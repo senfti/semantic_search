@@ -12,13 +12,19 @@
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
+#include <tf/tf.h>
+#include <tf/transform_listener.h>
+
 #include <opencv2/opencv.hpp>
+#include "vision/VisionMsg.h"
 
 class VisionApp{
   public:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
+    ros::Publisher result_pub_;
+    tf::TransformListener tf_listener_;
 
     CaffeClassifier* classifier_ = nullptr;
     YoloDetector* detector_ = nullptr;

@@ -92,5 +92,6 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
     }
   }
 
+  std::sort(detections.begin(), detections.end(), operator>);
   return detections;
 }

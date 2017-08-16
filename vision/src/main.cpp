@@ -1,10 +1,12 @@
 #include "vision/main.h"
+#include <geometry_msgs/TransformStamped.h>
 #include <chrono>
 
 const std::string model_file   = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt";
 const std::string trained_file = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel";
 const std::string mean_file    = "/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat";
 const std::string label_file   = "/home/thomas/BVLCcaffe/models/placescnn/categoryIndex_places205.csv";
+const int num_place_proposals = 5;
 
 const std::string object_label_file = "/home/thomas/darknet/data/coco.names";
 const std::string yolo_cfg = "/home/thomas/pyyolo/darknet/cfg/yolo.cfg";
@@ -33,6 +35,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   std::cout << "Yolo init in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   image_sub_ = it_.subscribe("/camera/rgb/image_raw", 1, &VisionApp::imageCb, this);
+  result_pub_ = nh_.advertise<vision::VisionMsg>("vision_result", 10);
 
   is_ok_ = true;
 }
@@ -63,7 +66,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   cv::Mat img;
   cv_ptr->image.copyTo(img);
   auto begin = std::chrono::steady_clock::now();
-  std::vector<std::pair<std::string, float>> predictions = classifier_->classify(img);
+  std::vector<std::pair<std::string, float>> predictions = classifier_->classify(img, num_place_proposals);
   std::cout << "Places in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   begin = std::chrono::steady_clock::now();
@@ -80,6 +83,40 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     detections[i].scale(2.f);
     detections[i].draw(img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
   }
+
+  vision::VisionMsg result_msg;
+  for(int i=0; i<predictions.size(); i++){
+    vision::PlaceRecognitionMsg place_msg;
+    place_msg.name = predictions[i].first;
+    place_msg.prob = predictions[i].second;
+    result_msg.place_proposals.push_back(place_msg);
+  }
+  for(int i=0; i<detections.size(); i++){
+    vision::ObjectDetectionMsg object_msg;
+    object_msg.name = detections[i].label_;
+    object_msg.prob = detections[i].prob_;
+    object_msg.x1 = detections[i].x1_;
+    object_msg.x2 = detections[i].x2_;
+    object_msg.y1 = detections[i].y1_;
+    object_msg.y2 = detections[i].y1_;
+    result_msg.objects.push_back(object_msg);
+  }
+
+  try{
+    tf::StampedTransform transform;
+    tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
+    tf::Stamped<tf::Pose> tmp;
+    tmp.stamp_ = transform.stamp_;
+    tmp.frame_id_ = transform.frame_id_;
+    tmp.setOrigin(transform.getOrigin());
+    tmp.setRotation(transform.getRotation());
+    tf::poseStampedTFToMsg(tmp, result_msg.pose);
+  }
+  catch(std::exception& e){
+    std::cout << e.what() << std::endl;
+  }
+
+  result_pub_.publish(result_msg);
 
   cv::imshow("img", img);
   if((cv::waitKey(1) & 255) == 27)

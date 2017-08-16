@@ -15,7 +15,21 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  geometry_msgs
   tf
+  message_generation
+)
+
+add_message_files(
+  FILES
+  ObjectDetectionMsg.msg
+  PlaceRecognitionMsg.msg
+  VisionMsg.msg
+)
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  std_msgs
 )
 
 add_definitions(${PCL_DEFINITIONS} -std=c++11 -g)
@@ -33,7 +47,7 @@ link_directories(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Caffe_INCLUDE_DIRS} "/home/thomas/darknet/src")
 
-add_executable(vision src/main.cpp src/CaffeClassifier.cpp src/YoloDetector.cpp include/vision/main.h)
+add_executable(vision src/main.cpp src/CaffeClassifier.cpp src/YoloDetector.cpp)
 
 target_link_libraries(vision
   ${catkin_LIBRARIES}
@@ -41,3 +55,5 @@ target_link_libraries(vision
   ${Caffe_LIBRARIES}
   darknet
  )
+
+add_dependencies(vision vision_generate_messages_cpp)

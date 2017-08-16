@@ -1,0 +1,4 @@
+custom installed
+    caffe (https://github.com/BVLC/caffe) with Cuda for good fps
+    darknet cpp-fork (https://github.com/prabindh/darknet) with yolo files (in correct folders)
+    hokuyo_node (https://github.com/ros-drivers/hokuyo_node), which is not available in ros kinetic (atm)

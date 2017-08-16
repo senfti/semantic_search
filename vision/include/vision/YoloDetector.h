@@ -29,7 +29,13 @@ class YoloDetection{
     YoloDetection(const std::string& label, float prob, float x1, float x2, float y1, float y2);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
+
+    friend bool operator>(const YoloDetection& lhs, const YoloDetection& rhs);
 };
+
+inline bool operator>(const YoloDetection& lhs, const YoloDetection& rhs){
+  return lhs.prob_ > rhs.prob_;
+}
 
 class YoloDetector{
   private:
