@@ -95,36 +95,23 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
     }
   }
 
-  cv::Mat office, corridor, kitchen, kitchenette;
-  cv::Mat visible = place_maps_[129]*10000.f;
-  cv::Mat tmp(visible.rows, visible.cols, CV_8UC1, cv::Scalar(255));
+  cv::Mat visible = place_maps_[0]*10000.f;
+  for(const auto& p : place_maps_)
+    visible = visible + p;
   cv::flip(visible, visible, 0);
   cv::imshow("visible", visible);
-
-  place_maps_[129].convertTo(office, CV_8U, 150.f);
-  cv::flip(office, office, 0);
-  cv::merge(std::vector<cv::Mat>({office, tmp, tmp}), office);
-  cv::cvtColor(office, office, CV_HSV2BGR);
-  cv::imshow(place_labels_[129], office);
-
-  place_maps_[54].convertTo(corridor, CV_8U, 150.f);
-  cv::flip(corridor, corridor, 0);
-  cv::merge(std::vector<cv::Mat>({corridor, tmp, tmp}), corridor);
-  cv::cvtColor(corridor, corridor, CV_HSV2BGR);
-  cv::imshow(place_labels_[54], corridor);
-
-  place_maps_[108].convertTo(kitchen, CV_8U, 150.f);
-  cv::flip(kitchen, kitchen, 0);
-  cv::merge(std::vector<cv::Mat>({kitchen, tmp, tmp}), kitchen);
-  cv::cvtColor(kitchen, kitchen, CV_HSV2BGR);
-  cv::imshow(place_labels_[108], kitchen);
-
-  place_maps_[109].convertTo(kitchenette, CV_8U, 150.f);
-  cv::flip(kitchenette, kitchenette, 0);
-  cv::merge(std::vector<cv::Mat>({kitchenette, tmp, tmp}), kitchenette);
-  cv::cvtColor(kitchenette, kitchenette, CV_HSV2BGR);
-  cv::imshow(place_labels_[109], kitchenette);
-
+  cv::imwrite("/tmp/visible.png", visible);
+  cv::Mat tmp(place_maps_[0].rows, place_maps_[0].cols, CV_8UC1, cv::Scalar(255));
+  for(int i=0; i<place_maps_.size(); i++){
+    cv::Mat out;
+    place_maps_[i].convertTo(out, CV_8U, 150.f);
+    cv::flip(out, out, 0);
+    cv::merge(std::vector<cv::Mat>({out, tmp, tmp}), out);
+    cv::cvtColor(out, out, CV_HSV2BGR);
+    cv::imwrite("/tmp/" + place_labels_[i] + ".png", out);
+    if(!place_labels_[i].compare("office") || !place_labels_[i].compare("corridor") || !place_labels_[i].compare("kitchen") || !place_labels_[i].compare("kitchenette"))
+      cv::imshow(place_labels_[i], out);
+  }
   cv::waitKey(1);
 }
 
