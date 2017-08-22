@@ -68,20 +68,46 @@ static std::vector<int> argmax(const std::vector<float>& v, int N) {
   return result;
 }
 
+/* Return the indices of the top N values of vector v. */
+static std::vector<int> argmax(const std::vector<float>& v, float min_prob) {
+  std::vector<std::pair<float, int> > pairs;
+  for (size_t i = 0; i < v.size(); ++i)
+    pairs.push_back(std::make_pair(v[i], i));
+  std::sort(pairs.begin(), pairs.end(), pairCompare);
+
+  std::vector<int> result;
+  for (int i = 0; i < pairs.size() && pairs[i].first >= min_prob; ++i)
+    result.push_back(pairs[i].second);
+  return result;
+}
+
 /* Return the top N std::pair<float, int>s. */
-std::vector<std::pair<std::string, float>> CaffeClassifier::classify(const cv::Mat& img, int N) {
+std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img, int N) {
   std::vector<float> output = predict(img);
 
   N = std::min<int>(labels_.size(), N);
   std::vector<int> maxN = argmax(output, N);
-  std::vector<std::pair<std::string, float>> predictions;
+  std::vector<CaffeRecognition> predictions;
   for (int i = 0; i < N; ++i) {
     int idx = maxN[i];
-    predictions.push_back(std::make_pair(labels_[idx], output[idx]));
+    predictions.push_back(CaffeRecognition(labels_[idx], idx, output[idx]));
   }
 
   return predictions;
 }
+
+std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img, float min_prob){
+  std::vector<float> output = predict(img);
+
+  std::vector<int> maxN = argmax(output, min_prob);
+  std::vector<CaffeRecognition> predictions;
+  for (int i = 0; i < maxN.size(); ++i) {
+    int idx = maxN[i];
+    predictions.push_back(CaffeRecognition(labels_[idx], idx, output[idx]));
+  }
+
+  return predictions;
+};
 
 /* Load the mean file in binaryproto format. */
 void CaffeClassifier::setMean(const std::string& mean_file) {

@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   message_generation
   vision
+  kb_query
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
@@ -27,7 +28,7 @@ add_definitions(-std=c++11 -g)
 catkin_package(
 )
 
-add_executable(semantic_mapping src/main.cpp)
+add_executable(semantic_mapping src/main.cpp src/VisionResult.cpp src/KnowledgeBase.cpp)
 
 target_link_libraries(semantic_mapping
   ${catkin_LIBRARIES}

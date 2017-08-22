@@ -5,12 +5,13 @@
 const std::string model_file   = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt";
 const std::string trained_file = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel";
 const std::string mean_file    = "/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat";
-const std::string label_file   = "/home/thomas/BVLCcaffe/models/placescnn/categoryIndex_places205.csv";
-const int num_place_proposals = 5;
+const std::string label_file   = "/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv";
+//const int num_place_proposals = 5;
+const float min_place_prob = 0.0;
 
 const std::string object_label_file = "/home/thomas/darknet/data/coco.names";
-const std::string yolo_cfg = "/home/thomas/pyyolo/darknet/cfg/yolo.cfg";
-const std::string yolo_weights = "/home/thomas/pyyolo/yolo.weights";
+const std::string yolo_cfg = "/home/thomas/darknet/cfg/yolo.cfg";
+const std::string yolo_weights = "/home/thomas/darknet/data/yolo.weights";
 const float thresh = 0.1;
 const float hier_thresh = 0.5;
 const float nms = 0.4f;
@@ -66,7 +67,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   cv::Mat img;
   cv_ptr->image.copyTo(img);
   auto begin = std::chrono::steady_clock::now();
-  std::vector<std::pair<std::string, float>> predictions = classifier_->classify(img, num_place_proposals);
+  std::vector<CaffeRecognition> predictions = classifier_->classify(img, min_place_prob);
   std::cout << "Places in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   begin = std::chrono::steady_clock::now();
@@ -76,7 +77,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   cv::resize(img, img, cv::Size(img.cols*2, img.rows*2));
 
   for (size_t i = 0; i < predictions.size(); ++i)
-    cv::putText(img, predictions[i].first + " " + std::to_string(predictions[i].second).substr(0, 5),
+    cv::putText(img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
                 cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
 
   for(int i=0; i<detections.size(); i++){
@@ -87,13 +88,15 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   vision::VisionMsg result_msg;
   for(int i=0; i<predictions.size(); i++){
     vision::PlaceRecognitionMsg place_msg;
-    place_msg.name = predictions[i].first;
-    place_msg.prob = predictions[i].second;
-    result_msg.place_proposals.push_back(place_msg);
+    place_msg.name = predictions[i].label_;
+    place_msg.id = predictions[i].id_;
+    place_msg.prob = predictions[i].prob_;
+    result_msg.place_guesses.push_back(place_msg);
   }
   for(int i=0; i<detections.size(); i++){
     vision::ObjectDetectionMsg object_msg;
     object_msg.name = detections[i].label_;
+    object_msg.id = detections[i].id_;
     object_msg.prob = detections[i].prob_;
     object_msg.x1 = detections[i].x1_;
     object_msg.x2 = detections[i].x2_;

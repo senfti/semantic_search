@@ -23,10 +23,11 @@
 class YoloDetection{
   public:
     std::string label_;
+    int id_;
     float prob_;
-    float x1_, x2_, y1_, y2_;
+    float x1_, x2_, y1_, y2_, z_;
 
-    YoloDetection(const std::string& label, float prob, float x1, float x2, float y1, float y2);
+    YoloDetection(const std::string& label, int id, float prob, float x1, float x2, float y1, float y2, float z);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
 

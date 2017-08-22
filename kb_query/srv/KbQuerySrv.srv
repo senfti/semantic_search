@@ -1,0 +1,4 @@
+string[] terms1
+string[] terms2
+---
+float32[] similarities

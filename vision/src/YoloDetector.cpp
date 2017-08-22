@@ -6,8 +6,8 @@
 #include <fstream>
 #include <iostream>
 
-YoloDetection::YoloDetection(const std::string& label, float prob, float x1, float x2, float y1, float y2)
-      : label_(label), prob_(prob), x1_(x1), x2_(x2), y1_(y1), y2_(y2)
+YoloDetection::YoloDetection(const std::string& label, int id, float prob, float x1, float x2, float y1, float y2, float z)
+      : label_(label), id_(id), prob_(prob), x1_(x1), x2_(x2), y1_(y1), y2_(y2), z_(z)
 {
 }
 
@@ -88,7 +88,7 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
     float y1 = (boxes[i].y-boxes[i].h/2.)*img.rows;
     float y2 = (boxes[i].y+boxes[i].h/2.)*img.rows;
     if(prob > thresh){
-      detections.push_back(YoloDetection(labels_[max_idx], prob, x1, x2, y1, y2));
+      detections.push_back(YoloDetection(labels_[max_idx], max_idx, prob, x1, x2, y1, y2, 0.f));
     }
   }
 
