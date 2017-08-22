@@ -74,17 +74,22 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
   for(int x=0; x<msg->info.width; x++){
     for(int y=0; y<msg->info.height; y++){
       if(msg->data[y*msg->info.width+x] >= 0){
-        for(auto& map : place_maps_)
-          map(y,x) = 1.f/place_maps_.size();
+        std::vector<double> log_probs(place_labels_.size(), -std::log2(double(place_maps_.size())));
         for(const auto& v : vision_results_){
           float importance = static_cast<float>(v.getImportance(x*resolution + orig_x, y*resolution + orig_y));
           if(importance > 0.f){
             for(int i=0; i<v.place_guesses_.size(); i++){
-              place_maps_[v.place_guesses_[i].id_](y,x) += MAP_UPDATE_FACTOR * importance * v.place_guesses_[i].prob_;
-              place_maps_[v.place_guesses_[i].id_](y,x) /= (1.f + MAP_UPDATE_FACTOR * importance);
-              //place_maps_[v.place_guesses_[i].id_](y,x) *= v.place_guesses_[i].prob_;
+              log_probs[v.place_guesses_[i].id_] += std::log(v.place_guesses_[i].prob_);
             }
           }
+        }
+        double sum_probs = 0.0;
+        for(int i=0; i<place_labels_.size(); i++){
+          log_probs[i] = std::pow(2, log_probs[i]);
+          sum_probs += log_probs[i];
+        }
+        for(int i=0; i<place_labels_.size(); i++){
+          place_maps_[i](y, x) = float(log_probs[i] / sum_probs);
         }
       }
     }
@@ -96,25 +101,25 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
   cv::flip(visible, visible, 0);
   cv::imshow("visible", visible);
 
-  place_maps_[129].convertTo(office, CV_8U, 180.f);
+  place_maps_[129].convertTo(office, CV_8U, 150.f);
   cv::flip(office, office, 0);
   cv::merge(std::vector<cv::Mat>({office, tmp, tmp}), office);
   cv::cvtColor(office, office, CV_HSV2BGR);
   cv::imshow(place_labels_[129], office);
 
-  place_maps_[54].convertTo(corridor, CV_8U, 180.f);
+  place_maps_[54].convertTo(corridor, CV_8U, 150.f);
   cv::flip(corridor, corridor, 0);
   cv::merge(std::vector<cv::Mat>({corridor, tmp, tmp}), corridor);
   cv::cvtColor(corridor, corridor, CV_HSV2BGR);
   cv::imshow(place_labels_[54], corridor);
 
-  place_maps_[108].convertTo(kitchen, CV_8U, 180.f);
+  place_maps_[108].convertTo(kitchen, CV_8U, 150.f);
   cv::flip(kitchen, kitchen, 0);
   cv::merge(std::vector<cv::Mat>({kitchen, tmp, tmp}), kitchen);
   cv::cvtColor(kitchen, kitchen, CV_HSV2BGR);
   cv::imshow(place_labels_[108], kitchen);
 
-  place_maps_[109].convertTo(kitchenette, CV_8U, 180.f);
+  place_maps_[109].convertTo(kitchenette, CV_8U, 150.f);
   cv::flip(kitchenette, kitchenette, 0);
   cv::merge(std::vector<cv::Mat>({kitchenette, tmp, tmp}), kitchenette);
   cv::cvtColor(kitchenette, kitchenette, CV_HSV2BGR);
