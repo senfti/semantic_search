@@ -1,0 +1,11 @@
+<!-- launches turtlebot for semantic mapping
+-->
+<launch>
+  <include file="$(find testing_data)/launch/mapping.launch">
+  </include>
+
+  <node pkg="vision" type="vision" name="vision" />
+  <node pkg="semantic_mapping" type="semantic_mapping" name="semantic_mapping" />
+  <node pkg="kb_query" type="conceptnet4_query.py" name="conceptnet4_query.py" />
+
+</launch>

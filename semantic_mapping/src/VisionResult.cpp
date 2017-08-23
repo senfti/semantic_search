@@ -90,9 +90,9 @@ double VisionResult::getImportance(double x, double y) const{
     return 0.0;
   double angle = atan2(diff_y,diff_x) - atan2(pose_.getBasis().getColumn(0).getY(),pose_.getBasis().getColumn(0).getX());
 
-  int segment = (angle + ASUS_FOV / 2.0) / max_dists_.size();
+  int segment = (angle + ASUS_FOV / 2.0) / ASUS_FOV * max_dists_.size();
   if(segment < 0 || segment >= max_dists_.size() || dist > max_dists_[segment])
-    return 0.0;
+    return -1.0;
 
   return 1.0;
 

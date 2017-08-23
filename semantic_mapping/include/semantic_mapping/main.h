@@ -26,6 +26,7 @@ class SemanticMappingApp{
 
     std::vector<VisionResult> vision_results_;
     std::vector<VisionResult> improved_vision_result_;
+    int processed_views_ = 0;
 
     KnowledgeBase kb_;
 

@@ -107,7 +107,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
 
   result_msg.view_dists.resize(VIEW_DIST_SEGMENTS);
   cv::Mat dist_mat;
-  cv::blur(depth_img_, dist_mat, cv::Size(5,5));
+  cv::medianBlur(depth_img_, dist_mat, 5);
   int pixel_per_seg = depth_img_.cols / VIEW_DIST_SEGMENTS;
   for(int i=0; i<VIEW_DIST_SEGMENTS; i++){
     double mi, ma;
