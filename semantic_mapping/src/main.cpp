@@ -2,13 +2,14 @@
 #include <geometry_msgs/PoseArray.h>
 #include <kb_query/KbQuerySrv.h>
 #include <fstream>
+#include <chrono>
 
 const std::string label_file = "/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv";
 
 SemanticMappingApp::SemanticMappingApp(ros::NodeHandle& nh)
   : nh_(nh), kb_(nh)
 {
-  vision_sub_ = nh_.subscribe("vision_result", 10, &SemanticMappingApp::visionCb, this);
+  vision_sub_ = nh_.subscribe("vision_result", 100, &SemanticMappingApp::visionCb, this);
   map_sub_ = nh_.subscribe("map", 10, &SemanticMappingApp::mapCb, this);
   vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("vision_poses", 2);
 
@@ -49,6 +50,10 @@ void SemanticMappingApp::publishVisionPoses(const vision::VisionMsgConstPtr &msg
 }
 
 void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& msg){
+  static int i=-1;
+  i++;
+  if(i%5)
+    return;
   int width = msg->info.width;
   int height = msg->info.height;
   float resolution = msg->info.resolution;
@@ -77,7 +82,7 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
         std::vector<double> log_probs(place_labels_.size(), -std::log2(double(place_maps_.size())));
         for(const auto& v : vision_results_){
           float importance = static_cast<float>(v.getImportance(x*resolution + orig_x, y*resolution + orig_y));
-          if(importance > 0.f){
+          if(importance > 0.0){
             for(int i=0; i<v.place_guesses_.size(); i++){
               log_probs[v.place_guesses_[i].id_] += std::log(v.place_guesses_[i].prob_);
             }
@@ -116,20 +121,24 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
 }
 
 void SemanticMappingApp::visionCb(const vision::VisionMsgConstPtr& msg){
+  auto begin = std::chrono::steady_clock::now();
   VisionResult res = VisionResult(*msg);
   //std::cout << res;
-  std::cout << res.place_guesses_[0].class_ << " " << res.place_guesses_[0].prob_ << std::endl;
+  //std::cout << res.place_guesses_[0].class_ << " " << res.place_guesses_[0].prob_ << std::endl;
   res.improve(kb_);
   //std::cout << res;
-  std::cout << res.place_guesses_[0].class_ << " " << res.place_guesses_[0].prob_ << std::endl << std::endl;
+  //std::cout << res.place_guesses_[0].class_ << " " << res.place_guesses_[0].prob_ << std::endl << std::endl;
   vision_results_.push_back(res);
 
   if(PUBLISH_VISION_POSES)
     publishVisionPoses(msg);
+  //std::cout << "Vision input processing in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 
 void SemanticMappingApp::mapCb(const nav_msgs::OccupancyGridConstPtr& msg){
+  auto begin = std::chrono::steady_clock::now();
   updatePlaceMaps(msg);
+  std::cout << "Map update in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 
 int main(int argc, char** argv){

@@ -1,0 +1,16 @@
+<!-- launches turtlebot for mapping
+-->
+<launch>
+  <include file="$(find testing_data)/launch/basic.launch">
+    <arg name="move_file" value="xbox360_teleop.launch"/>
+  </include>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
+
+  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml" />
+  
+  <include file="$(find turtlebot_navigation)/launch/includes/gmapping/gmapping.launch.xml" >
+    <arg name="scan_topic" value="scan" />
+  </include>
+
+</launch>

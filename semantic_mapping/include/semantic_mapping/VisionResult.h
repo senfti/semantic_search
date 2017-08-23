@@ -43,6 +43,7 @@ class VisionResult{
     tf::Pose pose_;
     std::vector<Object> objects_;
     std::vector<PlaceGuess> place_guesses_;
+    std::vector<float> max_dists_;
 
     double getSumPlaceProbs() const;
     double getSumObjectProbs() const;

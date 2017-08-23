@@ -16,6 +16,8 @@ const float thresh = 0.1;
 const float hier_thresh = 0.5;
 const float nms = 0.4f;
 
+const int VIEW_DIST_SEGMENTS = 32;
+
 VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   : nh_(nh), it_(nh)
 {
@@ -36,6 +38,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   std::cout << "Yolo init in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   image_sub_ = it_.subscribe("/camera/rgb/image_raw", 1, &VisionApp::imageCb, this);
+  depth_image_sub_ = it_.subscribe("/camera/depth_registered/image_raw", 1, &VisionApp::depthImageCb, this);
   result_pub_ = nh_.advertise<vision::VisionMsg>("vision_result", 10);
 
   is_ok_ = true;
@@ -47,7 +50,7 @@ VisionApp::~VisionApp(){
 }
 
 void VisionApp::run(){
-  ros::Rate rate(4);
+  ros::Rate rate(2);
   while(ros::ok() && run_){
     ros::spinOnce();
     rate.sleep();
@@ -55,6 +58,11 @@ void VisionApp::run(){
 }
 
 void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
+  if(depth_img_.empty()){
+    std::cout << "No depth image" << std::endl;
+    return;
+  }
+
   cv_bridge::CvImagePtr cv_ptr;
   try{
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -74,17 +82,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
   std::cout << "Objects in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
-  cv::resize(img, img, cv::Size(img.cols*2, img.rows*2));
-
-  for (size_t i = 0; i < predictions.size(); ++i)
-    cv::putText(img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
-                cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
-
-  for(int i=0; i<detections.size(); i++){
-    detections[i].scale(2.f);
-    detections[i].draw(img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
-  }
-
+  begin = std::chrono::steady_clock::now();
   vision::VisionMsg result_msg;
   for(int i=0; i<predictions.size(); i++){
     vision::PlaceRecognitionMsg place_msg;
@@ -93,16 +91,28 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     place_msg.prob = predictions[i].prob_;
     result_msg.place_guesses.push_back(place_msg);
   }
-  for(int i=0; i<detections.size(); i++){
+  for(const auto& d : detections){
     vision::ObjectDetectionMsg object_msg;
-    object_msg.name = detections[i].label_;
-    object_msg.id = detections[i].id_;
-    object_msg.prob = detections[i].prob_;
-    object_msg.x1 = detections[i].x1_;
-    object_msg.x2 = detections[i].x2_;
-    object_msg.y1 = detections[i].y1_;
-    object_msg.y2 = detections[i].y1_;
+    object_msg.name = d.label_;
+    object_msg.id = d.id_;
+    object_msg.prob = d.prob_;
+    object_msg.x1 = d.x1_;
+    object_msg.x2 = d.x2_;
+    object_msg.y1 = d.y1_;
+    object_msg.y2 = d.y1_;
+    object_msg.z = cv::mean(depth_img_(cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
+                                                cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))))[0];
     result_msg.objects.push_back(object_msg);
+  }
+
+  result_msg.view_dists.resize(VIEW_DIST_SEGMENTS);
+  cv::Mat dist_mat;
+  cv::blur(depth_img_, dist_mat, cv::Size(5,5));
+  int pixel_per_seg = depth_img_.cols / VIEW_DIST_SEGMENTS;
+  for(int i=0; i<VIEW_DIST_SEGMENTS; i++){
+    double mi, ma;
+    cv::minMaxIdx(depth_img_(cv::Rect(i*pixel_per_seg, 0, pixel_per_seg, depth_img_.rows)), &mi, &ma);
+    result_msg.view_dists[i] = ma;
   }
 
   try{
@@ -120,10 +130,36 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   }
 
   result_pub_.publish(result_msg);
+  std::cout << "Message created in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
+  begin = std::chrono::steady_clock::now();
+  cv::resize(img, img, cv::Size(img.cols*2, img.rows*2));
+  for (size_t i = 0; i < predictions.size(); ++i)
+    cv::putText(img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
+                cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
+
+  for(int i=0; i<detections.size(); i++){
+    detections[i].scale(2.f);
+    detections[i].draw(img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
+  }
   cv::imshow("img", img);
   if((cv::waitKey(1) & 255) == 27)
     run_ = false;
+  std::cout << "Debut Images in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+}
+
+void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
+  cv_bridge::CvImagePtr cv_ptr;
+  try{
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
+  }
+  catch (cv_bridge::Exception& e){
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
+
+  cv::Mat img;
+  cv_ptr->image.copyTo(depth_img_);
 }
 
 int main(int argc, char** argv){

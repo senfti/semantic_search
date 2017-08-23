@@ -23,11 +23,14 @@ class VisionApp{
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
+    image_transport::Subscriber depth_image_sub_;
     ros::Publisher result_pub_;
     tf::TransformListener tf_listener_;
 
     CaffeClassifier* classifier_ = nullptr;
     YoloDetector* detector_ = nullptr;
+
+    cv::Mat depth_img_;
 
     bool is_ok_ = false;
     bool run_ = true;
@@ -37,6 +40,7 @@ class VisionApp{
 
     void run();
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
+    void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
 };
 
 #endif //VISION_MAIN_H

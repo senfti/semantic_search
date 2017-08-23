@@ -28,6 +28,8 @@ VisionResult::VisionResult(const vision::VisionMsg &msg)
   place_guesses_.reserve(msg.place_guesses.size());
   for(const auto& p : msg.place_guesses)
     place_guesses_.push_back(PlaceGuess(p));
+
+  max_dists_ = msg.view_dists;
 }
 
 double VisionResult::getSumPlaceProbs() const{
@@ -84,13 +86,19 @@ double VisionResult::getImportance(double x, double y) const{
   double diff_x = x-pose_.getOrigin().getX();
   double diff_y = y-pose_.getOrigin().getY();
   double dist = std::sqrt(diff_x*diff_x + diff_y*diff_y);
-  double cos_angle = (diff_x*pose_.getBasis().getColumn(0).getX() + diff_y*pose_.getBasis().getColumn(0).getY()) / dist;
-  if(cos_angle < ASUS_FOV_COS || dist < MIN_DIST_BOUND || dist > MAX_DIST_BOUND)
+  if(dist > MAX_DIST_BOUND)
+    return 0.0;
+  double angle = atan2(diff_y,diff_x) - atan2(pose_.getBasis().getColumn(0).getY(),pose_.getBasis().getColumn(0).getX());
+
+  int segment = (angle + ASUS_FOV / 2.0) / max_dists_.size();
+  if(segment < 0 || segment >= max_dists_.size() || dist > max_dists_[segment])
     return 0.0;
 
-  double dist_normalized = (std::sqrt(dist) - (MAX_DIST_BOUND + MIN_DIST_BOUND) / 2.0) / ((MAX_DIST_BOUND - MIN_DIST_BOUND) / 2.0);
+  return 1.0;
+
+  /*double dist_normalized = (std::sqrt(dist) - (MAX_DIST_BOUND + MIN_DIST_BOUND) / 2.0) / ((MAX_DIST_BOUND - MIN_DIST_BOUND) / 2.0);
   return (cos_angle - ASUS_FOV_COS*0.5)/(1.0-ASUS_FOV_COS*0.5)  // angular weight
-      * (1.0 - dist_normalized*dist_normalized);                // distance weight
+      * (1.0 - dist_normalized*dist_normalized);                // distance weight*/
 
 }
 
