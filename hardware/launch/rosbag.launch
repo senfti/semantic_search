@@ -1,12 +1,13 @@
 <!-- launches turtlebot for mapping
 -->
 <launch>
-  <include file="$(find testing_data)/launch/basic.launch">
+  <include file="$(find hardware)/launch/basic.launch">
     <arg name="move_file" value="xbox360_teleop.launch"/>
   </include>
 
   <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
 
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml" />
+  <node name="set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver data_skip 15" />
 
 </launch>

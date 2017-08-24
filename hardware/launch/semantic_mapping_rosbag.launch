@@ -1,11 +1,13 @@
 <!-- launches turtlebot for semantic mapping
 -->
 <launch>
-  <include file="$(find testing_data)/launch/mapping.launch">
+  <include file="$(find turtlebot_navigation)/launch/includes/gmapping/gmapping.launch.xml" >
+    <arg name="scan_topic" value="scan" />
   </include>
 
   <node pkg="vision" type="vision" name="vision" />
   <node pkg="semantic_mapping" type="semantic_mapping" name="semantic_mapping" />
   <node pkg="kb_query" type="conceptnet4_query.py" name="knowledgebase" />
+  <param name="use_sim_time" value="true" />
 
 </launch>

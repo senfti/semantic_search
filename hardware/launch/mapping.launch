@@ -1,7 +1,7 @@
 <!-- launches turtlebot for mapping
 -->
 <launch>
-  <include file="$(find testing_data)/launch/basic.launch">
+  <include file="$(find hardware)/launch/basic.launch">
     <arg name="move_file" value="xbox360_teleop.launch"/>
   </include>
 
