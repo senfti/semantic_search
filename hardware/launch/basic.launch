@@ -3,7 +3,7 @@
 <launch>
   <arg name="move_file" default="xbox360_teleop.launch" doc="movement launch file"/>
 
-  <include file="$(find turtlebot_bringup)/launch/minimal.launch">
+  <include file="$(find hardware)/launch/turtlebot.launch">
     <arg name="3d_sensor" value="own_sensors"/>
   </include>
 

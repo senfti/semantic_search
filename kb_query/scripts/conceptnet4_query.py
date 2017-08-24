@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import divisi2
 import kb_query.srv
 import rospy

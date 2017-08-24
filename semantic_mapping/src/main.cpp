@@ -107,10 +107,10 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
   auto begin = std::chrono::steady_clock::now();
   cv::flip(map, map, 0);
   cv::imshow("map", map);
-  cv::imwrite("/tmp/map.png", map);
+  //cv::imwrite("/tmp/map.png", map);
   cv::flip(visible, visible, 0);
   cv::imshow("visible", visible);
-  cv::imwrite("/tmp/visible.png", visible);
+  //cv::imwrite("/tmp/visible.png", visible);
 
   cv::Mat tmp(place_maps_[0].rows, place_maps_[0].cols, CV_8UC1, cv::Scalar(255));
   cv::Mat other(place_maps_[0].rows, place_maps_[0].cols, CV_32FC1, cv::Scalar(0));
@@ -120,7 +120,7 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
     cv::flip(out, out, 0);
     cv::merge(std::vector<cv::Mat>({out, tmp, tmp}), out);
     cv::cvtColor(out, out, CV_HSV2BGR);
-    cv::imwrite("/tmp/" + place_labels_[i] + ".png", out);
+    //cv::imwrite("/tmp/" + place_labels_[i] + ".png", out);
     if(!place_labels_[i].compare("office") || !place_labels_[i].compare("corridor") || !place_labels_[i].compare("kitchen") || !place_labels_[i].compare("kitchenette"))
       cv::imshow(place_labels_[i], out);
     else
@@ -132,7 +132,7 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
   cv::merge(std::vector<cv::Mat>({other, tmp, tmp}), other);
   cv::cvtColor(other, other, CV_HSV2BGR);
   cv::imshow("other", other);
-  cv::imwrite("/tmp/other.png", other);
+  //cv::imwrite("/tmp/other.png", other);
   cv::waitKey(1);
   std::cout << "Debug images in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
