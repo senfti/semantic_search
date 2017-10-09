@@ -2,22 +2,6 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <chrono>
 
-const std::string model_file   = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt";
-const std::string trained_file = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel";
-const std::string mean_file    = "/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat";
-const std::string label_file   = "/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv";
-//const int num_place_proposals = 5;
-const float min_place_prob = 0.0;
-
-const std::string object_label_file = "/home/thomas/darknet/data/coco.names";
-const std::string yolo_cfg = "/home/thomas/darknet/cfg/yolo.cfg";
-const std::string yolo_weights = "/home/thomas/darknet/data/yolo.weights";
-const float thresh = 0.1;
-const float hier_thresh = 0.5;
-const float nms = 0.4f;
-
-const int VIEW_DIST_SEGMENTS = 32;
-
 VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   : nh_(nh), it_(nh)
 {
@@ -58,11 +42,6 @@ void VisionApp::run(){
 }
 
 void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
-  if(depth_img_.empty()){
-    std::cout << "No depth image" << std::endl;
-    return;
-  }
-
   cv_bridge::CvImagePtr cv_ptr;
   try{
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -71,81 +50,22 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     ROS_ERROR("cv_bridge exception: %s", e.what());
     return;
   }
-
   cv::Mat img;
   cv_ptr->image.copyTo(img);
-  auto begin = std::chrono::steady_clock::now();
-  std::vector<CaffeRecognition> predictions = classifier_->classify(img, min_place_prob);
-  std::cout << "Places in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
-  begin = std::chrono::steady_clock::now();
-  std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
-  std::cout << "Objects in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+  if(!useImage(img))
+    return;
 
-  begin = std::chrono::steady_clock::now();
   vision::VisionMsg result_msg;
-  for(int i=0; i<predictions.size(); i++){
-    vision::PlaceRecognitionMsg place_msg;
-    place_msg.name = predictions[i].label_;
-    place_msg.id = predictions[i].id_;
-    place_msg.prob = predictions[i].prob_;
-    result_msg.place_guesses.push_back(place_msg);
-  }
-  for(const auto& d : detections){
-    vision::ObjectDetectionMsg object_msg;
-    object_msg.name = d.label_;
-    object_msg.id = d.id_;
-    object_msg.prob = d.prob_;
-    object_msg.x1 = d.x1_;
-    object_msg.x2 = d.x2_;
-    object_msg.y1 = d.y1_;
-    object_msg.y2 = d.y1_;
-    object_msg.z = cv::mean(depth_img_(cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
-                                                cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))))[0];
-    result_msg.objects.push_back(object_msg);
-  }
-
-  result_msg.view_dists.resize(VIEW_DIST_SEGMENTS);
-  cv::Mat dist_mat;
-  cv::medianBlur(depth_img_, dist_mat, 5);
-  int pixel_per_seg = depth_img_.cols / VIEW_DIST_SEGMENTS;
-  for(int i=0; i<VIEW_DIST_SEGMENTS; i++){
-    double mi, ma;
-    cv::minMaxIdx(depth_img_(cv::Rect(i*pixel_per_seg, 0, pixel_per_seg, depth_img_.rows)), &mi, &ma);
-    result_msg.view_dists[i] = ma;
-  }
-
-  try{
-    tf::StampedTransform transform;
-    tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
-    tf::Stamped<tf::Pose> tmp;
-    tmp.stamp_ = transform.stamp_;
-    tmp.frame_id_ = transform.frame_id_;
-    tmp.setOrigin(transform.getOrigin());
-    tmp.setRotation(transform.getRotation());
-    tf::poseStampedTFToMsg(tmp, result_msg.pose);
-  }
-  catch(std::exception& e){
-    std::cout << e.what() << std::endl;
-  }
+  if(!fillTransform(result_msg))
+    return;
+  std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
+  std::vector<YoloDetection> detections = fillObjectDetections(img, result_msg);
+  fillViewDistances(result_msg);
 
   result_pub_.publish(result_msg);
-  std::cout << "Message created in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
-
-  begin = std::chrono::steady_clock::now();
-  cv::resize(img, img, cv::Size(img.cols*2, img.rows*2));
-  for (size_t i = 0; i < predictions.size(); ++i)
-    cv::putText(img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
-                cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
-
-  for(int i=0; i<detections.size(); i++){
-    detections[i].scale(2.f);
-    detections[i].draw(img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
-  }
-  cv::imshow("img", img);
-  if((cv::waitKey(1) & 255) == 27)
-    run_ = false;
-  std::cout << "Debut Images in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+  old_img_ = img;
+  showDebugImage(img, predictions, detections);
 }
 
 void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
@@ -161,6 +81,125 @@ void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
   cv::Mat img;
   cv_ptr->image.copyTo(depth_img_);
 }
+
+
+bool VisionApp::useImage(const cv::Mat& img) const{
+  if(depth_img_.empty()){
+    std::cout << "No depth image" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+
+bool VisionApp::fillTransform(vision::VisionMsg& vision_msg) const {
+  try{
+    tf::StampedTransform transform;
+    tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
+    tf::Stamped<tf::Pose> tmp;
+    tmp.stamp_ = transform.stamp_;
+    tmp.frame_id_ = transform.frame_id_;
+    tmp.setOrigin(transform.getOrigin());
+    tmp.setRotation(transform.getRotation());
+    tf::poseStampedTFToMsg(tmp, vision_msg.pose);
+  }
+  catch(std::exception& e){
+    std::cout << e.what() << std::endl;
+    return false;
+  }
+  return true;
+}
+
+
+std::vector<CaffeRecognition> VisionApp::fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const{
+  auto begin = std::chrono::steady_clock::now();
+  std::vector<CaffeRecognition> predictions = classifier_->classify(img, min_place_prob);
+
+  for(int i=0; i<predictions.size(); i++){
+    vision::PlaceRecognitionMsg place_msg;
+    place_msg.name = predictions[i].label_;
+    place_msg.id = predictions[i].id_;
+    place_msg.prob = predictions[i].prob_;
+    vision_msg.place_guesses.push_back(place_msg);
+  }
+  std::cout << "Places in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+
+  return predictions;
+}
+
+
+std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const{
+  auto begin = std::chrono::steady_clock::now();
+  std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
+
+  for(const auto& d : detections){
+    vision::ObjectDetectionMsg object_msg;
+    object_msg.name = d.label_;
+    object_msg.id = d.id_;
+    object_msg.prob = d.prob_;
+
+    cv::Mat tmp = depth_img_((cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
+                                       cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))));
+    std::vector<float> depths;
+    if (tmp.isContinuous()) {
+      depths.assign((float*)tmp.datastart, (float*)tmp.dataend);
+    } else {
+      for (int i = 0; i < tmp.rows; ++i) {
+        depths.insert(depths.end(), tmp.ptr<float>(i), tmp.ptr<float>(i)+tmp.cols);
+      }
+    }
+    if(depths.empty())
+      continue;
+
+    std::sort(depths.begin(), depths.end());
+    float z_median = depths[depths.size()/2];
+
+    object_msg.x1 = (d.x1_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
+    object_msg.x2 = (d.x2_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
+    object_msg.y1 = (d.y1_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
+    object_msg.y2 = (d.y2_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
+    object_msg.z1 = depths[depths.size()*dist_cutoff_];
+    object_msg.z2 = depths[depths.size()*(1.f-dist_cutoff_)];
+    vision_msg.objects.push_back(object_msg);
+  }
+  std::cout << "Objects in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+
+  return detections;
+}
+
+
+void VisionApp::fillViewDistances(vision::VisionMsg& vision_msg) const{
+  vision_msg.view_dists.resize(VIEW_DIST_SEGMENTS);
+  cv::Mat dist_mat;
+  cv::medianBlur(depth_img_, dist_mat, 5);
+  int pixel_per_seg = depth_img_.cols / VIEW_DIST_SEGMENTS;
+  for(int i=0; i<VIEW_DIST_SEGMENTS; i++){
+    double mi, ma;
+    cv::minMaxIdx(depth_img_(cv::Rect(i*pixel_per_seg, 0, pixel_per_seg, depth_img_.rows)), &mi, &ma);
+    vision_msg.view_dists[i] = ma;
+  }
+}
+
+
+void VisionApp::showDebugImage(cv::Mat img, const std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections){
+  float scale_factor = 2.f;
+  auto begin = std::chrono::steady_clock::now();
+  cv::Mat debug_img;
+  cv::resize(img, debug_img, cv::Size(img.cols*scale_factor, img.rows*scale_factor));
+  for (size_t i = 0; i < predictions.size(); ++i)
+    cv::putText(debug_img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
+                cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
+
+  for(int i=0; i<detections.size(); i++){
+    detections[i].scale(2.f);
+    detections[i].draw(debug_img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
+  }
+  cv::imshow("img", debug_img);
+  if((cv::waitKey(1) & 255) == 27)
+    run_ = false;
+  std::cout << "Debug Images in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+}
+
 
 int main(int argc, char** argv){
   ros::init (argc, argv, "vision");

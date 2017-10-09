@@ -15,7 +15,7 @@ class Object{
   public:
     Object(const vision::ObjectDetectionMsg& msg);
 
-    float x1_, x2_, y1_, y2_, z_;
+    float x1_, x2_, y1_, y2_, z1_, z2_;
     float prob_ = 0.f;
     int id_;
     std::string class_;

@@ -9,7 +9,7 @@ const double ASUS_FOV = 57.0*M_PI/180.0;
 const double ASUS_FOV_COS = std::cos(ASUS_FOV/2.0);
 
 Object::Object(const vision::ObjectDetectionMsg &msg)
-  : x1_(msg.x1), x2_(msg.x2), y1_(msg.y1), y2_(msg.y2), z_(msg.z), prob_(msg.prob), class_(msg.name), id_(msg.id)
+  : x1_(msg.x1), x2_(msg.x2), y1_(msg.y1), y2_(msg.y2), z1_(msg.z1), z2_(msg.z2), prob_(msg.prob), class_(msg.name), id_(msg.id)
 {
 }
 

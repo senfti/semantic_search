@@ -2,6 +2,7 @@
 -->
 <launch>
   <include file="$(find hardware)/launch/mapping.launch">
+    <arg name="use_manual_control" value="1" />
   </include>
 
   <node pkg="vision" type="vision" name="vision" />

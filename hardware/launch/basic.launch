@@ -2,6 +2,7 @@
 -->
 <launch>
   <arg name="move_file" default="xbox360_teleop.launch" doc="movement launch file"/>
+  <arg name="use_manual_control" default="0" doc="if manual control (keyboard/gamepad) is used"/>
 
   <include file="$(find hardware)/launch/turtlebot.launch">
     <arg name="3d_sensor" value="own_sensors"/>
@@ -13,7 +14,7 @@
     <arg name="depth_registration" value="true"/>
   </include>
 
-  <node name="laser_scanner_node" pkg="hokuyo_node" type="hokuyo_node" required="true" launch-prefix="xterm -hold -e">
+  <node name="laser_scanner_node" pkg="hokuyo_node" type="hokuyo_node" required="true">
     <param name="port" value="/dev/ttyACM0"/>
     <param name="frame_id" value="base_laser_link"/>
     <param name="calibrate_time" type="bool" value="true"/>  
@@ -23,7 +24,10 @@
     <param name="cluster" value="1"/>
   </node>
   
-  <include file="$(find turtlebot_teleop)/launch/$(arg move_file)">
-  </include>
+
+  <group if="$(arg use_manual_control)">    
+    <include file="$(find turtlebot_teleop)/launch/$(arg move_file)">
+    </include>
+  </group>
 
 </launch>
