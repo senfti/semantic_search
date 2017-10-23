@@ -19,24 +19,25 @@
 #include <option_list.h>
 #include <opencv2/opencv.hpp>
 
+static const int NUM_OBJECT_TYPES = 80;
 
 class YoloDetection{
   public:
     std::string label_;
     int id_;
-    float prob_;
+    std::vector<float> prob_;
     float x1_, x2_, y1_, y2_, z_;
 
-    YoloDetection(const std::string& label, int id, float prob, float x1, float x2, float y1, float y2, float z);
+    YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
 
-    friend bool operator>(const YoloDetection& lhs, const YoloDetection& rhs);
+    //friend bool operator>(const YoloDetection& lhs, const YoloDetection& rhs);
 };
 
-inline bool operator>(const YoloDetection& lhs, const YoloDetection& rhs){
-  return lhs.prob_ > rhs.prob_;
-}
+//inline bool operator>(const YoloDetection& lhs, const YoloDetection& rhs){
+//  return lhs.prob_ > rhs.prob_;
+//}
 
 class YoloDetector{
   private:
@@ -45,6 +46,7 @@ class YoloDetector{
     bool is_ok_ = false;
 
     bool loadLabels(const std::string& label_file);
+    void getRegionBoxes(layer l, int w, int h, float thresh, float **probs, float *box_probs, box *boxes, int only_objectness, int *map, float tree_thresh);      // from darknet implementation with minor changes
 
   public:
     YoloDetector(const std::string& label_file, const std::string& config_file, const std::string& weight_file);

@@ -32,7 +32,7 @@ generate_messages(
   std_msgs
 )
 
-add_definitions(${PCL_DEFINITIONS} -std=c++11 -g)
+add_definitions(-std=c++11 -g)
 add_definitions(${Caffe_DEFINITIONS} )
 
 find_package( OpenCV REQUIRED )

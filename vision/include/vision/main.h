@@ -30,9 +30,9 @@ class VisionApp{
     const std::string object_label_file = "/home/thomas/darknet/data/coco.names";
     const std::string yolo_cfg = "/home/thomas/darknet/cfg/yolo.cfg";
     const std::string yolo_weights = "/home/thomas/darknet/data/yolo.weights";
-    const float thresh = 0.1f;
-    const float hier_thresh = 0.5f;
-    const float nms = 0.4f;
+    float thresh = 0.01f;
+    float hier_thresh = 0.5f;
+    float nms = 0.8f;
 
     const int VIEW_DIST_SEGMENTS = 32;
     const float horizontal_camera_spread_ = 1.1;                    // parameters of xtion pro: position in world = (pixel/num_pixels - 0.5) * camera_spread * distance
@@ -67,7 +67,7 @@ class VisionApp{
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     void fillViewDistances(vision::VisionMsg& vision_msg) const;
-    void showDebugImage(cv::Mat img, const std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
+    void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
 };
 
 #endif //VISION_MAIN_H

@@ -18,11 +18,7 @@ class CaffeRecognition{
     CaffeRecognition(const std::string& label, int id, float prob)
           : label_(label), id_(id), prob_(prob){
     }
-
-    friend inline bool probGreater(const CaffeRecognition& lhs, const CaffeRecognition& rhs);
 };
-
-inline bool probGreater(const CaffeRecognition& lhs, const CaffeRecognition& rhs) { return lhs.prob_ > rhs.prob_; }
 
 // based on caffe classification example
 class CaffeClassifier {
@@ -43,8 +39,7 @@ class CaffeClassifier {
     CaffeClassifier(const std::string& model_file, const std::string& trained_file,
                     const std::string& mean_file, const std::string& label_file);
     ~CaffeClassifier();
-    std::vector<CaffeRecognition> classify(const cv::Mat& img);
-    std::vector<CaffeRecognition> classify(const cv::Mat& img, int N);
+    std::vector<CaffeRecognition> classify(const cv::Mat& img, int N = 5);
     std::vector<CaffeRecognition> classify(const cv::Mat& img, float min_prob);
     bool isOk() const { return is_ok_; }
     std::string getName(int id) const { return labels_[id]; }

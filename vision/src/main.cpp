@@ -113,7 +113,7 @@ bool VisionApp::fillTransform(vision::VisionMsg& vision_msg) const {
 
 std::vector<CaffeRecognition> VisionApp::fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const{
   auto begin = std::chrono::steady_clock::now();
-  std::vector<CaffeRecognition> predictions = classifier_->classify(img, min_place_prob);
+  std::vector<CaffeRecognition> predictions = classifier_->classify(img);
 
   for(int i=0; i<predictions.size(); i++){
     vision::PlaceRecognitionMsg place_msg;
@@ -132,36 +132,60 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, v
   auto begin = std::chrono::steady_clock::now();
   std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
 
+//  for(const auto& d : detections){
+//    vision::ObjectDetectionMsg object_msg;
+//    object_msg.name = d.label_;
+//    object_msg.id = d.id_;
+//    object_msg.prob = d.prob_;
+//
+//    cv::Mat tmp = depth_img_((cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
+//                                       cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))));
+//    std::vector<float> depths;
+//    if (tmp.isContinuous()) {
+//      depths.assign((float*)tmp.datastart, (float*)tmp.dataend);
+//    } else {
+//      for (int i = 0; i < tmp.rows; ++i) {
+//        depths.insert(depths.end(), tmp.ptr<float>(i), tmp.ptr<float>(i)+tmp.cols);
+//      }
+//    }
+//    if(depths.empty())
+//      continue;
+//
+//    std::sort(depths.begin(), depths.end());
+//    float z_median = depths[depths.size()/2];
+//
+//    object_msg.x1 = (d.x1_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
+//    object_msg.x2 = (d.x2_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
+//    object_msg.y1 = (d.y1_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
+//    object_msg.y2 = (d.y2_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
+//    object_msg.z1 = depths[depths.size()*dist_cutoff_];
+//    object_msg.z2 = depths[depths.size()*(1.f-dist_cutoff_)];
+//    vision_msg.objects.push_back(object_msg);
+//  }
+
+  cv::Mat depth_filtered;
+  cv::GaussianBlur(depth_img_, depth_filtered, cv::Size(7,7), 2.0, 2.0);
   for(const auto& d : detections){
     vision::ObjectDetectionMsg object_msg;
     object_msg.name = d.label_;
     object_msg.id = d.id_;
     object_msg.prob = d.prob_;
 
-    cv::Mat tmp = depth_img_((cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
+    cv::Mat tmp = depth_filtered((cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
                                        cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))));
-    std::vector<float> depths;
-    if (tmp.isContinuous()) {
-      depths.assign((float*)tmp.datastart, (float*)tmp.dataend);
-    } else {
-      for (int i = 0; i < tmp.rows; ++i) {
-        depths.insert(depths.end(), tmp.ptr<float>(i), tmp.ptr<float>(i)+tmp.cols);
-      }
-    }
-    if(depths.empty())
-      continue;
+    double z_mean = cv::mean(tmp)[0];
+    double z_min, z_max;
+    cv::minMaxIdx(tmp, &z_min, &z_max);
 
-    std::sort(depths.begin(), depths.end());
-    float z_median = depths[depths.size()/2];
-
-    object_msg.x1 = (d.x1_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
-    object_msg.x2 = (d.x2_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
-    object_msg.y1 = (d.y1_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
-    object_msg.y2 = (d.y2_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
-    object_msg.z1 = depths[depths.size()*dist_cutoff_];
-    object_msg.z2 = depths[depths.size()*(1.f-dist_cutoff_)];
+    object_msg.x1 = (d.x1_/img.cols - 0.5) * horizontal_camera_spread_ * z_mean;
+    object_msg.x2 = (d.x2_/img.cols - 0.5) * horizontal_camera_spread_ * z_mean;
+    object_msg.y1 = (d.y1_/img.rows - 0.5) * vertical_camera_spread_ * z_mean;
+    object_msg.y2 = (d.y2_/img.rows - 0.5) * vertical_camera_spread_ * z_mean;
+    object_msg.z1 = z_min;
+    object_msg.z2 = z_max;
     vision_msg.objects.push_back(object_msg);
   }
+
   std::cout << "Objects in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   return detections;
@@ -181,9 +205,10 @@ void VisionApp::fillViewDistances(vision::VisionMsg& vision_msg) const{
 }
 
 
-void VisionApp::showDebugImage(cv::Mat img, const std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections){
+void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections){
   float scale_factor = 2.f;
   auto begin = std::chrono::steady_clock::now();
+  std::sort(predictions.begin(), predictions.end(), probGreater);
   cv::Mat debug_img;
   cv::resize(img, debug_img, cv::Size(img.cols*scale_factor, img.rows*scale_factor));
   for (size_t i = 0; i < predictions.size(); ++i)
@@ -195,8 +220,17 @@ void VisionApp::showDebugImage(cv::Mat img, const std::vector<CaffeRecognition>&
     detections[i].draw(debug_img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
   }
   cv::imshow("img", debug_img);
-  if((cv::waitKey(1) & 255) == 27)
+  uchar key = cv::waitKey(1) & 255;
+  if(key == 27)
     run_ = false;
+  else if(key == 'a')
+    thresh += 0.05;
+  else if(key == 'y')
+    thresh -= 0.05;
+  else if(key == 's')
+    nms += 0.05;
+  else if(key == 'x')
+    nms -= 0.05;
   std::cout << "Debug Images in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 
@@ -211,3 +245,4 @@ int main(int argc, char** argv){
   vision_app.run();
   return 0;
 }
+

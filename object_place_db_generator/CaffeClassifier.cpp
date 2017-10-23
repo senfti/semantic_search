@@ -1,4 +1,4 @@
-#include "vision/CaffeClassifier.h"
+#include "CaffeClassifier.h"
 
 CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::string& trained_file,
                                  const std::string& mean_file, const std::string& label_file){
@@ -66,17 +66,6 @@ static std::vector<int> argmax(const std::vector<float>& v, int N) {
   for (int i = 0; i < N; ++i)
     result.push_back(pairs[i].second);
   return result;
-}
-
-/* Return all without ordering */
-std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img){
-  std::vector<float> output = predict(img);
-  std::vector<CaffeRecognition> predictions;
-  for(int i = 0; i < output.size(); ++i){
-    predictions.push_back(CaffeRecognition(labels_[i], i, output[i]));
-  }
-
-  return predictions;
 }
 
 /* Return the indices of the top N values of vector v. */
