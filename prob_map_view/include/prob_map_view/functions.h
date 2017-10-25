@@ -12,8 +12,8 @@ inline T pToL(T p) {
   return std::log(p / (1-p));
 }
 template<>
-inline cv::Mat_<float> pToL(cv::Mat_<float> p){
-  cv::Mat_<float> res;
+inline cv::Mat_<double> pToL(cv::Mat_<double> p){
+  cv::Mat_<double> res;
   cv::log(p / (1-p), res);
   return res;
 }
@@ -23,8 +23,8 @@ inline T lToP(T l) {
   return 1 - 1 / (1 + std::exp(l));
 }
 template<>
-inline cv::Mat_<float> lToP(cv::Mat_<float> l){
-  cv::Mat_<float> tmp;
+inline cv::Mat_<double> lToP(cv::Mat_<double> l){
+  cv::Mat_<double> tmp;
   cv::exp(l, tmp);
   return tmp / (1+tmp);
 }

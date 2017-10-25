@@ -37,8 +37,7 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
     place_viewer_->Show(true);
   }
 
-  cv_bridge::CvImagePtr cv_ptr;
-  std::vector<cv::Mat_<float>> imgs(msg->images.size());
+  std::vector<cv::Mat_<double>> imgs(msg->images.size());
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
@@ -52,10 +51,9 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
     obj_viewer_->Show(true);
   }
 
-  cv_bridge::CvImagePtr cv_ptr;
-  std::vector<cv::Mat_<float>> imgs(msg->images.size());
+  std::vector<cv::Mat_<double>> imgs(msg->images.size());
   for(int i=0; i<imgs.size(); i++){
-    imgs[i] = cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data()));
+    cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
 
   obj_viewer_->updateImages(imgs);

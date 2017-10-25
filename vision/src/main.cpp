@@ -83,11 +83,34 @@ void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
 }
 
 
-bool VisionApp::useImage(const cv::Mat& img) const{
+bool VisionApp::useImage(const cv::Mat& img){
   if(depth_img_.empty()){
     std::cout << "No depth image" << std::endl;
     return false;
   }
+  if(old_gradients_.empty()){
+    return true;
+  }
+
+  // discarding not moved images
+  cv::Mat working;
+  cv::resize(img, working, cv::Size(img.cols / 4, img.rows / 4));
+  cv::blur(working, working, cv::Size(5,5));
+  cv::Mat dx, dy, gradient;
+  cv::Sobel(img, dx, CV_32F, 1, 0, 3);
+  cv::Sobel(img, dy, CV_32F, 0, 1, 3);
+  cv::add(dx, dy, gradient);
+  cv::normalize(gradient, gradient, 0.0, 1.0, cv::NORM_MINMAX);
+  cv::Mat diff;
+  cv::subtract(gradient, old_gradients_, diff);
+  old_gradients_ = gradient;
+  cv::Mat pow;
+  cv::pow(diff, 6, pow);
+  cv::Scalar sum = cv::sum(pow);
+  float psnr = log(sum.val[0] / diff.size().area());
+  if(psnr < psnr_thresh)
+    return false;
+
   return true;
 }
 

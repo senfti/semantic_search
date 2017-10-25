@@ -33,18 +33,18 @@ class SemanticMappingApp{
 
     const double HORIZONTAL_CAMERA_SPREAD = 1.1;                    // parameters of xtion pro: position in world = (pixel/num_pixels - 0.5) * camera_spread * distance
     const double VERTICAL_CAMERA_SPREAD = 0.825;
-    const double XTION_FOV_2 = std::atan(HORIZONTAL_CAMERA_SPREAD/2.f);
-    const double MIN_VISION_DIST = 0.5f;
-    const double MAX_VISION_DIST = 5.f;
+    const double XTION_FOV_2 = std::atan(HORIZONTAL_CAMERA_SPREAD/2.0);
+    const double MIN_VISION_DIST = 0.5;
+    const double MAX_VISION_DIST = 4.0;
 
     const int NUM_OBJECT_TYPES = 80;
     const int NUM_PLACE_TYPES = 205;
-    const double OBJ_PIXEL_PER_METER = 5.f;
+    const double OBJ_PIXEL_PER_METER = 5.0;
     const int PROB_DRAW_OVERSAMPLING_FACTOR = 5;
-    const double OBJ_MAP_PRIOR = 0.1f;
+    const double OBJ_MAP_PRIOR = 0.01;
     const int MAP_BASE_SIZE = 20;
     const double SIGMA_PER_ENTROPY = 0.05;
-    const double PLACE_VISIBLE_PROB = 0.8;
+    const double PLACE_VISIBLE_PROB = 0.01;
 
     double pose_sigma_ = 0.2;
 

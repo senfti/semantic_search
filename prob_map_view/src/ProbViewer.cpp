@@ -38,7 +38,7 @@ void ProbViewer::onMouseMove( wxMouseEvent& event ){
   }
 }
 
-void ProbViewer::updateImages(const std::vector<cv::Mat_<float>> prob_images){
+void ProbViewer::updateImages(const std::vector<cv::Mat_<double>> prob_images){
   prob_images_ = prob_images;
   setCurrent();
 }
@@ -63,7 +63,7 @@ void ProbViewer::setCurrent(){
     cv::Mat out;
     if(rescale_checkbox_->IsChecked() || log_checkbox_->IsChecked()){
       if(min == max)
-        out = cv::Mat_<float>::ones(curr_img_.rows, curr_img_.cols);
+        out = cv::Mat_<double>::ones(curr_img_.rows, curr_img_.cols);
       else
         out = ((curr_img_ - min) / (max - min));
       out.convertTo(out, CV_8U, 150.f);

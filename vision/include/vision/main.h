@@ -38,6 +38,7 @@ class VisionApp{
     const float horizontal_camera_spread_ = 1.1;                    // parameters of xtion pro: position in world = (pixel/num_pixels - 0.5) * camera_spread * distance
     const float vertical_camera_spread_ = 0.825;
     const float dist_cutoff_ = 0.1;                                 // only use dist_cutoff to (1-dist_cutoff) depth values for depth estimate
+    const float psnr_thresh = 4.f;
 
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
@@ -51,6 +52,7 @@ class VisionApp{
 
     cv::Mat depth_img_;
     cv::Mat old_img_;
+    cv::Mat old_gradients_;
 
     bool is_ok_ = false;
     bool run_ = true;
@@ -62,7 +64,7 @@ class VisionApp{
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
     void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
 
-    bool useImage(const cv::Mat& img) const;
+    bool useImage(const cv::Mat& img);
     bool fillTransform(vision::VisionMsg& vision_msg) const;
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
