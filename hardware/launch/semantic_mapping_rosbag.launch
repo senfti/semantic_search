@@ -5,9 +5,9 @@
     <arg name="scan_topic" value="scan" />
   </include>
 
-  <node pkg="vision" type="vision" name="vision" launch-prefix="xterm -e" /> 
+  <node pkg="vision" type="vision" name="vision" launch-prefix="xterm -hold -e" /> 
   <node pkg="semantic_mapping" type="semantic_mapping" name="semantic_mapping" launch-prefix="xterm -hold -e" /> 
-  <node pkg="kb_query" type="conceptnet4_query.py" name="knowledgebase" />
+  <node pkg="prob_map_view" type="prob_map_view" name="prob_map_view" launch-prefix="xterm -hold -e" /> 
   <param name="use_sim_time" value="true" />
 
 </launch>

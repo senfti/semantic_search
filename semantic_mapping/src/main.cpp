@@ -1,13 +1,16 @@
 #include "semantic_mapping/main.h"
+#include "semantic_mapping/functions.h"
 #include <geometry_msgs/PoseArray.h>
 #include <kb_query/KbQuerySrv.h>
 #include <fstream>
 #include <chrono>
+#include <cv_bridge/cv_bridge.h>
 
-const std::string label_file = "/home/thomas/darknet/data/coco.names";
+const std::string obj_label_file = "/home/thomas/darknet/data/coco.names";
+const std::string place_label_file = "/home/thomas/BVLCcaffe/models/googlenet_places205/categories_places205.csv";
 
 
-void visualizeProbMap(cv::Mat_<float> map, const std::string& win_name){
+void visualizeProbMap(cv::Mat_<double> map, const std::string& win_name){
   cv::Mat out;
   map.convertTo(out, CV_8U, 150.f);
   cv::flip(out, out, 0);
@@ -26,26 +29,36 @@ SemanticMappingApp::SemanticMappingApp(ros::NodeHandle& nh)
   map_sub_ = nh_.subscribe("map", 10, &SemanticMappingApp::mapCb, this);
   entropy_sub_ = nh_.subscribe("/slam_gmapping/entropy", 1, &SemanticMappingApp::entropyCb, this);
   vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("vision_poses", 2);
+  obj_map_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("object_maps", 2);
+  place_map_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("place_maps", 2);
 
-  std::ifstream labels(label_file);
+  std::ifstream labels(obj_label_file);
   if(!labels.good()){
-    std::cout << "Unable to open labels file " << label_file;
+    std::cout << "Unable to open labels file " << obj_label_file;
     return;
   }
   std::string line;
   while (std::getline(labels, line))
     object_labels_.push_back(line);
 
+  std::ifstream labels2(place_label_file);
+  if(!labels2.good()){
+    std::cout << "Unable to open labels file " << place_label_file;
+    return;
+  }
+  while (std::getline(labels2, line))
+    place_labels_.push_back(line);
+
   object_maps_.resize(object_labels_.size());
   for(int i=0; i<place_maps_.size(); i++){
     object_prior_p_[i] = OBJ_MAP_PRIOR;
     object_prior_l_[i] = pToL(object_prior_p_[i]);
-    object_maps_[i] = cv::Mat_<float>(MAP_BASE_SIZE,MAP_BASE_SIZE, object_prior_l_[i]);
+    object_maps_[i] = cv::Mat_<double>(MAP_BASE_SIZE,MAP_BASE_SIZE, object_prior_l_[i]);
   }
   place_maps_.resize(NUM_PLACE_TYPES);
   for(int i=0; i<place_maps_.size(); i++){
-    place_prior_[i] = pToL(1.f/NUM_PLACE_TYPES);
-    place_maps_[i] = cv::Mat_<float>(MAP_BASE_SIZE,MAP_BASE_SIZE, place_prior_[i]);
+    place_prior_[i] = 1.f/NUM_PLACE_TYPES;
+    place_maps_[i] = cv::Mat_<double>(MAP_BASE_SIZE,MAP_BASE_SIZE, place_prior_[i]);
   }
   origin_ = cv::Point(object_maps_[0].cols/2, object_maps_[0].rows/2);
 }
@@ -79,11 +92,11 @@ std::vector<cv::Point> SemanticMappingApp::getCornersFromDetection(const Object 
 }
 
 
-std::vector<cv::Mat_<float>> SemanticMappingApp::generateDetectionProbMaps(const VisionResult &vision_result, const cv::Mat_<float> &seen_map){
-  std::vector<cv::Mat_<float>> detection_prob_maps(vision_result.objects_.size(), cv::Mat_<float>(seen_map.rows*PROB_DRAW_OVERSAMPLING_FACTOR, seen_map.cols*PROB_DRAW_OVERSAMPLING_FACTOR, 0.f));
+std::vector<cv::Mat_<double>> SemanticMappingApp::generateDetectionProbMaps(const VisionResult &vision_result, const cv::Mat_<double> &seen_map){
+  std::vector<cv::Mat_<double>> detection_prob_maps(vision_result.objects_.size(), cv::Mat_<double>(seen_map.rows*PROB_DRAW_OVERSAMPLING_FACTOR, seen_map.cols*PROB_DRAW_OVERSAMPLING_FACTOR, 0.f));
   cv::Point2d pos(vision_result.pose_.getOrigin().getX(), vision_result.pose_.getOrigin().getY());
-  float dir = std::atan2(vision_result.pose_.getBasis().getColumn(0).getY(), vision_result.pose_.getBasis().getColumn(0).getX());
-  float pose_sigma = pose_sigma_ * OBJ_PIXEL_PER_METER * PROB_DRAW_OVERSAMPLING_FACTOR;
+  double dir = std::atan2(vision_result.pose_.getBasis().getColumn(0).getY(), vision_result.pose_.getBasis().getColumn(0).getX());
+  double pose_sigma = pose_sigma_ * OBJ_PIXEL_PER_METER * PROB_DRAW_OVERSAMPLING_FACTOR;
   int gauss_kernel_size = std::round(3*pose_sigma);
   for(int i=0; i<detection_prob_maps.size(); i++){
     cv::fillConvexPoly(detection_prob_maps[i], getCornersFromDetection(vision_result.objects_[i], pos, dir), cv::Scalar(1.0));
@@ -95,10 +108,10 @@ std::vector<cv::Mat_<float>> SemanticMappingApp::generateDetectionProbMaps(const
 }
 
 
-void SemanticMappingApp::updateObjectMaps(const VisionResult &vision_result, const cv::Mat_<float> &seen_map){
-  std::vector<cv::Mat_<float>> detection_prob_maps = generateDetectionProbMaps(vision_result, seen_map);
+void SemanticMappingApp::updateObjectMaps(const VisionResult &vision_result, const cv::Mat_<double> &seen_map){
+  std::vector<cv::Mat_<double>> detection_prob_maps = generateDetectionProbMaps(vision_result, seen_map);
 
-  std::vector<float> prior_factor(object_prior_p_.size());
+  std::vector<double> prior_factor(object_prior_p_.size());
   for(int i=0; i<object_prior_p_.size(); i++){
     prior_factor[i] = object_prior_p_[i] / (1.f-object_prior_p_[i]);
   }
@@ -107,12 +120,12 @@ void SemanticMappingApp::updateObjectMaps(const VisionResult &vision_result, con
     for(int y=0; y<seen_map.rows; y++){
       if(seen_map(y, x) != 0.f){
         for(int i = 0; i < object_maps_.size(); i++){
-          float inv_prob = 0.99;
+          double inv_prob = 0.99;
           for(int j=0; j<detection_prob_maps.size(); j++){
             inv_prob *= (1.f-detection_prob_maps[j](y,x)*vision_result.objects_[j].prob_[i]);
           }
-          float seen_factor = object_prior_p_[i] + seen_map(y,x) * (1.f-object_prior_p_[i]);
-          float inverse_sensor_model = pToL(seen_factor*(1.f-inv_prob)+prior_factor[i]*(1-seen_factor)*inv_prob);
+          double seen_factor = object_prior_p_[i] + seen_map(y,x) * (1.f-object_prior_p_[i]);
+          double inverse_sensor_model = pToL(seen_factor*(1.f-inv_prob)+prior_factor[i]*(1-seen_factor)*inv_prob);
           object_maps_[i](y, x) = object_maps_[i](y, x) + inverse_sensor_model - object_prior_l_[i];
         }
       }
@@ -121,57 +134,86 @@ void SemanticMappingApp::updateObjectMaps(const VisionResult &vision_result, con
   cv::Mat out = lToP(object_maps_[72]);
   cv::resize(out, out, cv::Size(object_maps_[72].cols*5, object_maps_[72].rows*5), 0, 0, cv::INTER_NEAREST);
   visualizeProbMap(out, object_labels_[72]);
+  prob_map_view::ProbMapMsg msg;
+  msg.names = object_labels_;
+  msg.img_are_log = true;
+  msg.images.resize(msg.names.size());
+  for(int i=0; i<msg.images.size(); i++){
+    msg.images[i].rows = object_maps_[i].rows;
+    msg.images[i].cols = object_maps_[i].cols;
+    msg.images[i].type = object_maps_[i].type();
+    msg.images[i].data.assign(object_maps_[i].datastart, object_maps_[i].dataend);
+  }
+  obj_map_pub_.publish(msg);
+  std::cout << "obj pub" << std::endl;
 }
 
 
-void SemanticMappingApp::updatePlaceMaps(const VisionResult& vision_result, const cv::Mat_<float>& seen_map){
-  float num_inv = 1.f/NUM_PLACE_TYPES;
-  float num_m1_inv = 1.f/(NUM_PLACE_TYPES-1);
+void SemanticMappingApp::updatePlaceMaps(const VisionResult& vision_result, const cv::Mat_<double>& seen_map){
+  double num_inv = 1.f/NUM_PLACE_TYPES;
+  double num_m1_inv = 1.f/(NUM_PLACE_TYPES-1);
 
   for(int x=0; x<seen_map.cols; x++){
     for(int y=0; y<seen_map.rows; y++){
       if(seen_map(y, x) != 0.f){
-        float seen_prob = num_inv + seen_map(y,x) * (PLACE_VISIBLE_PROB-num_inv);
+        double sum = 0.0;
+        double seen_prob = seen_map(y, x) * PLACE_VISIBLE_PROB;
         for(int i = 0; i < place_maps_.size(); i++){
-          float inverse_sensor_model = pToL(num_m1_inv * (1.f - seen_prob - vision_result.place_guesses_[i].prob_) + (1.f + num_inv) * vision_result.place_guesses_[i].prob_ * seen_prob);
-          place_maps_[i](y, x) = place_maps_[i](y, x) + inverse_sensor_model - place_prior_[i];
+          place_maps_[i](y, x) = place_maps_[i](y, x) * (seen_prob*vision_result.place_guesses_[i].prob_ + (1-seen_prob)*place_prior_[i]) / place_prior_[i];
+          sum += place_maps_[i](y,x);
+        }
+        for(int i = 0; i < place_maps_.size(); i++){
+          place_maps_[i](y, x) /= sum;
         }
       }
     }
   }
 //  for(int i=0; i<place_maps_.size(); i++){
-//    cv::Mat_<float> update_map = pToL(cv::Mat_<float>(
+//    cv::Mat_<double> update_map = pToL(cv::Mat_<double>(
 //          (1.f - seen_map - vision_result.place_guesses_[i].prob_) / (NUM_PLACE_TYPES-1) +
 //          (NUM_PLACE_TYPES/(NUM_PLACE_TYPES-1))*vision_result.place_guesses_[i].prob_*seen_map));   // P(m) = P(m|~R) * P(~R) + P(m|R) P(R) = (1-P(m|R)*(1-P(R)) + P(m|R)*P(R)
 //    place_maps_[i] = place_maps_[i] + update_map - place_prior_[i];
 //  }
 
-  std::vector<cv::Mat_<float>> tmp(NUM_PLACE_TYPES);
-  cv::Mat_<float> sum(place_maps_[0].rows, place_maps_[0].cols, 0.f);
-  for(int i=0; i<place_maps_.size(); i++){
-    tmp[i] = lToP(place_maps_[i]);
-    sum = sum + tmp[i];
+//  std::vector<cv::Mat_<double>> tmp(NUM_PLACE_TYPES);
+//  cv::Mat_<double> sum(place_maps_[0].rows, place_maps_[0].cols, 0.f);
+//  for(int i=0; i<place_maps_.size(); i++){
+//    tmp[i] = lToP(place_maps_[i]);
+//    sum = sum + tmp[i];
+//  }
+//  for(int i=0; i<place_maps_.size(); i++){
+//    tmp[i] = tmp[i] / sum;
+//    place_maps_[i] = pToL(tmp[i]);
+//  }
+//  cv::resize(tmp[129], tmp[129], cv::Size(place_maps_[129].cols*5, place_maps_[129].rows*5), 0, 0, cv::INTER_NEAREST);
+//  visualizeProbMap(tmp[129], vision_result.place_guesses_[129].class_);
+
+  prob_map_view::ProbMapMsg msg;
+  msg.names = place_labels_;
+  msg.img_are_log = false;
+  msg.images.resize(msg.names.size());
+  for(int i=0; i<msg.images.size(); i++){
+    msg.images[i].rows = place_maps_[i].rows;
+    msg.images[i].cols = place_maps_[i].cols;
+    msg.images[i].type = place_maps_[i].type();
+    msg.images[i].data.assign(place_maps_[i].datastart, place_maps_[i].dataend);
   }
-  for(int i=0; i<place_maps_.size(); i++){
-    tmp[i] = tmp[i] / sum;
-    place_maps_[i] = pToL(tmp[i]);
-  }
-  cv::resize(tmp[129], tmp[129], cv::Size(place_maps_[129].cols*5, place_maps_[129].rows*5), 0, 0, cv::INTER_NEAREST);
-  visualizeProbMap(tmp[129], vision_result.place_guesses_[129].class_);
+  place_map_pub_.publish(msg);
+  std::cout << "place pub" << std::endl;
 }
 
 
-cv::Mat_<float> SemanticMappingApp::generateSeenMap(const VisionResult &vision_result){
+cv::Mat_<double> SemanticMappingApp::generateSeenMap(const VisionResult &vision_result){
   cv::Point2d pos(vision_result.pose_.getOrigin().getX(), vision_result.pose_.getOrigin().getY());
-  float dir = std::atan2(vision_result.pose_.getBasis().getColumn(0).getY(), vision_result.pose_.getBasis().getColumn(0).getX());
-  const std::vector<float>& dists = vision_result.max_dists_;
+  double dir = std::atan2(vision_result.pose_.getBasis().getColumn(0).getY(), vision_result.pose_.getBasis().getColumn(0).getX());
+  const std::vector<double>& dists = vision_result.max_dists_;
   std::vector<cv::Point> visible_poly(dists.size()*2);
 
-  float angle_step = XTION_FOV_2*2.f / (dists.size()-1);
+  double angle_step = XTION_FOV_2*2.f / (dists.size()-1);
   int minx = 1000, maxx = -1000, miny = 1000, maxy = -1000;
   for(int i=0; i<dists.size(); i++){
-    float angle = dir - XTION_FOV_2 + i*angle_step;
-    float dist = std::min(std::max(dists[i] / std::cos(i*angle_step), MIN_VISION_DIST), MAX_VISION_DIST);
+    double angle = dir - XTION_FOV_2 + i*angle_step;
+    double dist = std::min(std::max(dists[i] / std::cos(i*angle_step), MIN_VISION_DIST), MAX_VISION_DIST);
     if(!std::isfinite(dist))
       dist = MAX_VISION_DIST;
     visible_poly[i] = (pos + cv::Point2d(dist*std::cos(angle), dist*std::sin(angle))) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_);
@@ -206,7 +248,7 @@ cv::Mat_<float> SemanticMappingApp::generateSeenMap(const VisionResult &vision_r
     origin_ += cv::Point(padx1, pady1);
   }
 
-  cv::Mat_<float> seen_map(object_maps_[0].rows, object_maps_[0].cols, 0.f);
+  cv::Mat_<double> seen_map(object_maps_[0].rows, object_maps_[0].cols, 0.f);
   cv::fillPoly(seen_map, std::vector<std::vector<cv::Point>>({visible_poly}), 1.f, cv::LINE_4);
   cv::GaussianBlur(seen_map, seen_map, cv::Size(2*gauss_kernel_size+1, 2*gauss_kernel_size+1), pose_sigma_ * OBJ_PIXEL_PER_METER, pose_sigma_ * OBJ_PIXEL_PER_METER, cv::BORDER_REPLICATE);
 
@@ -237,12 +279,12 @@ void SemanticMappingApp::publishVisionPoses(const vision::VisionMsgConstPtr &msg
 void SemanticMappingApp::visionCb(const vision::VisionMsgConstPtr& msg){
   auto begin = std::chrono::steady_clock::now();
   VisionResult res = VisionResult(*msg);
-  cv::Mat_<float> seen_map = generateSeenMap(res);
+  vision_results_.push_back(res);
+  cv::Mat_<double> seen_map = generateSeenMap(res);
   updatePlaceMaps(res, seen_map);
-  updateObjectMaps(res, seen_map);
+  //updateObjectMaps(res, seen_map);
 
   if(PUBLISH_VISION_POSES){
-    vision_results_.push_back(res);
     publishVisionPoses(msg);
   }
 }
@@ -295,13 +337,13 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
 
   int width = msg->info.width;
   int height = msg->info.height;
-  float resolution = msg->info.resolution;
-  float orig_x = msg->info.origin.position.x;
-  float orig_y = msg->info.origin.position.y;
+  double resolution = msg->info.resolution;
+  double orig_x = msg->info.origin.position.x;
+  double orig_y = msg->info.origin.position.y;
 
   if(place_maps_[0].empty()){
     for(auto& map : place_maps_)
-      map = cv::Mat_<float>(msg->info.height, msg->info.width, 1.f/place_maps_.size());
+      map = cv::Mat_<double>(msg->info.height, msg->info.width, 1.f/place_maps_.size());
   }
   else if(place_maps_[0].rows != height || place_maps_[0].cols != width){
     int left = static_cast<int>((old_map_data_.origin.position.x - msg->info.origin.position.x) / resolution);
@@ -325,7 +367,7 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
         }
         for(int i=processed_views_; i<vision_results_.size(); i++){
           const auto& v = vision_results_[i];
-          float importance = static_cast<float>(v.getImportance(x*resolution + orig_x, y*resolution + orig_y));
+          double importance = static_cast<double>(v.getImportance(x*resolution + orig_x, y*resolution + orig_y));
           if(importance > 0.0){
             visible(y,x) = visible(y,x) | uchar(255);
             for(int i=0; i<v.place_guesses_.size(); i++){
@@ -340,7 +382,7 @@ void SemanticMappingApp::updatePlaceMaps(const nav_msgs::OccupancyGridConstPtr& 
         }
         for(int i=0; i<place_labels_.size(); i++){
           if(visible(y,x))
-            place_maps_[i](y, x) = float(log_probs[i] / sum_probs);
+            place_maps_[i](y, x) = double(log_probs[i] / sum_probs);
         }
       }
     }
