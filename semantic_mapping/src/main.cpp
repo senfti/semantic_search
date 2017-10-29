@@ -31,6 +31,7 @@ SemanticMappingApp::SemanticMappingApp(ros::NodeHandle& nh)
   vision_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("vision_poses", 2);
   obj_map_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("object_maps", 2);
   place_map_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("place_maps", 2);
+  object_location_map_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("object_loc_maps", 2);
 
   std::ifstream labels(obj_label_file);
   if(!labels.good()){
@@ -79,31 +80,47 @@ void SemanticMappingApp::run(){
 std::vector<cv::Point> SemanticMappingApp::getCornersFromDetection(const Object &obj, const cv::Point2d& position, double direction){
   std::vector<cv::Point> corners(4);
 
-  corners[0] = (cv::Point2d(std::round(position.x + obj.x1_*std::cos(direction) - obj.z1_*std::sin(direction)),
-                           std::round(position.y + obj.x1_*std::sin(direction) + obj.z1_*std::cos(direction))) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
-  corners[1] = (cv::Point2d(std::round(position.x + obj.x1_*std::cos(direction) - obj.z2_*std::sin(direction)),
-                           std::round(position.y + obj.x1_*std::sin(direction) + obj.z2_*std::cos(direction))) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
-  corners[2] = (cv::Point2d(std::round(position.x + obj.x2_*std::cos(direction) - obj.z2_*std::sin(direction)),
-                           std::round(position.y + obj.x2_*std::sin(direction) + obj.z2_*std::cos(direction))) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
-  corners[3] = (cv::Point2d(std::round(position.x + obj.x2_*std::cos(direction) - obj.z2_*std::sin(direction)),
-                           std::round(position.y + obj.x2_*std::sin(direction) + obj.z2_*std::cos(direction))) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
+  corners[0] = (cv::Point2d(position.x + obj.x1_*std::cos(direction) - obj.z1_*std::sin(direction),
+                            position.y + obj.x1_*std::sin(direction) + obj.z1_*std::cos(direction)) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
+  corners[1] = (cv::Point2d(position.x + obj.x1_*std::cos(direction) - obj.z2_*std::sin(direction),
+                           position.y + obj.x1_*std::sin(direction) + obj.z2_*std::cos(direction)) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
+  corners[2] = (cv::Point2d(position.x + obj.x2_*std::cos(direction) - obj.z2_*std::sin(direction),
+                           position.y + obj.x2_*std::sin(direction) + obj.z2_*std::cos(direction)) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
+  corners[3] = (cv::Point2d(position.x + obj.x2_*std::cos(direction) - obj.z1_*std::sin(direction),
+                           position.y + obj.x2_*std::sin(direction) + obj.z1_*std::cos(direction)) * OBJ_PIXEL_PER_METER + cv::Point2d(origin_)) * PROB_DRAW_OVERSAMPLING_FACTOR;
 
   return corners;
 }
 
 
 std::vector<cv::Mat_<double>> SemanticMappingApp::generateDetectionProbMaps(const VisionResult &vision_result, const cv::Mat_<double> &seen_map){
-  std::vector<cv::Mat_<double>> detection_prob_maps(vision_result.objects_.size(), cv::Mat_<double>(seen_map.rows*PROB_DRAW_OVERSAMPLING_FACTOR, seen_map.cols*PROB_DRAW_OVERSAMPLING_FACTOR, 0.f));
+  std::vector<cv::Mat_<double>> detection_prob_maps(vision_result.objects_.size());
   cv::Point2d pos(vision_result.pose_.getOrigin().getX(), vision_result.pose_.getOrigin().getY());
   double dir = std::atan2(vision_result.pose_.getBasis().getColumn(0).getY(), vision_result.pose_.getBasis().getColumn(0).getX());
   double pose_sigma = pose_sigma_ * OBJ_PIXEL_PER_METER * PROB_DRAW_OVERSAMPLING_FACTOR;
   int gauss_kernel_size = std::round(3*pose_sigma);
   for(int i=0; i<detection_prob_maps.size(); i++){
-    cv::fillConvexPoly(detection_prob_maps[i], getCornersFromDetection(vision_result.objects_[i], pos, dir), cv::Scalar(1.0));
+    detection_prob_maps[i] = cv::Mat_<double>(seen_map.rows*PROB_DRAW_OVERSAMPLING_FACTOR, seen_map.cols*PROB_DRAW_OVERSAMPLING_FACTOR, 0.0);
+    std::vector<cv::Point> corners = getCornersFromDetection(vision_result.objects_[i], pos, dir);
+    cv::fillConvexPoly(detection_prob_maps[i], corners, cv::Scalar(5.0));
     cv::GaussianBlur(detection_prob_maps[i], detection_prob_maps[i], cv::Size(2*gauss_kernel_size+1, 2*gauss_kernel_size+1), pose_sigma, pose_sigma, cv::BORDER_REPLICATE);
+    cv::threshold(detection_prob_maps[i], detection_prob_maps[i], 1.0, 1.0, cv::THRESH_TRUNC);
     cv::resize(detection_prob_maps[i], detection_prob_maps[i], seen_map.size());
   }
-
+/*
+  prob_map_view::ProbMapMsg msg;
+  msg.names.resize(detection_prob_maps.size());
+  msg.img_are_log = false;
+  msg.images.resize(msg.names.size());
+  for(int i=0; i<msg.images.size(); i++){
+    msg.names[i] = std::to_string(i);
+    msg.images[i].rows = detection_prob_maps[i].rows;
+    msg.images[i].cols = detection_prob_maps[i].cols;
+    msg.images[i].type = detection_prob_maps[i].type();
+    msg.images[i].data.assign(detection_prob_maps[i].datastart, detection_prob_maps[i].dataend);
+  }
+  object_location_map_pub_.publish(msg);
+*/
   return detection_prob_maps;
 }
 
@@ -111,37 +128,30 @@ std::vector<cv::Mat_<double>> SemanticMappingApp::generateDetectionProbMaps(cons
 void SemanticMappingApp::updateObjectMaps(const VisionResult &vision_result, const cv::Mat_<double> &seen_map){
   std::vector<cv::Mat_<double>> detection_prob_maps = generateDetectionProbMaps(vision_result, seen_map);
 
-//  std::vector<double> prior_factor(object_prior_p_.size());
-//  for(int i=0; i<object_prior_p_.size(); i++){
-//    prior_factor[i] = object_prior_p_[i] / (1.f-object_prior_p_[i]);
-//  }
-
   for(int x=0; x<seen_map.cols; x++){
     for(int y=0; y<seen_map.rows; y++){
       double seen = seen_map(y, x);
       if(seen != 0.f){
-        std::vector<double> p(NUM_OBJECT_TYPES), p2(NUM_OBJECT_TYPES);
-        seen *= 0.1;
-        std::vector<double> not_obj_prob(NUM_OBJECT_TYPES, 0.99);
+        //seen *= 0.1;
+        std::vector<double> not_obj_prob(NUM_OBJECT_TYPES, 0.9995);
         for(int i = 0; i < detection_prob_maps.size(); i++){
           double det_prob = detection_prob_maps[i](y, x);
           if(det_prob > 0.0){
             for(int o = 0; o < NUM_OBJECT_TYPES; o++){
               not_obj_prob[o] *= (1.0 - vision_result.objects_[i].prob_[o] * det_prob);
+              if(not_obj_prob[o] > 1.0 || not_obj_prob[o] < 0.0)
+                std::cout << "sldkfjsdfsdfsdfsdfssssssssssssssss" << std::endl;
             }
           }
         }
         for(int o=0; o<NUM_OBJECT_TYPES; o++){
-          p[o] = object_maps_[o](y, x);
-          object_maps_[o](y, x) *= (seen*(1.0-not_obj_prob[o])/object_prior_p_[o] + 1.0 - seen) / (seen * not_obj_prob[o]/(1.0-object_prior_p_[o])+1.0-seen);
-          p2[o] = object_maps_[o](y, x);
+          double tmp = object_maps_[o](y, x)/(1.0-object_maps_[o](y, x)) * (seen*(1.0-not_obj_prob[o])/object_prior_p_[o] + 1.0 - seen) / (seen * not_obj_prob[o]/(1.0-object_prior_p_[o])+1.0-seen);
+          object_maps_[o](y, x) = tmp/(1+tmp);
         }
       }
     }
   }
-//  cv::Mat out = lToP(object_maps_[72]);
-//  cv::resize(out, out, cv::Size(object_maps_[72].cols*5, object_maps_[72].rows*5), 0, 0, cv::INTER_NEAREST);
-//  visualizeProbMap(out, object_labels_[72]);
+
   prob_map_view::ProbMapMsg msg;
   msg.names = object_labels_;
   msg.img_are_log = false;

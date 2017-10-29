@@ -16,6 +16,7 @@ bool ProbViewApp::OnInit(){
   node_handle_ = new ros::NodeHandle();
   place_sub_ = node_handle_->subscribe("place_maps", 1, &ProbViewApp::placeProbCb, this);
   obj_sub_ = node_handle_->subscribe("object_maps", 1, &ProbViewApp::objProbCb, this);
+  obj_loc_sub_ = node_handle_->subscribe("object_loc_maps", 1, &ProbViewApp::objLocProbCb, this);
 
   input_timer_ = new wxTimer(this);
   Connect(input_timer_->GetId(), wxEVT_TIMER, wxTimerEventHandler(ProbViewApp::input), NULL, this);
@@ -57,5 +58,23 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
 
   obj_viewer_->updateImages(imgs);
+}
+
+void ProbViewApp::objLocProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
+  std::cout << "loc" << std::endl;
+  if(obj_loc_viewer_ == nullptr){
+    std::vector<std::string> names(300);
+    for(int i=0; i<300; i++)
+      names[i] = std::to_string(i);
+    obj_loc_viewer_ = new ProbViewer("Object Loc Prob Viewer", names, msg->img_are_log);
+    obj_loc_viewer_->Show(true);
+  }
+
+  std::vector<cv::Mat_<double>> imgs(msg->images.size());
+  for(int i=0; i<imgs.size(); i++){
+    cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
+  }
+
+  obj_loc_viewer_->updateImages(imgs);
 }
 

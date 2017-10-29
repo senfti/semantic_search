@@ -38,12 +38,15 @@ void ProbViewer::onMouseMove( wxMouseEvent& event ){
   }
 }
 
-void ProbViewer::updateImages(const std::vector<cv::Mat_<double>> prob_images){
+void ProbViewer::updateImages(const std::vector<cv::Mat_<double>>& prob_images){
   prob_images_ = prob_images;
   setCurrent();
 }
 
 void ProbViewer::setCurrent(){
+  if(select_choice_->GetSelection() >= prob_images_.size())
+    select_choice_->SetSelection(prob_images_.size()-1);
+
   prob_images_[select_choice_->GetSelection()].copyTo(curr_img_);
   if(curr_img_.cols > 0){
     if(img_are_log_ && !log_checkbox_->IsChecked())

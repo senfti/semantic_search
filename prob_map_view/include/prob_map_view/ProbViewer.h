@@ -25,7 +25,7 @@ class ProbViewer : public ProbViewer_B{
     virtual void onCheck( wxCommandEvent& event );
     virtual void onMouseMove( wxMouseEvent& event );
 
-    void updateImages(const std::vector<cv::Mat_<double>> prob_images);
+    void updateImages(const std::vector<cv::Mat_<double>>& prob_images);
     void setCurrent();
 };
 

@@ -1,6 +1,8 @@
 #include "vision/main.h"
 #include <geometry_msgs/TransformStamped.h>
 #include <chrono>
+#include <cmath>
+#include <algorithm>
 
 VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   : nh_(nh), it_(nh)
@@ -155,39 +157,16 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, v
   auto begin = std::chrono::steady_clock::now();
   std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
 
-//  for(const auto& d : detections){
-//    vision::ObjectDetectionMsg object_msg;
-//    object_msg.name = d.label_;
-//    object_msg.id = d.id_;
-//    object_msg.prob = d.prob_;
-//
-//    cv::Mat tmp = depth_img_((cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
-//                                       cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))));
-//    std::vector<float> depths;
-//    if (tmp.isContinuous()) {
-//      depths.assign((float*)tmp.datastart, (float*)tmp.dataend);
-//    } else {
-//      for (int i = 0; i < tmp.rows; ++i) {
-//        depths.insert(depths.end(), tmp.ptr<float>(i), tmp.ptr<float>(i)+tmp.cols);
-//      }
-//    }
-//    if(depths.empty())
-//      continue;
-//
-//    std::sort(depths.begin(), depths.end());
-//    float z_median = depths[depths.size()/2];
-//
-//    object_msg.x1 = (d.x1_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
-//    object_msg.x2 = (d.x2_/img.cols - 0.5) * horizontal_camera_spread_ * z_median;
-//    object_msg.y1 = (d.y1_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
-//    object_msg.y2 = (d.y2_/img.rows - 0.5) * vertical_camera_spread_ * z_median;
-//    object_msg.z1 = depths[depths.size()*dist_cutoff_];
-//    object_msg.z2 = depths[depths.size()*(1.f-dist_cutoff_)];
-//    vision_msg.objects.push_back(object_msg);
-//  }
+  cv::Mat_<float> depth_filtered;
+  depth_img_.copyTo(depth_filtered);
+  for(int x=0; x<depth_img_.cols; x++){
+    for(int y=0; y<depth_img_.rows; y++){
+      if(!std::isfinite(depth_filtered.at<float>(y,x)))
+        depth_filtered(y,x) = 5.f;
+    }
+  }
 
-  cv::Mat depth_filtered;
-  cv::GaussianBlur(depth_img_, depth_filtered, cv::Size(7,7), 2.0, 2.0);
+  cv::GaussianBlur(depth_filtered, depth_filtered, cv::Size(7,7), 2.0, 2.0);
   for(const auto& d : detections){
     vision::ObjectDetectionMsg object_msg;
     object_msg.name = d.label_;
@@ -207,6 +186,9 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, v
     object_msg.z1 = z_min;
     object_msg.z2 = z_max;
     vision_msg.objects.push_back(object_msg);
+
+    if(!std::isfinite(z_mean))
+      std::cout << "sldkfjsdlkfj" << std::endl;
   }
 
   std::cout << "Objects in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
@@ -234,13 +216,15 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
   std::sort(predictions.begin(), predictions.end(), probGreater);
   cv::Mat debug_img;
   cv::resize(img, debug_img, cv::Size(img.cols*scale_factor, img.rows*scale_factor));
-  for (size_t i = 0; i < predictions.size(); ++i)
+  for (size_t i = 0; i < predictions.size() && predictions[i].prob_ > 0.05; ++i)
     cv::putText(debug_img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
                 cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
 
   for(int i=0; i<detections.size(); i++){
-    detections[i].scale(2.f);
-    detections[i].draw(debug_img, cv::Scalar(255,255,255), 1, cv::Scalar(0,0,255), 0.5, 1);
+    if(*std::max_element(detections[i].prob_.begin(), detections[i].prob_.end()) > 0.1){
+      detections[i].scale(2.f);
+      detections[i].draw(debug_img, cv::Scalar(255, 255, 255), 1, cv::Scalar(0, 0, 255), 0.5, 1);
+    }
   }
   cv::imshow("img", debug_img);
   uchar key = cv::waitKey(1) & 255;

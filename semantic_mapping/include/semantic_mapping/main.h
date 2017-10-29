@@ -28,6 +28,7 @@ class SemanticMappingApp{
     ros::Publisher vision_pose_pub_;
     ros::Publisher obj_map_pub_;
     ros::Publisher place_map_pub_;
+    ros::Publisher object_location_map_pub_;
 
     std::vector<VisionResult> vision_results_;
 
@@ -41,8 +42,8 @@ class SemanticMappingApp{
     const int NUM_PLACE_TYPES = 205;
     const double OBJ_PIXEL_PER_METER = 5.0;
     const int PROB_DRAW_OVERSAMPLING_FACTOR = 5;
-    const double OBJ_MAP_PRIOR = 0.01;
-    const int MAP_BASE_SIZE = 20;
+    const double OBJ_MAP_PRIOR = 0.001;
+    const int MAP_BASE_SIZE = 100;
     const double SIGMA_PER_ENTROPY = 0.05;
     const double PLACE_VISIBLE_PROB = 0.01;
 

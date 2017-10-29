@@ -17,9 +17,11 @@ class ProbViewApp : public wxApp{
     ros::NodeHandle* node_handle_ = nullptr;
     ros::Subscriber place_sub_;
     ros::Subscriber obj_sub_;
+    ros::Subscriber obj_loc_sub_;
 
     ProbViewer* place_viewer_ = nullptr;
     ProbViewer* obj_viewer_ = nullptr;
+    ProbViewer* obj_loc_viewer_ = nullptr;
 
     wxTimer* input_timer_ = nullptr;
 
@@ -33,6 +35,7 @@ class ProbViewApp : public wxApp{
 
     void placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+    void objLocProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
 };
 
 #endif //PROB_VIEW_MAIN_H
