@@ -23,7 +23,8 @@
     <param name="max_ang" value="2.35619443"/>    
     <param name="cluster" value="1"/>
   </node>
-  
+
+  <node pkg="my_laser_filter" type="my_laser_filter" name="my_laser_filter" args="-1.95 1.95" />  
 
   <group if="$(arg use_manual_control)">    
     <include file="$(find turtlebot_teleop)/launch/$(arg move_file)">
