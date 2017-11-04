@@ -79,12 +79,24 @@ void OctoGMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   pass_z.filter(pc);
 
   for(int i=0; i<octo_maps_.size(); i++){
-    GMapping::OrientedPoint point = gsp_->getParticles()[i].pose;
+    GMapping::OrientedPoint point;
+    GMapping::OrientedPoint point1 = gsp_->getParticles()[i].pose;
+    GMapping::OrientedPoint point2 = point1;
+    double time1 = ros::Time::now().toSec();
+    double time2 = time1;
     for(GMapping::GridSlamProcessor::TNode* n = gsp_->getParticles()[i].node; n; n = n->parent){
-      point = n->pose;
+      point2 = point1;
+      point1 = n->pose;
+      time2 = time1;
+      time1 = n->reading ? n->reading->getTime() : time1;
       if(n->reading == nullptr || n->reading->getTime() < cloud->header.stamp.toSec())
         break;
     }
+    if(time1 == time2)
+      point = point1;
+    else
+      point = GMapping::interpolate(point1, time1, point2, time2, cloud->header.stamp.toSec());
+
     tf::Transform base_to_map_transform(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
     octo_maps_[i]->insertCloud(pc, base_to_map_transform);
     //ROS_WARN("Octomap %d in %.3lf", i, ros::Time::now().toSec() - t.toSec());
