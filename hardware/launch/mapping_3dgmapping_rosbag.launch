@@ -1,0 +1,8 @@
+<launch>
+  <param name="use_sim_time" value="true" />
+  
+  <include file="$(find hardware)/launch/includes/3dgmapping.launch.xml" >
+    <arg name="scan_topic" value="scan_filtered" />
+  </include>
+
+</launch>

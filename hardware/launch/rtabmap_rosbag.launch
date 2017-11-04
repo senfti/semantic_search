@@ -30,6 +30,8 @@
           <param name="Vis/InlierDistance"        type="string" value="0.1"/>
           <param name="Rtabmap/TimeThr"           type="string" value="700"/>
           <param name="Mem/RehearsalSimilarity"   type="string" value="0.45"/>
+
+          <param name="Icp/MaxCorrespondenceDistance"   type="string" value="0.5"/>
     </node>
   </group>
 </launch>
