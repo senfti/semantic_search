@@ -305,46 +305,14 @@ bool OctoMapper::openFile(const std::string& filename){
 void OctoMapper::insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorldTf){
   ros::WallTime startTime = ros::WallTime::now();
 
-
-  //
-  // ground filtering in base frame
-  //
-
-//  tf::StampedTransform sensorToWorldTf;
-//  try {
-//    m_tfListener.lookupTransform(m_worldFrameId, cloud.header.frame_id, cloud.header.stamp, sensorToWorldTf);
-//  } catch(tf::TransformException& ex){
-//    ROS_ERROR_STREAM( "Transform error of sensor data: " << ex.what() << ", quitting callback");
-//    return;
-//  }
-//
   Eigen::Matrix4f sensorToWorld;
   pcl_ros::transformAsMatrix(sensorToWorldTf, sensorToWorld);
-
-//  // set up filter for height range, also removes NANs:
-//  pcl::PassThrough<PCLPoint> pass_x;
-//  pass_x.setFilterFieldName("x");
-//  pass_x.setFilterLimits(m_pointcloudMinX, m_pointcloudMaxX);
-//  pcl::PassThrough<PCLPoint> pass_y;
-//  pass_y.setFilterFieldName("y");
-//  pass_y.setFilterLimits(m_pointcloudMinY, m_pointcloudMaxY);
-//  pcl::PassThrough<PCLPoint> pass_z;
-//  pass_z.setFilterFieldName("z");
-//  pass_z.setFilterLimits(m_pointcloudMinZ, m_pointcloudMaxZ);
 
   PCLPointCloud pc_ground; // segmented ground plane
   PCLPointCloud pc_nonground; // everything else
 
   // directly transform to map frame:
   pcl::transformPointCloud(cloud, cloud, sensorToWorld);
-
-  // just filter height range:
-//  pass_x.setInputCloud(cloud.makeShared());
-//  pass_x.filter(cloud);
-//  pass_y.setInputCloud(cloud.makeShared());
-//  pass_y.filter(cloud);
-//  pass_z.setInputCloud(cloud.makeShared());
-//  pass_z.filter(cloud);
 
   pc_ground.header = cloud.header;
 

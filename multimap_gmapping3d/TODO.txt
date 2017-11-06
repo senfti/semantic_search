@@ -1,1 +1,11 @@
-octomap
+missing features:
+    - door detection (probably better done in another package)
+    - loop closure and map merging
+    - object probability mapping (maybe here because more efficient to do along 3d mapping)
+
+problems:
+    - octomap publishes maybe an old version?
+
+possible improvements:
+    - initialize new map particles with poses of particles in old map
+    - maybe more efficient handling of pointcloud possible
