@@ -54,10 +54,11 @@ class SlamGMapping
     SlamGMapping();
     SlamGMapping(ros::NodeHandle& nh, ros::NodeHandle& pnh);
     SlamGMapping(unsigned long int seed, unsigned long int max_duration_buffer);
-    ~SlamGMapping();
+    virtual ~SlamGMapping();
 
     void init();
     void startLiveSlam();
+    void stopLiveSlam();
     void startReplay(const std::string & bag_fname, std::string scan_topic);
     void publishTransform();
 
@@ -91,6 +92,7 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
+    bool is_enabled_ = false;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;

@@ -105,7 +105,7 @@ Initial map dimensions and resolution:
 
 
 
-#include "gmapping_3dmap/slam_gmapping.h"
+#include "multimap_gmapping3d/slam_gmapping.h"
 #include "octomap_server/OctomapServer.h"
 
 #include <iostream>
@@ -263,7 +263,23 @@ void SlamGMapping::startLiveSlam()
   scan_filter_ = new tf::MessageFilter<sensor_msgs::LaserScan>(*scan_filter_sub_, tf_, odom_frame_, 5);
   scan_filter_->registerCallback(boost::bind(&SlamGMapping::laserCallback, this, _1));
 
+  is_enabled_ = true;
   transform_thread_ = new boost::thread(boost::bind(&SlamGMapping::publishLoop, this, transform_publish_period_));
+}
+
+void SlamGMapping::stopLiveSlam(){
+  is_enabled_ = false;
+  transform_thread_->join();
+
+  delete scan_filter_;
+  scan_filter_ = nullptr;
+  delete scan_filter_sub_;
+  scan_filter_sub_ = nullptr;
+
+  entropy_publisher_.shutdown();
+  sst_.shutdown();
+  sstm_.shutdown();
+  ss_.shutdown();
 }
 
 void SlamGMapping::startReplay(const std::string & bag_fname, std::string scan_topic)
@@ -341,7 +357,7 @@ void SlamGMapping::publishLoop(double transform_publish_period){
     return;
 
   ros::Rate r(1.0 / transform_publish_period);
-  while(ros::ok()){
+  while(ros::ok() && is_enabled_){
     publishTransform();
     r.sleep();
   }

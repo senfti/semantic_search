@@ -1,0 +1,19 @@
+<!-- launches turtlebot for mapping
+-->
+<launch>
+  <arg name="use_manual_control" default="1" doc="if manual control (keyboard/gamepad) is used"/>
+
+  <include file="$(find hardware)/launch/basic.launch">
+    <arg name="move_file" value="xbox360_teleop.launch"/>
+    <arg name="use_manual_control" value="$(arg use_manual_control)"/>
+  </include>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
+
+  <include file="$(find hardware)/launch/includes/move_base.launch.xml" />
+  
+  <include file="$(find hardware)/launch/includes/3dmultigmapping.launch.xml" >
+    <arg name="scan_topic" value="scan_filtered" />
+  </include>
+
+</launch>

@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gmapping_3dmap/OctoMapper.h>
+#include <multimap_gmapping3d/OctoMapper.h>
 
 using namespace octomap;
 using octomap_msgs::Octomap;

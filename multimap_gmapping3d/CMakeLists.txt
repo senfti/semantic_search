@@ -18,7 +18,7 @@ catkin_package(
   CATKIN_DEPENDS ${PACKAGE_DEPENDENCIES}
 )
 
-add_executable(multimap_gmapping3d src/slam_gmapping.cpp src/main.cpp src/OctoGMapper.cpp src/OctoMapper.cpp)
+add_executable(multimap_gmapping3d src/slam_gmapping.cpp src/main.cpp src/OctoGMapper.cpp src/OctoMapper.cpp src/HierarchyOctoGMapper.cpp)
 target_link_libraries(multimap_gmapping3d ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${catkin_LIBRARIES})
 if(catkin_EXPORTED_TARGETS)
   add_dependencies(multimap_gmapping3d ${catkin_EXPORTED_TARGETS})

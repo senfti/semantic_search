@@ -2,11 +2,11 @@
 // Created by thomas on 02.11.17.
 //
 
-#include "gmapping_3dmap/OctoGMapper.h"
+#include "multimap_gmapping3d/OctoGMapper.h"
 #include <pcl/filters/voxel_grid.h>
 
 OctoGMapper::OctoGMapper()
-  : octo_maps_(particles_), associated_nodes_(particles_, nullptr)
+  : octo_maps_(particles_)
 {
   for(auto& map : octo_maps_)
     map = new OctoMapper();
@@ -26,14 +26,15 @@ OctoGMapper::OctoGMapper()
   map_pub_ = node_.advertise<nav_msgs::OccupancyGrid>("projected_map", 5);
   fmarker_pub_ = node_.advertise<visualization_msgs::MarkerArray>("free_cells_vis_array", 1);
 
-  cloud_sub_ = node_.subscribe("/camera/depth_registered/points", 1, &OctoGMapper::cloudCb, this);
-
-  tf::TransformListener listener;
-  listener.waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time(0), ros::Duration(2.0));
-  listener.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time(0), camera_to_base_transform_);
+  tf_.waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
+  tf_.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
+  //camera_to_base_transform_ = tf::StampedTransform(tf::Transform(tf::Quaternion(0.545, -0.536, 0.463, 0.448), tf::Vector3(-0.003, 0.935, 0.343)).inverse(), ros::Time(), "", "");
 }
 
 void OctoGMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
+  if(!got_first_scan_)
+    return;
+
   //ROS_WARN("Octomaps start");
   ros::Time t = ros::Time::now();
   if(!gsp_->getIndexes().empty()){
@@ -104,97 +105,11 @@ void OctoGMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 }
 
-int OctoGMapper::getIdxFromNodePtr(GMapping::GridSlamProcessor::TNode* ptr) const {
-  for(int i=0; i<associated_nodes_.size(); i++){
-    if(associated_nodes_[i] == ptr)
-      return i;
-  }
-  return -1;
-}
-
 void OctoGMapper::updateOctoMaps(){
-
-  ROS_WARN("here OctoGMapper");
-
-  /*std::vector<GMapping::GridSlamProcessor::Particle> particles = gsp_->getParticles();
-  std::vector<std::vector<GMapping::OrientedPoint>> poses(particles_);
-  std::vector<std::vector<double>> times(particles_);
-  std::vector<int> start_map(particles_,-1);
-
-  for(int i=0; i<particles.size(); i++){
-    for(GMapping::GridSlamProcessor::TNode* n = particles[i].node; n; n = n->parent){
-      if(n->reading != nullptr){
-        poses[i].push_back(n->pose);
-        times[i].push_back(n->reading->getTime());
-      }
-      start_map[i] = getIdxFromNodePtr(n);
-      if(start_map[i] >= 0)
-        break;
-    }
-    if(octomaps_started_ && start_map[i] < 0){
-      std::cout << "Big Problem! no start map found" << std::endl;
-    }
-    else if(octomaps_started_ && start_map[i] != i)
-      copyTo(octo_maps_[start_map[i]], octo_maps_[i]);
-
-    auto pose_it = poses[i].rbegin() + 1;
-    auto time_it = times[i].rbegin() + 1;
-    for(const auto& cloud : cloud_list_){
-      double t = cloud.header.stamp.toSec();
-      if(t >= *times[i].rbegin() && t <= *times[i].begin()){
-        if(time_it+1 != times[i].rend() && t > *(time_it+1))
-          time_it++;
-        GMapping::OrientedPoint point = GMapping::interpolate(*(pose_it-1), *(time_it-1), *pose_it, *time_it, t);
-        tf::Transform base_to_map_transform(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
-        octo_maps_[i].insertCloud(cloud, camera_to_base_transform_*base_to_map_transform);
-      }
-    }
+  if(enable_octo_soon_){
+    enableOctoMapping(true);
+    return;
   }
-
-  cloud_list_.clear();
-
-  visualization_msgs::MarkerArray occupied_cells_vis_array;
-  octomap_msgs::Octomap octomap_binary;
-  octomap_msgs::Octomap octomap_full;
-  sensor_msgs::PointCloud2 octomap_point_cloud_centers;
-  nav_msgs::OccupancyGrid projected_map;
-  visualization_msgs::MarkerArray free_cells_vis_array;
-
-  octo_maps_[gsp_->getBestParticleIndex()].getAllPublishMsgs(occupied_cells_vis_array, octomap_binary, octomap_full,
-                                                             octomap_point_cloud_centers, projected_map, free_cells_vis_array);
-
-  if(!occupied_cells_vis_array.markers.empty())
-    marker_pub_.publish(occupied_cells_vis_array);
-  if(octomap_binary.resolution != 0.0)
-    binary_map_pub_.publish(octomap_binary);
-  if(octomap_full.resolution != 0.0)
-    full_map_pub_.publish(octomap_full);
-  if(octomap_point_cloud_centers.height != 0)
-    point_cloud_pub_.publish(octomap_point_cloud_centers);
-  if(projected_map.info.width != 0)
-    map_pub_.publish(projected_map);
-  if(!free_cells_vis_array.markers.empty())
-    fmarker_pub_.publish(free_cells_vis_array);*/
-
-//  static OctoMapper map;
-//
-//  GMapping::GridSlamProcessor::Particle best = gsp_->getParticles()[gsp_->getBestParticleIndex()];
-//  for(GMapping::GridSlamProcessor::TNode* n = best.node; n; n = n->parent)
-//  {
-//    if(!n->reading)
-//    {
-//      ROS_DEBUG("Reading is NULL");
-//      continue;
-//    }
-//    for(auto it=cloud_list_.begin(); it!=cloud_list_.end(); ++it){
-//      if(it->header.stamp.toSec() > n->reading->getTime()){
-//        GMapping::OrientedPoint point = n->pose;
-//        tf::Transform base_to_map_transform(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
-//        map.insertCloud(*it, base_to_map_transform*camera_to_base_transform_);
-//        break;
-//      }
-//    }
-//  }
 
   visualization_msgs::MarkerArray occupied_cells_vis_array;
   octomap_msgs::Octomap octomap_binary;
@@ -220,6 +135,40 @@ void OctoGMapper::updateOctoMaps(){
     fmarker_pub_.publish(free_cells_vis_array);
 
   cloud_list_.clear();
+}
 
-  ROS_WARN("here OctoGMapper end");
+
+void OctoGMapper::enableOctoMapping(bool enable){
+  if(enable)
+    cloud_sub_ = node_.subscribe("/camera/depth_registered/points", 1, &OctoGMapper::cloudCb, this);
+  else
+    cloud_sub_.shutdown();
+
+  enable_octo_soon_ = false;
+}
+
+void OctoGMapper::startSlam(bool enable){
+  if(enable){
+    //if(scan_filter_sub_ == nullptr){
+      startLiveSlam();
+      //enable_octo_soon_ = true;
+//    }
+//    else
+//      scan_filter_sub_->subscribe();
+  }
+  else if(scan_filter_sub_){
+    stopLiveSlam();
+  }
+}
+
+
+void OctoGMapper::enable(){
+  startSlam(true);
+  if(!enable_octo_soon_)
+    enableOctoMapping(true);
+}
+
+void OctoGMapper::disable(){
+  enableOctoMapping(false);
+  startSlam(false);
 }

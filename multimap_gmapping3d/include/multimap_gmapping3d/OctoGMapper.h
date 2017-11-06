@@ -5,8 +5,8 @@
 #ifndef GMAPPING_3DMAP_OCTOMAPMAPPER_H
 #define GMAPPING_3DMAP_OCTOMAPMAPPER_H
 
-#include "gmapping_3dmap/OctoMapper.h"
-#include "gmapping_3dmap/slam_gmapping.h"
+#include "multimap_gmapping3d/OctoMapper.h"
+#include "multimap_gmapping3d/slam_gmapping.h"
 
 #include <map>
 #include <list>
@@ -15,7 +15,6 @@ class OctoGMapper : public SlamGMapping{
   protected:
     std::list<sensor_msgs::PointCloud2> cloud_list_;
     std::vector<OctoMapper*> octo_maps_;
-    std::vector<GMapping::GridSlamProcessor::TNode*> associated_nodes_;
     bool octomaps_started_ = false;
 
     tf::StampedTransform camera_to_base_transform_;
@@ -27,6 +26,8 @@ class OctoGMapper : public SlamGMapping{
     ros::Publisher map_pub_;
     ros::Publisher fmarker_pub_;
     ros::Subscriber cloud_sub_;
+
+    bool enable_octo_soon_ = false;
 
     double downsample_voxel_size_ = 0.03;
     double m_pointcloudMinX = -std::numeric_limits<double>::max();
@@ -42,8 +43,12 @@ class OctoGMapper : public SlamGMapping{
   public:
     OctoGMapper();
 
+    void enableOctoMapping(bool enable = true);
+    void startSlam(bool enable = true);
+    void enable();
+    void disable();
+
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
-    int getIdxFromNodePtr(GMapping::GridSlamProcessor::TNode* ptr) const;
 };
 
 #endif //GMAPPING_3DMAP_OCTOMAPMAPPER_H
