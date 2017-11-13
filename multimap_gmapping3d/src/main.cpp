@@ -28,42 +28,42 @@ main(int argc, char** argv)
     params += std::string(argv[i]) + " ";
   ros::init(argc, argv, "slam_gmapping");
 
-  ROS_WARN("%d, %s", argc, params.c_str());
+  //ROS_WARN("%d, %s", argc, params.c_str());
 
   HierarchyOctoGMapper mapper;
   ros::Rate rate(50);
-  ros::Time t = ros::Time::now();
-  int state = 0;
+  //ros::Time t = ros::Time::now();
+  //int state = 5;
   while(ros::ok()){
-    if(t > ros::Time::now())
-      t = ros::Time::now();
+    //if(t > ros::Time::now())
+    //  t = ros::Time::now();
     ros::spinOnce();
     rate.sleep();
-    if(ros::Time::now().toSec() - t.toSec() > 18 && state == 0){
-      mapper.addMapper();
-      ROS_WARN("New mapper");
-      state=1;
-    }
-    if(ros::Time::now().toSec() - t.toSec() > 58 && state == 1){
-      mapper.startMapper(0);
-      ROS_WARN("Back to mapper 0");
-      state=2;
-    }
-    if(ros::Time::now().toSec() - t.toSec() > 88 && state == 2){
-      mapper.addMapper();
-      ROS_WARN("New mapper");
-      state=3;
-    }
-    if(ros::Time::now().toSec() - t.toSec() > 114 && state == 3){
-      mapper.startMapper(0);
-      ROS_WARN("Back to mapper 0");
-      state=4;
-    }
-    if(ros::Time::now().toSec() - t.toSec() > 135 && state == 4){
-      mapper.startMapper(1);
-      ROS_WARN("Back to mapper 1");
-      state=5;
-    }
+//    if(ros::Time::now().toSec() - t.toSec() > 18 && state == 0){
+//      mapper.addMapper();
+//      ROS_WARN("New mapper");
+//      state=1;
+//    }
+//    if(ros::Time::now().toSec() - t.toSec() > 58 && state == 1){
+//      mapper.startMapper(0);
+//      ROS_WARN("Back to mapper 0");
+//      state=2;
+//    }
+//    if(ros::Time::now().toSec() - t.toSec() > 88 && state == 2){
+//      mapper.addMapper();
+//      ROS_WARN("New mapper");
+//      state=3;
+//    }
+//    if(ros::Time::now().toSec() - t.toSec() > 114 && state == 3){
+//      mapper.startMapper(0);
+//      ROS_WARN("Back to mapper 0");
+//      state=4;
+//    }
+//    if(ros::Time::now().toSec() - t.toSec() > 135 && state == 4){
+//      mapper.startMapper(1);
+//      ROS_WARN("Back to mapper 1");
+//      state=5;
+//    }
   }
   ros::spin();
 

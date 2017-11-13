@@ -1,19 +1,11 @@
 <launch>
   <param name="use_sim_time" value="true" />
 
-  <include file="$(find hardware)/launch/includes/description.launch.xml">
+  <include file="$(find hardware)/launch/includes/robot.launch.xml">
     <arg name="base" value="$(env TURTLEBOT_BASE)" />
     <arg name="stacks" value="$(env TURTLEBOT_STACKS)" />
     <arg name="3d_sensor" value="own_sensors" />
   </include>
-
-  <!-- important generally, but specifically utilised by the current app manager -->  
-  <param name="robot/name" value="$(optenv ROBOT turtlebot)"/>
-  <param name="robot/type" value="turtlebot"/>
-  
-  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-    <param name="publish_frequency" type="double" value="5.0" />
-  </node>
   
   <include file="$(find hardware)/launch/includes/3dmultigmapping.launch.xml" >
     <arg name="scan_topic" value="scan_filtered" />

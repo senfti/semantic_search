@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find hardware)/launch/mapping.launch">
+  <include file="$(find hardware)/launch/multimapping_3dgmapping.launch">
     <arg name="use_manual_control" value="0"/>
   </include>
 
@@ -10,9 +10,9 @@
 
     <!-- Should be less than sensor range -->
     <param name="goal_aliasing" value="2.0"/>
-    
-    <!--<rosparam file="$(find turtlebot_navigation)/param/costmap_common_params.yaml" command="load" ns="explore_costmap" />
-    <rosparam file="$(find hardware)/param/costmap_exploration.yaml" command="load" ns="explore_costmap" />-->
+
+    <rosparam file="$(find hardware)/param/costmap_common_params.yaml" command="load" ns="explore_costmap" />
+    <rosparam file="$(find hardware)/param/costmap_exploration_params.yaml" command="load" ns="explore_costmap" />
   </node>
 
 </launch>

@@ -6,9 +6,5 @@
     <arg name="stacks" value="$(env TURTLEBOT_STACKS)" />
     <arg name="3d_sensor" value="own_sensors" />
   </include>
-  
-  <include file="$(find hardware)/launch/includes/3dgmapping.launch.xml" >
-    <arg name="scan_topic" value="scan_filtered" />
-  </include>
 
 </launch>

@@ -1,6 +1,12 @@
 <launch>
   <include file="$(find hardware)/launch/mapping_rosbag.launch">
   </include>
+
+  <include file="$(find hardware)/launch/includes/robot.launch.xml">
+    <arg name="base" value="$(env TURTLEBOT_BASE)" />
+    <arg name="stacks" value="$(env TURTLEBOT_STACKS)" />
+    <arg name="3d_sensor" value="own_sensors" />
+  </include>
   
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
     <param name="resolution" value="0.05" />    

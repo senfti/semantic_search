@@ -19,12 +19,12 @@ OctoGMapper::OctoGMapper()
   private_nh_.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
 
-  marker_pub_ = node_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1);
-  binary_map_pub_ = node_.advertise<octomap_msgs::Octomap>("octomap_binary", 1);
-  full_map_pub_ = node_.advertise<octomap_msgs::Octomap>("octomap_full", 1);
-  point_cloud_pub_ = node_.advertise<sensor_msgs::PointCloud2>("octomap_point_cloud_centers", 1);
-  map_pub_ = node_.advertise<nav_msgs::OccupancyGrid>("projected_map", 5);
-  fmarker_pub_ = node_.advertise<visualization_msgs::MarkerArray>("free_cells_vis_array", 1);
+  marker_pub_ = node_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
+  binary_map_pub_ = node_.advertise<octomap_msgs::Octomap>("octomap_binary", 1, true);
+  full_map_pub_ = node_.advertise<octomap_msgs::Octomap>("octomap_full", 1, true);
+  point_cloud_pub_ = node_.advertise<sensor_msgs::PointCloud2>("octomap_point_cloud_centers", 1, true);
+  map_pub_ = node_.advertise<nav_msgs::OccupancyGrid>("projected_map", 5, true);
+  fmarker_pub_ = node_.advertise<visualization_msgs::MarkerArray>("free_cells_vis_array", 1, true);
 
   tf_.waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
   tf_.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
@@ -102,7 +102,7 @@ void OctoGMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     octo_maps_[i]->insertCloud(pc, base_to_map_transform);
     //ROS_WARN("Octomap %d in %.3lf", i, ros::Time::now().toSec() - t.toSec());
   }
-  ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
+  //ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 }
 
 void OctoGMapper::updateOctoMaps(){
