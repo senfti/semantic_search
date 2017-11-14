@@ -8,7 +8,7 @@
 #include <chrono>
 
 YoloDetection::YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z)
-      : label_(label), id_(id), prob_(prob, prob + NUM_OBJECT_TYPES), x1_(x1), x2_(x2), y1_(y1), y2_(y2), z_(z)
+      : label_(label), id_(id), prob_(prob, prob + NUM_OBJECT_TYPES), x1_(x1), x2_(x2), y1_(y1), y2_(y2)
 {
 }
 
@@ -24,6 +24,19 @@ void YoloDetection::scale(float factor){
   y2_ *= factor;
 }
 
+vision::ObjectDetectionMsg YoloDetection::getAsMsg() const{
+  vision::ObjectDetectionMsg object_msg;
+  object_msg.name = label_;
+  object_msg.id = id_;
+  object_msg.prob = prob_;
+
+  object_msg.x1 = x1_;
+  object_msg.x2 = x2_;
+  object_msg.y1 = y1_;
+  object_msg.y2 = y2_;
+
+  return object_msg;
+}
 
 
 YoloDetector::YoloDetector(const std::string &label_file, const std::string &config_file, const std::string &weight_file){
@@ -191,16 +204,15 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
           max_idx = j;
         }
       }
-      float x1 = (boxes[i].x - boxes[i].w / 2.) * img.cols;
-      float x2 = (boxes[i].x + boxes[i].w / 2.) * img.cols;
-      float y1 = (boxes[i].y - boxes[i].h / 2.) * img.rows;
-      float y2 = (boxes[i].y + boxes[i].h / 2.) * img.rows;
+      float x1 = std::max((boxes[i].x - boxes[i].w / 2.f) * img.cols, 0.f);
+      float x2 = std::min((boxes[i].x + boxes[i].w / 2.f) * img.cols, img.cols-1.f);
+      float y1 = std::max((boxes[i].y - boxes[i].h / 2.f) * img.rows, 0.f);
+      float y2 = std::min((boxes[i].y + boxes[i].h / 2.f) * img.rows, img.rows-1.f);
       if(prob > thresh){
         detections.push_back(YoloDetection(labels_[max_idx], max_idx, probs[i], x1, x2, y1, y2, 0.f));
       }
     }
   }
 
-  //std::sort(detections.begin(), detections.end(), operator>);
   return detections;
 }

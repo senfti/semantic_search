@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   tf
   message_generation
+  pcl_ros
 )
 
 add_message_files(
@@ -29,10 +30,11 @@ add_message_files(
 generate_messages(
   DEPENDENCIES
   geometry_msgs
+  sensor_msgs
   std_msgs
 )
 
-add_definitions(-std=c++11 -g)
+add_definitions(-std=c++11 -O3)
 add_definitions(${Caffe_DEFINITIONS} )
 
 find_package( OpenCV REQUIRED )

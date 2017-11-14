@@ -18,6 +18,7 @@
 #include <region_layer.h>
 #include <option_list.h>
 #include <opencv2/opencv.hpp>
+#include "vision/ObjectDetectionMsg.h"
 
 static const int NUM_OBJECT_TYPES = 80;
 
@@ -26,18 +27,13 @@ class YoloDetection{
     std::string label_;
     int id_;
     std::vector<float> prob_;
-    float x1_, x2_, y1_, y2_, z_;
+    float x1_, x2_, y1_, y2_;
 
     YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
-
-    //friend bool operator>(const YoloDetection& lhs, const YoloDetection& rhs);
+    vision::ObjectDetectionMsg getAsMsg() const;
 };
-
-//inline bool operator>(const YoloDetection& lhs, const YoloDetection& rhs){
-//  return lhs.prob_ > rhs.prob_;
-//}
 
 class YoloDetector{
   private:

@@ -25,6 +25,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
 
   image_sub_ = it_.subscribe("/camera/rgb/image_raw", 1, &VisionApp::imageCb, this);
   depth_image_sub_ = it_.subscribe("/camera/depth_registered/image_raw", 1, &VisionApp::depthImageCb, this);
+  cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &VisionApp::cloudCb, this);
   result_pub_ = nh_.advertise<vision::VisionMsg>("vision_result", 10);
 
   is_ok_ = true;
@@ -59,8 +60,8 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     return;
 
   vision::VisionMsg result_msg;
-  if(!fillTransform(result_msg))
-    return;
+//  if(!fillTransform(result_msg))
+//    return;
   std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
   std::vector<YoloDetection> detections = fillObjectDetections(img, result_msg);
   fillViewDistances(result_msg);
@@ -71,22 +72,23 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
 }
 
 void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
-  cv_bridge::CvImagePtr cv_ptr;
   try{
-    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
+    depth_img_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
   }
   catch (cv_bridge::Exception& e){
     ROS_ERROR("cv_bridge exception: %s", e.what());
     return;
   }
+}
 
-  cv::Mat img;
-  cv_ptr->image.copyTo(depth_img_);
+
+void VisionApp::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
+  point_cloud_ = msg;
 }
 
 
 bool VisionApp::useImage(const cv::Mat& img){
-  if(depth_img_.empty()){
+  if(!depth_img_ || !point_cloud_){
     std::cout << "No depth image" << std::endl;
     return false;
   }
@@ -152,46 +154,44 @@ std::vector<CaffeRecognition> VisionApp::fillPlaceGuesses(const cv::Mat& img, vi
   return predictions;
 }
 
+#include <pcl/filters/statistical_outlier_removal.h>
 
-std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const{
-  auto begin = std::chrono::steady_clock::now();
-  std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
-
-  cv::Mat_<float> depth_filtered;
-  depth_img_.copyTo(depth_filtered);
-  for(int x=0; x<depth_img_.cols; x++){
-    for(int y=0; y<depth_img_.rows; y++){
-      if(!std::isfinite(depth_filtered.at<float>(y,x)))
-        depth_filtered(y,x) = 5.f;
+void VisionApp::fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::ObjectDetectionMsg &msg) const{
+  int x1=std::round(msg.x1), x2=std::round(msg.x2), y1=std::round(msg.y1), y2=std::round(msg.y2);
+  int num_points = (x2-x1+1)*(y2-y1+1);
+  pcl::PointCloud<pcl::PointXYZ> sub_cloud;
+  sub_cloud.is_dense = true;
+  sub_cloud.reserve(num_points);
+  int i = 0;
+  for(int x=msg.x1; x<=msg.x2; x++){
+    for(int y=msg.y1; y<=msg.y2; y++){
+      if(pcl::isFinite(cloud.at(x, y)))
+        sub_cloud.push_back(cloud.at(x,y));
     }
   }
 
-  cv::GaussianBlur(depth_filtered, depth_filtered, cv::Size(7,7), 2.0, 2.0);
-  for(const auto& d : detections){
-    vision::ObjectDetectionMsg object_msg;
-    object_msg.name = d.label_;
-    object_msg.id = d.id_;
-    object_msg.prob = d.prob_;
+  Eigen::Vector4f mean;
+  Eigen::Matrix3f covariance;
+  pcl::computeMeanAndCovarianceMatrix(sub_cloud, covariance, mean);
+  msg.center = std::vector<float>(mean.data(), mean.data()+3);
+  msg.covariance = std::vector<float>(covariance.data(), covariance.data()+3*3);
+}
 
-    cv::Mat tmp = depth_filtered((cv::Rect(cv::Point(std::max(int(d.x1_),0), std::max(int(d.y1_),0)),
-                                       cv::Point(std::min(int(d.x2_),depth_img_.cols-1), std::min(int(d.y2_),depth_img_.rows-1)))));
-    double z_mean = cv::mean(tmp)[0];
-    double z_min, z_max;
-    cv::minMaxIdx(tmp, &z_min, &z_max);
 
-    object_msg.x1 = (d.x1_/img.cols - 0.5) * horizontal_camera_spread_ * z_mean;
-    object_msg.x2 = (d.x2_/img.cols - 0.5) * horizontal_camera_spread_ * z_mean;
-    object_msg.y1 = (d.y1_/img.rows - 0.5) * vertical_camera_spread_ * z_mean;
-    object_msg.y2 = (d.y2_/img.rows - 0.5) * vertical_camera_spread_ * z_mean;
-    object_msg.z1 = z_min;
-    object_msg.z2 = z_max;
-    vision_msg.objects.push_back(object_msg);
+std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const{
+  auto begin = std::chrono::steady_clock::now();
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  pcl::fromROSMsg(*point_cloud_, cloud);
+  std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
 
-    if(!std::isfinite(z_mean))
-      std::cout << "sldkfjsdlkfj" << std::endl;
+  auto t1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+  vision_msg.objects.resize(detections.size());
+  for(int i=0; i<detections.size(); i++){
+    vision_msg.objects[i] = detections[i].getAsMsg();
+    fillObjectGaussian(cloud, vision_msg.objects[i]);
   }
 
-  std::cout << "Objects in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+  std::cout << detections.size() << " Objects in " << t1 << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() - t1 << " ms" << std::endl;
 
   return detections;
 }
@@ -200,11 +200,11 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, v
 void VisionApp::fillViewDistances(vision::VisionMsg& vision_msg) const{
   vision_msg.view_dists.resize(VIEW_DIST_SEGMENTS);
   cv::Mat dist_mat;
-  cv::medianBlur(depth_img_, dist_mat, 5);
-  int pixel_per_seg = depth_img_.cols / VIEW_DIST_SEGMENTS;
+  cv::medianBlur(depth_img_->image, dist_mat, 5);
+  int pixel_per_seg = dist_mat.cols / VIEW_DIST_SEGMENTS;
   for(int i=0; i<VIEW_DIST_SEGMENTS; i++){
     double mi, ma;
-    cv::minMaxIdx(depth_img_(cv::Rect(i*pixel_per_seg, 0, pixel_per_seg, depth_img_.rows)), &mi, &ma);
+    cv::minMaxIdx(dist_mat(cv::Rect(i*pixel_per_seg, 0, pixel_per_seg, dist_mat.rows)), &mi, &ma);
     vision_msg.view_dists[i] = ma;
   }
 }

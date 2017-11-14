@@ -10,10 +10,14 @@
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <pcl/point_types.h>
+#include <pcl/common/centroid.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <opencv2/opencv.hpp>
 #include "vision/VisionMsg.h"
@@ -39,18 +43,21 @@ class VisionApp{
     const float vertical_camera_spread_ = 0.825;
     const float dist_cutoff_ = 0.1;                                 // only use dist_cutoff to (1-dist_cutoff) depth values for depth estimate
     const float psnr_thresh = 4.f;
+    const float donwsample_factor = 2.f;
 
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     image_transport::Subscriber depth_image_sub_;
+    ros::Subscriber cloud_sub_;
     ros::Publisher result_pub_;
     tf::TransformListener tf_listener_;
 
     CaffeClassifier* classifier_ = nullptr;
     YoloDetector* detector_ = nullptr;
 
-    cv::Mat depth_img_;
+    sensor_msgs::PointCloud2ConstPtr point_cloud_ = nullptr;
+    cv_bridge::CvImagePtr depth_img_ = nullptr;
     cv::Mat old_img_;
     cv::Mat old_gradients_;
 
@@ -63,10 +70,12 @@ class VisionApp{
     void run();
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
     void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
+    void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg);
 
     bool useImage(const cv::Mat& img);
     bool fillTransform(vision::VisionMsg& vision_msg) const;
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
+    void fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::ObjectDetectionMsg &msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     void fillViewDistances(vision::VisionMsg& vision_msg) const;
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
