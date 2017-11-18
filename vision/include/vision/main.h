@@ -58,8 +58,6 @@ class VisionApp{
 
     sensor_msgs::PointCloud2ConstPtr point_cloud_ = nullptr;
     cv_bridge::CvImagePtr depth_img_ = nullptr;
-    cv::Mat old_img_;
-    cv::Mat old_gradients_;
 
     bool is_ok_ = false;
     bool run_ = true;
@@ -73,11 +71,9 @@ class VisionApp{
     void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg);
 
     bool useImage(const cv::Mat& img);
-    bool fillTransform(vision::VisionMsg& vision_msg) const;
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     void fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::ObjectDetectionMsg &msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
-    void fillViewDistances(vision::VisionMsg& vision_msg) const;
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
 };
 

@@ -60,14 +60,10 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     return;
 
   vision::VisionMsg result_msg;
-//  if(!fillTransform(result_msg))
-//    return;
   std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
   std::vector<YoloDetection> detections = fillObjectDetections(img, result_msg);
-  fillViewDistances(result_msg);
 
   result_pub_.publish(result_msg);
-  old_img_ = img;
   showDebugImage(img, predictions, detections);
 }
 
@@ -92,48 +88,7 @@ bool VisionApp::useImage(const cv::Mat& img){
     std::cout << "No depth image" << std::endl;
     return false;
   }
-  if(old_gradients_.empty()){
-    return true;
-  }
 
-  // discarding not moved images
-  cv::Mat working;
-  cv::resize(img, working, cv::Size(img.cols / 4, img.rows / 4));
-  cv::blur(working, working, cv::Size(5,5));
-  cv::Mat dx, dy, gradient;
-  cv::Sobel(img, dx, CV_32F, 1, 0, 3);
-  cv::Sobel(img, dy, CV_32F, 0, 1, 3);
-  cv::add(dx, dy, gradient);
-  cv::normalize(gradient, gradient, 0.0, 1.0, cv::NORM_MINMAX);
-  cv::Mat diff;
-  cv::subtract(gradient, old_gradients_, diff);
-  old_gradients_ = gradient;
-  cv::Mat pow;
-  cv::pow(diff, 6, pow);
-  cv::Scalar sum = cv::sum(pow);
-  float psnr = log(sum.val[0] / diff.size().area());
-  if(psnr < psnr_thresh)
-    return false;
-
-  return true;
-}
-
-
-bool VisionApp::fillTransform(vision::VisionMsg& vision_msg) const {
-  try{
-    tf::StampedTransform transform;
-    tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
-    tf::Stamped<tf::Pose> tmp;
-    tmp.stamp_ = transform.stamp_;
-    tmp.frame_id_ = transform.frame_id_;
-    tmp.setOrigin(transform.getOrigin());
-    tmp.setRotation(transform.getRotation());
-    tf::poseStampedTFToMsg(tmp, vision_msg.pose);
-  }
-  catch(std::exception& e){
-    std::cout << e.what() << std::endl;
-    return false;
-  }
   return true;
 }
 
@@ -154,7 +109,6 @@ std::vector<CaffeRecognition> VisionApp::fillPlaceGuesses(const cv::Mat& img, vi
   return predictions;
 }
 
-#include <pcl/filters/statistical_outlier_removal.h>
 
 void VisionApp::fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::ObjectDetectionMsg &msg) const{
   int x1=std::round(msg.x1), x2=std::round(msg.x2), y1=std::round(msg.y1), y2=std::round(msg.y2);
@@ -194,19 +148,6 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, v
   std::cout << detections.size() << " Objects in " << t1 << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() - t1 << " ms" << std::endl;
 
   return detections;
-}
-
-
-void VisionApp::fillViewDistances(vision::VisionMsg& vision_msg) const{
-  vision_msg.view_dists.resize(VIEW_DIST_SEGMENTS);
-  cv::Mat dist_mat;
-  cv::medianBlur(depth_img_->image, dist_mat, 5);
-  int pixel_per_seg = dist_mat.cols / VIEW_DIST_SEGMENTS;
-  for(int i=0; i<VIEW_DIST_SEGMENTS; i++){
-    double mi, ma;
-    cv::minMaxIdx(dist_mat(cv::Rect(i*pixel_per_seg, 0, pixel_per_seg, dist_mat.rows)), &mi, &ma);
-    vision_msg.view_dists[i] = ma;
-  }
 }
 
 
