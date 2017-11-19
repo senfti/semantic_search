@@ -1,2 +1,1 @@
 a half-open door might cause problems
-possible problem of laser scan and pointcloud not fitting together when moving (synchronization)

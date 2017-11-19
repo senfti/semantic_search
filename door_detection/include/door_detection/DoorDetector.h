@@ -32,6 +32,7 @@ class DoorDetector{
     const float LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR = 0.5;
     const float LASER_IN_FRONT_OF_DOOR_DEPTH_AREA = 0.3*OCC_RES;
     const int MAX_LASER_IN_ZONE = 5;
+    const float RATE = 10;
 
     ros::NodeHandle nh_;
     ros::Subscriber cloud_sub_;

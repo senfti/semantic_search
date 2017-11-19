@@ -214,7 +214,7 @@ void DoorDetector::laserCb(const sensor_msgs::LaserScanConstPtr &msg){
 
 
 void DoorDetector::run(){
-  ros::Rate rate(2);
+  ros::Rate rate(RATE);
   while(ros::ok()){
     ros::spinOnce();
     rate.sleep();
