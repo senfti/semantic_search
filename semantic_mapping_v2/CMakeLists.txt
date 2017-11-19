@@ -29,7 +29,7 @@ catkin_package(
   CATKIN_DEPENDS ${PACKAGE_DEPENDENCIES}
 )
 
-add_executable(semantic_mapping src/SlamGMapping.cpp src/OctoMapper.cpp src/main.cpp src/RoomMapper.cpp src/ObjectMapper.cpp)
+add_executable(semantic_mapping src/main.cpp src/ObjectMapper.cpp src/HierarchyMapper.cpp src/OctoMapper.cpp src/RoomMapper.cpp)
 target_link_libraries(semantic_mapping ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${catkin_LIBRARIES})
 if(catkin_EXPORTED_TARGETS)
   add_dependencies(semantic_mapping ${catkin_EXPORTED_TARGETS})

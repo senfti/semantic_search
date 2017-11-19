@@ -105,8 +105,6 @@ typedef octomap::ColorOcTree OcTreeT;
       m_octree = octree;
     }
 
-    friend void copyTo(OctoMapper& src, OctoMapper& dst);
-
     void getAllPublishMsgs(visualization_msgs::MarkerArray& occupied_cells_vis_array, octomap_msgs::Octomap& octomap_binary,
                            octomap_msgs::Octomap& octomap_full, sensor_msgs::PointCloud2& octomap_point_cloud_centers,
                            nav_msgs::OccupancyGrid& projected_map, visualization_msgs::MarkerArray& free_cells_vis_array,
@@ -262,7 +260,5 @@ typedef octomap::ColorOcTree OcTreeT;
     bool m_projectCompleteMap;
     bool m_useColoredMap;
 };
-
-void copyTo(OctoMapper& src, OctoMapper& dst);
 
 #endif
