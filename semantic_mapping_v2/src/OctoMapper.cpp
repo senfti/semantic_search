@@ -453,6 +453,8 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
     else
       free_cells.markers[i].action = visualization_msgs::Marker::DELETE;
   }
+
+  return occupiedNodesVis;
 }
 
 
@@ -502,8 +504,9 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
       if(m_octree->isNodeOccupied(*it) && it.getZ() <= downprojection_height_){
         int x = (it.getX() - downprojected_map.info.origin.position.x) * res;
         int y = (it.getY() - downprojected_map.info.origin.position.y) * res;
-        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height)
+        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height){
           downprojected_map.data[y * downprojected_map.info.width + x] = 100;
+        }
       }
     }
   }
@@ -522,6 +525,8 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
       }
     }
   }
+
+  return downprojected_map;
 }
 
 

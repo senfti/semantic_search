@@ -52,15 +52,6 @@ class SlamGMapping
 
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
 
-    bool wasMapUpdated() const { return was_map_updated_; }
-    bool resetWasMapUpdated() {
-      if(was_map_updated_){
-        was_map_updated_ = false;
-        return true;
-      }
-      return false;
-    }
-
   protected:
     ros::NodeHandle node_;
     tf::TransformListener tf_;
@@ -79,7 +70,6 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
-    bool was_map_updated_ = false;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;

@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED signals)
 find_package(octomap REQUIRED)
 
-add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -mavx2)
+add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
 
 include_directories(
   include

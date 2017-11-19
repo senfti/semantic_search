@@ -1,0 +1,14 @@
+<launch>
+  <param name="use_sim_time" value="true" />
+
+  <include file="$(find hardware)/launch/includes/robot.launch.xml">
+    <arg name="base" value="$(env TURTLEBOT_BASE)" />
+    <arg name="stacks" value="$(env TURTLEBOT_STACKS)" />
+    <arg name="3d_sensor" value="own_sensors" />
+  </include>
+
+  <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
+    <arg name="scan_topic" value="scan_filtered" />
+  </include>
+
+</launch>

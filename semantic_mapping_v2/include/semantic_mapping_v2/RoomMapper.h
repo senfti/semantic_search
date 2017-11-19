@@ -12,7 +12,8 @@ class RoomMapper : public SlamGMapping{
   protected:
     std::vector<OctoMapper*> octo_maps_;
     nav_msgs::OccupancyGrid obstacle_map_;
-    bool octomaps_started_ = false;
+    boost::mutex obstacle_map_mutex_;
+    bool was_map_updated_ = false;
 
     tf::StampedTransform camera_to_base_transform_;
 
@@ -27,7 +28,19 @@ class RoomMapper : public SlamGMapping{
 
     int getBestParticleIdx() const { return gsp_->getBestParticleIndex(); }
 
-    nav_msgs::OccupancyGrid getMap() { return obstacle_map_; }
+    bool wasMapUpdated() const { return was_map_updated_; }
+    bool resetWasMapUpdated() {
+      if(was_map_updated_){
+        was_map_updated_ = false;
+        return true;
+      }
+      return false;
+    }
+
+    nav_msgs::OccupancyGrid getMap() {
+      boost::mutex::scoped_lock lock(obstacle_map_mutex_);
+      return obstacle_map_;
+    }
     octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now()) const {
       return octo_maps_[getBestParticleIdx()]->getBinaryOctoMapMsg(rostime);
     }

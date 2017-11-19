@@ -8,16 +8,18 @@
 HierarchyMapper::HierarchyMapper(){
   addMapper(true);
 
-  laser_sub_ = nh_.subscribe("scan", 1, &HierarchyMapper::cloudCb, this);
+  laser_sub_ = nh_.subscribe("scan", 1, &HierarchyMapper::laserCallback, this);
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &HierarchyMapper::cloudCb, this);
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+  gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
+  std::cout << "HierarchyMapping started" << std::endl;
 }
 
 
@@ -60,8 +62,12 @@ void HierarchyMapper::transformPublishLoop(double transform_publish_period){
 
 
 void HierarchyMapper::publish(){
-  map_pub_.publish(room_mapper_[current_mapper_]->getMap());
-  map_info_pub_.publish(room_mapper_[current_mapper_]->getMap().info);
+  gmap_pub_.publish(room_mapper_[current_mapper_]->getGMap());
+  nav_msgs::OccupancyGrid map = room_mapper_[current_mapper_]->getMap();
+  if(map.data.size() > 0){
+    map_pub_.publish(map);
+    map_info_pub_.publish(map.info);
+  }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
 }
 

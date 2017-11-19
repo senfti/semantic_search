@@ -16,6 +16,7 @@ class HierarchyMapper{
     ros::Subscriber cloud_sub_;
 
     ros::Publisher map_pub_;
+    ros::Publisher gmap_pub_;
     ros::Publisher map_info_pub_;
     ros::Publisher marker_pub_;
 

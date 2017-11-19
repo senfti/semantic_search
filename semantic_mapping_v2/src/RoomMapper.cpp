@@ -15,18 +15,22 @@ RoomMapper::RoomMapper()
   for(auto& map : octo_maps_)
     map = new OctoMapper();
 
+  obstacle_map_.info.resolution = 10;
+
   private_nh_.param("Octomap/downsample_voxel_size", downsample_voxel_size_, downsample_voxel_size_);
   private_nh_.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
 
   bool got_transform = false;
   while(!got_transform && ros::ok()){
+    got_transform = true;
     try{
       tf_.waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
       tf_.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
+      got_transform = false;
     }
   }
 }
@@ -89,7 +93,9 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   }
   ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 
-  if(was_map_updated_){
+  if(obstacle_map_.header.stamp != getGMap().header.stamp){
+    boost::mutex::scoped_lock lock(obstacle_map_mutex_);
     obstacle_map_ = octo_maps_[getBestParticleIdx()]->addDownprojected(getGMap());
+    was_map_updated_ = true;
   }
 }

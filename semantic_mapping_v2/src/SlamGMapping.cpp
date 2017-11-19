@@ -427,8 +427,6 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   //make sure to set the header information on the map
   map_.map.header.stamp = ros::Time::now();
   map_.map.header.frame_id = tf_.resolve( map_frame_ );
-
-  was_map_updated_ = true;
 }
 
 
