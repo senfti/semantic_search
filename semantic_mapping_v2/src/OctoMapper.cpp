@@ -1,5 +1,6 @@
 //
 // Created by thomas on 19.11.17.
+// Based on Ros Octomap_Server: https://github.com/OctoMap/octomap_mapping/tree/kinetic-devel/octomap_server
 //
 
 #include <semantic_mapping_v2/OctoMapper.h>
@@ -24,12 +25,6 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
         m_res(0.05),
         m_treeDepth(0),
         m_maxTreeDepth(0),
-        m_pointcloudMinX(-std::numeric_limits<double>::max()),
-        m_pointcloudMaxX(std::numeric_limits<double>::max()),
-        m_pointcloudMinY(-std::numeric_limits<double>::max()),
-        m_pointcloudMaxY(std::numeric_limits<double>::max()),
-        m_pointcloudMinZ(-std::numeric_limits<double>::max()),
-        m_pointcloudMaxZ(std::numeric_limits<double>::max()),
         m_occupancyMinZ(-std::numeric_limits<double>::max()),
         m_occupancyMaxZ(std::numeric_limits<double>::max()),
         m_minSizeX(0.0), m_minSizeY(0.0),
@@ -46,12 +41,6 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
   private_nh.param("Octomap/colored_map", m_useColoredMap, m_useColoredMap);
   private_nh.param("Octomap/color_factor", m_colorFactor, m_colorFactor);
 
-  private_nh.param("Octomap/pointcloud_min_x", m_pointcloudMinX,m_pointcloudMinX);
-  private_nh.param("Octomap/pointcloud_max_x", m_pointcloudMaxX,m_pointcloudMaxX);
-  private_nh.param("Octomap/pointcloud_min_y", m_pointcloudMinY,m_pointcloudMinY);
-  private_nh.param("Octomap/pointcloud_max_y", m_pointcloudMaxY,m_pointcloudMaxY);
-  private_nh.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
-  private_nh.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
   private_nh.param("Octomap/occupancy_min_z", m_occupancyMinZ,m_occupancyMinZ);
   private_nh.param("Octomap/occupancy_max_z", m_occupancyMaxZ,m_occupancyMaxZ);
   private_nh.param("Octomap/min_x_size", m_minSizeX,m_minSizeX);
@@ -135,12 +124,6 @@ OctoMapper::OctoMapper(const OctoMapper& rhs){
   m_treeDepth = rhs.m_treeDepth;
   m_maxTreeDepth = rhs.m_maxTreeDepth;
 
-  m_pointcloudMinX = rhs.m_pointcloudMinX;
-  m_pointcloudMaxX = rhs.m_pointcloudMaxX;
-  m_pointcloudMinY = rhs.m_pointcloudMinY;
-  m_pointcloudMaxY = rhs.m_pointcloudMaxY;
-  m_pointcloudMinZ = rhs.m_pointcloudMinZ;
-  m_pointcloudMaxZ = rhs.m_pointcloudMaxZ;
   m_occupancyMinZ = rhs.m_occupancyMinZ;
   m_occupancyMaxZ = rhs.m_occupancyMaxZ;
   m_minSizeX = rhs.m_minSizeX;
@@ -215,16 +198,13 @@ void OctoMapper::insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToW
   Eigen::Matrix4f sensorToWorld;
   pcl_ros::transformAsMatrix(sensorToWorldTf, sensorToWorld);
 
-  PCLPointCloud pc_ground; // segmented ground plane
-  PCLPointCloud pc_nonground; // everything else
-
   // directly transform to map frame:
   pcl::transformPointCloud(cloud, cloud, sensorToWorld);
 
   insertScan(sensorToWorldTf.getOrigin(), cloud);
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
-  ROS_DEBUG("Pointcloud insertion in OctoMapper done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), cloud.size(), total_elapsed);
+  ROS_DEBUG("Pointcloud insertion in OctoMapper done (%zu pts , %f sec)", cloud.size(), total_elapsed);
 }
 
 
@@ -513,16 +493,17 @@ Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) const{
 }
 
 
-void OctoMapper::insertDownprojected(nav_msgs::OccupancyGrid &map){
-  geometry_msgs::Quaternion orig_quat = map.info.origin.orientation;
-  double res = 1.00 / map.info.resolution;
+nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) const{
+  nav_msgs::OccupancyGrid downprojected_map = map;
+  geometry_msgs::Quaternion orig_quat = downprojected_map.info.origin.orientation;
+  double res = 1.00 / downprojected_map.info.resolution;
   if(is_equal(orig_quat.w, 1.0) && is_equal(orig_quat.x, 0.0) && is_equal(orig_quat.y, 0.0) && is_equal(orig_quat.z, 0.0)){   // should be here
     for(OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
       if(m_octree->isNodeOccupied(*it) && it.getZ() <= downprojection_height_){
-        int x = (it.getX() - map.info.origin.position.x) * res;
-        int y = (it.getY() - map.info.origin.position.y) * res;
-        if(x >= 0 && x < map.info.width && y >= 0 && y < map.info.height)
-          map.data[y * map.info.width + x] = 100;
+        int x = (it.getX() - downprojected_map.info.origin.position.x) * res;
+        int y = (it.getY() - downprojected_map.info.origin.position.y) * res;
+        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height)
+          downprojected_map.data[y * downprojected_map.info.width + x] = 100;
       }
     }
   }
@@ -532,12 +513,12 @@ void OctoMapper::insertDownprojected(nav_msgs::OccupancyGrid &map){
     double sin_yaw = std::sin(yaw);
     for(OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
       if(m_octree->isNodeOccupied(*it) && it.getZ() <= downprojection_height_){
-        double xd = it.getX() - map.info.origin.position.x;
-        double yd = it.getY() - map.info.origin.position.y;
+        double xd = it.getX() - downprojected_map.info.origin.position.x;
+        double yd = it.getY() - downprojected_map.info.origin.position.y;
         int x = (cos_yaw * xd - sin_yaw * yd) * res;
         int y = (sin_yaw * xd + cos_yaw * yd) * res;
-        if(x >= 0 && x < map.info.width && y >= 0 && y < map.info.height)
-          map.data[y * map.info.width + x] = 100;
+        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height)
+          downprojected_map.data[y * downprojected_map.info.width + x] = 100;
       }
     }
   }

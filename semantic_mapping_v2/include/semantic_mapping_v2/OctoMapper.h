@@ -69,12 +69,6 @@ class OctoMapper {
     unsigned m_treeDepth;
     unsigned m_maxTreeDepth;
 
-    double m_pointcloudMinX;
-    double m_pointcloudMaxX;
-    double m_pointcloudMinY;
-    double m_pointcloudMaxY;
-    double m_pointcloudMinZ;
-    double m_pointcloudMaxZ;
     double m_occupancyMinZ;
     double m_occupancyMaxZ;
     double m_minSizeX;
@@ -103,7 +97,7 @@ class OctoMapper {
                            octomap_msgs::Octomap& octomap_full, visualization_msgs::MarkerArray& free_cells_vis_array,
                            const ros::Time& rostime = ros::Time::now());
 
-    void insertDownprojected(nav_msgs::OccupancyGrid &map);
+    nav_msgs::OccupancyGrid addDownprojected(const nav_msgs::OccupancyGrid &map) const;
 
     float getOccupancy(float x, float y, float z) const;
     float getOccupancy(const pcl::PointXYZ& pos) const { return getOccupancy(pos.x, pos.y, pos.z); }

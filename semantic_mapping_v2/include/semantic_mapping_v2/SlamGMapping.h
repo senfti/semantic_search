@@ -48,9 +48,18 @@ class SlamGMapping
     void init();
 
     tf::StampedTransform getTransform();
-    nav_msgs::OccupancyGrid getMap();
+    nav_msgs::OccupancyGrid getGMap();
 
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
+
+    bool wasMapUpdated() const { return was_map_updated_; }
+    bool resetWasMapUpdated() {
+      if(was_map_updated_){
+        was_map_updated_ = false;
+        return true;
+      }
+      return false;
+    }
 
   protected:
     ros::NodeHandle node_;
@@ -70,6 +79,7 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
+    bool was_map_updated_ = false;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;
@@ -88,7 +98,6 @@ class SlamGMapping
     std::string odom_frame_;
 
     void updateMap(const sensor_msgs::LaserScan& scan);
-    virtual void updateOctoMaps() = 0;
     bool getOdomPose(GMapping::OrientedPoint& gmap_pose, const ros::Time& t);
     bool initMapper(const sensor_msgs::LaserScan& scan);
     bool addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoint& gmap_pose);

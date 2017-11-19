@@ -5,19 +5,6 @@
 
 #include "semantic_mapping_v2/SlamGMapping.h"
 
-#include <iostream>
-#include <time.h>
-
-#include "ros/ros.h"
-#include "ros/console.h"
-#include "nav_msgs/MapMetaData.h"
-
-#include "gmapping/sensor/sensor_range/rangesensor.h"
-#include "gmapping/sensor/sensor_odometry/odometrysensor.h"
-
-#include <boost/foreach.hpp>
-#define foreach BOOST_FOREACH
-
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
@@ -441,11 +428,11 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   map_.map.header.stamp = ros::Time::now();
   map_.map.header.frame_id = tf_.resolve( map_frame_ );
 
-  updateOctoMaps();
+  was_map_updated_ = true;
 }
 
 
-nav_msgs::OccupancyGrid SlamGMapping::getMap(){
+nav_msgs::OccupancyGrid SlamGMapping::getGMap(){
   boost::mutex::scoped_lock map_lock(map_mutex_);
   return map_.map;
 }
