@@ -128,6 +128,7 @@ OctoMapper::OctoMapper(const OctoMapper& rhs){
   m_occupancyMaxZ = rhs.m_occupancyMaxZ;
   m_minSizeX = rhs.m_minSizeX;
   m_minSizeY = rhs.m_minSizeY;
+  downprojection_height_ = rhs.downprojection_height_;
 
   m_compressMap = rhs.m_compressMap;
 
@@ -502,10 +503,16 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
   if(is_equal(orig_quat.w, 1.0) && is_equal(orig_quat.x, 0.0) && is_equal(orig_quat.y, 0.0) && is_equal(orig_quat.z, 0.0)){   // should be here
     for(OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
       if(m_octree->isNodeOccupied(*it) && it.getZ() <= downprojection_height_){
-        int x = (it.getX() - downprojected_map.info.origin.position.x) * res;
-        int y = (it.getY() - downprojected_map.info.origin.position.y) * res;
-        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height){
-          downprojected_map.data[y * downprojected_map.info.width + x] = 100;
+        double x_min = ((it.getX() - downprojected_map.info.origin.position.x) - m_res/2.0)*res;
+        double y_min = ((it.getY() - downprojected_map.info.origin.position.y) - m_res/2.0)*res;
+        double x_max = x_min + m_res*res;
+        double y_max = y_min + m_res*res;
+        for(int x=std::round(x_min); x<x_max-0.5; x++){
+          for(int y=std::round(y_min); y<y_max-0.5; y++){
+            if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height){
+              downprojected_map.data[y * downprojected_map.info.width + x] = 100;
+            }
+          }
         }
       }
     }

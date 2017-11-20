@@ -1,0 +1,1 @@
+different occupancy thresholds for downprojection (higher) and possible object location (lower)
