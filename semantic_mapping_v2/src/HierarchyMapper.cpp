@@ -10,16 +10,26 @@ HierarchyMapper::HierarchyMapper(){
 
   laser_sub_ = nh_.subscribe("scan", 1, &HierarchyMapper::laserCallback, this);
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &HierarchyMapper::cloudCb, this);
+  door_pose_sub_ = nh_.subscribe("door_poses", 1, &HierarchyMapper::doorPoseCb, this);
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
+  door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
   std::cout << "HierarchyMapping started" << std::endl;
+}
+
+HierarchyMapper::~HierarchyMapper(){
+  transform_thread_->join();
+  delete transform_thread_;
+  for(auto& mapper : room_mapper_)
+    delete mapper;
+  delete tfB_;
 }
 
 
@@ -49,6 +59,12 @@ void HierarchyMapper::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan
 }
 
 
+void HierarchyMapper::doorPoseCb(const geometry_msgs::PoseArray::ConstPtr &msg){
+  if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size())
+    room_mapper_[current_mapper_]->doorCb(msg);
+}
+
+
 void HierarchyMapper::transformPublishLoop(double transform_publish_period){
   if(transform_publish_period == 0)
     return;
@@ -71,13 +87,14 @@ void HierarchyMapper::publish(){
     map_info_pub_.publish(map.info);
   }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
+  door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
 }
 
 
 void HierarchyMapper::run(){
   ros::Rate rate(50);
   ros::Time t = ros::Time::now();
-  int state = 0;
+  int state = 5;
   while(ros::ok()){
     ros::spinOnce();
     if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size() && room_mapper_[current_mapper_]->resetWasMapUpdated())

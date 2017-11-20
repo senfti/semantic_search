@@ -12,7 +12,7 @@
     <arg name="depth_registration" value="true"/>
       <arg name="device_id" value="#1" />
   </include>
-<!--
+
   <group ns="door_asus">
     <include file="$(find openni2_launch)/launch/openni2_tf_prefix.launch">
       <arg name="depth_registration" value="true"/>
@@ -20,9 +20,11 @@
       <arg name="tf_prefix" value="door_asus" />
     </include>
   </group>
--->
+
   <node name="set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver z_scaling 1.05" />
-<!--  <node name="door_asus_set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver z_scaling 1.03" />-->
+  <node name="set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver data_skip 5" />
+  <node name="door_asus_set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver z_scaling 1.03" />
+  <node name="door_asus_set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver data_skip 5" />
 
   <node name="laser_scanner_node" pkg="hokuyo_node" type="hokuyo_node" required="true">
     <param name="port" value="/dev/ttyACM0"/>

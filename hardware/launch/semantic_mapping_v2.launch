@@ -9,9 +9,9 @@
   <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
 
   <include file="$(find hardware)/launch/includes/move_base.launch.xml" /> 
-<!--  
+  
   <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" > 
     <arg name="scan_topic" value="scan_filtered" />
   </include>
--->
+
 </launch>

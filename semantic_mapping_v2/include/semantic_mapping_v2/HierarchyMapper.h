@@ -14,11 +14,13 @@ class HierarchyMapper{
 
     ros::Subscriber laser_sub_;
     ros::Subscriber cloud_sub_;
+    ros::Subscriber door_pose_sub_;
 
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
     ros::Publisher map_info_pub_;
     ros::Publisher marker_pub_;
+    ros::Publisher door_pose_pub_;
 
     tf::TransformBroadcaster* tfB_;
     ros::NodeHandle nh_;
@@ -30,12 +32,14 @@ class HierarchyMapper{
 
   public:
     HierarchyMapper();
+    ~HierarchyMapper();
 
     void addMapper(bool do_switch = true);
     void switchMapper(int mapper_idx);
 
-    virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
+    void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
+    void doorPoseCb(const geometry_msgs::PoseArray::ConstPtr& msg);
 
     void publish();
 

@@ -10,7 +10,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 RoomMapper::RoomMapper()
-      : octo_maps_(particles_)
+      : octo_maps_(particles_, nullptr), door_mappers_(particles_)
 {
   for(auto& map : octo_maps_)
     map = new OctoMapper();
@@ -36,6 +36,11 @@ RoomMapper::RoomMapper()
   }
 }
 
+RoomMapper::~RoomMapper(){
+  for(auto& map : octo_maps_)
+    delete map;
+}
+
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   if(!got_first_scan_ || cloud->header.stamp < activate_time_)
     return;
@@ -46,6 +51,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
       if(i != gsp_->getIndexes()[i]){
         delete octo_maps_[i];
         octo_maps_[i] = new OctoMapper(*octo_maps_[gsp_->getIndexes()[i]]);
+        door_mappers_[i] = door_mappers_[gsp_->getIndexes()[i]];
       }
     }
     gsp_->resetIndexes();
@@ -71,26 +77,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   voxel_grid_filter.filter(pc);
 
   for(int i=0; i<octo_maps_.size(); i++){
-    GMapping::OrientedPoint point;
-    GMapping::OrientedPoint point1 = gsp_->getParticles()[i].pose;
-    GMapping::OrientedPoint point2 = point1;
-    double time1 = ros::Time::now().toSec();
-    double time2 = time1;
-    for(GMapping::GridSlamProcessor::TNode* n = gsp_->getParticles()[i].node; n; n = n->parent){
-      point2 = point1;
-      point1 = n->pose;
-      time2 = time1;
-      time1 = n->reading ? n->reading->getTime() : time1;
-      if(n->reading == nullptr || n->reading->getTime() < cloud->header.stamp.toSec())
-        break;
-    }
-    if(time1 == time2)
-      point = point1;
-    else
-      point = GMapping::interpolate(point1, time1, point2, time2, cloud->header.stamp.toSec());
-
-    tf::Transform base_to_map_transform(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
-    octo_maps_[i]->insertCloud(pc, base_to_map_transform);
+    octo_maps_[i]->insertCloud(pc, getParticlePose3D(i, cloud->header.stamp));
   }
   ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 
@@ -100,3 +87,47 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     was_map_updated_ = true;
   }
 }
+
+
+GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Time time) const{
+  GMapping::OrientedPoint point;
+  GMapping::OrientedPoint point1 = gsp_->getParticles()[particle_idx].pose;
+  GMapping::OrientedPoint point2 = point1;
+  double time1 = ros::Time::now().toSec();
+  double time2 = time1;
+  for(GMapping::GridSlamProcessor::TNode* n = gsp_->getParticles()[particle_idx].node; n; n = n->parent){
+    point2 = point1;
+    point1 = n->pose;
+    time2 = time1;
+    time1 = n->reading ? n->reading->getTime() : time1;
+    if(n->reading == nullptr || n->reading->getTime() < time.toSec())
+      break;
+  }
+  if(time1 == time2)
+    point = point1;
+  else
+    point = GMapping::interpolate(point1, time1, point2, time2, time.toSec());
+
+  return point;
+}
+
+
+tf::Transform RoomMapper::getParticlePose3D(int particle_idx, ros::Time time) const{
+  GMapping::OrientedPoint point = getParticlePose2D(particle_idx, time);
+  tf::Transform pose(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
+
+  return pose;
+}
+
+
+void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
+  for(int i=0; i<door_mappers_.size(); i++){
+    tf::Transform transform = getParticlePose3D(i, msg->header.stamp);
+    for(const auto& pose : msg->poses){
+      tf::Transform tf_pose;
+      tf::poseMsgToTF(pose, tf_pose);
+      door_mappers_[i].addDoorProposal(transform*tf_pose);
+    }
+  }
+}
+

@@ -7,10 +7,12 @@
 
 #include "semantic_mapping_v2/SlamGMapping.h"
 #include "semantic_mapping_v2/OctoMapper.h"
+#include "semantic_mapping_v2/DoorMapper.h"
 
 class RoomMapper : public SlamGMapping{
   protected:
     std::vector<OctoMapper*> octo_maps_;
+    std::vector<DoorMapper> door_mappers_;
     nav_msgs::OccupancyGrid obstacle_map_;
     boost::mutex obstacle_map_mutex_;
     bool was_map_updated_ = false;
@@ -26,10 +28,14 @@ class RoomMapper : public SlamGMapping{
 
   public:
     RoomMapper();
+    ~RoomMapper();
 
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
+    void doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
 
     int getBestParticleIdx() const { return gsp_->getBestParticleIndex(); }
+    GMapping::OrientedPoint getParticlePose2D(int particle_idx, ros::Time time) const;
+    tf::Transform getParticlePose3D(int particle_idx, ros::Time time) const;
 
     bool wasMapUpdated() const { return was_map_updated_; }
     bool resetWasMapUpdated() {
@@ -41,6 +47,9 @@ class RoomMapper : public SlamGMapping{
     }
 
     void activate() { activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec()); }
+
+    std::vector<tf::Transform> getDoorPoses() { return door_mappers_[getBestParticleIdx()].getDoorPoses(); }
+    geometry_msgs::PoseArray getDoorPoseMsg() { return door_mappers_[getBestParticleIdx()].getDoorPoseMsg(); }
 
     nav_msgs::OccupancyGrid getMap() {
       boost::mutex::scoped_lock lock(obstacle_map_mutex_);

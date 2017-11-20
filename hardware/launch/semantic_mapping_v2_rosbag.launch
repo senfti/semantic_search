@@ -11,4 +11,6 @@
     <arg name="scan_topic" value="scan_filtered" />
   </include>
 
+  <node pkg="door_detection" type="door_detection" name="door_detection" />  
+
 </launch>
