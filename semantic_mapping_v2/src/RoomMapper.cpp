@@ -20,6 +20,7 @@ RoomMapper::RoomMapper()
   private_nh_.param("Octomap/downsample_voxel_size", downsample_voxel_size_, downsample_voxel_size_);
   private_nh_.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
+  private_nh_.param("octomap_wait_time", octomap_wait_time_,octomap_wait_time_);
 
   bool got_transform = false;
   while(!got_transform && ros::ok()){
@@ -36,7 +37,7 @@ RoomMapper::RoomMapper()
 }
 
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
-  if(!got_first_scan_)
+  if(!got_first_scan_ || cloud->header.stamp < activate_time_)
     return;
 
   ros::Time t = ros::Time::now();

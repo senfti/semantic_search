@@ -32,6 +32,8 @@ void HierarchyMapper::addMapper(bool do_switch){
 
 void HierarchyMapper::switchMapper(int mapper_idx){
   current_mapper_ = mapper_idx;
+  if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size())
+    room_mapper_[current_mapper_]->activate();
 }
 
 
@@ -74,11 +76,38 @@ void HierarchyMapper::publish(){
 
 void HierarchyMapper::run(){
   ros::Rate rate(50);
+  ros::Time t = ros::Time::now();
+  int state = 0;
   while(ros::ok()){
     ros::spinOnce();
     if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size() && room_mapper_[current_mapper_]->resetWasMapUpdated())
       publish();
     rate.sleep();
+    if(ros::Time::now().toSec() - t.toSec() > 18 && state == 0){
+      addMapper();
+      ROS_WARN("New mapper");
+      state=1;
+    }
+    if(ros::Time::now().toSec() - t.toSec() > 58 && state == 1){
+      switchMapper(0);
+      ROS_WARN("Back to mapper 0");
+      state=2;
+    }
+    if(ros::Time::now().toSec() - t.toSec() > 88 && state == 2){
+      addMapper();
+      ROS_WARN("New mapper");
+      state=3;
+    }
+    if(ros::Time::now().toSec() - t.toSec() > 114 && state == 3){
+      switchMapper(0);
+      ROS_WARN("Back to mapper 0");
+      state=4;
+    }
+    if(ros::Time::now().toSec() - t.toSec() > 135 && state == 4){
+      switchMapper(1);
+      ROS_WARN("Back to mapper 1");
+      state=5;
+    }
   }
 }
 

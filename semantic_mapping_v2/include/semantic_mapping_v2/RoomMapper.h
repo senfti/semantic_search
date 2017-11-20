@@ -21,6 +21,9 @@ class RoomMapper : public SlamGMapping{
     double m_pointcloudMinZ = -std::numeric_limits<double>::max();
     double m_pointcloudMaxZ = std::numeric_limits<double>::max();
 
+    ros::Time activate_time_ = ros::TIME_MAX;
+    double octomap_wait_time_ = 2.0;
+
   public:
     RoomMapper();
 
@@ -36,6 +39,8 @@ class RoomMapper : public SlamGMapping{
       }
       return false;
     }
+
+    void activate() { activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec()); }
 
     nav_msgs::OccupancyGrid getMap() {
       boost::mutex::scoped_lock lock(obstacle_map_mutex_);
