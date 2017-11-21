@@ -11,6 +11,8 @@
 
 class RoomMapper : public SlamGMapping{
   protected:
+    int idx_ = -1;
+
     std::vector<OctoMapper*> octo_maps_;
     std::vector<DoorMapper> door_mappers_;
     nav_msgs::OccupancyGrid obstacle_map_;
@@ -27,15 +29,17 @@ class RoomMapper : public SlamGMapping{
     double octomap_wait_time_ = 2.0;
 
   public:
-    RoomMapper();
+    RoomMapper(int idx, const Door& door = Door());
     ~RoomMapper();
 
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
     void doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
 
-    int getBestParticleIdx() const { return gsp_->getBestParticleIndex(); }
+    int getBestParticleIdx() const { return (gsp_->getBestParticleIndex() >= 0 ? gsp_->getBestParticleIndex() : 0); }
     GMapping::OrientedPoint getParticlePose2D(int particle_idx, ros::Time time) const;
     tf::Transform getParticlePose3D(int particle_idx, ros::Time time) const;
+    GMapping::OrientedPoint getBestParticlePose2D(ros::Time time) const { return getParticlePose2D(getBestParticleIdx(), time); }
+    tf::Transform getBestParticlePose3D(ros::Time time) const { return getParticlePose3D(getBestParticleIdx(), time); }
 
     bool wasMapUpdated() const { return was_map_updated_; }
     bool resetWasMapUpdated() {
@@ -48,8 +52,10 @@ class RoomMapper : public SlamGMapping{
 
     void activate() { activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec()); }
 
-    std::vector<tf::Transform> getDoorPoses() { return door_mappers_[getBestParticleIdx()].getDoorPoses(); }
-    geometry_msgs::PoseArray getDoorPoseMsg() { return door_mappers_[getBestParticleIdx()].getDoorPoseMsg(); }
+    std::vector<Door> getDoors() const { return door_mappers_[getBestParticleIdx()].getDoors(); }
+    void setDoorRoom(const tf::Transform& pose, int other_room);
+    geometry_msgs::PoseArray getDoorPoseMsg() const { return door_mappers_[getBestParticleIdx()].getDoorPoseMsg(); }
+    Door droveThroughDoor() const { return (got_first_scan_ ? door_mappers_[getBestParticleIdx()].droveThroughDoor(getBestParticlePose3D(ros::Time::now())) : Door()); }
 
     nav_msgs::OccupancyGrid getMap() {
       boost::mutex::scoped_lock lock(obstacle_map_mutex_);

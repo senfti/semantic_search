@@ -34,7 +34,7 @@ class HierarchyMapper{
     HierarchyMapper();
     ~HierarchyMapper();
 
-    void addMapper(bool do_switch = true);
+    void addMapper(const Door& door = Door());
     void switchMapper(int mapper_idx);
 
     void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);

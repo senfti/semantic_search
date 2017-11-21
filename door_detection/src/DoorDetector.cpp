@@ -176,6 +176,8 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   cv::imshow("occ_under", occupancy_under);
   cv::imshow("occ", occupancy);
   tmp = cv::Mat_<cv::Vec3b>(4*50, 3*50, cv::Vec3b(0,0,0));
+  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,0,0)), pointToPixel(pcl::PointXYZ(1,0,0)), cv::Scalar(100,100,100));
+  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,-1,0)), pointToPixel(pcl::PointXYZ(0,1,0)), cv::Scalar(100,100,100));
 #endif
 
   cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);

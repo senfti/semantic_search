@@ -9,8 +9,8 @@
 #include "semantic_mapping_v2/RoomMapper.h"
 #include <pcl/filters/voxel_grid.h>
 
-RoomMapper::RoomMapper()
-      : octo_maps_(particles_, nullptr), door_mappers_(particles_)
+RoomMapper::RoomMapper(int idx, const Door& door)
+      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, DoorMapper(idx, door))
 {
   for(auto& map : octo_maps_)
     map = new OctoMapper();
@@ -128,6 +128,13 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
       tf::poseMsgToTF(pose, tf_pose);
       door_mappers_[i].addDoorProposal(transform*tf_pose);
     }
+  }
+}
+
+
+void RoomMapper::setDoorRoom(const tf::Transform& pose, int other_room){
+  for(int i=0; i<door_mappers_.size(); i++){
+    door_mappers_[i].setDoorRoom(pose, other_room);
   }
 }
 
