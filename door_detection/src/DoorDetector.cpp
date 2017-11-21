@@ -103,7 +103,8 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
 #endif
   for(const auto& p : laser_cloud_)
     in_zone += (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
-  laser_check_rect.size.width *= LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR / LASER_IN_DOOR_NARROWING_FACTOR;
+
+  laser_check_rect.size.width = rect.size.width * LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR;
   laser_check_rect.size.height += 2*LASER_IN_FRONT_OF_DOOR_DEPTH_AREA;
   for(const auto& p : laser_cloud_)
     in_zone += (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
@@ -111,13 +112,27 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
   laser_check_rect.points(rect_points);
   for(int j = 0; j < 4; j++)
     cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
+#endif
 
-  std::cout << in_zone << "____________________" << contour_pixels << "____________________" << w*h << std::endl;
-  if(in_zone <= MAX_LASER_IN_ZONE)
+  int at_doorframe = 0;
+  laser_check_rect.size.width = rect.size.width*LASER_IN_DOOR_NARROWING_FACTOR;
+  laser_check_rect.size.height = rect.size.height+LASER_DOORFRAME_DEPTH*2;
+  for(const auto& p : laser_cloud_)
+    at_doorframe -= (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
+  laser_check_rect.size.width = rect.size.width+LASER_DOORFRAME_WIDTH*2;
+  for(const auto& p : laser_cloud_)
+    at_doorframe += (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
+#ifdef DEBUG_OUTPUT
+  laser_check_rect.points(rect_points);
+  for(int j = 0; j < 4; j++)
+    cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
+
+  std::cout << in_zone << "____________________" << at_doorframe << "____________________" << contour_pixels << "____________________" << w*h << std::endl;
+  if(in_zone <= MAX_LASER_IN_ZONE && at_doorframe >= MIN_LASER_IN_DOORFRAME)
     tmp(rect.center.y, rect.center.x) = cv::Vec3b(0,255,0);
 #endif
 
-  if(w >= MIN_WIDTH && h >= MIN_DEPTH && h <= MAX_DEPTH && contour_pixels/(w*h) >= FILL_THRESH && in_zone <= MAX_LASER_IN_ZONE){
+  if(w >= MIN_WIDTH && h >= MIN_DEPTH && h <= MAX_DEPTH && contour_pixels/(w*h) >= FILL_THRESH && in_zone <= MAX_LASER_IN_ZONE && at_doorframe >= MIN_LASER_IN_DOORFRAME){
     return rect;
   }
 
