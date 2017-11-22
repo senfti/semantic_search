@@ -34,8 +34,7 @@ HierarchyMapper::~HierarchyMapper(){
 
 
 void HierarchyMapper::addMapper(const Door& door){
-  room_mapper_.push_back(new RoomMapper(room_mapper_.size()));
-
+  room_mapper_.push_back(new RoomMapper(room_mapper_.size(), door));
   switchMapper(room_mapper_.size() - 1);
 }
 
@@ -91,19 +90,37 @@ void HierarchyMapper::publish(){
 }
 
 
+void HierarchyMapper::downprojecAndPublishMap(){
+  room_mapper_[current_mapper_]->downprojectMap();
+  nav_msgs::OccupancyGrid map = room_mapper_[current_mapper_]->getMap();
+  if(map.data.size() > 0){
+    map_pub_.publish(map);
+    map_info_pub_.publish(map.info);
+  }
+}
+
+
 void HierarchyMapper::run(){
   ros::Rate rate(50);
+  ros::Time last_publish = ros::TIME_MAX;
   while(ros::ok()){
     ros::spinOnce();
-    if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-      if(room_mapper_[current_mapper_]->resetWasMapUpdated())
+    if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size() && room_mapper_[current_mapper_]->isInitialized()){
+      if(room_mapper_[current_mapper_]->resetWasMapUpdated()){
         publish();
+        last_publish = ros::Time::now();
+      }
+      else if(ros::Time::now() - last_publish > ros::Duration(0.5)){
+        downprojecAndPublishMap();
+        last_publish = ros::Time::now();
+      }
 
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
-      std::cout << "DOOOOOOOOOOOOOOOR: " << door.other_room_ << " " << door.this_room_ << " " << door.proposal_count_ << std::endl;
       if(door.isValid()){
         room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size());
         door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
+        door.this_room_ = room_mapper_.size();
+        door.other_room_ = current_mapper_;
         addMapper(door);
       }
     }

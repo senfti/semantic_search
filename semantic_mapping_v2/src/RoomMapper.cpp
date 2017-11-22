@@ -42,7 +42,7 @@ RoomMapper::~RoomMapper(){
 }
 
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
-  if(!got_first_scan_ || cloud->header.stamp < activate_time_)
+  if(!isInitialized() || cloud->header.stamp < activate_time_)
     return;
 
   ros::Time t = ros::Time::now();
@@ -82,10 +82,30 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 
   if(obstacle_map_.header.stamp != getGMap().header.stamp){
-    boost::mutex::scoped_lock lock(obstacle_map_mutex_);
-    obstacle_map_ = octo_maps_[getBestParticleIdx()]->addDownprojected(getGMap());
+    downprojectMap();
     was_map_updated_ = true;
   }
+}
+
+
+void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
+  if(!isInitialized())
+    return;
+  
+  for(int i=0; i<door_mappers_.size(); i++){
+    tf::Transform transform = getParticlePose3D(i, msg->header.stamp);
+    for(const auto& pose : msg->poses){
+      tf::Transform tf_pose;
+      tf::poseMsgToTF(pose, tf_pose);
+      door_mappers_[i].addDoorProposal(transform*tf_pose);
+    }
+  }
+}
+
+
+void RoomMapper::downprojectMap(){
+  boost::mutex::scoped_lock lock(obstacle_map_mutex_);
+  obstacle_map_ = octo_maps_[getBestParticleIdx()]->addDownprojected(getGMap());
 }
 
 
@@ -120,15 +140,12 @@ tf::Transform RoomMapper::getParticlePose3D(int particle_idx, ros::Time time) co
 }
 
 
-void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
-  for(int i=0; i<door_mappers_.size(); i++){
-    tf::Transform transform = getParticlePose3D(i, msg->header.stamp);
-    for(const auto& pose : msg->poses){
-      tf::Transform tf_pose;
-      tf::poseMsgToTF(pose, tf_pose);
-      door_mappers_[i].addDoorProposal(transform*tf_pose);
-    }
+bool RoomMapper::resetWasMapUpdated() {
+  if(was_map_updated_){
+    was_map_updated_ = false;
+    return true;
   }
+  return false;
 }
 
 

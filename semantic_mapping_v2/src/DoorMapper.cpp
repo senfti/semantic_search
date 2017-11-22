@@ -9,8 +9,7 @@
 DoorMapper::DoorMapper(int this_room, const Door &door)
       : this_room_(this_room)
 {
-  std::cout << "sdklfjhskdjfhskdjfhskdjf" << this_room << " " << this_room_ << std::endl;
-  if(door.isValid())
+  if(door.isValid() && door.this_room_ == this_room_)
     addDoor(door);
 }
 

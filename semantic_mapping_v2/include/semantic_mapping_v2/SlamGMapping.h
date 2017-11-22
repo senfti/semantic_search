@@ -51,6 +51,7 @@ class SlamGMapping
     nav_msgs::OccupancyGrid getGMap();
 
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
+    bool isInitialized() const { return got_first_scan_; }
 
   protected:
     ros::NodeHandle node_;

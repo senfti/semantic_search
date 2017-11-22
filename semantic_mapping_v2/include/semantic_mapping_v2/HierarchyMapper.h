@@ -42,6 +42,7 @@ class HierarchyMapper{
     void doorPoseCb(const geometry_msgs::PoseArray::ConstPtr& msg);
 
     void publish();
+    void downprojecAndPublishMap();
 
     void run();
 };
