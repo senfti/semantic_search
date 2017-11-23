@@ -91,7 +91,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
 void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
   if(!isInitialized())
     return;
-  
+
   for(int i=0; i<door_mappers_.size(); i++){
     tf::Transform transform = getParticlePose3D(i, msg->header.stamp);
     for(const auto& pose : msg->poses){

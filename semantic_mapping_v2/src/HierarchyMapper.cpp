@@ -35,14 +35,17 @@ HierarchyMapper::~HierarchyMapper(){
 
 void HierarchyMapper::addMapper(const Door& door){
   room_mapper_.push_back(new RoomMapper(room_mapper_.size(), door));
+  ROS_INFO("Added MAPPER %d", room_mapper_.size() - 1);
   switchMapper(room_mapper_.size() - 1);
 }
 
 
 void HierarchyMapper::switchMapper(int mapper_idx){
-  current_mapper_ = mapper_idx;
-  if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size())
+  if(mapper_idx >= 0 && mapper_idx < room_mapper_.size()){
+    current_mapper_ = mapper_idx;
     room_mapper_[current_mapper_]->activate();
+  }
+  ROS_INFO("Switched to MAPPER %d", current_mapper_);
 }
 
 
@@ -117,11 +120,15 @@ void HierarchyMapper::run(){
 
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
       if(door.isValid()){
+        int other_room = door.other_room_;
         room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size());
         door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
         door.this_room_ = room_mapper_.size();
         door.other_room_ = current_mapper_;
-        addMapper(door);
+        if(other_room < 0)
+          addMapper(door);
+        else
+          switchMapper(other_room);
       }
     }
     rate.sleep();

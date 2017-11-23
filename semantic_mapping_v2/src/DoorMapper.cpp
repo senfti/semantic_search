@@ -72,8 +72,6 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose){
 Door DoorMapper::droveThroughDoor(const tf::Transform &robot_pose) const{
   for(int i=0; i<doors_.size(); i++){
     tf::Vector3 diff = robot_pose.getOrigin() - doors_[i].pose_.getOrigin();
-    std::cout << "diff " << diff.x() << " " << diff.y() << " "<< diff.z() << " " << diff.length() << std::endl;
-    std::cout << "dir " << doors_[i].pose_.getBasis().getColumn(0).x() << " " << doors_[i].pose_.getBasis().getColumn(0).y() << " "<< doors_[i].pose_.getBasis().getColumn(0).z() << " " << doors_[i].pose_.getBasis().getColumn(0).dot(diff) << std::endl;
     if(diff.length() < MIN_DOOR_DIST && doors_[i].pose_.getBasis().getColumn(0).dot(diff) > 0){
       return doors_[i];
     }

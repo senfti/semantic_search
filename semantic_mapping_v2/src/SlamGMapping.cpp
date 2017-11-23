@@ -344,7 +344,6 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
 }
 
 void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
-  ROS_WARN("here slamgMapping");
   ROS_DEBUG("Update map");
   boost::mutex::scoped_lock map_lock (map_mutex_);
   GMapping::ScanMatcher matcher;

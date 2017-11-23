@@ -15,17 +15,17 @@ bool is_equal (double a, double b, double epsilon = 1.0e-7)
 
 OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
       : m_octree(NULL),
-        m_maxRange(-1.0),
+        m_maxRange(4.0),
         m_worldFrameId("/map"), m_baseFrameId("base_footprint"),
         m_useHeightMap(true),
         m_useColoredMap(false),
         m_colorFactor(0.8),
         m_latchedTopics(true),
         m_publishFreeSpace(true),
-        m_res(0.05),
+        m_res(0.1),
         m_treeDepth(0),
         m_maxTreeDepth(0),
-        m_occupancyMinZ(-std::numeric_limits<double>::max()),
+        m_occupancyMinZ(0.3),
         m_occupancyMaxZ(std::numeric_limits<double>::max()),
         m_minSizeX(0.0), m_minSizeY(0.0),
         m_compressMap(true),
@@ -97,10 +97,6 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
   private_nh.param("Octomap/publish_free_space", m_publishFreeSpace, m_publishFreeSpace);
 
   private_nh.param("Octomap/latch", m_latchedTopics, m_latchedTopics);
-  if (m_latchedTopics)
-    ROS_INFO("Publishing latched (single publish will take longer, all topics are prepared)");
-  else
-    ROS_INFO("Publishing non-latched (topics are only prepared as needed, will only be re-published on map change");
 }
 
 OctoMapper::OctoMapper(const OctoMapper& rhs){

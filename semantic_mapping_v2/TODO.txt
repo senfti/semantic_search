@@ -1,2 +1,3 @@
 different occupancy thresholds for downprojection (higher) and possible object location (lower)
 better switching (odom correction on switch)
+not 3d mapping when not moved
