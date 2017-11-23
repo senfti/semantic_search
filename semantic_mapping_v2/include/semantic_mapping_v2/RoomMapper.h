@@ -8,6 +8,7 @@
 #include "semantic_mapping_v2/SlamGMapping.h"
 #include "semantic_mapping_v2/OctoMapper.h"
 #include "semantic_mapping_v2/DoorMapper.h"
+#include "semantic_mapping_v2/RoomTypeMapper.h"
 
 class RoomMapper : public SlamGMapping{
   protected:
@@ -15,6 +16,8 @@ class RoomMapper : public SlamGMapping{
 
     std::vector<OctoMapper*> octo_maps_;
     std::vector<DoorMapper> door_mappers_;
+    RoomTypeMapper room_type_mapper_;
+
     nav_msgs::OccupancyGrid obstacle_map_;
     boost::mutex obstacle_map_mutex_;
     bool was_map_updated_ = false;
@@ -34,6 +37,7 @@ class RoomMapper : public SlamGMapping{
 
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
     void doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
+    void visionCb(const vision::VisionMsgConstPtr& msg);
 
     int getBestParticleIdx() const { return gsp_->getBestParticleIndex(); }
     GMapping::OrientedPoint getParticlePose2D(int particle_idx, ros::Time time) const;

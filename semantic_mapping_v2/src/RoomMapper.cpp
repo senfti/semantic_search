@@ -103,6 +103,12 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
 }
 
 
+void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
+  room_type_mapper_.processMsg(msg);
+  std::cout << "Room Type: " << room_type_mapper_.getBestName() << std::endl;
+}
+
+
 void RoomMapper::downprojectMap(){
   boost::mutex::scoped_lock lock(obstacle_map_mutex_);
   obstacle_map_ = octo_maps_[getBestParticleIdx()]->addDownprojected(getGMap());

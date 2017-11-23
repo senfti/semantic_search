@@ -319,10 +319,9 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &
 
   // now, traverse all leafs in the tree:
   for (OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
-    if (m_octree->isNodeOccupied(*it)){
+    if(m_octree->isNodeOccupied(*it)){
       double z = it.getZ();
-      if (z > m_occupancyMinZ && z < m_occupancyMaxZ)      {
-        double size = it.getSize();
+      if(z > m_occupancyMinZ && z < m_occupancyMaxZ){
         double x = it.getX();
         double y = it.getY();
 

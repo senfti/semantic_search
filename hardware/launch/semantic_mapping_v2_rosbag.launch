@@ -12,5 +12,6 @@
   </include>
 
   <node pkg="door_detection" type="door_detection" name="door_detection" launch-prefix="xterm -hold -e" />  
+  <node pkg="vision" type="vision" name="vision" launch-prefix="xterm -hold -e" /> 
 
 </launch>

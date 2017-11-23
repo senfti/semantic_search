@@ -11,6 +11,7 @@ HierarchyMapper::HierarchyMapper(){
   laser_sub_ = nh_.subscribe("scan", 1, &HierarchyMapper::laserCallback, this);
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &HierarchyMapper::cloudCb, this);
   door_pose_sub_ = nh_.subscribe("door_poses", 1, &HierarchyMapper::doorPoseCb, this);
+  vision_sub_ = nh_.subscribe("vision_result", 1, &HierarchyMapper::visionCb, this);
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
@@ -35,7 +36,7 @@ HierarchyMapper::~HierarchyMapper(){
 
 void HierarchyMapper::addMapper(const Door& door){
   room_mapper_.push_back(new RoomMapper(room_mapper_.size(), door));
-  ROS_INFO("Added MAPPER %d", room_mapper_.size() - 1);
+  ROS_INFO("Added MAPPER %d", int(room_mapper_.size()) - 1);
   switchMapper(room_mapper_.size() - 1);
 }
 
@@ -64,6 +65,12 @@ void HierarchyMapper::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan
 void HierarchyMapper::doorPoseCb(const geometry_msgs::PoseArray::ConstPtr &msg){
   if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size())
     room_mapper_[current_mapper_]->doorCb(msg);
+}
+
+
+void HierarchyMapper::visionCb(const vision::VisionMsgConstPtr &msg){
+  if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size())
+    room_mapper_[current_mapper_]->visionCb(msg);
 }
 
 

@@ -15,6 +15,7 @@ class HierarchyMapper{
     ros::Subscriber laser_sub_;
     ros::Subscriber cloud_sub_;
     ros::Subscriber door_pose_sub_;
+    ros::Subscriber vision_sub_;
 
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
@@ -40,6 +41,7 @@ class HierarchyMapper{
     void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     void doorPoseCb(const geometry_msgs::PoseArray::ConstPtr& msg);
+    void visionCb(const vision::VisionMsgConstPtr& msg);
 
     void publish();
     void downprojecAndPublishMap();
