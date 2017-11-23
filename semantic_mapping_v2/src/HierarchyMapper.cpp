@@ -107,6 +107,7 @@ void HierarchyMapper::downprojecAndPublishMap(){
     map_pub_.publish(map);
     map_info_pub_.publish(map.info);
   }
+  door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
 }
 
 
@@ -128,12 +129,14 @@ void HierarchyMapper::run(){
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
       if(door.isValid()){
         int other_room = door.other_room_;
-        room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size());
-        door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
-        door.this_room_ = room_mapper_.size();
-        door.other_room_ = current_mapper_;
-        if(other_room < 0)
+        if(other_room < 0){
+          room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size());
+          door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
+          door.this_room_ = room_mapper_.size();
+          door.other_room_ = current_mapper_;
+          door.proposal_count_ = std::min(door.proposal_count_, 5);
           addMapper(door);
+        }
         else
           switchMapper(other_room);
       }

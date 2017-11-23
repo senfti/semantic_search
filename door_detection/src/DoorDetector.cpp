@@ -52,10 +52,12 @@ geometry_msgs::Point DoorDetector::pixelToPoint(const cv::Point2f& p) const{
 
 geometry_msgs::Pose DoorDetector::rectToPose(const cv::RotatedRect& rect) const{
   geometry_msgs::Pose pose;
-  float angle = (rect.angle+90)*PI_180;
-  if(std::abs(angle) > M_PI_2)
-    angle += M_PI;
   pose.position = pixelToPoint(rect.center);
+  float angle = (rect.angle+90)*PI_180;
+  if(pose.position.x >= 0 && std::abs(angle) > M_PI_2)
+    angle += M_PI;
+  else if(pose.position.x < 0 && std::abs(angle) < M_PI_2)
+    angle += M_PI;
   pose.orientation.w = std::cos(angle/2);
   pose.orientation.x = 0.0;
   pose.orientation.y = 0.0;
