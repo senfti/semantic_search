@@ -34,6 +34,8 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
     }
 
     inline void resetIndexes() { m_indexes = std::vector<unsigned int>(); }
+
+    void discardButBestParticle();
 };
 
 
@@ -71,6 +73,7 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
+    bool processed_scan_ = false;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;

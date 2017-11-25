@@ -19,6 +19,8 @@
 #include <pcl/common/centroid.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <mutex>
+#include <thread>
 #include <opencv2/opencv.hpp>
 #include "vision/VisionMsg.h"
 
@@ -45,17 +47,29 @@ class VisionApp{
     const float psnr_thresh = 4.f;
     const float donwsample_factor = 2.f;
 
+    const float MAX_DISCARD_TIME = 5.0;
+    const float MIN_ANGLE_DIFF = 0.1;
+    const float MIN_DIST_DIFF = 0.5;
+    const float MAX_ROT_VELOCITY = 0.3;
+
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     image_transport::Subscriber depth_image_sub_;
     ros::Subscriber cloud_sub_;
     ros::Publisher result_pub_;
+
+    std::thread* nn_thread_ = nullptr;
+
     tf::TransformListener tf_listener_;
+    tf::StampedTransform last_transform_;
+    tf::StampedTransform last_used_transform_;
 
     CaffeClassifier* classifier_ = nullptr;
     YoloDetector* detector_ = nullptr;
 
+    std::mutex img_mutex_;
+    cv::Mat curr_img_;
     sensor_msgs::PointCloud2ConstPtr point_cloud_ = nullptr;
     cv_bridge::CvImagePtr depth_img_ = nullptr;
 
@@ -66,6 +80,7 @@ class VisionApp{
     ~VisionApp();
 
     void run();
+    void nnThreadRun();
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
     void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
     void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg);

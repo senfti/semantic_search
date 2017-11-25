@@ -26,6 +26,41 @@ DoorDetector::DoorDetector()
 }
 
 
+inline double makeBetweenPi(double angle){
+  while(angle > M_PI)
+    angle -= 2*M_PI;
+  while(angle < -M_PI)
+    angle += 2*M_PI;
+  return angle;
+}
+
+bool DoorDetector::useCloud(){
+  tf::StampedTransform transform;
+  try{
+    tf_listener_.lookupTransform("base_link", "odom", ros::Time(0), transform);
+  }
+  catch (tf::TransformException& ex){
+    ROS_ERROR("%s", ex.what());
+    return false;
+  }
+
+  if(last_used_transform_.frame_id_.empty() || (last_used_transform_.stamp_ - transform.stamp_).toSec() > MAX_DISCARD_TIME){
+    last_used_transform_ = transform;
+    return true;
+  }
+
+  double angle = tf::getYaw(transform.getRotation()) - tf::getYaw(last_used_transform_.getRotation());
+  angle = makeBetweenPi(angle);
+  double dist = (transform.getOrigin() - last_used_transform_.getOrigin()).length();
+  if(std::abs(angle) < MIN_ANGLE_DIFF && dist < MIN_DIST_DIFF){
+    std::cout << "NOTHING CHANGED" << std::endl;
+    return false;
+  }
+  last_used_transform_ = transform;
+  return true;
+}
+
+
 bool DoorDetector::isInRotatedRect(const pcl::PointXYZ& p, const cv::RotatedRect& rect) const{
   cv::Point2f tmp = pointToPixel(p) - rect.center;
   float x = std::cos(rect.angle*PI_180)*tmp.x + std::sin(rect.angle*PI_180)*tmp.y;
@@ -143,6 +178,9 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
 
 
 void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
+  if(!useCloud())
+    return;
+
   ros::Time start = ros::Time::now();
   pcl::PointCloud<pcl::PointXYZ> cloud, cloud_2m, cloud_under2m; // input cloud for filtering and ground-detection
   pcl::fromROSMsg(*msg, cloud);

@@ -36,17 +36,22 @@ class DoorDetector{
     const float LASER_DOORFRAME_DEPTH = 0.1*OCC_RES;
     const int MIN_LASER_IN_DOORFRAME = 50;
     const float RATE = 10;
+    const float MIN_ANGLE_DIFF = 0.05;
+    const float MIN_DIST_DIFF = 0.05;
+    const float MAX_DISCARD_TIME = 2.0;
 
     ros::NodeHandle nh_;
     ros::Subscriber cloud_sub_;
     ros::Subscriber laser_sub_;
     ros::Publisher door_pose_pub_;
     tf::TransformListener tf_listener_;
+    tf::StampedTransform last_used_transform_;
 
     tf::StampedTransform camera_to_base_transform_;
     tf::StampedTransform laser_to_base_transform_;
     pcl::PointCloud<pcl::PointXYZ> laser_cloud_;
 
+    bool useCloud();
     cv::Point2f pointToPixel(const pcl::PointXYZ& p) const;
     geometry_msgs::Point pixelToPoint(const cv::Point2f& p) const;
     geometry_msgs::Pose rectToPose(const cv::RotatedRect& rect) const;

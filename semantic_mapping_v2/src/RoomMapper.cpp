@@ -42,8 +42,9 @@ RoomMapper::~RoomMapper(){
 }
 
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
-  if(!isInitialized() || cloud->header.stamp < activate_time_)
+  if(!isInitialized() || cloud->header.stamp < activate_time_ || !processed_scan_)
     return;
+  processed_scan_ = false;
 
   ros::Time t = ros::Time::now();
   if(!gsp_->getIndexes().empty()){
@@ -105,7 +106,7 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
 
 void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
   room_type_mapper_.processMsg(msg);
-  std::cout << "Room Type: " << room_type_mapper_.getBestName() << std::endl;
+  std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
 }
 
 
@@ -152,6 +153,16 @@ bool RoomMapper::resetWasMapUpdated() {
     return true;
   }
   return false;
+}
+
+
+void RoomMapper::activate(){
+  activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec());
+}
+
+
+void RoomMapper::deactivate(){
+  gsp_->discardButBestParticle();
 }
 
 

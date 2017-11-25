@@ -48,7 +48,8 @@ class RoomMapper : public SlamGMapping{
     bool wasMapUpdated() const { return was_map_updated_; }
     bool resetWasMapUpdated();
 
-    void activate() { activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec()); }
+    void activate();
+    void deactivate();
     void downprojectMap();
 
     std::vector<Door> getDoors() const { return door_mappers_[getBestParticleIdx()].getDoors(); }

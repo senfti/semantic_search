@@ -37,9 +37,36 @@ VisionApp::~VisionApp(){
 }
 
 void VisionApp::run(){
-  ros::Rate rate(2);
+  ros::Rate rate(10);
+  nn_thread_ = new std::thread(&VisionApp::nnThreadRun, this);
   while(ros::ok() && run_){
     ros::spinOnce();
+    rate.sleep();
+  }
+  run_ = false;
+  nn_thread_->join();
+  delete nn_thread_;
+}
+
+void VisionApp::nnThreadRun(){
+  ros::Rate rate(100);
+  while(ros::ok() && run_){
+    std::unique_lock<std::mutex> lock(img_mutex_);
+    if(curr_img_.rows > 0){
+      cv::Mat img;
+      curr_img_.copyTo(img);
+      curr_img_ = cv::Mat();
+      lock.unlock();
+
+      vision::VisionMsg result_msg;
+      std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
+      std::vector<YoloDetection> detections = fillObjectDetections(img, result_msg);
+      result_pub_.publish(result_msg);
+      showDebugImage(img, predictions, detections);
+    }
+    else
+      lock.unlock();
+
     rate.sleep();
   }
 }
@@ -53,18 +80,10 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     ROS_ERROR("cv_bridge exception: %s", e.what());
     return;
   }
-  cv::Mat img;
-  cv_ptr->image.copyTo(img);
 
-  if(!useImage(img))
-    return;
-
-  vision::VisionMsg result_msg;
-  std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
-  std::vector<YoloDetection> detections = fillObjectDetections(img, result_msg);
-
-  result_pub_.publish(result_msg);
-  showDebugImage(img, predictions, detections);
+  std::lock_guard<std::mutex> lock(img_mutex_);
+  if(useImage(cv_ptr->image))
+    cv_ptr->image.copyTo(curr_img_);
 }
 
 void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
@@ -83,12 +102,58 @@ void VisionApp::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
 }
 
 
+inline double makeBetweenPi(double angle){
+  while(angle > M_PI)
+    angle -= 2*M_PI;
+  while(angle < -M_PI)
+    angle += 2*M_PI;
+  return angle;
+}
+
+
 bool VisionApp::useImage(const cv::Mat& img){
   if(!depth_img_ || !point_cloud_){
     std::cout << "No depth image" << std::endl;
     return false;
   }
 
+  tf::StampedTransform transform;
+  try{
+    tf_listener_.lookupTransform("base_link", "odom", ros::Time(0), transform);
+  }
+  catch (tf::TransformException& ex){
+    ROS_ERROR("%s", ex.what());
+    return false;
+  }
+
+  if(last_transform_.frame_id_.empty() || (last_used_transform_.stamp_ - transform.stamp_).toSec() > MAX_DISCARD_TIME){
+    last_transform_ = transform;
+    last_used_transform_ = transform;
+    return true;
+  }
+
+  double angle = tf::getYaw(transform.getRotation()) - tf::getYaw(last_used_transform_.getRotation());
+  angle = makeBetweenPi(angle);
+  double dist = (transform.getOrigin() - last_used_transform_.getOrigin()).length();
+  double ang_vel = tf::getYaw(transform.getRotation()) - tf::getYaw(last_transform_.getRotation());
+  ang_vel = makeBetweenPi(ang_vel);
+  ang_vel /= (transform.stamp_ - last_transform_.stamp_).toSec();
+  last_transform_ = transform;
+
+  if(std::abs(angle) < MIN_ANGLE_DIFF && dist < MIN_DIST_DIFF){
+    last_transform_ = transform;
+    std::cout << "NOTHING CHANGED" << std::endl;
+    return false;
+  }
+
+  if(ang_vel > MAX_ROT_VELOCITY){
+    last_transform_ = transform;
+    std::cout << "ROTATING TOO FAST" << std::endl;
+    return false;
+  }
+
+  last_transform_ = transform;
+  last_used_transform_ = transform;
   return true;
 }
 

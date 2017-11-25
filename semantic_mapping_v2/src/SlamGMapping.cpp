@@ -5,6 +5,22 @@
 
 #include "semantic_mapping_v2/SlamGMapping.h"
 
+
+
+void MyGridSlamProcessor::discardButBestParticle(){
+  int best_idx = getBestParticleIndex();
+
+  for(int i=0; i<m_particles.size(); i++){
+    if(i!=best_idx){
+      delete m_particles[i].node;
+      m_particles[i] = m_particles[best_idx];
+    }
+  }
+}
+
+
+
+
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
@@ -243,8 +259,7 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   gsp_->setUpdateDistances(linearUpdate_, angularUpdate_, resampleThreshold_);
   gsp_->setUpdatePeriod(temporalUpdate_);
   gsp_->setgenerateMap(false);
-  gsp_->GridSlamProcessor::init(particles_, xmin_, ymin_, xmax_, ymax_,
-                                delta_, initialPose);
+  gsp_->GridSlamProcessor::init(particles_, xmin_, ymin_, xmax_, ymax_, delta_, initialPose);
   gsp_->setllsamplerange(llsamplerange_);
   gsp_->setllsamplestep(llsamplestep_);
   gsp_->setlasamplerange(lasamplerange_);
@@ -319,6 +334,7 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
   GMapping::OrientedPoint odom_pose;
 
   if(addScan(*scan, odom_pose)) {
+    processed_scan_ = true;
     ROS_DEBUG("scan processed");
 
     GMapping::OrientedPoint mpose = gsp_->getParticles()[gsp_->getBestParticleIndex()].pose;
@@ -426,6 +442,12 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   //make sure to set the header information on the map
   map_.map.header.stamp = ros::Time::now();
   map_.map.header.frame_id = tf_.resolve( map_frame_ );
+
+  std::cout << "WEIGHTS: ";
+  for(int i=0;i<particles_; i++){
+    std::cout << gsp_->getParticles()[i].weight << " ";
+  }
+  std::cout << std::endl;
 }
 
 
