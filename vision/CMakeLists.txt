@@ -26,6 +26,7 @@ add_message_files(
   ObjectDetectionMsg.msg
   PlaceRecognitionMsg.msg
   VisionMsg.msg
+  ObjectDetectionSample.msg
 )
 generate_messages(
   DEPENDENCIES

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <cstdlib>
 
 VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   : nh_(nh), it_(nh)
@@ -29,6 +30,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   result_pub_ = nh_.advertise<vision::VisionMsg>("vision_result", 10);
 
   is_ok_ = true;
+  std::srand(ros::Time::now().nsec);
 }
 
 VisionApp::~VisionApp(){
@@ -58,9 +60,15 @@ void VisionApp::nnThreadRun(){
       curr_img_ = cv::Mat();
       lock.unlock();
 
+      std::unique_lock<std::mutex> lock(cloud_mutex_);
+      pcl::PointCloud<pcl::PointXYZ> cloud;
+      pcl::fromROSMsg(*point_cloud_, cloud);
+      lock.unlock();
+
       vision::VisionMsg result_msg;
       std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
-      std::vector<YoloDetection> detections = fillObjectDetections(img, result_msg);
+      std::vector<YoloDetection> detections = fillObjectDetections(img, cloud, result_msg);
+      fillObjectDetectionSamples(detections, cloud, result_msg);
       result_pub_.publish(result_msg);
       showDebugImage(img, predictions, detections);
     }
@@ -98,6 +106,7 @@ void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
 
 
 void VisionApp::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
+  std::lock_guard<std::mutex> lock(cloud_mutex_);
   point_cloud_ = msg;
 }
 
@@ -197,10 +206,8 @@ void VisionApp::fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, 
 }
 
 
-std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const{
+std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const{
   auto begin = std::chrono::steady_clock::now();
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  pcl::fromROSMsg(*point_cloud_, cloud);
   std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
 
   auto t1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
@@ -213,6 +220,42 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, v
   std::cout << detections.size() << " Objects in " << t1 << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() - t1 << " ms" << std::endl;
 
   return detections;
+}
+
+
+inline bool isSampleInDetection(int x, int y, const YoloDetection& detection){
+  return (x>detection.x1_ && x<detection.x2_ && y<detection.y1_ && y>detection.y2_);
+}
+
+void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &detections, const pcl::PointCloud<pcl::PointXYZ> &cloud, vision::VisionMsg& vision_msg) const{
+  auto begin = std::chrono::steady_clock::now();
+  int i = 0;
+  for(int c=0; i<DETECTION_SAMPLE_NUM && c < 5*DETECTION_SAMPLE_NUM; c++){
+    int x=std::rand()%cloud.width;
+    int y=std::rand()%cloud.height;
+    if(cloud.at(x,y).z < MIN_Z || cloud.at(x,y).z > MAX_Z)
+      continue;
+
+    vision::ObjectDetectionSample sample;
+    sample.x = cloud.at(x,y).x;
+    sample.y = cloud.at(x,y).y;
+    sample.z = cloud.at(x,y).z;
+    sample.probs.resize(NUM_OBJECT_TYPES, MIN_OBJECT_PROB);
+
+    for(const auto& d : detections){
+      if(isSampleInDetection(x,y,d)){
+        for(int o=0; o<NUM_OBJECT_TYPES; o++){
+          sample.probs[o] *= (1.f-d.prob_[o]);
+        }
+      }
+    }
+    for(int o=0; o<NUM_OBJECT_TYPES; o++){
+      sample.probs[o] = 1.f-sample.probs[o];
+    }
+    vision_msg.detection_samples.push_back(sample);
+    i++;
+  }
+  std::cout << detections.size() << " Objects Samples in " << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 
 

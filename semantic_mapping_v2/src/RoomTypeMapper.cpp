@@ -4,6 +4,17 @@
 
 #include "semantic_mapping_v2/RoomTypeMapper.h"
 
+template <typename T>
+std::vector<size_t> ordered(std::vector<T> const& values) {
+  std::vector<size_t> indices(values.size());
+  std::iota(begin(indices), end(indices), static_cast<size_t>(0));
+
+  std::sort(
+        begin(indices), end(indices),
+        [&](size_t a, size_t b) { return values[a] < values[b]; }
+  );
+  return indices;
+}
 
 void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg){
   if(num_types_ == 0){
@@ -49,6 +60,10 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg){
     for(int i=0; i<not_low_idx.size(); i++){
       probs_[not_low_idx[i]] *= rest_sum/sum;
     }
+  }
+  std::vector<size_t> indices_sorted = ordered(probs_);
+  for(int i=indices_sorted.size()-1; i>indices_sorted.size()-11; i--){
+    std::cout << names_[indices_sorted[i]] << ": " << probs_[indices_sorted[i]] << std::endl;
   }
 }
 

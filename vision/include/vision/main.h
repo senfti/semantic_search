@@ -46,6 +46,11 @@ class VisionApp{
     const float dist_cutoff_ = 0.1;                                 // only use dist_cutoff to (1-dist_cutoff) depth values for depth estimate
     const float psnr_thresh = 4.f;
     const float donwsample_factor = 2.f;
+    const float MIN_Z = 0.8;
+    const float MAX_Z = 3.5;
+
+    const int DETECTION_SAMPLE_NUM = 1000;
+    const float MIN_OBJECT_PROB = 0.99;
 
     const float MAX_DISCARD_TIME = 5.0;
     const float MIN_ANGLE_DIFF = 0.1;
@@ -70,6 +75,7 @@ class VisionApp{
 
     std::mutex img_mutex_;
     cv::Mat curr_img_;
+    std::mutex cloud_mutex_;
     sensor_msgs::PointCloud2ConstPtr point_cloud_ = nullptr;
     cv_bridge::CvImagePtr depth_img_ = nullptr;
 
@@ -88,7 +94,8 @@ class VisionApp{
     bool useImage(const cv::Mat& img);
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     void fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::ObjectDetectionMsg &msg) const;
-    std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
+    std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const;
+    void fillObjectDetectionSamples(const std::vector<YoloDetection>& detections, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const;
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
 };
 

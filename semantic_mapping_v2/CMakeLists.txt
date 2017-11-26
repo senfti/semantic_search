@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(Boost REQUIRED signals)
 find_package(octomap REQUIRED)
+find_package( OpenCV REQUIRED )
 
 add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
 
@@ -30,7 +31,7 @@ catkin_package(
 )
 
 add_executable(semantic_mapping src/main.cpp src/ObjectMapper.cpp src/HierarchyMapper.cpp src/OctoMapper.cpp src/RoomMapper.cpp src/SlamGMapping.cpp src/DoorMapper.cpp src/RoomTypeMapper.cpp)
-target_link_libraries(semantic_mapping ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(semantic_mapping ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
 if(catkin_EXPORTED_TARGETS)
   add_dependencies(semantic_mapping ${catkin_EXPORTED_TARGETS})
 endif()
