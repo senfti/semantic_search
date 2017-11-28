@@ -3,6 +3,7 @@
 <launch>
   <arg name="move_file" default="xbox360_teleop.launch" doc="movement launch file"/>
   <arg name="use_manual_control" default="0" doc="if manual control (keyboard/gamepad) is used"/>
+  <arg name="use_mouse_control" default="0" doc="if manual control with mouse is used"/>
 
   <include file="$(find hardware)/launch/turtlebot.launch">
     <arg name="3d_sensor" value="own_sensors"/>
@@ -42,6 +43,11 @@
 
   <group if="$(arg use_manual_control)">    
     <include file="$(find turtlebot_teleop)/launch/$(arg move_file)">
+    </include>
+  </group>
+
+  <group if="$(arg use_mouse_control)">    
+    <include file="$(find mouse_control)/launch/mouse_control.launch" >
     </include>
   </group>
 

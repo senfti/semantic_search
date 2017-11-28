@@ -22,6 +22,7 @@ class HierarchyMapper{
     ros::Publisher map_info_pub_;
     ros::Publisher marker_pub_;
     ros::Publisher door_pose_pub_;
+    ros::Publisher obj_prob_pub_;
 
     tf::TransformBroadcaster* tfB_;
     ros::NodeHandle nh_;

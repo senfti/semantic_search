@@ -50,7 +50,7 @@ class VisionApp{
     const float MAX_Z = 3.5;
 
     const int DETECTION_SAMPLE_NUM = 1000;
-    const float MIN_OBJECT_PROB = 0.99;
+    const float MIN_OBJECT_PROB = 0.001f;
 
     const float MAX_DISCARD_TIME = 5.0;
     const float MIN_ANGLE_DIFF = 0.1;

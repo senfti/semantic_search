@@ -60,12 +60,16 @@ void VisionApp::nnThreadRun(){
       curr_img_ = cv::Mat();
       lock.unlock();
 
+      vision::VisionMsg result_msg;
       std::unique_lock<std::mutex> lock(cloud_mutex_);
       pcl::PointCloud<pcl::PointXYZ> cloud;
       pcl::fromROSMsg(*point_cloud_, cloud);
+      static int seq = 0;
+      result_msg.header.stamp = point_cloud_->header.stamp;
+      result_msg.header.seq = seq++;
+      result_msg.header.frame_id = point_cloud_->header.frame_id;
       lock.unlock();
 
-      vision::VisionMsg result_msg;
       std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
       std::vector<YoloDetection> detections = fillObjectDetections(img, cloud, result_msg);
       fillObjectDetectionSamples(detections, cloud, result_msg);
@@ -224,23 +228,37 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, c
 
 
 inline bool isSampleInDetection(int x, int y, const YoloDetection& detection){
-  return (x>detection.x1_ && x<detection.x2_ && y<detection.y1_ && y>detection.y2_);
+  return (x>detection.x1_ && x<detection.x2_ && y>detection.y1_ && y<detection.y2_);
+}
+
+void visualizeProbMap(cv::Mat_<double> map, const std::string& win_name){
+  cv::Mat out;
+  map.convertTo(out, CV_8U, 120.f);
+  //cv::flip(out, out, 0);
+  cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255));
+  cv::merge(std::vector<cv::Mat>({out, tmp, tmp}), out);
+  cv::cvtColor(out, out, CV_HSV2BGR);
+  cv::imshow(win_name, out);
 }
 
 void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &detections, const pcl::PointCloud<pcl::PointXYZ> &cloud, vision::VisionMsg& vision_msg) const{
+//  std::vector<cv::Mat_<float>> sdf(NUM_OBJECT_TYPES);
+//  for(int o=0; o<NUM_OBJECT_TYPES; o++){
+//    sdf[o] = cv::Mat_<float>(cloud.height, cloud.width, 15.f/12);
+//  }
   auto begin = std::chrono::steady_clock::now();
   int i = 0;
   for(int c=0; i<DETECTION_SAMPLE_NUM && c < 5*DETECTION_SAMPLE_NUM; c++){
     int x=std::rand()%cloud.width;
     int y=std::rand()%cloud.height;
-    if(cloud.at(x,y).z < MIN_Z || cloud.at(x,y).z > MAX_Z)
+    if(!(cloud.at(x,y).z >= MIN_Z && cloud.at(x,y).z <= MAX_Z))
       continue;
 
     vision::ObjectDetectionSample sample;
     sample.x = cloud.at(x,y).x;
     sample.y = cloud.at(x,y).y;
     sample.z = cloud.at(x,y).z;
-    sample.probs.resize(NUM_OBJECT_TYPES, MIN_OBJECT_PROB);
+    sample.probs.resize(NUM_OBJECT_TYPES, (1.f-MIN_OBJECT_PROB));
 
     for(const auto& d : detections){
       if(isSampleInDetection(x,y,d)){
@@ -251,10 +269,15 @@ void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &det
     }
     for(int o=0; o<NUM_OBJECT_TYPES; o++){
       sample.probs[o] = 1.f-sample.probs[o];
+      //sdf[o](y,x) = sample.probs[o];
     }
     vision_msg.detection_samples.push_back(sample);
     i++;
   }
+//  for(int o=0; o<NUM_OBJECT_TYPES; o++){
+//    cv::resize(sdf[o], sdf[o], cv::Size(sdf[o].cols*2, sdf[o].rows*2),0,0,cv::INTER_NEAREST);
+//    visualizeProbMap(sdf[o], std::to_string(o));
+//  }
   std::cout << detections.size() << " Objects Samples in " << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 

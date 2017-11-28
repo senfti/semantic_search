@@ -10,7 +10,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 RoomMapper::RoomMapper(int idx, const Door& door)
-      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, DoorMapper(idx, door))
+      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, DoorMapper(idx, door)), obj_mappers_(particles_)
 {
   for(auto& map : octo_maps_)
     map = new OctoMapper();
@@ -105,8 +105,28 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
 
 
 void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
+  ros::Time start = ros::Time::now();
   room_type_mapper_.processMsg(msg);
   std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
+  ros::Time mid = ros::Time::now();
+
+  pcl::PointCloud<pcl::PointXYZ> cloud(msg->detection_samples.size(), 1);
+  for(int i=0; i<cloud.size(); i++){
+    cloud[i] = pcl::PointXYZ(msg->detection_samples[i].x, msg->detection_samples[i].y, msg->detection_samples[i].z);
+  }
+  Eigen::Matrix4f cam_to_base;
+  pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
+  pcl::transformPointCloud(cloud, cloud, cam_to_base);
+
+  for(int i=0; i<particles_; i++){
+    pcl::PointCloud<pcl::PointXYZ> cloud_trans;
+    Eigen::Matrix4f sensorToWorld;
+    pcl_ros::transformAsMatrix(getParticlePose3D(i, msg->header.stamp), sensorToWorld);
+    pcl::transformPointCloud(cloud, cloud_trans, sensorToWorld);
+    obj_mappers_[i].addCloud(cloud_trans, msg->detection_samples);
+  }
+
+  ROS_WARN("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
 }
 
 
@@ -170,5 +190,24 @@ void RoomMapper::setDoorRoom(const tf::Transform& pose, int other_room){
   for(int i=0; i<door_mappers_.size(); i++){
     door_mappers_[i].setDoorRoom(pose, other_room);
   }
+}
+
+
+visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
+  visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()].getProbMsg(id);
+  std::vector<geometry_msgs::Point> points;
+  std::vector<std_msgs::ColorRGBA> colors;
+  for(int i=0; i<res.markers[0].points.size(); i++){
+    auto& p = res.markers[0].points[i];
+    float scale_2 = res.markers[0].scale.x/2;
+    if(octo_maps_[getBestParticleIdx()]->isOccupied(p.x-scale_2,p.y-scale_2,p.z-scale_2,p.x+scale_2,p.y+scale_2,p.z+scale_2,0.5)){
+      points.push_back(p);
+      colors.push_back(res.markers[0].colors[i]);
+    }
+  }
+  res.markers[0].points = points;
+  res.markers[0].colors = colors;
+
+  return res;
 }
 

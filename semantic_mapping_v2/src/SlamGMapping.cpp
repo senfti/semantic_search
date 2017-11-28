@@ -442,12 +442,6 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   //make sure to set the header information on the map
   map_.map.header.stamp = ros::Time::now();
   map_.map.header.frame_id = tf_.resolve( map_frame_ );
-
-  std::cout << "WEIGHTS: ";
-  for(int i=0;i<particles_; i++){
-    std::cout << gsp_->getParticles()[i].weight << " ";
-  }
-  std::cout << std::endl;
 }
 
 

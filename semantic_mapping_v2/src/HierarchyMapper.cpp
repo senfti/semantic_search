@@ -18,6 +18,7 @@ HierarchyMapper::HierarchyMapper(){
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
+  obj_prob_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("obj_prob", 1, true);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   tfB_ = new tf::TransformBroadcaster();
@@ -100,6 +101,7 @@ void HierarchyMapper::publish(){
   }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+  obj_prob_pub_.publish(room_mapper_[current_mapper_]->getObjectProbMsg(56));
 }
 
 
@@ -146,41 +148,5 @@ void HierarchyMapper::run(){
     }
     rate.sleep();
   }
-
-
-//  ros::Rate rate(50);
-//  ros::Time t = ros::Time::now();
-//  int state = 0;
-//  while(ros::ok()){
-//    ros::spinOnce();
-//    if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size() && room_mapper_[current_mapper_]->resetWasMapUpdated())
-//      publish();
-//    rate.sleep();
-//    if(ros::Time::now().toSec() - t.toSec() > 30 && state == 0){
-//      addMapper();
-//      ROS_WARN("New mapper");
-//      state=1;
-//    }
-//    if(ros::Time::now().toSec() - t.toSec() > 58 && state == 1){
-//      switchMapper(0);
-//      ROS_WARN("Back to mapper 0");
-//      state=2;
-//    }
-//    if(ros::Time::now().toSec() - t.toSec() > 88 && state == 2){
-//      addMapper();
-//      ROS_WARN("New mapper");
-//      state=3;
-//    }
-//    if(ros::Time::now().toSec() - t.toSec() > 114 && state == 3){
-//      switchMapper(0);
-//      ROS_WARN("Back to mapper 0");
-//      state=4;
-//    }
-//    if(ros::Time::now().toSec() - t.toSec() > 135 && state == 4){
-//      switchMapper(1);
-//      ROS_WARN("Back to mapper 1");
-//      state=5;
-//    }
-//  }
 }
 

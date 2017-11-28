@@ -2,3 +2,4 @@
 ObjectDetectionMsg[] objects
 PlaceRecognitionMsg[] place_guesses
 ObjectDetectionSample[] detection_samples
+Header header

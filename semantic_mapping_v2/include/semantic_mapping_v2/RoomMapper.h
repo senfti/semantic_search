@@ -9,6 +9,7 @@
 #include "semantic_mapping_v2/OctoMapper.h"
 #include "semantic_mapping_v2/DoorMapper.h"
 #include "semantic_mapping_v2/RoomTypeMapper.h"
+#include "semantic_mapping_v2/ObjectMapper.h"
 
 class RoomMapper : public SlamGMapping{
   protected:
@@ -16,6 +17,7 @@ class RoomMapper : public SlamGMapping{
 
     std::vector<OctoMapper*> octo_maps_;
     std::vector<DoorMapper> door_mappers_;
+    std::vector<ObjectMapper> obj_mappers_;
     RoomTypeMapper room_type_mapper_;
 
     nav_msgs::OccupancyGrid obstacle_map_;
@@ -82,6 +84,8 @@ class RoomMapper : public SlamGMapping{
       return octo_maps_[getBestParticleIdx()]->getOccupancy(x,y,z);
     }
     float getOccupancy(const pcl::PointXYZ& pos) const { return getOccupancy(pos.x, pos.y, pos.z); }
+
+    visualization_msgs::MarkerArray getObjectProbMsg(int id) const;
 };
 
 

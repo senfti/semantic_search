@@ -3,10 +3,13 @@
 <launch>
   <include file="$(find hardware)/launch/basic.launch">
     <arg name="move_file" value="keyboard_teleop.launch"/>
-    <arg name="use_manual_control" value="1"/>
+    <arg name="use_mouse_control" value="1"/>
   </include>
 
   <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
+
+  <node pkd="image_view" type="image_view" name="image_view" args="image:=/camera/rgb/image_raw"
+  <node pkd="image_view" type="image_view" name="image_view_door" args="image:=/door_asus/camera/rgb/image_raw"
 
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml" />
 

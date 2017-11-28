@@ -398,6 +398,7 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
           m_octree->getMetricMax(maxX, maxY, maxZ);
 
           double h = (1.0 - std::min(std::max((cubeCenter.z-minZ)/ (maxZ - minZ), 0.0), 1.0)) *m_colorFactor;
+
           occupiedNodesVis.markers[idx].colors.push_back(heightMapColor(h));
         }
       }
@@ -580,75 +581,15 @@ std_msgs::ColorRGBA OctoMapper::heightMapColor(double h) {
   return color;
 }
 
-//bool OctoMapper::octomapBinarySrv(OctomapSrv::Request  &req, OctomapSrv::Response &res)
-//{
-//  ros::WallTime startTime = ros::WallTime::now();
-//  ROS_INFO("Sending binary map data on service request");
-//  res.map.header.frame_id = m_worldFrameId;
-//  res.map.header.stamp = ros::Time::now();
-//  if (!octomap_msgs::binaryMapToMsg(*m_octree, res.map))
-//    return false;
-//
-//  double total_elapsed = (ros::WallTime::now() - startTime).toSec();
-//  ROS_INFO("Binary octomap sent in %f sec", total_elapsed);
-//  return true;
-//}
-//
-//bool OctoMapper::octomapFullSrv(OctomapSrv::Request  &req, OctomapSrv::Response &res)
-//{
-//  ROS_INFO("Sending full map data on service request");
-//  res.map.header.frame_id = m_worldFrameId;
-//  res.map.header.stamp = ros::Time::now();
-//
-//  if (!octomap_msgs::fullMapToMsg(*m_octree, res.map))
-//    return false;
-//
-//  return true;
-//}
 
-
-//
-//bool OctoMapper::clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp){
-//  point3d min = pointMsgToOctomap(req.min);
-//  point3d max = pointMsgToOctomap(req.max);
-//
-//  double thresMin = m_octree->getClampingThresMin();
-//  for(OcTreeT::leaf_bbx_iterator it = m_octree->begin_leafs_bbx(min,max), end=m_octree->end_leafs_bbx(); it!= end; ++it){
-//    it->setLogOdds(octomap::logodds(thresMin));
-//  }
-//  m_octree->updateInnerOccupancy();
-//
-//  return true;
-//}
-//
-//bool OctoMapper::resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp) {
-//  visualization_msgs::MarkerArray occupiedNodesVis;
-//  occupiedNodesVis.markers.resize(m_treeDepth +1);
-//  ros::Time rostime = ros::Time::now();
-//  m_octree->clear();
-//
-//  ROS_INFO("Cleared octomap");
-//
-//  for (unsigned i= 0; i < occupiedNodesVis.markers.size(); ++i){
-//    occupiedNodesVis.markers[i].header.frame_id = m_worldFrameId;
-//    occupiedNodesVis.markers[i].header.stamp = rostime;
-//    occupiedNodesVis.markers[i].ns = "map";
-//    occupiedNodesVis.markers[i].id = i;
-//    occupiedNodesVis.markers[i].type = visualization_msgs::Marker::CUBE_LIST;
-//    occupiedNodesVis.markers[i].action = visualization_msgs::Marker::DELETE;
-//  }
-//
-//  visualization_msgs::MarkerArray freeNodesVis;
-//  freeNodesVis.markers.resize(m_treeDepth +1);
-//
-//  for (unsigned i= 0; i < freeNodesVis.markers.size(); ++i){
-//    freeNodesVis.markers[i].header.frame_id = m_worldFrameId;
-//    freeNodesVis.markers[i].header.stamp = rostime;
-//    freeNodesVis.markers[i].ns = "map";
-//    freeNodesVis.markers[i].id = i;
-//    freeNodesVis.markers[i].type = visualization_msgs::Marker::CUBE_LIST;
-//    freeNodesVis.markers[i].action = visualization_msgs::Marker::DELETE;
-//  }
-//
-//  return true;
-//}
+bool OctoMapper::isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh) const{
+  for(float x = x_min+0.5f*m_res; x < x_max; x+=m_res){
+    for(float y = y_min+0.5f*m_res; y < y_max; y+=m_res){
+      for(float z = z_min+0.5f*m_res; z < z_max; z+=m_res){
+        if(isOccupied(x,y,z,thresh))
+          return true;
+      }
+    }
+  }
+  return false;
+}
