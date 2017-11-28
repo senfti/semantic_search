@@ -7,7 +7,7 @@
 
 
 
-void MyGridSlamProcessor::discardButBestParticle(){
+int MyGridSlamProcessor::discardButBestParticle(){
   int best_idx = getBestParticleIndex();
 
   for(int i=0; i<m_particles.size(); i++){
@@ -16,6 +16,8 @@ void MyGridSlamProcessor::discardButBestParticle(){
       m_particles[i] = m_particles[best_idx];
     }
   }
+
+  return best_idx;
 }
 
 

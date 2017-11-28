@@ -2,3 +2,5 @@ different occupancy thresholds for downprojection (higher) and possible object l
 better switching (odom correction on switch)
  - not 3d mapping when not moved
 avoid switching map back and forth
+
+make obj_mapper and door_mapper pointers for more efficient working

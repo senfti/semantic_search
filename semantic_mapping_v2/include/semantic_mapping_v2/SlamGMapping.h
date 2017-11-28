@@ -35,7 +35,7 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
 
     inline void resetIndexes() { m_indexes = std::vector<unsigned int>(); }
 
-    void discardButBestParticle();
+    int discardButBestParticle();
 };
 
 

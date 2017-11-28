@@ -10,10 +10,20 @@
 #include <pcl/filters/voxel_grid.h>
 
 RoomMapper::RoomMapper(int idx, const Door& door)
-      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, DoorMapper(idx, door)), obj_mappers_(particles_)
+      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr)
 {
-  for(auto& map : octo_maps_)
-    map = new OctoMapper();
+  try{
+    for(auto &map : octo_maps_)
+      map = new OctoMapper();
+    for(auto &map : door_mappers_)
+      map = new DoorMapper(idx, door);
+    for(auto &map : obj_mappers_)
+      map = new ObjectMapper();
+  }
+  catch(std::exception& e){
+    std::cout << e.what() << std::endl;
+    ros::shutdown();
+  }
 
   obstacle_map_.info.resolution = 10;
 
@@ -39,6 +49,10 @@ RoomMapper::RoomMapper(int idx, const Door& door)
 RoomMapper::~RoomMapper(){
   for(auto& map : octo_maps_)
     delete map;
+  for(auto& map : door_mappers_)
+    delete map;
+  for(auto& map : obj_mappers_)
+    delete map;
 }
 
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
@@ -48,12 +62,21 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
 
   ros::Time t = ros::Time::now();
   if(!gsp_->getIndexes().empty()){
-    for(int i=0; i<gsp_->getIndexes().size(); i++){
-      if(i != gsp_->getIndexes()[i]){
-        delete octo_maps_[i];
-        octo_maps_[i] = new OctoMapper(*octo_maps_[gsp_->getIndexes()[i]]);
-        door_mappers_[i] = door_mappers_[gsp_->getIndexes()[i]];
+    try{
+      for(int i=0; i<gsp_->getIndexes().size(); i++){
+        if(i != gsp_->getIndexes()[i]){
+          delete octo_maps_[i];
+          octo_maps_[i] = new OctoMapper(*octo_maps_[gsp_->getIndexes()[i]]);
+          delete door_mappers_[i];
+          door_mappers_[i] = new DoorMapper(*door_mappers_[gsp_->getIndexes()[i]]);
+          delete obj_mappers_[i];
+          obj_mappers_[i] = new ObjectMapper(*obj_mappers_[gsp_->getIndexes()[i]]);
+        }
       }
+    }
+    catch(std::exception& e){
+      ROS_ERROR("%s",e.what());
+      ros::shutdown();
     }
     gsp_->resetIndexes();
   }
@@ -98,7 +121,7 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
     for(const auto& pose : msg->poses){
       tf::Transform tf_pose;
       tf::poseMsgToTF(pose, tf_pose);
-      door_mappers_[i].addDoorProposal(transform*tf_pose);
+      door_mappers_[i]->addDoorProposal(transform*tf_pose);
     }
   }
 }
@@ -123,7 +146,7 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     Eigen::Matrix4f sensorToWorld;
     pcl_ros::transformAsMatrix(getParticlePose3D(i, msg->header.stamp), sensorToWorld);
     pcl::transformPointCloud(cloud, cloud_trans, sensorToWorld);
-    obj_mappers_[i].addCloud(cloud_trans, msg->detection_samples);
+    obj_mappers_[i]->addCloud(cloud_trans, msg->detection_samples);
   }
 
   ROS_WARN("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
@@ -177,24 +200,75 @@ bool RoomMapper::resetWasMapUpdated() {
 
 
 void RoomMapper::activate(){
+  if(octo_maps_.size() < particles_){
+    ROS_WARN("ACTIVATE");
+    octo_maps_.resize(particles_, nullptr);
+    door_mappers_.resize(particles_, nullptr);
+    obj_mappers_.resize(particles_, nullptr);
+    try{
+      for(int i=1; i<octo_maps_.size(); i++){
+        octo_maps_[i] = new OctoMapper(*octo_maps_[0]);
+        door_mappers_[i] = new DoorMapper(*door_mappers_[0]);
+        obj_mappers_[i] = new ObjectMapper(*obj_mappers_[0]);
+      }
+    }
+    catch(std::exception& e){
+      ROS_ERROR("%s",e.what());
+      ros::shutdown();
+    }
+    ROS_WARN("ACTIVATE END");
+  }
   activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec());
 }
 
 
 void RoomMapper::deactivate(){
-  gsp_->discardButBestParticle();
+  ROS_WARN("DEACTIVATE");
+  int best_particle = 0;
+  if(got_first_scan_){
+    int best_particle = getBestParticleIdx();
+    gsp_->discardButBestParticle();
+  }
+
+  ROS_WARN("BEST PARTICLE = %d", best_particle);
+  std::cout << best_particle << std::endl;
+  if(best_particle != 0){
+    delete octo_maps_[0];
+    octo_maps_[0] = octo_maps_[best_particle];
+    delete door_mappers_[0];
+    door_mappers_[0] = door_mappers_[best_particle];
+    delete obj_mappers_[0];
+    obj_mappers_[0] = obj_mappers_[best_particle];
+  }
+  for(int i=1; i<octo_maps_.size(); i++){
+    if(i != best_particle){
+      ROS_WARN("OCTO");
+      delete octo_maps_[i];
+      octo_maps_[i] = nullptr;
+      ROS_WARN("DOOR");
+      delete door_mappers_[i];
+      door_mappers_[i] = nullptr;
+      ROS_WARN("OBJ");
+      delete obj_mappers_[i];
+      obj_mappers_[i] = nullptr;
+    }
+  }
+  octo_maps_.resize(1);
+  door_mappers_.resize(1);
+  obj_mappers_.resize(1);
+  ROS_WARN("DEACTIVATE END");
 }
 
 
 void RoomMapper::setDoorRoom(const tf::Transform& pose, int other_room){
   for(int i=0; i<door_mappers_.size(); i++){
-    door_mappers_[i].setDoorRoom(pose, other_room);
+    door_mappers_[i]->setDoorRoom(pose, other_room);
   }
 }
 
 
 visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
-  visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()].getProbMsg(id);
+  visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(id);
   std::vector<geometry_msgs::Point> points;
   std::vector<std_msgs::ColorRGBA> colors;
   for(int i=0; i<res.markers[0].points.size(); i++){

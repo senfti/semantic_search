@@ -16,8 +16,8 @@ class RoomMapper : public SlamGMapping{
     int idx_ = -1;
 
     std::vector<OctoMapper*> octo_maps_;
-    std::vector<DoorMapper> door_mappers_;
-    std::vector<ObjectMapper> obj_mappers_;
+    std::vector<DoorMapper*> door_mappers_;
+    std::vector<ObjectMapper*> obj_mappers_;
     RoomTypeMapper room_type_mapper_;
 
     nav_msgs::OccupancyGrid obstacle_map_;
@@ -54,10 +54,10 @@ class RoomMapper : public SlamGMapping{
     void deactivate();
     void downprojectMap();
 
-    std::vector<Door> getDoors() const { return door_mappers_[getBestParticleIdx()].getDoors(); }
+    std::vector<Door> getDoors() const { return door_mappers_[getBestParticleIdx()]->getDoors(); }
     void setDoorRoom(const tf::Transform& pose, int other_room);
-    geometry_msgs::PoseArray getDoorPoseMsg() const { return door_mappers_[getBestParticleIdx()].getDoorPoseMsg(); }
-    Door droveThroughDoor() const { return door_mappers_[getBestParticleIdx()].droveThroughDoor(getBestParticlePose3D(ros::Time::now())); }
+    geometry_msgs::PoseArray getDoorPoseMsg() const { return door_mappers_[getBestParticleIdx()]->getDoorPoseMsg(); }
+    Door droveThroughDoor() const { return door_mappers_[getBestParticleIdx()]->droveThroughDoor(getBestParticlePose3D(ros::Time::now())); }
 
     nav_msgs::OccupancyGrid getMap() {
       boost::mutex::scoped_lock lock(obstacle_map_mutex_);

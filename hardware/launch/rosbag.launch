@@ -8,8 +8,8 @@
 
   <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
 
-  <node pkd="image_view" type="image_view" name="image_view" args="image:=/camera/rgb/image_raw"
-  <node pkd="image_view" type="image_view" name="image_view_door" args="image:=/door_asus/camera/rgb/image_raw"
+  <node pkg="image_view" type="image_view" name="image_view" args="image:=/camera/rgb/image_raw" />
+  <node pkg="image_view" type="image_view" name="image_view_door" args="image:=/door_asus/camera/rgb/image_raw" />
 
   <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml" />
 

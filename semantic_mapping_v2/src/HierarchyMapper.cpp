@@ -43,8 +43,10 @@ void HierarchyMapper::addMapper(const Door& door){
 
 
 void HierarchyMapper::switchMapper(int mapper_idx){
-//  if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size())
-//    room_mapper_[current_mapper_]->deactivate();
+  int old_mapper = current_mapper_;
+  current_mapper_ = -1;
+  if(old_mapper >= 0 && old_mapper < room_mapper_.size())
+    room_mapper_[old_mapper]->deactivate();
 
   if(mapper_idx >= 0 && mapper_idx < room_mapper_.size()){
     current_mapper_ = mapper_idx;

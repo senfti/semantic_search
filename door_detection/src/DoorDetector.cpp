@@ -235,7 +235,7 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   door_poses.header.seq = seq++;
   for(const auto& contour : contours){
     cv::RotatedRect rect = isContourDoor(contour);
-    if(rect.size.area() >= MIN_WIDTH*MIN_DEPTH){
+    if(rect.size.area() >= MIN_WIDTH*MIN_DEPTH && rect.center.x > 0){         // discard if already through door
       door_poses.poses.push_back(rectToPose(rect));
     }
   }

@@ -21,11 +21,11 @@ class MyWindow : public wxFrame
     bool stopped_ = false;
     geometry_msgs::Twist msg;
 
-    const float SPEED = 0.3;
+    const float SPEED = 0.25;
     const float ANG_SPEED = 1.0;
 
   public:
-    MyWindow( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ProbViewer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 400,400 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+    MyWindow( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("ProbViewer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 800,800 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 };
 
 class MyApp : public wxApp{
@@ -129,7 +129,7 @@ void MyWindow::stop(wxMouseEvent &event){
   msg.angular.z = 0.f;
   msg.linear.x = 0.f;
   std::cout << l << " " << m << " " << r << std::endl;
-  if(event.m_x < 175 || event.m_x > 225 || event.m_y < 175 || event.m_y > 225)
-    WarpPointer(200,200);
+  if(event.m_x < 375 || event.m_x > 425 || event.m_y < 375 || event.m_y > 425)
+    WarpPointer(400,400);
 }
 
