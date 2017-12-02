@@ -34,8 +34,9 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
     }
 
     inline void resetIndexes() { m_indexes = std::vector<unsigned int>(); }
+    void init(unsigned int size, double xmin, double ymin, double xmax, double ymax, double delta, GMapping::OrientedPoint initialPose, const GMapping::ScanMatcherMap& initial_map);
 
-    int discardButBestParticle();
+    //int discardButBestParticle();
 };
 
 
@@ -55,6 +56,9 @@ class SlamGMapping
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     bool isInitialized() const { return got_first_scan_; }
 
+    void setResume(const GMapping::OrientedPoint& initial_pose) { initial_pose_ = initial_pose; resume_ = true; }
+    void resume(GMapping::OrientedPoint initialPose, const sensor_msgs::LaserScan& scan);
+
   protected:
     ros::NodeHandle node_;
     tf::TransformListener tf_;
@@ -73,6 +77,8 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
+    bool resume_ = false;
+    GMapping::OrientedPoint initial_pose_;
     bool processed_scan_ = false;
 
     bool got_map_;

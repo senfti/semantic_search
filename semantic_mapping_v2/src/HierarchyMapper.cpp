@@ -42,15 +42,32 @@ void HierarchyMapper::addMapper(const Door& door){
 }
 
 
-void HierarchyMapper::switchMapper(int mapper_idx){
+void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
   int old_mapper = current_mapper_;
   current_mapper_ = -1;
   if(old_mapper >= 0 && old_mapper < room_mapper_.size())
     room_mapper_[old_mapper]->deactivate();
 
   if(mapper_idx >= 0 && mapper_idx < room_mapper_.size()){
-    current_mapper_ = mapper_idx;
-    room_mapper_[current_mapper_]->activate();
+    if(door.isValid()){
+      ROS_INFO("DOOR_VALID");
+      tf::StampedTransform transform;
+      try{
+        tf_listener_.lookupTransform("base_link", "map", ros::Time(0), transform);
+      }
+      catch (tf::TransformException ex){
+        ROS_ERROR("%s",ex.what());
+      }
+      GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
+      ROS_INFO("GOT POINT");
+      current_mapper_ = mapper_idx;
+      ROS_INFO("CHANGED MAPPER");
+      room_mapper_[current_mapper_]->activate(p, door, transform_publish_period_*2.0);
+    }
+    else{
+      current_mapper_ = mapper_idx;
+      room_mapper_[current_mapper_]->activate();
+    }
   }
   ROS_INFO("Switched to MAPPER %d", current_mapper_);
 }
@@ -135,17 +152,25 @@ void HierarchyMapper::run(){
 
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
       if(door.isValid()){
+        ROS_INFO("Door %d, c_id: %d, r: %d, c_r: %d", door.id_, door.counterpart_id_, door.this_room_, door.other_room_);
         int other_room = door.other_room_;
         if(other_room < 0){
-          room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size());
-          door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
-          door.this_room_ = room_mapper_.size();
-          door.other_room_ = current_mapper_;
-          door.proposal_count_ = std::min(door.proposal_count_, 5);
-          addMapper(door);
+          int new_id = Door::getID();
+          room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size(), new_id);
+//          door.counterpart_id_ = door.id_;
+//          door.id_ = new_id;
+//          door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
+//          door.this_room_ = room_mapper_.size();
+//          door.other_room_ = current_mapper_;
+//          door.proposal_count_ = std::min(door.proposal_count_, 5);
+
+          Door counterpart_door(room_mapper_.size(), door.pose_, std::min(door.proposal_count_, 5), current_mapper_, new_id, door.id_);
+          counterpart_door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
+          ROS_INFO("New Door %d, c_id: %d, r: %d, c_r: %d", counterpart_door.id_, counterpart_door.counterpart_id_, counterpart_door.this_room_, counterpart_door.other_room_);
+          addMapper(counterpart_door);
         }
         else
-          switchMapper(other_room);
+          switchMapper(other_room, door);
       }
     }
     rate.sleep();

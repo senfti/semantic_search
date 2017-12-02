@@ -51,11 +51,12 @@ class RoomMapper : public SlamGMapping{
     bool resetWasMapUpdated();
 
     void activate();
+    void activate(const GMapping::OrientedPoint& robot, const Door& door, double sleep_time);
     void deactivate();
     void downprojectMap();
 
     std::vector<Door> getDoors() const { return door_mappers_[getBestParticleIdx()]->getDoors(); }
-    void setDoorRoom(const tf::Transform& pose, int other_room);
+    void setDoorRoom(const tf::Transform& pose, int other_room, int counterpart_id);
     geometry_msgs::PoseArray getDoorPoseMsg() const { return door_mappers_[getBestParticleIdx()]->getDoorPoseMsg(); }
     Door droveThroughDoor() const { return door_mappers_[getBestParticleIdx()]->droveThroughDoor(getBestParticlePose3D(ros::Time::now())); }
 

@@ -6,6 +6,7 @@
 #include <tf/transform_datatypes.h>
 
 
+
 DoorMapper::DoorMapper(int this_room, const Door &door)
       : this_room_(this_room)
 {
@@ -14,27 +15,27 @@ DoorMapper::DoorMapper(int this_room, const Door &door)
 }
 
 
-bool DoorMapper::isDoorNearPose(const tf::Transform& pose) const{
+Door DoorMapper::isDoorNearPose(const tf::Transform& pose) const{
   for(int i=0; i<doors_.size(); i++){
     if((pose.getOrigin() - doors_[i].pose_.getOrigin()).length() < MIN_DOOR_DIST){
-      return true;
+      return doors_[i];
     }
   }
-  return false;
+  return Door();
 }
 
 
-bool DoorMapper::addDoor(const tf::Transform &pose, int proposal_count, int other_room){
-  if(isDoorNearPose(pose))
+bool DoorMapper::addDoor(const tf::Transform &pose, int proposal_count, int other_room, int counterpart_id){
+  if(isDoorNearPose(pose).isValid())
     return false;
 
-  doors_.push_back(Door(this_room_, pose, proposal_count, other_room));
+  doors_.push_back(Door(this_room_, pose, proposal_count, other_room, Door::getID(), counterpart_id));
   return true;
 }
 
 
 bool DoorMapper::addDoor(const Door& door){
-  if(isDoorNearPose(door.pose_))
+  if(isDoorNearPose(door.pose_).isValid())
     return false;
 
   doors_.push_back(door);
@@ -42,10 +43,11 @@ bool DoorMapper::addDoor(const Door& door){
 }
 
 
-bool DoorMapper::setDoorRoom(const tf::Transform &pose, int other_room){
+bool DoorMapper::setDoorRoom(const tf::Transform &pose, int other_room, int counterpart_id){
   for(int i=0; i<doors_.size(); i++){
     if((pose.getOrigin() - doors_[i].pose_.getOrigin()).length() < MIN_DOOR_DIST){
       doors_[i].other_room_ = other_room;
+      doors_[i].counterpart_id_ = counterpart_id;
       return true;
     }
   }
@@ -54,7 +56,7 @@ bool DoorMapper::setDoorRoom(const tf::Transform &pose, int other_room){
 }
 
 
-bool DoorMapper::addDoorProposal(const tf::Transform &pose){
+bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
   for(int i=0; i<doors_.size(); i++){
     if((pose.getOrigin() - doors_[i].pose_.getOrigin()).length() < MIN_DOOR_DIST){
       doors_[i].pose_.setOrigin((doors_[i].pose_.getOrigin()*doors_[i].proposal_count_ + pose.getOrigin()) / (doors_[i].proposal_count_+1));
@@ -64,7 +66,7 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose){
     }
   }
 
-  doors_.push_back(Door(this_room_, pose));
+  doors_.push_back(Door(this_room_, pose, 1, -1, new_id));
   return false;
 }
 
@@ -77,6 +79,15 @@ Door DoorMapper::droveThroughDoor(const tf::Transform &robot_pose) const{
     }
   }
 
+  return Door();
+}
+
+
+Door DoorMapper::getDoor(int id) const{
+  for(int i=0; i<doors_.size(); i++){
+    if(doors_[i].id_ == id)
+      return doors_[i];
+  }
   return Door();
 }
 

@@ -24,6 +24,7 @@ class HierarchyMapper{
     ros::Publisher door_pose_pub_;
     ros::Publisher obj_prob_pub_;
 
+    tf::TransformListener tf_listener_;
     tf::TransformBroadcaster* tfB_;
     ros::NodeHandle nh_;
     boost::thread* transform_thread_;
@@ -37,7 +38,7 @@ class HierarchyMapper{
     ~HierarchyMapper();
 
     void addMapper(const Door& door = Door());
-    void switchMapper(int mapper_idx);
+    void switchMapper(int mapper_idx, const Door& door = Door());
 
     void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);

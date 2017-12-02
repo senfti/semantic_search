@@ -6,20 +6,52 @@
 #include "semantic_mapping_v2/SlamGMapping.h"
 
 
+// Modified init for resume
+void MyGridSlamProcessor::init(unsigned int size, double xmin, double ymin, double xmax, double ymax, double delta,
+                               GMapping::OrientedPoint initialPose, const GMapping::ScanMatcherMap& initial_map)
+{
+  m_xmin=xmin;
+  m_ymin=ymin;
+  m_xmax=xmax;
+  m_ymax=ymax;
+  m_delta=delta;
+  if (m_infoStream)
+    m_infoStream
+          << " -xmin "<< m_xmin
+          << " -xmax "<< m_xmax
+          << " -ymin "<< m_ymin
+          << " -ymax "<< m_ymax
+          << " -delta "<< m_delta
+          << " -particles "<< size << std::endl;
 
-int MyGridSlamProcessor::discardButBestParticle(){
-  int best_idx = getBestParticleIndex();
-
-  for(int i=0; i<m_particles.size(); i++){
-    if(i!=best_idx){
-      delete m_particles[i].node;
-      m_particles[i] = m_particles[best_idx];
-    }
+  m_particles.clear();
+  TNode* node=new TNode(initialPose, 0, 0, 0);
+  for (unsigned int i=0; i<size; i++){
+    m_particles.push_back(Particle(initial_map));
+    m_particles.back().pose=initialPose;
+    m_particles.back().previousPose=initialPose;
+    m_particles.back().setWeight(0);
+    m_particles.back().previousIndex=0;
+    m_particles.back().node= node;
   }
-
-  return best_idx;
+  m_neff=(double)size;
+  m_count=0;
+  m_readingCount=0;
+  m_linearDistance=m_angularDistance=0;
 }
 
+//int MyGridSlamProcessor::discardButBestParticle(){
+//  int best_idx = getBestParticleIndex();
+//
+//  for(int i=0; i<m_particles.size(); i++){
+//    if(i!=best_idx){
+//      delete m_particles[i].node;
+//      m_particles[i] = m_particles[best_idx];
+//    }
+//  }
+//
+//  return best_idx;
+//}
 
 
 
@@ -330,6 +362,10 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
   if(!got_first_scan_) {
     if(!initMapper(*scan))
       return;
+    if(resume_){
+      resume(initial_pose_, *scan);
+      resume_ = false;
+    }
     got_first_scan_ = true;
   }
 
@@ -456,5 +492,30 @@ tf::StampedTransform SlamGMapping::getTransform(){
   boost::mutex::scoped_lock lock(map_to_odom_mutex_);
   ros::Time tf_expiration = ros::Time::now() + ros::Duration(tf_delay_);
   return tf::StampedTransform(map_to_odom_, tf_expiration, map_frame_, odom_frame_);
+}
+
+
+
+void SlamGMapping::resume(GMapping::OrientedPoint initialPose, const sensor_msgs::LaserScan& scan){
+  GMapping::ScanMatcherMap map = gsp_->getParticles()[gsp_->getBestParticleIndex()].map;
+  MyGridSlamProcessor* new_gsp = new MyGridSlamProcessor();
+
+  GMapping::SensorMap smap;
+  smap.insert(make_pair(gsp_laser_->getName(), gsp_laser_));
+  new_gsp->setSensorMap(smap);
+  new_gsp->setMatchingParameters(maxUrange_, maxRange_, sigma_, kernelSize_, lstep_, astep_, iterations_, lsigma_, ogain_, lskip_);
+  new_gsp->setMotionModelParameters(srr_, srt_, str_, stt_);
+  new_gsp->setUpdateDistances(linearUpdate_, angularUpdate_, resampleThreshold_);
+  new_gsp->setUpdatePeriod(temporalUpdate_);
+  new_gsp->setgenerateMap(false);
+  new_gsp->init(particles_, xmin_, ymin_, xmax_, ymax_, delta_, initialPose, map);
+  new_gsp->setllsamplerange(llsamplerange_);
+  new_gsp->setllsamplestep(llsamplestep_);
+  new_gsp->setlasamplerange(lasamplerange_);
+  new_gsp->setlasamplestep(lasamplestep_);
+  new_gsp->setminimumScore(minimum_score_);
+
+  delete gsp_;
+  gsp_ = new_gsp;
 }
 
