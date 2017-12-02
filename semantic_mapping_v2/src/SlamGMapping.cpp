@@ -40,19 +40,6 @@ void MyGridSlamProcessor::init(unsigned int size, double xmin, double ymin, doub
   m_linearDistance=m_angularDistance=0;
 }
 
-//int MyGridSlamProcessor::discardButBestParticle(){
-//  int best_idx = getBestParticleIndex();
-//
-//  for(int i=0; i<m_particles.size(); i++){
-//    if(i!=best_idx){
-//      delete m_particles[i].node;
-//      m_particles[i] = m_particles[best_idx];
-//    }
-//  }
-//
-//  return best_idx;
-//}
-
 
 
 // compute linear index for given map coords

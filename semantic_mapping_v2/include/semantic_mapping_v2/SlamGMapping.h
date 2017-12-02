@@ -36,7 +36,6 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
     inline void resetIndexes() { m_indexes = std::vector<unsigned int>(); }
     void init(unsigned int size, double xmin, double ymin, double xmax, double ymax, double delta, GMapping::OrientedPoint initialPose, const GMapping::ScanMatcherMap& initial_map);
 
-    //int discardButBestParticle();
 };
 
 

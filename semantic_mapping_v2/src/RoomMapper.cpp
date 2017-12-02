@@ -103,7 +103,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   for(int i=0; i<octo_maps_.size(); i++){
     octo_maps_[i]->insertCloud(pc, getParticlePose3D(i, cloud->header.stamp));
   }
-  ROS_WARN("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
+  ROS_INFO("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 
   if(obstacle_map_.header.stamp != getGMap().header.stamp){
     downprojectMap();
@@ -199,7 +199,6 @@ bool RoomMapper::resetWasMapUpdated() {
 
 void RoomMapper::activate(){
   if(octo_maps_.size() < particles_){
-    ROS_WARN("ACTIVATE");
     octo_maps_.resize(particles_, nullptr);
     door_mappers_.resize(particles_, nullptr);
     obj_mappers_.resize(particles_, nullptr);
@@ -214,68 +213,33 @@ void RoomMapper::activate(){
       ROS_ERROR("%s",e.what());
       ros::shutdown();
     }
-    ROS_WARN("ACTIVATE END");
   }
   activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec());
 }
 
 
 void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door, double sleep_time){
-  ROS_INFO("BETTER ACTIVATE START");
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
   if(door2.isValid()){
-    ROS_INFO("DOOR  2 VALID");
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
     GMapping::OrientedPoint pose_in_door = GMapping::OrientedPoint(robot.x-door1_pose.x, robot.y-door1_pose.y, robot.theta).rotate(-door1_pose.theta);
     pose_in_door = pose_in_door.rotate(M_PI);
     GMapping::OrientedPoint new_pose = pose_in_door.rotate(door2_pose.theta);
     new_pose = new_pose + GMapping::OrientedPoint(door2_pose.x, door2_pose.y, 0.0);
-    ROS_INFO("PRE RESUME");
     setResume(new_pose);
-    ROS_INFO("POST RESUME");
-
-//
-//    ROS_INFO("DOOR  2 VALID");
-//    GMapping::OrientedPoint odom_pose;
-//    if(getOdomPose(odom_pose, ros::Time::now()-ros::Duration(transform_publish_period_))){
-//      ROS_INFO("GOT ODOM POSE");
-//      GMapping::OrientedPoint door1_pose = door.getPose2D();
-//      GMapping::OrientedPoint door2_pose = door2.getPose2D();
-//      GMapping::OrientedPoint pose_in_door = GMapping::OrientedPoint(robot.x-door1_pose.x, robot.y-door1_pose.y, robot.theta).rotate(-door1_pose.theta);
-//      pose_in_door = pose_in_door.rotate(M_PI);
-//      GMapping::OrientedPoint new_pose = pose_in_door.rotate(door2_pose.theta);
-//      new_pose = new_pose + GMapping::OrientedPoint(door2_pose.x, door2_pose.y, 0.0);
-//      ROS_INFO("CALCULATED NEW ODOM POSE");
-//
-//      tf::Transform laser_to_map = tf::Transform(tf::createQuaternionFromRPY(0, 0, new_pose.theta), tf::Vector3(new_pose.x, new_pose.y, 0.0)).inverse();
-//      tf::Transform odom_to_laser = tf::Transform(tf::createQuaternionFromRPY(0, 0, odom_pose.theta), tf::Vector3(odom_pose.x, odom_pose.y, 0.0));
-//      ROS_INFO("CALCULATED TRANSFORMS");
-//
-//      map_to_odom_mutex_.lock();
-//      map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
-//      map_to_odom_mutex_.unlock();
-//      ROS_INFO("SET ODOM TO MAP");
-//      ros::Rate r(1.0/sleep_time);
-//      r.sleep();
-//      ROS_INFO("SLEPT");
-//    }
   }
-  ROS_INFO("BETTER ACTIVATE END");
 
   activate();
 }
 
 
 void RoomMapper::deactivate(){
-  ROS_WARN("DEACTIVATE");
   int best_particle = 0;
   if(got_first_scan_){
     int best_particle = getBestParticleIdx();
-    //gsp_->discardButBestParticle();
   }
 
-  ROS_WARN("BEST PARTICLE = %d", best_particle);
   std::cout << best_particle << std::endl;
   if(best_particle != 0){
     delete octo_maps_[0];
@@ -298,7 +262,6 @@ void RoomMapper::deactivate(){
   octo_maps_.resize(1);
   door_mappers_.resize(1);
   obj_mappers_.resize(1);
-  ROS_WARN("DEACTIVATE END");
 }
 
 

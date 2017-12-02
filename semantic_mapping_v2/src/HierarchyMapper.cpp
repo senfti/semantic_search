@@ -50,7 +50,6 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
 
   if(mapper_idx >= 0 && mapper_idx < room_mapper_.size()){
     if(door.isValid()){
-      ROS_INFO("DOOR_VALID");
       tf::StampedTransform transform;
       try{
         tf_listener_.lookupTransform("base_link", "map", ros::Time(0), transform);
@@ -59,9 +58,7 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
         ROS_ERROR("%s",ex.what());
       }
       GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
-      ROS_INFO("GOT POINT");
       current_mapper_ = mapper_idx;
-      ROS_INFO("CHANGED MAPPER");
       room_mapper_[current_mapper_]->activate(p, door, transform_publish_period_*2.0);
     }
     else{
@@ -157,12 +154,6 @@ void HierarchyMapper::run(){
         if(other_room < 0){
           int new_id = Door::getID();
           room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size(), new_id);
-//          door.counterpart_id_ = door.id_;
-//          door.id_ = new_id;
-//          door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
-//          door.this_room_ = room_mapper_.size();
-//          door.other_room_ = current_mapper_;
-//          door.proposal_count_ = std::min(door.proposal_count_, 5);
 
           Door counterpart_door(room_mapper_.size(), door.pose_, std::min(door.proposal_count_, 5), current_mapper_, new_id, door.id_);
           counterpart_door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
