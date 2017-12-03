@@ -9,8 +9,8 @@
 #include "semantic_mapping_v2/RoomMapper.h"
 #include <pcl/filters/voxel_grid.h>
 
-RoomMapper::RoomMapper(int idx, const Door& door)
-      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr)
+RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, const Door& door)
+      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), SlamGMapping(tf)
 {
   try{
     for(auto &map : octo_maps_)
@@ -35,16 +35,14 @@ RoomMapper::RoomMapper(int idx, const Door& door)
   while(!got_transform && ros::ok()){
     got_transform = true;
     try{
-      tf_.waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
-      tf_.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
+      tf_->waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
+      tf_->lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
       got_transform = false;
     }
   }
-  ros::Rate r(10.0);
-  r.sleep();
 }
 
 RoomMapper::~RoomMapper(){
@@ -218,7 +216,7 @@ void RoomMapper::activate(){
       ros::shutdown();
     }
   }
-  activate_time_ = ros::TIME_MAX;
+  activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
 }
 
 GMapping::OrientedPoint transformPointIntoFrame(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& frame){
@@ -241,34 +239,14 @@ std::string o2s(GMapping::OrientedPoint p) { return std::to_string(p.x) + " " + 
 void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
   if(door2.isValid()){
-//    GMapping::OrientedPoint door1_pose = door.getPose2D();
-//    GMapping::OrientedPoint door2_pose = door2.getPose2D();
-//    ROS_WARN("Door1: %s", o2s(door1_pose).c_str());
-//    ROS_WARN("Door2: %s", o2s(door2_pose).c_str());
-//    GMapping::OrientedPoint pose_in_door = GMapping::OrientedPoint(robot.x-door1_pose.x, robot.y-door1_pose.y, robot.theta).rotate(-door1_pose.theta);
-//    ROS_WARN("pose_in_door: %s", o2s(pose_in_door).c_str());
-//    pose_in_door = pose_in_door.rotate(M_PI);
-//    GMapping::OrientedPoint new_pose = pose_in_door.rotate(door2_pose.theta);
-//    new_pose = new_pose + GMapping::OrientedPoint(door2_pose.x, door2_pose.y, 0.0);
-//    ROS_WARN("new_pose: %s", o2s(new_pose).c_str());
-//    setResume(new_pose);
-
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
-    ROS_WARN("Door1: %s", o2s(door1_pose).c_str());
-    ROS_WARN("Door2: %s", o2s(door2_pose).c_str());
-    ROS_WARN("Robot: %s", o2s(robot).c_str());
-
     GMapping::OrientedPoint pose = transformPointIntoFrame(robot, door1_pose);
-    ROS_WARN("InDoor1: %s", o2s(pose).c_str());
     turnMPI(pose);
-    ROS_WARN("InDoor2: %s", o2s(pose).c_str());
     GMapping::OrientedPoint map = invertFrame(door2_pose);
-    ROS_WARN("Map: %s", o2s(map).c_str());
     pose = transformPointIntoFrame(pose, map);
-    ROS_WARN("InMap: %s", o2s(pose).c_str());
 
-    setResume(pose);
+    resume(pose);
   }
   else{
     ROS_ERROR("Counterpart door exists but not found, counterpart_id: %d, number of doors in new room: %d", door.counterpart_id_, int(door_mappers_[0]->getDoors().size()));
@@ -347,17 +325,33 @@ GMapping::OrientedPoint RoomMapper::getBestParticlePose2D(ros::Time time) const{
 tf::Transform RoomMapper::getBestParticlePose3D(ros::Time time) const{
   tf::StampedTransform transform;
   try{
-    tf_.lookupTransform("map", "base_link", time, transform);
+    tf_->lookupTransform("map", "base_link", time, transform);
     return transform;
   }
   catch (tf::TransformException ex){
   }
   try{
-    tf_.lookupTransform("map", "base_link", ros::Time(0), transform);
+    tf_->lookupTransform("map", "base_link", ros::Time(0), transform);
     return transform;
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
   return tf::Transform();
+}
+
+
+geometry_msgs::PoseArray RoomMapper::getParticlePoseMsg() const{
+  static int seq = 0;
+  geometry_msgs::PoseArray msg;
+  msg.header.seq = seq++;
+  msg.header.frame_id = "map";
+  msg.header.stamp = ros::Time::now();
+  msg.poses.resize(particles_);
+  for(int i=0; i<particles_; i++){
+    tf::Transform pose(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), gsp_->getParticles()[i].pose.theta), tf::Vector3(gsp_->getParticles()[i].pose.x, gsp_->getParticles()[i].pose.y, 0.0));
+    tf::poseTFToMsg(pose, msg.poses[i]);
+  }
+
+  return msg;
 }

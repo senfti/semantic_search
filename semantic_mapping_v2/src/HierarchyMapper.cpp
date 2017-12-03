@@ -19,6 +19,7 @@ HierarchyMapper::HierarchyMapper(){
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
   obj_prob_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("obj_prob", 1, true);
+  particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   tfB_ = new tf::TransformBroadcaster();
@@ -36,7 +37,7 @@ HierarchyMapper::~HierarchyMapper(){
 
 
 void HierarchyMapper::addMapper(const Door& door){
-  room_mapper_.push_back(new RoomMapper(room_mapper_.size(), door));
+  room_mapper_.push_back(new RoomMapper(room_mapper_.size(), &tf_listener_, door));
   ROS_INFO("Added MAPPER %d", int(room_mapper_.size()) - 1);
   switchMapper(room_mapper_.size() - 1);
 }
@@ -129,6 +130,7 @@ void HierarchyMapper::downprojecAndPublishMap(){
     map_info_pub_.publish(map.info);
   }
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+  particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
 }
 
 

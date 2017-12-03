@@ -33,18 +33,26 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
       std::iota(m_indexes.begin(), m_indexes.end(), 0);
     }
 
+    bool resume_ = false;
+    int resume_particle_ = 0;
+    GMapping::OrientedPoint new_odom_, new_pose_;
+
     inline void resetIndexes() { m_indexes = std::vector<unsigned int>(); }
     void init(unsigned int size, double xmin, double ymin, double xmax, double ymax, double delta, GMapping::OrientedPoint initialPose, const GMapping::ScanMatcherMap& initial_map);
+    void resume(const GMapping::OrientedPoint& new_pose, const GMapping::OrientedPoint& new_odom);
 
+    virtual void onOdometryUpdate();
+    virtual void onResampleUpdate();
+    virtual void onScanmatchUpdate();
 };
 
 
 class SlamGMapping
 {
   public:
-    SlamGMapping();
-    SlamGMapping(ros::NodeHandle& nh, ros::NodeHandle& pnh);
-    SlamGMapping(unsigned long int seed, unsigned long int max_duration_buffer);
+    SlamGMapping(tf::TransformListener* tf);
+    SlamGMapping(tf::TransformListener* tf, ros::NodeHandle& nh, ros::NodeHandle& pnh);
+    SlamGMapping(tf::TransformListener* tf, unsigned long int seed, unsigned long int max_duration_buffer);
     virtual ~SlamGMapping();
 
     void init();
@@ -55,12 +63,11 @@ class SlamGMapping
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     bool isInitialized() const { return got_first_scan_; }
 
-    void setResume(const GMapping::OrientedPoint& initial_pose) { initial_pose_ = initial_pose; resume_ = true; }
-    void resume(GMapping::OrientedPoint initialPose, const sensor_msgs::LaserScan& scan);
+    void resume(const GMapping::OrientedPoint& new_pose);
 
   protected:
     ros::NodeHandle node_;
-    tf::TransformListener tf_;
+    tf::TransformListener* tf_;
 
     MyGridSlamProcessor* gsp_;
     GMapping::RangeSensor* gsp_laser_;
@@ -76,8 +83,6 @@ class SlamGMapping
     GMapping::OdometrySensor* gsp_odom_;
 
     bool got_first_scan_;
-    bool resume_ = false;
-    GMapping::OrientedPoint initial_pose_;
     bool processed_scan_ = false;
     ros::Time activate_time_ = ros::TIME_MAX;
     double settle_time_ = 1.0;

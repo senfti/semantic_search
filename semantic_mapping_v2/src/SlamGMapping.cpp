@@ -41,27 +41,65 @@ void MyGridSlamProcessor::init(unsigned int size, double xmin, double ymin, doub
 }
 
 
+void MyGridSlamProcessor::onOdometryUpdate(){
+  if(resume_){
+    for(auto& p : m_particles){
+      p.pose = new_pose_;
+    }
+    m_odoPose = new_odom_;
+    m_lastPartPose = new_odom_;
+  }
+  resume_ = false;
+}
+
+
+void MyGridSlamProcessor::onResampleUpdate(){
+  //ROS_ERROR("RES");
+}
+
+
+void MyGridSlamProcessor::onScanmatchUpdate(){
+//  if(resume_){
+//    ROS_ERROR("SM");
+//    for(int i=0; i<m_particles.size(); i++){
+//      if(i != resume_particle_){
+//        m_particles[i].weight = m_particles[resume_particle_].weight - 100000.0;
+//      }
+//    }
+//  }
+}
+
+
+void MyGridSlamProcessor::resume(const GMapping::OrientedPoint& new_pose, const GMapping::OrientedPoint& new_odom){
+  resume_particle_ = getBestParticleIndex();
+  new_pose_ = new_pose;
+  new_odom_ = new_odom;
+  m_linearDistance = m_linearThresholdDistance;
+  m_angularDistance = m_angularThresholdDistance;
+  resume_ = true;
+}
+
+
 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
-SlamGMapping::SlamGMapping():
-      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Point(0, 0, 0))), laser_count_(0), private_nh_("~")
+SlamGMapping::SlamGMapping(tf::TransformListener* tf):
+      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Point(0, 0, 0))), laser_count_(0), private_nh_("~"), tf_(tf)
 {
   seed_ = time(NULL);
   init();
 }
 
-SlamGMapping::SlamGMapping(ros::NodeHandle& nh, ros::NodeHandle& pnh):
-      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Point(0, 0, 0))), laser_count_(0),node_(nh), private_nh_(pnh)
+SlamGMapping::SlamGMapping(tf::TransformListener* tf, ros::NodeHandle& nh, ros::NodeHandle& pnh):
+      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Point(0, 0, 0))), laser_count_(0),node_(nh), private_nh_(pnh), tf_(tf)
 {
   seed_ = time(NULL);
   init();
 }
 
-SlamGMapping::SlamGMapping(long unsigned int seed, long unsigned int max_duration_buffer):
-      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY( 0, 0, 0 ), tf::Point(0, 0, 0 ))), laser_count_(0), private_nh_("~"),
-      seed_(seed), tf_(ros::Duration(max_duration_buffer))
+SlamGMapping::SlamGMapping(tf::TransformListener* tf, long unsigned int seed, long unsigned int max_duration_buffer):
+      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY( 0, 0, 0 ), tf::Point(0, 0, 0 ))), laser_count_(0), private_nh_("~"), seed_(seed), tf_(tf)
 {
   init();
 }
@@ -173,7 +211,7 @@ bool SlamGMapping::getOdomPose(GMapping::OrientedPoint& gmap_pose, const ros::Ti
   // Get the laser's pose that is centered
   tf::Stamped<tf::Transform> odom_pose;
   try {
-    tf_.transformPose(odom_frame_, centered_laser_pose_, odom_pose);
+    tf_->transformPose(odom_frame_, centered_laser_pose_, odom_pose);
   }
   catch(tf::TransformException e) {
     ROS_WARN("Failed to compute odom pose, skipping scan (%s)", e.what());
@@ -194,7 +232,7 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   ident.frame_id_ = laser_frame_;
   ident.stamp_ = scan.header.stamp;
   try {
-    tf_.transformPose(base_frame_, ident, laser_pose);
+    tf_->transformPose(base_frame_, ident, laser_pose);
   }
   catch(tf::TransformException e) {
     ROS_WARN("Failed to compute laser pose, aborting initialization (%s)", e.what());
@@ -206,7 +244,7 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   v.setValue(0, 0, 1 + laser_pose.getOrigin().z());
   tf::Stamped<tf::Vector3> up(v, scan.header.stamp, base_frame_);
   try {
-    tf_.transformPoint(laser_frame_, up, up);
+    tf_->transformPoint(laser_frame_, up, up);
     ROS_DEBUG("Z-Axis in sensor frame: %.3f", up.z());
   }
   catch(tf::TransformException& e) {
@@ -307,7 +345,7 @@ bool SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::Oriente
   double* ranges_double = new double[scan.ranges.size()];
   // If the angle increment is negative, we have to invert the order of the readings.
   if (do_reverse_range_) {
-    ROS_DEBUG("Inverting scan");
+    ROS_INFO("Inverting scan");
     int num_ranges = scan.ranges.size();
     for(int i=0; i < num_ranges; i++) {
       // Must filter out short readings, because the mapper won't
@@ -351,11 +389,6 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     if(!initMapper(*scan))
       return;
     got_first_scan_ = true;
-    activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
-  }
-  if(resume_){
-    resume(initial_pose_, *scan);
-    resume_ = false;
     activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
   }
 
@@ -469,7 +502,7 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
 
   //make sure to set the header information on the map
   map_.map.header.stamp = ros::Time::now();
-  map_.map.header.frame_id = tf_.resolve( map_frame_ );
+  map_.map.header.frame_id = tf_->resolve( map_frame_ );
 }
 
 
@@ -486,26 +519,9 @@ tf::StampedTransform SlamGMapping::getTransform(){
 
 
 
-void SlamGMapping::resume(GMapping::OrientedPoint initialPose, const sensor_msgs::LaserScan& scan){
-  GMapping::ScanMatcherMap map = gsp_->getParticles()[gsp_->getBestParticleIndex()].map;
-  MyGridSlamProcessor* new_gsp = new MyGridSlamProcessor();
-
-  GMapping::SensorMap smap;
-  smap.insert(make_pair(gsp_laser_->getName(), gsp_laser_));
-  new_gsp->setSensorMap(smap);
-  new_gsp->setMatchingParameters(maxUrange_, maxRange_, sigma_, kernelSize_, lstep_, astep_, iterations_, lsigma_, ogain_, lskip_);
-  new_gsp->setMotionModelParameters(srr_, srt_, str_, stt_);
-  new_gsp->setUpdateDistances(linearUpdate_, angularUpdate_, resampleThreshold_);
-  new_gsp->setUpdatePeriod(temporalUpdate_);
-  new_gsp->setgenerateMap(false);
-  new_gsp->init(particles_, xmin_, ymin_, xmax_, ymax_, delta_, initialPose, map);
-  new_gsp->setllsamplerange(llsamplerange_);
-  new_gsp->setllsamplestep(llsamplestep_);
-  new_gsp->setlasamplerange(lasamplerange_);
-  new_gsp->setlasamplestep(lasamplestep_);
-  new_gsp->setminimumScore(minimum_score_);
-
-  delete gsp_;
-  gsp_ = new_gsp;
+void SlamGMapping::resume(const GMapping::OrientedPoint& new_pose){
+  GMapping::OrientedPoint odom_pose;
+  getOdomPose(odom_pose, ros::Time(0));
+  gsp_->resume(new_pose, odom_pose);
 }
 

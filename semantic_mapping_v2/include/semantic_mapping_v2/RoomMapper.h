@@ -31,7 +31,7 @@ class RoomMapper : public SlamGMapping{
     double m_pointcloudMaxZ = std::numeric_limits<double>::max();
 
   public:
-    RoomMapper(int idx, const Door& door = Door());
+    RoomMapper(int idx, tf::TransformListener* tf, const Door& door = Door());
     ~RoomMapper();
 
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
@@ -84,6 +84,7 @@ class RoomMapper : public SlamGMapping{
     float getOccupancy(const pcl::PointXYZ& pos) const { return getOccupancy(pos.x, pos.y, pos.z); }
 
     visualization_msgs::MarkerArray getObjectProbMsg(int id) const;
+    geometry_msgs::PoseArray getParticlePoseMsg() const;
 };
 
 
