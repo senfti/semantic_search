@@ -30,9 +30,6 @@ class RoomMapper : public SlamGMapping{
     double m_pointcloudMinZ = -std::numeric_limits<double>::max();
     double m_pointcloudMaxZ = std::numeric_limits<double>::max();
 
-    ros::Time activate_time_ = ros::TIME_MAX;
-    double octomap_wait_time_ = 2.0;
-
   public:
     RoomMapper(int idx, const Door& door = Door());
     ~RoomMapper();
@@ -44,14 +41,14 @@ class RoomMapper : public SlamGMapping{
     int getBestParticleIdx() const { return gsp_->getBestParticleIndex(); }
     GMapping::OrientedPoint getParticlePose2D(int particle_idx, ros::Time time) const;
     tf::Transform getParticlePose3D(int particle_idx, ros::Time time) const;
-    GMapping::OrientedPoint getBestParticlePose2D(ros::Time time) const { return getParticlePose2D(getBestParticleIdx(), time); }
-    tf::Transform getBestParticlePose3D(ros::Time time) const { return getParticlePose3D(getBestParticleIdx(), time); }
+    GMapping::OrientedPoint getBestParticlePose2D(ros::Time time) const;
+    tf::Transform getBestParticlePose3D(ros::Time time) const;
 
     bool wasMapUpdated() const { return was_map_updated_; }
     bool resetWasMapUpdated();
 
     void activate();
-    void activate(const GMapping::OrientedPoint& robot, const Door& door, double sleep_time);
+    void activate(const GMapping::OrientedPoint& robot, const Door& door);
     void deactivate();
     void downprojectMap();
 

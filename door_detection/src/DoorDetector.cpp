@@ -89,9 +89,8 @@ geometry_msgs::Pose DoorDetector::rectToPose(const cv::RotatedRect& rect) const{
   geometry_msgs::Pose pose;
   pose.position = pixelToPoint(rect.center);
   float angle = (rect.angle+90)*PI_180;
-  if(pose.position.x >= 0 && std::abs(angle) > M_PI_2)
-    angle += M_PI;
-  else if(pose.position.x < 0 && std::abs(angle) < M_PI_2)
+  angle = makeBetweenPi(angle);
+  if(std::abs(angle) > M_PI_2)
     angle += M_PI;
   pose.orientation.w = std::cos(angle/2);
   pose.orientation.x = 0.0;
@@ -235,8 +234,10 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   door_poses.header.seq = seq++;
   for(const auto& contour : contours){
     cv::RotatedRect rect = isContourDoor(contour);
-    if(rect.size.area() >= MIN_WIDTH*MIN_DEPTH && rect.center.x > 0){         // discard if already through door
-      door_poses.poses.push_back(rectToPose(rect));
+    if(rect.size.area() >= MIN_WIDTH*MIN_DEPTH){
+      geometry_msgs::Pose pose = rectToPose(rect);
+      if(pose.position.x >= 0)
+        door_poses.poses.push_back(pose);
     }
   }
   door_pose_pub_.publish(door_poses);

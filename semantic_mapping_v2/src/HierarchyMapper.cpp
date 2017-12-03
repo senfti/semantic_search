@@ -52,14 +52,14 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
     if(door.isValid()){
       tf::StampedTransform transform;
       try{
-        tf_listener_.lookupTransform("base_link", "map", ros::Time(0), transform);
+        tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
       }
       catch (tf::TransformException ex){
         ROS_ERROR("%s",ex.what());
       }
       GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
       current_mapper_ = mapper_idx;
-      room_mapper_[current_mapper_]->activate(p, door, transform_publish_period_*2.0);
+      room_mapper_[current_mapper_]->activate(p, door);
     }
     else{
       current_mapper_ = mapper_idx;

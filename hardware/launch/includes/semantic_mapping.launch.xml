@@ -3,7 +3,7 @@
   <arg name="base_frame"  default="base_footprint"/>
   <arg name="odom_frame"  default="odom"/>
 
-  <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" launch-prefix="xterm -hold -e" >
+  <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" launch-prefix="xterm -sl 10000 -hold -e" >
     <param name="gmapping/base_frame" value="$(arg base_frame)"/>
     <param name="gmapping/odom_frame" value="$(arg odom_frame)"/>
     <param name="gmapping/map_update_interval" value="5.0"/>
@@ -26,7 +26,7 @@
     <param name="gmapping/angularUpdate" value="0.436"/>
     <param name="gmapping/temporalUpdate" value="-1.0"/>
     <param name="gmapping/resampleThreshold" value="0.5"/>
-    <param name="gmapping/particles" value="20"/>
+    <param name="gmapping/particles" value="10"/>
   <!--
     <param name="gmapping/xmin" value="-50.0"/>
     <param name="gmapping/ymin" value="-50.0"/>

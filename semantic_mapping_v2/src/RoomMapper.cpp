@@ -30,7 +30,6 @@ RoomMapper::RoomMapper(int idx, const Door& door)
   private_nh_.param("Octomap/downsample_voxel_size", downsample_voxel_size_, downsample_voxel_size_);
   private_nh_.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
-  private_nh_.param("octomap_wait_time", octomap_wait_time_,octomap_wait_time_);
 
   bool got_transform = false;
   while(!got_transform && ros::ok()){
@@ -44,6 +43,8 @@ RoomMapper::RoomMapper(int idx, const Door& door)
       got_transform = false;
     }
   }
+  ros::Rate r(10.0);
+  r.sleep();
 }
 
 RoomMapper::~RoomMapper(){
@@ -113,7 +114,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
 
 
 void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
-  if(!isInitialized())
+  if(!isInitialized() || msg->header.stamp < activate_time_)
     return;
 
   for(int i=0; i<door_mappers_.size(); i++){
@@ -128,6 +129,9 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
 
 
 void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
+  if(!isInitialized() || msg->header.stamp < activate_time_)
+    return;
+
   ros::Time start = ros::Time::now();
   room_type_mapper_.processMsg(msg);
   std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
@@ -149,7 +153,7 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     obj_mappers_[i]->addCloud(cloud_trans, msg->detection_samples);
   }
 
-  ROS_WARN("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
+  ROS_INFO("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
 }
 
 
@@ -214,20 +218,63 @@ void RoomMapper::activate(){
       ros::shutdown();
     }
   }
-  activate_time_ = ros::Time(octomap_wait_time_ + ros::Time::now().toSec());
+  activate_time_ = ros::TIME_MAX;
 }
 
+GMapping::OrientedPoint transformPointIntoFrame(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& frame){
+  double x_tmp = point.x-frame.x;
+  double y_tmp = point.y-frame.y;
+  return GMapping::OrientedPoint(x_tmp*std::cos(-frame.theta) - y_tmp*std::sin(-frame.theta), x_tmp*std::sin(-frame.theta) + y_tmp*std::cos(-frame.theta), point.theta - frame.theta);
+}
 
-void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door, double sleep_time){
+void turnMPI(GMapping::OrientedPoint& point){
+  point.x = -point.x;
+  point.y = -point.y;
+  point.theta = point.theta + M_PI;
+}
+
+GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
+  return transformPointIntoFrame(GMapping::OrientedPoint(0.0,0.0,0.0), frame);
+}
+
+std::string o2s(GMapping::OrientedPoint p) { return std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.theta); }
+void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
   if(door2.isValid()){
+//    GMapping::OrientedPoint door1_pose = door.getPose2D();
+//    GMapping::OrientedPoint door2_pose = door2.getPose2D();
+//    ROS_WARN("Door1: %s", o2s(door1_pose).c_str());
+//    ROS_WARN("Door2: %s", o2s(door2_pose).c_str());
+//    GMapping::OrientedPoint pose_in_door = GMapping::OrientedPoint(robot.x-door1_pose.x, robot.y-door1_pose.y, robot.theta).rotate(-door1_pose.theta);
+//    ROS_WARN("pose_in_door: %s", o2s(pose_in_door).c_str());
+//    pose_in_door = pose_in_door.rotate(M_PI);
+//    GMapping::OrientedPoint new_pose = pose_in_door.rotate(door2_pose.theta);
+//    new_pose = new_pose + GMapping::OrientedPoint(door2_pose.x, door2_pose.y, 0.0);
+//    ROS_WARN("new_pose: %s", o2s(new_pose).c_str());
+//    setResume(new_pose);
+
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
-    GMapping::OrientedPoint pose_in_door = GMapping::OrientedPoint(robot.x-door1_pose.x, robot.y-door1_pose.y, robot.theta).rotate(-door1_pose.theta);
-    pose_in_door = pose_in_door.rotate(M_PI);
-    GMapping::OrientedPoint new_pose = pose_in_door.rotate(door2_pose.theta);
-    new_pose = new_pose + GMapping::OrientedPoint(door2_pose.x, door2_pose.y, 0.0);
-    setResume(new_pose);
+    ROS_WARN("Door1: %s", o2s(door1_pose).c_str());
+    ROS_WARN("Door2: %s", o2s(door2_pose).c_str());
+    ROS_WARN("Robot: %s", o2s(robot).c_str());
+
+    GMapping::OrientedPoint pose = transformPointIntoFrame(robot, door1_pose);
+    ROS_WARN("InDoor1: %s", o2s(pose).c_str());
+    turnMPI(pose);
+    ROS_WARN("InDoor2: %s", o2s(pose).c_str());
+    GMapping::OrientedPoint map = invertFrame(door2_pose);
+    ROS_WARN("Map: %s", o2s(map).c_str());
+    pose = transformPointIntoFrame(pose, map);
+    ROS_WARN("InMap: %s", o2s(pose).c_str());
+
+    setResume(pose);
+  }
+  else{
+    ROS_ERROR("Counterpart door exists but not found, counterpart_id: %d, number of doors in new room: %d", door.counterpart_id_, int(door_mappers_[0]->getDoors().size()));
+    for(const auto& d : door_mappers_[0]->getDoors()){
+      std::cout << d.id_ << std::endl;
+    }
   }
 
   activate();
@@ -290,3 +337,27 @@ visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
   return res;
 }
 
+
+GMapping::OrientedPoint RoomMapper::getBestParticlePose2D(ros::Time time) const{
+  tf::Transform transform = getBestParticlePose3D(time);
+  return GMapping::OrientedPoint(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
+}
+
+
+tf::Transform RoomMapper::getBestParticlePose3D(ros::Time time) const{
+  tf::StampedTransform transform;
+  try{
+    tf_.lookupTransform("map", "base_link", time, transform);
+    return transform;
+  }
+  catch (tf::TransformException ex){
+  }
+  try{
+    tf_.lookupTransform("map", "base_link", ros::Time(0), transform);
+    return transform;
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
+  return tf::Transform();
+}

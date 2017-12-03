@@ -27,7 +27,7 @@ class Door{
     bool isValid() const { return id_ >= 0; }
     bool hasOtherRoom() const { return other_room_ >= 0; }
 
-    GMapping::OrientedPoint getPose2D() const { return GMapping::OrientedPoint(pose_.getOrigin().x(), pose_.getOrigin().x(), tf::getYaw(pose_.getRotation())); }
+    GMapping::OrientedPoint getPose2D() const { return GMapping::OrientedPoint(pose_.getOrigin().x(), pose_.getOrigin().y(), tf::getYaw(pose_.getRotation())); }
 
     static int getID() { static int id=0; return id++; }
 };
@@ -35,6 +35,7 @@ class Door{
 class DoorMapper{
   public:
     double MIN_DOOR_DIST = 1.0;
+    int MAX_CONFIDENCE = 10;
 
   private:
     std::vector<Door> doors_;

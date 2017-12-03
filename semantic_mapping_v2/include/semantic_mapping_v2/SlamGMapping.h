@@ -79,6 +79,8 @@ class SlamGMapping
     bool resume_ = false;
     GMapping::OrientedPoint initial_pose_;
     bool processed_scan_ = false;
+    ros::Time activate_time_ = ros::TIME_MAX;
+    double settle_time_ = 1.0;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;

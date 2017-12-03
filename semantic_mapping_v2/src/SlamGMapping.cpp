@@ -156,6 +156,7 @@ void SlamGMapping::init(){
   if(!private_nh_.getParam("gmapping/tf_delay", tf_delay_))
     tf_delay_ = transform_publish_period_;
 
+  private_nh_.param("gmapping/settle_time", settle_time_, settle_time_);
 }
 
 SlamGMapping::~SlamGMapping(){
@@ -349,11 +350,13 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
   if(!got_first_scan_) {
     if(!initMapper(*scan))
       return;
-    if(resume_){
-      resume(initial_pose_, *scan);
-      resume_ = false;
-    }
     got_first_scan_ = true;
+    activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
+  }
+  if(resume_){
+    resume(initial_pose_, *scan);
+    resume_ = false;
+    activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
   }
 
   GMapping::OrientedPoint odom_pose;

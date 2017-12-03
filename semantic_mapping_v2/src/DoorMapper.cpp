@@ -60,8 +60,9 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
   for(int i=0; i<doors_.size(); i++){
     if((pose.getOrigin() - doors_[i].pose_.getOrigin()).length() < MIN_DOOR_DIST){
       doors_[i].pose_.setOrigin((doors_[i].pose_.getOrigin()*doors_[i].proposal_count_ + pose.getOrigin()) / (doors_[i].proposal_count_+1));
-      doors_[i].pose_.setRotation(doors_[i].pose_.getRotation().slerp(pose.getRotation(), doors_[i].proposal_count_/double(doors_[i].proposal_count_+1)));
-      doors_[i].proposal_count_++;
+      doors_[i].pose_.setRotation(pose.getRotation().slerp(doors_[i].pose_.getRotation(), doors_[i].proposal_count_/double(doors_[i].proposal_count_+1)));
+      if(doors_[i].proposal_count_ < MAX_CONFIDENCE)
+        doors_[i].proposal_count_++;
       return true;
     }
   }
