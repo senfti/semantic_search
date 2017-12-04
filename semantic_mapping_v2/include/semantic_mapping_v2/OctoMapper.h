@@ -75,6 +75,10 @@ class OctoMapper {
     double m_minSizeY;
     double downprojection_height_;
 
+    double occupancy_thresh_ = 0.5;
+    double downproject_occ_thresh_ = 0.5;
+    int downproject_erode_iters_ = 2;
+
     bool m_compressMap;
     bool m_initConfig;
     bool m_useColoredMap;

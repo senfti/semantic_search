@@ -4,6 +4,7 @@
 //
 
 #include <semantic_mapping_v2/OctoMapper.h>
+#include <opencv2/opencv.hpp>
 
 using namespace octomap;
 using octomap_msgs::Octomap;
@@ -21,7 +22,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
         m_useColoredMap(false),
         m_colorFactor(0.8),
         m_latchedTopics(true),
-        m_publishFreeSpace(true),
+        m_publishFreeSpace(false),
         m_res(0.1),
         m_treeDepth(0),
         m_maxTreeDepth(0),
@@ -43,6 +44,9 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
 
   private_nh.param("Octomap/occupancy_min_z", m_occupancyMinZ,m_occupancyMinZ);
   private_nh.param("Octomap/occupancy_max_z", m_occupancyMaxZ,m_occupancyMaxZ);
+  private_nh.param("Octomap/occupancy_thresh", occupancy_thresh_,occupancy_thresh_);
+  private_nh.param("Octomap/downproject_occ_thresh", downproject_occ_thresh_,downproject_occ_thresh_);
+  private_nh.param("Octomap/downproject_erode_iters", downproject_erode_iters_,downproject_erode_iters_);
   private_nh.param("Octomap/min_x_size", m_minSizeX,m_minSizeX);
   private_nh.param("Octomap/min_y_size", m_minSizeY,m_minSizeY);
   private_nh.param("Octomap/downprojection_height", downprojection_height_,downprojection_height_);
@@ -122,6 +126,9 @@ OctoMapper::OctoMapper(const OctoMapper& rhs){
 
   m_occupancyMinZ = rhs.m_occupancyMinZ;
   m_occupancyMaxZ = rhs.m_occupancyMaxZ;
+  occupancy_thresh_ = rhs.occupancy_thresh_;
+  downproject_occ_thresh_ = rhs.downproject_occ_thresh_;
+  downproject_erode_iters_ = rhs.downproject_erode_iters_;
   m_minSizeX = rhs.m_minSizeX;
   m_minSizeY = rhs.m_minSizeY;
   downprojection_height_ = rhs.downprojection_height_;
@@ -313,13 +320,37 @@ void OctoMapper::getAllPublishMsgs(visualization_msgs::MarkerArray& occupied_cel
   ROS_DEBUG("Map publishing in OctoMapper took %f sec", total_elapsed);
 }
 
+
+std_msgs::ColorRGBA getProbColor(double prob){
+  int v = prob*13;
+  std_msgs::ColorRGBA c;
+  c.a = 1.0;
+  switch(v){
+    case 0:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 1:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 2:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 3:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 4:   c.r = 0.2;  c.g = 0.0;  c.b = 0.0;  break;
+    case 5:   c.r = 0.5;  c.g = 0.0;  c.b = 0.0;  break;
+    case 6:   c.r = 0.8;  c.g = 0.0;  c.b = 0.0;  break;
+    case 7:   c.r = 1.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 8:   c.r = 1.0;  c.g = 1.0;  c.b = 0.0;  break;
+    case 9:   c.r = 0.0;  c.g = 1.0;  c.b = 0.0;  break;
+    case 10:  c.r = 0.0;  c.g = 1.0;  c.b = 1.0;  break;
+    case 11:  c.r = 0.0;  c.g = 0.0;  c.b = 1.0;  break;
+    case 12:  c.r = 1.0;  c.g = 0.0;  c.b = 1.0;  break;
+    default:  c.r = 1.0;  c.g = 0.7;  c.b = 1.0;  break;
+  }
+  return c;
+}
+
 visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &rostime) const{
   visualization_msgs::MarkerArray occupiedNodesVis;
   occupiedNodesVis.markers.resize(m_treeDepth+1);
 
   // now, traverse all leafs in the tree:
   for (OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
-    if(m_octree->isNodeOccupied(*it)){
+    if(it->getOccupancy() > occupancy_thresh_){
       double z = it.getZ();
       if(z > m_occupancyMinZ && z < m_occupancyMaxZ){
         double x = it.getX();
@@ -340,7 +371,7 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &
           m_octree->getMetricMax(maxX, maxY, maxZ);
 
           double h = (1.0 - std::min(std::max((cubeCenter.z-minZ)/ (maxZ - minZ), 0.0), 1.0)) *m_colorFactor;
-          occupiedNodesVis.markers[idx].colors.push_back(heightMapColor(h));
+          occupiedNodesVis.markers[idx].colors.push_back(getProbColor(it->getOccupancy())); //heightMapColor(h));
         }
       }
     }
@@ -390,7 +421,7 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
       cubeCenter.y = y;
       cubeCenter.z = z;
 
-      if (m_octree->isNodeOccupied(*it)){
+      if (it->getOccupancy() > occupancy_thresh_){
         occupiedNodesVis.markers[idx].points.push_back(cubeCenter);
         if (m_useHeightMap){
           double minX, minY, minZ, maxX, maxY, maxZ;
@@ -398,8 +429,7 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
           m_octree->getMetricMax(maxX, maxY, maxZ);
 
           double h = (1.0 - std::min(std::max((cubeCenter.z-minZ)/ (maxZ - minZ), 0.0), 1.0)) *m_colorFactor;
-
-          occupiedNodesVis.markers[idx].colors.push_back(heightMapColor(h));
+          occupiedNodesVis.markers[idx].colors.push_back(getProbColor(it->getOccupancy())); //heightMapColor(h));
         }
       }
       else{
@@ -494,11 +524,12 @@ Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) const{
 
 nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) const{
   nav_msgs::OccupancyGrid downprojected_map = map;
+  cv::Mat_<uchar> tmp_map(map.info.height, map.info.width, uchar(0));
   geometry_msgs::Quaternion orig_quat = downprojected_map.info.origin.orientation;
   double res = 1.00 / downprojected_map.info.resolution;
   if(is_equal(orig_quat.w, 1.0) && is_equal(orig_quat.x, 0.0) && is_equal(orig_quat.y, 0.0) && is_equal(orig_quat.z, 0.0)){   // should be here
     for(OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
-      if(m_octree->isNodeOccupied(*it) && it.getZ() <= downprojection_height_){
+      if(it->getOccupancy() > downproject_occ_thresh_ && it.getZ() <= downprojection_height_){
         double x_min = ((it.getX() - downprojected_map.info.origin.position.x) - m_res/2.0)*res;
         double y_min = ((it.getY() - downprojected_map.info.origin.position.y) - m_res/2.0)*res;
         double x_max = x_min + m_res*res;
@@ -506,7 +537,8 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
         for(int x=std::round(x_min); x<x_max-0.5; x++){
           for(int y=std::round(y_min); y<y_max-0.5; y++){
             if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height){
-              downprojected_map.data[y * downprojected_map.info.width + x] = 100;
+              tmp_map(y,x) = 255;
+              //downprojected_map.data[y * downprojected_map.info.width + x] = 100;
             }
           }
         }
@@ -524,7 +556,16 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
         int x = (cos_yaw * xd - sin_yaw * yd) * res;
         int y = (sin_yaw * xd + cos_yaw * yd) * res;
         if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height)
-          downprojected_map.data[y * downprojected_map.info.width + x] = 100;
+          tmp_map(y,x) = 255;
+          //downprojected_map.data[y * downprojected_map.info.width + x] = 100;
+      }
+    }
+  }
+  cv::erode(tmp_map, tmp_map, cv::Mat_<uchar>::ones(3, 3), cv::Point(-1,-1), downproject_erode_iters_);
+  for(int x=0; x<tmp_map.cols; x++){
+    for(int y=0; y<tmp_map.rows; y++){
+      if(tmp_map(y,x)){
+        downprojected_map.data[y * downprojected_map.info.width + x] = 100;
       }
     }
   }
