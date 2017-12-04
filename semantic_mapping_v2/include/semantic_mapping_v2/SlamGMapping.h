@@ -50,9 +50,9 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
 class SlamGMapping
 {
   public:
-    SlamGMapping(tf::TransformListener* tf);
-    SlamGMapping(tf::TransformListener* tf, ros::NodeHandle& nh, ros::NodeHandle& pnh);
-    SlamGMapping(tf::TransformListener* tf, unsigned long int seed, unsigned long int max_duration_buffer);
+    SlamGMapping(tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom);
+    SlamGMapping(tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, ros::NodeHandle& nh, ros::NodeHandle& pnh);
+    SlamGMapping(tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, unsigned long int seed, unsigned long int max_duration_buffer);
     virtual ~SlamGMapping();
 
     void init();
@@ -86,6 +86,7 @@ class SlamGMapping
     bool processed_scan_ = false;
     ros::Time activate_time_ = ros::TIME_MAX;
     double settle_time_ = 1.0;
+    GMapping::OrientedPoint initial_pose_;
 
     bool got_map_;
     nav_msgs::GetMap::Response map_;

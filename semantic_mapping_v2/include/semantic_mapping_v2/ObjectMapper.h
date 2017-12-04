@@ -40,7 +40,17 @@ class ObjectMap{
     void insertProb(int x, int y, int z, float prob);
     void insertProb(float x, float y, float z, float prob) { insertProb(getXPixel(x), getYPixel(y), getZPixel(z), prob); }
 
-    float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
+    float getProb(int x, int y, int z) const {
+      if(z<0 || z>= prob_maps_.size())
+        std::cout << "get-------------------------------Z out: " << z << "size: " << prob_maps_.size() << std::endl;
+      if(x<0 || x>= prob_maps_[z].cols)
+        std::cout << "get-------------------------------X out: " << x << "size: " << prob_maps_[z].cols << std::endl;
+      if(y<0 || y>= prob_maps_[z].rows)
+        std::cout << "get-------------------------------Y out: " << y << "size: " << prob_maps_[z].rows << std::endl;
+
+      return prob_maps_[z](y, x);
+    }
+
     float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
 
     int getXPixel(float x) const { return x*resolution_ + origin_.x; }

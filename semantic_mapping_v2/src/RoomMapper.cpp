@@ -9,8 +9,8 @@
 #include "semantic_mapping_v2/RoomMapper.h"
 #include <pcl/filters/voxel_grid.h>
 
-RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, const Door& door)
-      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), SlamGMapping(tf)
+RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door)
+      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), SlamGMapping(tf, initial_pose, initial_map_to_odom)
 {
   try{
     for(auto &map : octo_maps_)
@@ -22,6 +22,8 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, const Door& door)
   }
   catch(std::exception& e){
     std::cout << e.what() << std::endl;
+    ros::Rate r(0.1);
+    r.sleep();
     ros::shutdown();
   }
 
@@ -75,6 +77,8 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     }
     catch(std::exception& e){
       ROS_ERROR("%s",e.what());
+      ros::Rate r(0.1);
+      r.sleep();
       ros::shutdown();
     }
     gsp_->resetIndexes();
@@ -213,6 +217,8 @@ void RoomMapper::activate(){
     }
     catch(std::exception& e){
       ROS_ERROR("%s",e.what());
+      ros::Rate r(0.1);
+      r.sleep();
       ros::shutdown();
     }
   }

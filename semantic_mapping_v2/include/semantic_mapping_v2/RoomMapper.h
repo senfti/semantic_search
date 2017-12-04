@@ -31,7 +31,7 @@ class RoomMapper : public SlamGMapping{
     double m_pointcloudMaxZ = std::numeric_limits<double>::max();
 
   public:
-    RoomMapper(int idx, tf::TransformListener* tf, const Door& door = Door());
+    RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door = Door());
     ~RoomMapper();
 
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);

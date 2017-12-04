@@ -20,9 +20,8 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
       : resolution_(resolution), base_size_(base_size), max_height_(max_height), origin_(origin)
 {
   prob_maps_.resize(getZSteps());
-  origin_ = cv::Point(base_size_/2, base_size_/2);
   for(auto& map : prob_maps_)
-    map = cv::Mat_<float>(width, height, initial_value);
+    map = cv::Mat_<float>(height, width, initial_value);
 }
 
 
@@ -34,6 +33,12 @@ void ObjectMap::resize(float left, float right, float top, float bottom){
 
 
 void ObjectMap::insertMax(int x, int y, int z, float prob){
+  if(z<0 || z>= prob_maps_.size())
+    std::cout << "max-------------------------------Z out: " << z << "size: " << prob_maps_.size() << std::endl;
+  if(x<0 || x>= prob_maps_[z].cols)
+    std::cout << "max-------------------------------X out: " << x << "size: " << prob_maps_[z].cols << std::endl;
+  if(y<0 || y>= prob_maps_[z].rows)
+    std::cout << "max-------------------------------Y out: " << y << "size: " << prob_maps_[z].rows << std::endl;
   if(prob_maps_[z](y,x) < prob)
     prob_maps_[z](y,x) = prob;
 }
@@ -43,6 +48,12 @@ void ObjectMap::insertProb(int x, int y, int z, float prob){
   if(prob < 0.f)
     return;
 
+  if(z<0 || z>= prob_maps_.size())
+    std::cout << "prob-------------------------------Z out: " << z << "size: " << prob_maps_.size() << std::endl;
+  if(x<0 || x>= prob_maps_[z].cols)
+    std::cout << "prob-------------------------------X out: " << x << "size: " << prob_maps_[z].cols << std::endl;
+  if(y<0 || y>= prob_maps_[z].rows)
+    std::cout << "prob-------------------------------Y out: " << y << "size: " << prob_maps_[z].rows << std::endl;
   float p = prob_maps_[z](y,x);
   float tmp = (OBJ_CONFIDENCE*prob+(1-OBJ_CONFIDENCE)*p)/OBJ_PRIOR_PROB*p;
   float tmp2 = (OBJ_CONFIDENCE*(1-prob)+(1-OBJ_CONFIDENCE)*(1-p))/OBJ_PRIOR_PROB*(1-p);

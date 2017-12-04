@@ -84,22 +84,22 @@ void MyGridSlamProcessor::resume(const GMapping::OrientedPoint& new_pose, const 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
-SlamGMapping::SlamGMapping(tf::TransformListener* tf):
-      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Point(0, 0, 0))), laser_count_(0), private_nh_("~"), tf_(tf)
+SlamGMapping::SlamGMapping(tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom):
+      laser_count_(0), private_nh_("~"), tf_(tf), initial_pose_(initial_pose), map_to_odom_(initial_map_to_odom)
 {
   seed_ = time(NULL);
   init();
 }
 
-SlamGMapping::SlamGMapping(tf::TransformListener* tf, ros::NodeHandle& nh, ros::NodeHandle& pnh):
-      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY(0, 0, 0), tf::Point(0, 0, 0))), laser_count_(0),node_(nh), private_nh_(pnh), tf_(tf)
+SlamGMapping::SlamGMapping(tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, ros::NodeHandle& nh, ros::NodeHandle& pnh):
+      laser_count_(0),node_(nh), private_nh_(pnh), tf_(tf), initial_pose_(initial_pose), map_to_odom_(initial_map_to_odom)
 {
   seed_ = time(NULL);
   init();
 }
 
-SlamGMapping::SlamGMapping(tf::TransformListener* tf, long unsigned int seed, long unsigned int max_duration_buffer):
-      map_to_odom_(tf::Transform(tf::createQuaternionFromRPY( 0, 0, 0 ), tf::Point(0, 0, 0 ))), laser_count_(0), private_nh_("~"), seed_(seed), tf_(tf)
+SlamGMapping::SlamGMapping(tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, long unsigned int seed, long unsigned int max_duration_buffer):
+      laser_count_(0), private_nh_("~"), seed_(seed), tf_(tf), initial_pose_(initial_pose), map_to_odom_(initial_map_to_odom)
 {
   init();
 }
@@ -307,19 +307,12 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   gsp_odom_ = new GMapping::OdometrySensor(odom_frame_);
   ROS_ASSERT(gsp_odom_);
 
-
-  GMapping::OrientedPoint initialPose;
-  if(!getOdomPose(initialPose, scan.header.stamp)) {
-    ROS_WARN("Unable to determine inital pose of laser! Starting point will be set to zero.");
-    initialPose = GMapping::OrientedPoint(0.0, 0.0, 0.0);
-  }
-
   gsp_->setMatchingParameters(maxUrange_, maxRange_, sigma_, kernelSize_, lstep_, astep_, iterations_, lsigma_, ogain_, lskip_);
   gsp_->setMotionModelParameters(srr_, srt_, str_, stt_);
   gsp_->setUpdateDistances(linearUpdate_, angularUpdate_, resampleThreshold_);
   gsp_->setUpdatePeriod(temporalUpdate_);
   gsp_->setgenerateMap(false);
-  gsp_->GridSlamProcessor::init(particles_, xmin_, ymin_, xmax_, ymax_, delta_, initialPose);
+  gsp_->GridSlamProcessor::init(particles_, xmin_, ymin_, xmax_, ymax_, delta_, initial_pose_);
   gsp_->setllsamplerange(llsamplerange_);
   gsp_->setllsamplestep(llsamplestep_);
   gsp_->setlasamplerange(lasamplerange_);
