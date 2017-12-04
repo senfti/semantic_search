@@ -25,6 +25,7 @@ class RoomMapper : public SlamGMapping{
     bool was_map_updated_ = false;
 
     tf::StampedTransform camera_to_base_transform_;
+    tf::StampedTransform base_to_laser_transform_;
 
     double downsample_voxel_size_ = 0.03;
     double m_pointcloudMinZ = -std::numeric_limits<double>::max();

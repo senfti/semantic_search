@@ -9,6 +9,31 @@
 #include "semantic_mapping_v2/RoomMapper.h"
 #include <pcl/filters/voxel_grid.h>
 
+
+GMapping::OrientedPoint transformPointForward(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& current_frame){
+  return GMapping::OrientedPoint(point.x*std::cos(current_frame.theta) - point.y*std::sin(current_frame.theta) + current_frame.x,
+                                 point.x*std::sin(current_frame.theta) + point.y*std::cos(current_frame.theta) + current_frame.y,
+                                 point.theta + current_frame.theta);
+}
+
+GMapping::OrientedPoint transformPointBackward(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& frame){
+  double x_tmp = point.x-frame.x;
+  double y_tmp = point.y-frame.y;
+  return GMapping::OrientedPoint(x_tmp*std::cos(-frame.theta) - y_tmp*std::sin(-frame.theta), x_tmp*std::sin(-frame.theta) + y_tmp*std::cos(-frame.theta), point.theta - frame.theta);
+}
+
+void turnMPI(GMapping::OrientedPoint& point){
+  point.x = -point.x;
+  point.y = -point.y;
+  point.theta = point.theta + M_PI;
+}
+
+GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
+  return transformPointBackward(GMapping::OrientedPoint(0.0,0.0,0.0), frame);
+}
+
+
+
 RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door)
       : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), SlamGMapping(tf, initial_pose, initial_map_to_odom)
 {
@@ -39,6 +64,14 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
     try{
       tf_->waitForTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
       tf_->lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      got_transform = false;
+    }
+    try{
+      tf_->waitForTransform("base_laser_link", "base_link", ros::Time::now(), ros::Duration(2.0));
+      tf_->lookupTransform("base_laser_link", "base_link", ros::Time::now(), base_to_laser_transform_);
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
@@ -167,28 +200,38 @@ void RoomMapper::downprojectMap(){
 
 GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Time time) const{
   GMapping::GridSlamProcessor::Particle particle = gsp_->getParticles()[particle_idx];
-  if(!particle.node)
-    return GMapping::OrientedPoint(0,0,0);
-  if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading)
-    return particle.pose;
+  GMapping::OrientedPoint result;
+  if(!particle.node){
+    result = GMapping::OrientedPoint(0, 0, 0);
+  }
+  else if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading){
+    result = particle.pose;
+  }
+  else{
+    GMapping::OrientedPoint newer_pose = particle.pose;
+    double newer_time = particle.node->reading->getTime();
+    for(GMapping::GridSlamProcessor::TNode* n = particle.node->parent; n && n->reading; n = n->parent){
+      if(time.toSec() > n->reading->getTime()){
+        result = GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
+        break;
+      }
 
-  GMapping::OrientedPoint newer_pose = particle.pose;
-  double newer_time = particle.node->reading->getTime();
-  for(GMapping::GridSlamProcessor::TNode* n = particle.node->parent; n && n->reading; n = n->parent){
-    if(time.toSec() > n->reading->getTime())
-      return GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
-
-    newer_pose = n->pose;
-    newer_time = n->reading->getTime();
+      newer_pose = n->pose;
+      newer_time = n->reading->getTime();
+    }
   }
 
-  return newer_pose;
+  result = transformPointForward(
+        GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x(), base_to_laser_transform_.getOrigin().y(), tf::getYaw(base_to_laser_transform_.getRotation())),
+        result);
+
+  return result;
 }
 
 
 tf::Transform RoomMapper::getParticlePose3D(int particle_idx, ros::Time time) const{
   GMapping::OrientedPoint point = getParticlePose2D(particle_idx, time);
-  tf::Transform pose(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
+  tf::Transform pose(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, -base_to_laser_transform_.getOrigin().z()));
 
   return pose;
 }
@@ -225,32 +268,15 @@ void RoomMapper::activate(){
   activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
 }
 
-GMapping::OrientedPoint transformPointIntoFrame(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& frame){
-  double x_tmp = point.x-frame.x;
-  double y_tmp = point.y-frame.y;
-  return GMapping::OrientedPoint(x_tmp*std::cos(-frame.theta) - y_tmp*std::sin(-frame.theta), x_tmp*std::sin(-frame.theta) + y_tmp*std::cos(-frame.theta), point.theta - frame.theta);
-}
-
-void turnMPI(GMapping::OrientedPoint& point){
-  point.x = -point.x;
-  point.y = -point.y;
-  point.theta = point.theta + M_PI;
-}
-
-GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
-  return transformPointIntoFrame(GMapping::OrientedPoint(0.0,0.0,0.0), frame);
-}
-
 std::string o2s(GMapping::OrientedPoint p) { return std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.theta); }
 void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
   if(door2.isValid()){
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
-    GMapping::OrientedPoint pose = transformPointIntoFrame(robot, door1_pose);
+    GMapping::OrientedPoint pose = transformPointBackward(robot, door1_pose);
     turnMPI(pose);
-    GMapping::OrientedPoint map = invertFrame(door2_pose);
-    pose = transformPointIntoFrame(pose, map);
+    pose = transformPointForward(pose, door2_pose);
 
     resume(pose);
   }

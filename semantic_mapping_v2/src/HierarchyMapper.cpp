@@ -71,7 +71,7 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
     if(door.isValid()){
       tf::StampedTransform transform;
       try{
-        tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
+        tf_listener_.lookupTransform("map", "base_laser_link", ros::Time(0), transform);
       }
       catch (tf::TransformException ex){
         ROS_ERROR("%s",ex.what());
