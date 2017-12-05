@@ -69,8 +69,8 @@ void ObjectMap::insertProb(int x, int y, int z, float prob){
     return;
   
   float p = prob_maps_[z](y,x);
-  float tmp = (OBJ_CONFIDENCE*prob+(1-OBJ_CONFIDENCE)*OBJ_PRIOR_PROB)/OBJ_PRIOR_PROB*p;
-  float tmp2 = (OBJ_CONFIDENCE*(1-prob)+(1-OBJ_CONFIDENCE)*(1-OBJ_PRIOR_PROB))/OBJ_PRIOR_PROB*(1-p);
+  float tmp = (OBJ_CONFIDENCE * prob/OBJ_PRIOR_PROB + 1-OBJ_CONFIDENCE) * p;
+  float tmp2 = (OBJ_CONFIDENCE * (1.f-prob)/(1.f-OBJ_PRIOR_PROB) + 1-OBJ_CONFIDENCE) * (1.f-p);
   prob_maps_[z](y,x) = std::min(OBJ_MAX_PROB, std::max(OBJ_MIN_PROB, tmp/(tmp+tmp2)));
 }
 
