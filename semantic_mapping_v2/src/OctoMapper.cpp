@@ -26,7 +26,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
         m_res(0.1),
         m_treeDepth(0),
         m_maxTreeDepth(0),
-        m_occupancyMinZ(0.3),
+        m_occupancyMinZ(0.25),
         m_occupancyMaxZ(std::numeric_limits<double>::max()),
         m_minSizeX(0.0), m_minSizeY(0.0),
         m_compressMap(true),
@@ -55,7 +55,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
   private_nh.param("Octomap/sensor_model/max_range", m_maxRange, m_maxRange);
 
   private_nh.param("Octomap/resolution", m_res, m_res);
-  private_nh.param("Octomap/sensor_model/hit", probHit, 0.7);
+  private_nh.param("Octomap/sensor_model/hit", probHit, 0.65);
   private_nh.param("Octomap/sensor_model/miss", probMiss, 0.4);
   private_nh.param("Octomap/sensor_model/min", thresMin, 0.12);
   private_nh.param("Octomap/sensor_model/max", thresMax, 0.97);

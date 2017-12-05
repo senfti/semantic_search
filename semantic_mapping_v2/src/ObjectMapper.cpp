@@ -25,6 +25,33 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
 }
 
 
+ObjectMap::ObjectMap(const ObjectMap& rhs){
+  resolution_ = rhs.resolution_;
+  base_size_ = rhs.base_size_;
+  max_height_ = rhs.max_height_;
+  origin_ = rhs.origin_;
+  prob_maps_.resize(rhs.prob_maps_.size());
+  for(int i=0; i<prob_maps_.size(); i++){
+    rhs.prob_maps_[i].copyTo(prob_maps_[i]);
+  }
+}
+
+ObjectMap& ObjectMap::operator=(const ObjectMap& rhs){
+  if(this == &rhs)
+    return *this;
+
+  resolution_ = rhs.resolution_;
+  base_size_ = rhs.base_size_;
+  max_height_ = rhs.max_height_;
+  origin_ = rhs.origin_;
+  prob_maps_.resize(rhs.prob_maps_.size());
+  for(int i=0; i<prob_maps_.size(); i++){
+    rhs.prob_maps_[i].copyTo(prob_maps_[i]);
+  }
+  return *this;
+}
+
+
 void ObjectMap::resize(float left, float right, float top, float bottom){
   origin_ += cv::Point(left, top);
   for(auto& map : prob_maps_)
@@ -33,8 +60,7 @@ void ObjectMap::resize(float left, float right, float top, float bottom){
 
 
 void ObjectMap::insertMax(int x, int y, int z, float prob){
-  if(prob_maps_[z](y,x) < prob)
-    prob_maps_[z](y,x) = prob;
+  prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
 }
 
 
@@ -43,8 +69,8 @@ void ObjectMap::insertProb(int x, int y, int z, float prob){
     return;
   
   float p = prob_maps_[z](y,x);
-  float tmp = (OBJ_CONFIDENCE*prob+(1-OBJ_CONFIDENCE)*p)/OBJ_PRIOR_PROB*p;
-  float tmp2 = (OBJ_CONFIDENCE*(1-prob)+(1-OBJ_CONFIDENCE)*(1-p))/OBJ_PRIOR_PROB*(1-p);
+  float tmp = (OBJ_CONFIDENCE*prob+(1-OBJ_CONFIDENCE)*OBJ_PRIOR_PROB)/OBJ_PRIOR_PROB*p;
+  float tmp2 = (OBJ_CONFIDENCE*(1-prob)+(1-OBJ_CONFIDENCE)*(1-OBJ_PRIOR_PROB))/OBJ_PRIOR_PROB*(1-p);
   prob_maps_[z](y,x) = std::min(OBJ_MAX_PROB, std::max(OBJ_MIN_PROB, tmp/(tmp+tmp2)));
 }
 
@@ -58,7 +84,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
   def.ns = "objects";
   def.id = id;
   def.type = visualization_msgs::Marker::CUBE_LIST;
-  def.scale.x = 1/resolution_;
+  def.scale.x = 1/(2*resolution_);
   def.scale.y = def.scale.x;
   def.scale.z = def.scale.x;
   def.action = visualization_msgs::Marker::ADD;

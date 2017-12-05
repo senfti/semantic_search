@@ -33,6 +33,9 @@ class ObjectMap{
     ObjectMap(float resolution = OBJ_DEFAULT_RESOLUTION, float start_size = 10.0f, float max_height = OBJ_DEFUALT_MAX_HEIGHT, float initial_value = OBJ_PRIOR_PROB);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height = OBJ_DEFUALT_MAX_HEIGHT, float initial_value = OBJ_PRIOR_PROB);
 
+    ObjectMap(const ObjectMap& rhs);
+    ObjectMap& operator=(const ObjectMap& rhs);
+
     void resize(float left, float right, float top, float bottom);
 
     void insertMax(int x, int y, int z, float prob);

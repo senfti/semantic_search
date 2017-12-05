@@ -138,8 +138,8 @@ void HierarchyMapper::publish(){
   }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
-//  for(int i=0; i<NUM_OBJECTS; i++)
-//    obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
+  for(int i=0; i<NUM_OBJECTS; i++)
+    obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
 }
 
 

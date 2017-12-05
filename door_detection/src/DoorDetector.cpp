@@ -11,7 +11,7 @@
 
 const float PI_180 = M_PI/180.0;
 
-#define DEBUG_OUTPUT
+//#define DEBUG_OUTPUT
 
 DoorDetector::DoorDetector()
 {

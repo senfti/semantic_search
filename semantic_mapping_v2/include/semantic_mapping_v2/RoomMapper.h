@@ -28,8 +28,8 @@ class RoomMapper : public SlamGMapping{
     tf::StampedTransform base_to_laser_transform_;
 
     double downsample_voxel_size_ = 0.03;
-    double m_pointcloudMinZ = -std::numeric_limits<double>::max();
-    double m_pointcloudMaxZ = std::numeric_limits<double>::max();
+    double m_pointcloudMinZ = 0.25;
+    double m_pointcloudMaxZ = 1.8;
 
   public:
     RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door = Door());

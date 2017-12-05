@@ -147,37 +147,37 @@ void SlamGMapping::init(){
   if(!private_nh_.getParam("gmapping/iterations", iterations_))
     iterations_ = 5;
   if(!private_nh_.getParam("gmapping/lsigma", lsigma_))
-    lsigma_ = 0.075;
+    lsigma_ = 0.01;
   if(!private_nh_.getParam("gmapping/ogain", ogain_))
     ogain_ = 3.0;
   if(!private_nh_.getParam("gmapping/lskip", lskip_))
     lskip_ = 0;
   if(!private_nh_.getParam("gmapping/srr", srr_))
-    srr_ = 0.1;
+    srr_ = 0.01;
   if(!private_nh_.getParam("gmapping/srt", srt_))
-    srt_ = 0.2;
+    srt_ = 0.02;
   if(!private_nh_.getParam("gmapping/str", str_))
-    str_ = 0.1;
+    str_ = 0.01;
   if(!private_nh_.getParam("gmapping/stt", stt_))
-    stt_ = 0.2;
+    stt_ = 0.02;
   if(!private_nh_.getParam("gmapping/linearUpdate", linearUpdate_))
-    linearUpdate_ = 1.0;
+    linearUpdate_ = 0.5;
   if(!private_nh_.getParam("gmapping/angularUpdate", angularUpdate_))
-    angularUpdate_ = 0.5;
+    angularUpdate_ = 0.436;
   if(!private_nh_.getParam("gmapping/temporalUpdate", temporalUpdate_))
     temporalUpdate_ = -1.0;
   if(!private_nh_.getParam("gmapping/resampleThreshold", resampleThreshold_))
     resampleThreshold_ = 0.5;
   if(!private_nh_.getParam("gmapping/particles", particles_))
-    particles_ = 30;
+    particles_ = 10;
   if(!private_nh_.getParam("gmapping/xmin", xmin_))
-    xmin_ = -100.0;
+    xmin_ = -1.0;
   if(!private_nh_.getParam("gmapping/ymin", ymin_))
-    ymin_ = -100.0;
+    ymin_ = -1.0;
   if(!private_nh_.getParam("gmapping/xmax", xmax_))
-    xmax_ = 100.0;
+    xmax_ = 1.0;
   if(!private_nh_.getParam("gmapping/ymax", ymax_))
-    ymax_ = 100.0;
+    ymax_ = 1.0;
   if(!private_nh_.getParam("gmapping/delta", delta_))
     delta_ = 0.05;
   if(!private_nh_.getParam("gmapping/occ_thresh", occ_thresh_))
@@ -288,9 +288,9 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   // setting maxRange and maxUrange here so we can set a reasonable default
   ros::NodeHandle private_nh_("~");
   if(!private_nh_.getParam("gmapping/maxRange", maxRange_))
-    maxRange_ = scan.range_max - 0.01;
+    maxRange_ = 4.5;//scan.range_max - 0.01;
   if(!private_nh_.getParam("gmapping/maxUrange", maxUrange_))
-    maxUrange_ = maxRange_;
+    maxUrange_ = 3.5;//maxRange_;
 
   // The laser must be called "FLASER".
   // We pass in the absolute value of the computed angle increment, on the

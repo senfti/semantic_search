@@ -231,11 +231,13 @@ inline bool isSampleInDetection(int x, int y, const YoloDetection& detection){
   return (x>detection.x1_ && x<detection.x2_ && y>detection.y1_ && y<detection.y2_);
 }
 
-void visualizeProbMap(cv::Mat_<double> map, const std::string& win_name){
+void visualizeProbMap(cv::Mat_<double> map, const std::string& win_name, cv::Mat_<uchar> mask = cv::Mat_<uchar>()){
   cv::Mat out;
   map.convertTo(out, CV_8U, 120.f);
   //cv::flip(out, out, 0);
   cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255));
+  if(mask.rows > 0)
+    tmp = mask;
   cv::merge(std::vector<cv::Mat>({out, tmp, tmp}), out);
   cv::cvtColor(out, out, CV_HSV2BGR);
   cv::imshow(win_name, out);
@@ -243,8 +245,9 @@ void visualizeProbMap(cv::Mat_<double> map, const std::string& win_name){
 
 void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &detections, const pcl::PointCloud<pcl::PointXYZ> &cloud, vision::VisionMsg& vision_msg) const{
 //  std::vector<cv::Mat_<float>> sdf(NUM_OBJECT_TYPES);
+//  cv::Mat_<uchar> mask = cv::Mat_<uchar>::zeros(cloud.height, cloud.width);
 //  for(int o=0; o<NUM_OBJECT_TYPES; o++){
-//    sdf[o] = cv::Mat_<float>(cloud.height, cloud.width, 15.f/12);
+//    sdf[o] = cv::Mat_<float>(cloud.height, cloud.width, 0.f);
 //  }
   auto begin = std::chrono::steady_clock::now();
   int i = 0;
@@ -254,6 +257,7 @@ void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &det
     if(!(cloud.at(x,y).z >= MIN_Z && cloud.at(x,y).z <= MAX_Z))
       continue;
 
+    //mask(y,x) = 255;
     vision::ObjectDetectionSample sample;
     sample.x = cloud.at(x,y).x;
     sample.y = cloud.at(x,y).y;
@@ -274,11 +278,12 @@ void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &det
     vision_msg.detection_samples.push_back(sample);
     i++;
   }
+//  cv::dilate(mask,mask,cv::Mat_<float>::ones(3,3),cv::Point(-1,-1), 2);
 //  for(int o=0; o<NUM_OBJECT_TYPES; o++){
-//    cv::resize(sdf[o], sdf[o], cv::Size(sdf[o].cols*2, sdf[o].rows*2),0,0,cv::INTER_NEAREST);
-//    visualizeProbMap(sdf[o], std::to_string(o));
+//    cv::dilate(sdf[o],sdf[o],cv::Mat_<float>::ones(3,3),cv::Point(-1,-1), 2);
+//    visualizeProbMap(sdf[o], std::to_string(o), mask);
 //  }
-  std::cout << detections.size() << " Objects Samples in " << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
+  std::cout << detections.size() << " Objects Samples in " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 
 
