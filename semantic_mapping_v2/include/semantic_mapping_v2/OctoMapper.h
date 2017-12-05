@@ -78,6 +78,7 @@ class OctoMapper {
     double occupancy_thresh_ = 0.5;
     double downproject_occ_thresh_ = 0.5;
     int downproject_erode_iters_ = 2;
+    int downproject_dilate_iters_ = 1;
 
     bool m_compressMap;
     bool m_initConfig;

@@ -47,6 +47,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
   private_nh.param("Octomap/occupancy_thresh", occupancy_thresh_,occupancy_thresh_);
   private_nh.param("Octomap/downproject_occ_thresh", downproject_occ_thresh_,downproject_occ_thresh_);
   private_nh.param("Octomap/downproject_erode_iters", downproject_erode_iters_,downproject_erode_iters_);
+  private_nh.param("Octomap/downproject_dilate_iters", downproject_dilate_iters_,downproject_dilate_iters_);
   private_nh.param("Octomap/min_x_size", m_minSizeX,m_minSizeX);
   private_nh.param("Octomap/min_y_size", m_minSizeY,m_minSizeY);
   private_nh.param("Octomap/downprojection_height", downprojection_height_,downprojection_height_);
@@ -129,6 +130,7 @@ OctoMapper::OctoMapper(const OctoMapper& rhs){
   occupancy_thresh_ = rhs.occupancy_thresh_;
   downproject_occ_thresh_ = rhs.downproject_occ_thresh_;
   downproject_erode_iters_ = rhs.downproject_erode_iters_;
+  downproject_dilate_iters_ = rhs.downproject_dilate_iters_;
   m_minSizeX = rhs.m_minSizeX;
   m_minSizeY = rhs.m_minSizeY;
   downprojection_height_ = rhs.downprojection_height_;
@@ -561,7 +563,19 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
       }
     }
   }
+//  cv::Mat sdf;
+  //cv::resize(tmp_map, sdf, cv::Size(tmp_map.cols*2, tmp_map.rows*2),0,0,cv::INTER_NEAREST);
+//  cv::flip(tmp_map,sdf,0);
+//  cv::imshow("1", sdf);
+  cv::dilate(tmp_map, tmp_map, cv::Mat_<uchar>::ones(3, 3), cv::Point(-1,-1), downproject_dilate_iters_);
+  //cv::resize(tmp_map, sdf, cv::Size(tmp_map.cols*2, tmp_map.rows*2),0,0,cv::INTER_NEAREST);
+//  cv::flip(tmp_map,sdf,0);
+//  cv::imshow("2", sdf);
   cv::erode(tmp_map, tmp_map, cv::Mat_<uchar>::ones(3, 3), cv::Point(-1,-1), downproject_erode_iters_);
+  //cv::resize(tmp_map, sdf, cv::Size(tmp_map.cols*2, tmp_map.rows*2),0,0,cv::INTER_NEAREST);
+//  cv::flip(tmp_map,sdf,0);
+//  cv::imshow("3", sdf);
+//  cv::waitKey(1);
   for(int x=0; x<tmp_map.cols; x++){
     for(int y=0; y<tmp_map.rows; y++){
       if(tmp_map(y,x)){
