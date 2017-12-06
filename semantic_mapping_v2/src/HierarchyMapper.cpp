@@ -21,6 +21,9 @@ HierarchyMapper::HierarchyMapper(){
   obj_prob_pub_.resize(NUM_OBJECTS);
   for(int i=0; i<NUM_OBJECTS; i++)
     obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>("obj_prob" + std::to_string(i), 1, true);
+  room_prob_pub_.resize(205);
+  for(int i=0; i<205; i++)
+    room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>("room_prob" + std::to_string(i), 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
@@ -140,6 +143,14 @@ void HierarchyMapper::publish(){
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
   for(int i=0; i<NUM_OBJECTS; i++)
     obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
+  for(int i=0; i<205; i++)
+    room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
+  std::vector<size_t> order;
+  std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
+  if(!probs.empty())
+    for(int i=0; i<10; i++){
+      std::cout << room_mapper_[current_mapper_]->getRoomName(order[i]) << ": " << probs[order[i]] << std::endl;
+  }
 }
 
 

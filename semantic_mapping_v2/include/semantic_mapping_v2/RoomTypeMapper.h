@@ -6,26 +6,92 @@
 #define SEMANTIC_MAPPING_V2_ROOMTYPEMAPPER_H
 
 #include "vision/VisionMsg.h"
+#include <opencv2/opencv.hpp>
+#include "gmapping/utils/point.h"
+#include <visualization_msgs/MarkerArray.h>
+#include <nav_msgs/OccupancyGrid.h>
+
+const float ROOM_CONFIDENCE = 0.3f;
+const float ROOM_MIN_PROB = 0.00015;
+
+const float ROOM_DEFAULT_RESOLUTION = 2.f;
+
+class RoomTypeMap{
+  private:
+
+    float resolution_ = ROOM_DEFAULT_RESOLUTION;
+    int base_size_;
+    cv::Mat_<float> prob_map_;
+    cv::Point origin_;
+    std::string name_;
+
+  public:
+    RoomTypeMap(float resolution = ROOM_DEFAULT_RESOLUTION, float start_size = 10.0f, float initial_value = 1.f/205, const std::string& name = "");
+    RoomTypeMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float initial_value = 1.f/205, const std::string& name = "");
+
+    RoomTypeMap(const RoomTypeMap& rhs);
+    RoomTypeMap& operator=(const RoomTypeMap& rhs);
+
+    void resize(int left, int right, int top, int bottom, float prior);
+    void setProb(int x, int y, float prob) { prob_map_(y, x) = prob; }
+    void setProb(float x, float y, float prob) { setProb(getXPixel(x), getYPixel(y), prob); }
+
+    float getProb(int x, int y) const { return prob_map_(y, x); }
+    float getProb(float x, float y) const { return  getProb(getXPixel(x), getYPixel(y)); }
+
+    int getXPixel(float x) const { return x*resolution_ + origin_.x; }
+    int getYPixel(float y) const { return y*resolution_ + origin_.y; }
+
+    float getXWorld(int x) const { return (x-origin_.x)/resolution_; }
+    float getYWorld(int y) const { return (y-origin_.y)/resolution_; }
+
+    int getBaseSize() const { return base_size_; }
+    int getWidth() const { return prob_map_.cols; }
+    int getHeight() const { return prob_map_.rows; }
+    float getResolution() const { return resolution_; }
+    cv::Point getOrigin() const { return origin_; }
+
+    void setName(const std::string& name) { name_ = name; }
+
+    visualization_msgs::MarkerArray getProbMsg(int id=0) const;
+};
 
 class RoomTypeMapper{
   public:
-    const double MIN_PROB = 0.001;
-    const double CONFIDENCE = 0.2;
+    const float ASUS_FOV = 29.f*M_PI/180.f;
+    const float MIN_DIST = 0.5f;
+    const float MAX_DIST = 4.0f;
+
+    float ROOM_PRIOR_PROB = 1/205;
 
   private:
-    std::vector<double> probs_;
+    std::vector<RoomTypeMap> prob_maps_;
     std::vector<std::string> names_;
+
+    std::vector<float> curr_probs_;
 
     int num_types_ = 0;
 
+    bool resizeUntilFitting(std::vector<cv::Point>& points);
+    void updateProbs(const vision::VisionMsgConstPtr& msg, int x, int y);
+
   public:
-    void processMsg(const vision::VisionMsgConstPtr& msg);
+    void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
 
-    std::vector<double> getProbs() const { return probs_; }
+    //std::vector<double> getProbs() const { return probs_; }
     std::vector<std::string> getNames() const { return names_; }
+    std::string getName(int idx) const { return names_[idx]; }
 
-    std::string getBestName() const { return names_[std::max_element(probs_.begin(), probs_.end())-probs_.begin()]; }
-    double getBestProb() const { return *std::max_element(probs_.begin(), probs_.end()); }
+//    std::string getBestName() const { return names_[std::max_element(probs_.begin(), probs_.end())-probs_.begin()]; }
+//    double getBestProb() const { return *std::max_element(probs_.begin(), probs_.end()); }
+
+    visualization_msgs::MarkerArray getProbMsg(int id) const {
+      if(prob_maps_.empty())
+        return visualization_msgs::MarkerArray();
+      return prob_maps_[id].getProbMsg(id);
+    }
+
+    std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, std::vector<size_t>& order);
 };
 
 #endif //SEMANTIC_MAPPING_V2_ROOMTYPEMAPPER_H

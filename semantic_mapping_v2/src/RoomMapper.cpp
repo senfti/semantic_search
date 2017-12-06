@@ -35,7 +35,8 @@ GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
 
 
 RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door)
-      : idx_(idx), octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), SlamGMapping(tf, initial_pose, initial_map_to_odom)
+      : SlamGMapping(tf, initial_pose, initial_map_to_odom), idx_(idx),
+        octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), room_type_mappers_(particles_, nullptr)
 {
   try{
     for(auto &map : octo_maps_)
@@ -44,6 +45,8 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
       map = new DoorMapper(idx, door);
     for(auto &map : obj_mappers_)
       map = new ObjectMapper();
+    for(auto &map : room_type_mappers_)
+      map = new RoomTypeMapper();
   }
   catch(std::exception& e){
     std::cout << e.what() << std::endl;
@@ -87,6 +90,8 @@ RoomMapper::~RoomMapper(){
     delete map;
   for(auto& map : obj_mappers_)
     delete map;
+  for(auto& map : room_type_mappers_)
+    delete map;
 }
 
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
@@ -105,6 +110,8 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
           door_mappers_[i] = new DoorMapper(*door_mappers_[gsp_->getIndexes()[i]]);
           delete obj_mappers_[i];
           obj_mappers_[i] = new ObjectMapper(*obj_mappers_[gsp_->getIndexes()[i]]);
+          delete room_type_mappers_[i];
+          room_type_mappers_[i] = new RoomTypeMapper(*room_type_mappers_[gsp_->getIndexes()[i]]);
         }
       }
     }
@@ -168,8 +175,10 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     return;
 
   ros::Time start = ros::Time::now();
-  room_type_mapper_.processMsg(msg);
-  std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
+  for(int i=0; i<particles_; i++){
+    room_type_mappers_[i]->processMsg(msg, getParticlePose2D(i, msg->header.stamp));
+  }
+  //std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
   ros::Time mid = ros::Time::now();
 
   pcl::PointCloud<pcl::PointXYZ> cloud(msg->detection_samples.size(), 1);
@@ -251,11 +260,13 @@ void RoomMapper::activate(){
     octo_maps_.resize(particles_, nullptr);
     door_mappers_.resize(particles_, nullptr);
     obj_mappers_.resize(particles_, nullptr);
+    room_type_mappers_.resize(particles_, nullptr);
     try{
       for(int i=1; i<octo_maps_.size(); i++){
         octo_maps_[i] = new OctoMapper(*octo_maps_[0]);
         door_mappers_[i] = new DoorMapper(*door_mappers_[0]);
         obj_mappers_[i] = new ObjectMapper(*obj_mappers_[0]);
+        room_type_mappers_[i] = new RoomTypeMapper(*room_type_mappers_[0]);
       }
     }
     catch(std::exception& e){
@@ -266,6 +277,7 @@ void RoomMapper::activate(){
     }
   }
   activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
+  was_map_updated_ = true;
 }
 
 std::string o2s(GMapping::OrientedPoint p) { return std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.theta); }
@@ -305,6 +317,8 @@ void RoomMapper::deactivate(){
     door_mappers_[0] = door_mappers_[best_particle];
     delete obj_mappers_[0];
     obj_mappers_[0] = obj_mappers_[best_particle];
+    delete room_type_mappers_[0];
+    room_type_mappers_[0] = room_type_mappers_[best_particle];
   }
   for(int i=1; i<octo_maps_.size(); i++){
     if(i != best_particle){
@@ -314,11 +328,14 @@ void RoomMapper::deactivate(){
       door_mappers_[i] = nullptr;
       delete obj_mappers_[i];
       obj_mappers_[i] = nullptr;
+      delete room_type_mappers_[i];
+      room_type_mappers_[i] = nullptr;
     }
   }
   octo_maps_.resize(1);
   door_mappers_.resize(1);
   obj_mappers_.resize(1);
+  room_type_mappers_.resize(1);
 }
 
 
@@ -337,6 +354,31 @@ visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
     auto& p = res.markers[0].points[i];
     float scale_2 = res.markers[0].scale.x/2;
     if(octo_maps_[getBestParticleIdx()]->isOccupied(p.x-scale_2,p.y-scale_2,p.z-scale_2,p.x+scale_2,p.y+scale_2,p.z+scale_2,0.5)){
+      points.push_back(p);
+      colors.push_back(res.markers[0].colors[i]);
+    }
+  }
+  res.markers[0].points = points;
+  res.markers[0].colors = colors;
+
+  return res;
+}
+
+visualization_msgs::MarkerArray RoomMapper::getRoomProbMsg(int id) {
+  return room_type_mappers_[getBestParticleIdx()]->getProbMsg(id);
+  visualization_msgs::MarkerArray res = room_type_mappers_[getBestParticleIdx()]->getProbMsg(id);
+  if(res.markers.empty())
+    return visualization_msgs::MarkerArray();
+
+  nav_msgs::OccupancyGrid map = getMap();
+  double reso = 1.00 / map.info.resolution;
+  std::vector<geometry_msgs::Point> points;
+  std::vector<std_msgs::ColorRGBA> colors;
+  for(int i=0; i<res.markers[0].points.size(); i++){
+    auto& p = res.markers[0].points[i];
+    int x = (p.x - map.info.origin.position.x)*reso;
+    int y = (p.y - map.info.origin.position.y)*reso;
+    if(x>=0 && x<map.info.width && y>=0 && y<map.info.height && map.data[y * map.info.width + x] >= 0){
       points.push_back(p);
       colors.push_back(res.markers[0].colors[i]);
     }

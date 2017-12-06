@@ -13,7 +13,7 @@
 
 const int NUM_OBJECTS = 80;
 const float OBJ_PRIOR_PROB = 0.01f;
-const float OBJ_CONFIDENCE = 0.99f;
+const float OBJ_CONFIDENCE = 0.5f;
 const float OBJ_MIN_PROB = 0.0001f;
 const float OBJ_MAX_PROB = 0.99f;
 
@@ -36,7 +36,7 @@ class ObjectMap{
     ObjectMap(const ObjectMap& rhs);
     ObjectMap& operator=(const ObjectMap& rhs);
 
-    void resize(float left, float right, float top, float bottom);
+    void resize(int left, int right, int top, int bottom, float prior);
 
     void insertMax(int x, int y, int z, float prob);
     void insertMax(float x, float y, float z, float prob) { insertMax(getXPixel(x), getYPixel(y), getZPixel(z), prob); }

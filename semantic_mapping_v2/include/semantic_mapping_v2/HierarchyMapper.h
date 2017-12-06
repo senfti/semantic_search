@@ -23,6 +23,7 @@ class HierarchyMapper{
     ros::Publisher marker_pub_;
     ros::Publisher door_pose_pub_;
     std::vector<ros::Publisher> obj_prob_pub_;
+    std::vector<ros::Publisher> room_prob_pub_;
     ros::Publisher particle_pose_pub_;
 
     tf::TransformListener tf_listener_;

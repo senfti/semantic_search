@@ -18,7 +18,7 @@ class RoomMapper : public SlamGMapping{
     std::vector<OctoMapper*> octo_maps_;
     std::vector<DoorMapper*> door_mappers_;
     std::vector<ObjectMapper*> obj_mappers_;
-    RoomTypeMapper room_type_mapper_;
+    std::vector<RoomTypeMapper*> room_type_mappers_;
 
     nav_msgs::OccupancyGrid obstacle_map_;
     boost::mutex obstacle_map_mutex_;
@@ -85,7 +85,11 @@ class RoomMapper : public SlamGMapping{
     float getOccupancy(const pcl::PointXYZ& pos) const { return getOccupancy(pos.x, pos.y, pos.z); }
 
     visualization_msgs::MarkerArray getObjectProbMsg(int id) const;
+    visualization_msgs::MarkerArray getRoomProbMsg(int id);
     geometry_msgs::PoseArray getParticlePoseMsg() const;
+
+    std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) { return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), order); }
+    std::string getRoomName(int id) const { return room_type_mappers_[0]->getName(id); }
 };
 
 

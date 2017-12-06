@@ -52,10 +52,10 @@ ObjectMap& ObjectMap::operator=(const ObjectMap& rhs){
 }
 
 
-void ObjectMap::resize(float left, float right, float top, float bottom){
+void ObjectMap::resize(int left, int right, int top, int bottom, float prior){
   origin_ += cv::Point(left, top);
   for(auto& map : prob_maps_)
-    cv::copyMakeBorder(map, map, top, bottom, left, right, cv::BORDER_CONSTANT, cv::Scalar(OBJ_PRIOR_PROB));
+    cv::copyMakeBorder(map, map, top, bottom, left, right, cv::BORDER_CONSTANT, cv::Scalar(prior));
 }
 
 
@@ -110,7 +110,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
       }
     }
   }
-  std::cout << "MIN: " << min << "MAX: " << max << std::endl;
+  //std::cout << "id: " << id << " MIN: " << min << " MAX: " << max << std::endl;
 
   return markers;
 }
@@ -175,7 +175,7 @@ bool ObjectMapper::expandUntilFitting(const pcl::PointXYZ& min, const pcl::Point
     return false;
 
   for(auto& map : maps_)
-    map.resize(left, right, top, bottom);
+    map.resize(left, right, top, bottom, OBJ_PRIOR_PROB);
   return true;
 }
 
