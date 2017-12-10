@@ -5,20 +5,66 @@
 #include <algorithm>
 #include <cstdlib>
 
+#define PRINT_PARAM(x) std::cout << #x << " = " << x << " " << std::endl;
+
 VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   : nh_(nh), it_(nh)
 {
   ::google::InitGoogleLogging(exe_name);
 
+  ros::NodeHandle private_nh("~");
+  private_nh.param("vision/PLACE_MODEL_FILE", PLACE_MODEL_FILE, PLACE_MODEL_FILE);
+  private_nh.param("vision/PLACE_TRAINED_FILE", PLACE_TRAINED_FILE, PLACE_TRAINED_FILE);
+  private_nh.param("vision/PLACE_MEAN_FILE", PLACE_MEAN_FILE, PLACE_MEAN_FILE);
+  private_nh.param("vision/PLACE_LABEL_FILE", PLACE_LABEL_FILE, PLACE_LABEL_FILE);
+
+  private_nh.param("vision/OBJ_LABEL_FILE", OBJ_LABEL_FILE, OBJ_LABEL_FILE);
+  private_nh.param("vision/YOLO_CFG", YOLO_CFG, YOLO_CFG);
+  private_nh.param("vision/YOLO_WEIGHTS", YOLO_WEIGHTS, YOLO_WEIGHTS);
+  private_nh.param("vision/OBJ_THRESH", OBJ_THRESH, OBJ_THRESH);
+  private_nh.param("vision/OBJ_NMS", OBJ_NMS, OBJ_NMS);
+
+  private_nh.param("vision/MIN_Z", MIN_Z, MIN_Z);
+  private_nh.param("vision/MAX_Z", MAX_Z, MAX_Z);
+
+  private_nh.param("vision/DETECTION_SAMPLE_NUM", DETECTION_SAMPLE_NUM, DETECTION_SAMPLE_NUM);
+  private_nh.param("vision/MIN_OBJECT_PROB", MIN_OBJECT_PROB, MIN_OBJECT_PROB);
+
+  private_nh.param("vision/MAX_DISCARD_TIME", MAX_DISCARD_TIME, MAX_DISCARD_TIME);
+  private_nh.param("vision/MIN_ANGLE_DIFF", MIN_ANGLE_DIFF, MIN_ANGLE_DIFF);
+  private_nh.param("vision/MIN_DIST_DIFF", MIN_DIST_DIFF, MIN_DIST_DIFF);
+  private_nh.param("vision/MAX_ROT_VELOCITY", MAX_ROT_VELOCITY, MAX_ROT_VELOCITY);
+
+  private_nh.param("vision/DEBUG_IMAGES", DEBUG_IMAGES, DEBUG_IMAGES);
+
+  PRINT_PARAM(PLACE_MODEL_FILE)
+  PRINT_PARAM(PLACE_TRAINED_FILE)
+  PRINT_PARAM(PLACE_MEAN_FILE)
+  PRINT_PARAM(PLACE_LABEL_FILE)
+  PRINT_PARAM(OBJ_LABEL_FILE)
+  PRINT_PARAM(YOLO_CFG)
+  PRINT_PARAM(YOLO_WEIGHTS)
+  PRINT_PARAM(OBJ_THRESH)
+  PRINT_PARAM(OBJ_NMS)
+  PRINT_PARAM(MIN_Z)
+  PRINT_PARAM(MAX_Z)
+  PRINT_PARAM(DETECTION_SAMPLE_NUM)
+  PRINT_PARAM(MIN_OBJECT_PROB)
+  PRINT_PARAM(MAX_DISCARD_TIME)
+  PRINT_PARAM(MIN_ANGLE_DIFF)
+  PRINT_PARAM(MIN_DIST_DIFF)
+  PRINT_PARAM(MAX_ROT_VELOCITY)
+  PRINT_PARAM(DEBUG_IMAGES)
+
   auto begin = std::chrono::steady_clock::now();
-  classifier_ = new CaffeClassifier(model_file, trained_file, mean_file, label_file);
+  classifier_ = new CaffeClassifier(PLACE_MODEL_FILE, PLACE_TRAINED_FILE, PLACE_MEAN_FILE, PLACE_LABEL_FILE);
   if(!classifier_->isOk()){
     return;
   }
   std::cout << "Places init in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   begin = std::chrono::steady_clock::now();
-  detector_ = new YoloDetector(object_label_file, yolo_cfg, yolo_weights);
+  detector_ = new YoloDetector(OBJ_LABEL_FILE, YOLO_CFG, YOLO_WEIGHTS);
   if(!detector_->isOk()){
     return;
   }
@@ -74,7 +120,8 @@ void VisionApp::nnThreadRun(){
       std::vector<YoloDetection> detections = fillObjectDetections(img, cloud, result_msg);
       fillObjectDetectionSamples(detections, cloud, result_msg);
       result_pub_.publish(result_msg);
-      showDebugImage(img, predictions, detections);
+      if(DEBUG_IMAGES)
+        showDebugImage(img, predictions, detections);
     }
     else
       lock.unlock();
@@ -212,14 +259,14 @@ void VisionApp::fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, 
 
 std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const{
   auto begin = std::chrono::steady_clock::now();
-  std::vector<YoloDetection> detections = detector_->detect(img, thresh, hier_thresh, nms);
+  std::vector<YoloDetection> detections = detector_->detect(img, OBJ_THRESH, 0.5, OBJ_NMS);
 
   auto t1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-  vision_msg.objects.resize(detections.size());
-  for(int i=0; i<detections.size(); i++){
-    vision_msg.objects[i] = detections[i].getAsMsg();
-    fillObjectGaussian(cloud, vision_msg.objects[i]);
-  }
+//  vision_msg.objects.resize(detections.size());
+//  for(int i=0; i<detections.size(); i++){
+//    vision_msg.objects[i] = detections[i].getAsMsg();
+//    fillObjectGaussian(cloud, vision_msg.objects[i]);
+//  }
 
   std::cout << detections.size() << " Objects in " << t1 << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() - t1 << " ms" << std::endl;
 
@@ -262,18 +309,14 @@ void VisionApp::fillObjectDetectionSamples(const std::vector<YoloDetection> &det
     sample.x = cloud.at(x,y).x;
     sample.y = cloud.at(x,y).y;
     sample.z = cloud.at(x,y).z;
-    sample.probs.resize(NUM_OBJECT_TYPES, (1.f-MIN_OBJECT_PROB));
+    sample.probs.resize(NUM_OBJECT_TYPES, MIN_OBJECT_PROB);
 
     for(const auto& d : detections){
       if(isSampleInDetection(x,y,d)){
         for(int o=0; o<NUM_OBJECT_TYPES; o++){
-          sample.probs[o] *= (1.f-d.prob_[o]);
+          sample.probs[o] = std::max(d.prob_[o], sample.probs[o]);
         }
       }
-    }
-    for(int o=0; o<NUM_OBJECT_TYPES; o++){
-      sample.probs[o] = 1.f-sample.probs[o];
-      //sdf[o](y,x) = sample.probs[o];
     }
     vision_msg.detection_samples.push_back(sample);
     i++;
@@ -307,14 +350,14 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
   uchar key = cv::waitKey(1) & 255;
   if(key == 27)
     run_ = false;
-  else if(key == 'a')
-    thresh += 0.05;
-  else if(key == 'y')
-    thresh -= 0.05;
-  else if(key == 's')
-    nms += 0.05;
-  else if(key == 'x')
-    nms -= 0.05;
+//  else if(key == 'a')
+//    thresh += 0.05;
+//  else if(key == 'y')
+//    thresh -= 0.05;
+//  else if(key == 's')
+//    nms += 0.05;
+//  else if(key == 'x')
+//    nms -= 0.05;
   std::cout << "Debug Images in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 }
 

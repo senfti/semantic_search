@@ -20,25 +20,25 @@
 
 class DoorDetector{
   private:
-    const float MIN_DOOR_HEIGHT = 1.95f;
-    const float MAX_DOOR_HEIGHT = 2.05f;
-    const float OCC_RES = 50.f;
-    const cv::Size IMG_SIZE = cv::Size(3*OCC_RES, 4*OCC_RES);
-    const float FILL_THRESH = 0.8f;
-    const float MIN_WIDTH = 0.6f*OCC_RES;
-    const float MIN_DEPTH = 0.1f*OCC_RES;
-    const float MAX_DEPTH = 0.5f*OCC_RES;
-    const float LASER_IN_DOOR_NARROWING_FACTOR = 0.8;
-    const float LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR = 0.5;
-    const float LASER_IN_FRONT_OF_DOOR_DEPTH_AREA = 0.3*OCC_RES;
-    const int MAX_LASER_IN_ZONE = 5;
-    const float LASER_DOORFRAME_WIDTH = 0.3*OCC_RES;
-    const float LASER_DOORFRAME_DEPTH = 0.1*OCC_RES;
-    const int MIN_LASER_IN_DOORFRAME = 50;
-    const float RATE = 10;
-    const float MIN_ANGLE_DIFF = 0.05;
-    const float MIN_DIST_DIFF = 0.05;
-    const float MAX_DISCARD_TIME = 2.0;
+    float MIN_DOOR_HEIGHT = 1.95f;
+    float MAX_DOOR_HEIGHT = 2.05f;
+    float OCC_RES = 50.f;
+    cv::Size IMG_SIZE = cv::Size(3*OCC_RES, 4*OCC_RES);
+    float FILL_THRESH = 0.8f;
+    float MIN_WIDTH = 0.6f;
+    float MIN_DEPTH = 0.1f;
+    float MAX_DEPTH = 0.5f;
+    float LASER_IN_DOOR_NARROWING_FACTOR = 0.8;
+    float LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR = 0.5;
+    float LASER_IN_FRONT_OF_DOOR_DEPTH_AREA = 0.3;
+    int MAX_LASER_IN_ZONE = 5;
+    float LASER_DOORFRAME_WIDTH = 0.3;
+    float LASER_DOORFRAME_DEPTH = 0.1;
+    int MIN_LASER_IN_DOORFRAME = 50;
+    float RATE = 10;
+    float MIN_ANGLE_DIFF = 0.05;
+    float MIN_DIST_DIFF = 0.05;
+    float MAX_DISCARD_TIME = 2.0;
 
     ros::NodeHandle nh_;
     ros::Subscriber cloud_sub_;

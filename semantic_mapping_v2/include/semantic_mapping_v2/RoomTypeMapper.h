@@ -11,23 +11,17 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
 
-const float ROOM_CONFIDENCE = 0.3f;
-const float ROOM_MIN_PROB = 0.00015;
-
-const float ROOM_DEFAULT_RESOLUTION = 2.f;
-
 class RoomTypeMap{
   private:
-
-    float resolution_ = ROOM_DEFAULT_RESOLUTION;
+    float resolution_;
     int base_size_;
     cv::Mat_<float> prob_map_;
     cv::Point origin_;
     std::string name_;
 
   public:
-    RoomTypeMap(float resolution = ROOM_DEFAULT_RESOLUTION, float start_size = 10.0f, float initial_value = 1.f/205, const std::string& name = "");
-    RoomTypeMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float initial_value = 1.f/205, const std::string& name = "");
+    RoomTypeMap(float resolution, float start_size, float initial_value, const std::string& name = "");
+    RoomTypeMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float initial_value, const std::string& name = "");
 
     RoomTypeMap(const RoomTypeMap& rhs);
     RoomTypeMap& operator=(const RoomTypeMap& rhs);
@@ -58,11 +52,18 @@ class RoomTypeMap{
 
 class RoomTypeMapper{
   public:
-    const float ASUS_FOV = 29.f*M_PI/180.f;
-    const float MIN_DIST = 0.5f;
-    const float MAX_DIST = 4.0f;
+    float ROOM_MIN_PROB = 0.00015;
+    float ROOM_DEFAULT_RESOLUTION = 2.f;
+    float ASUS_FOV = 29.f*M_PI/180.f;
+    float MIN_DIST = 0.5f;
+    float MAX_DIST = 4.0f;
+    float ROOM_CELL_PROB = 0.3f;
+    float ROOM_NOT_CELL_PROB = (1.f-ROOM_CELL_PROB)/204;
 
-    float ROOM_PRIOR_PROB = 1/205;
+    int NUM_CLASSES = 0;
+    float ROOM_PRIOR_PROB = 1.f/205;
+    float V_H = 0.3;
+    float V_M = 0.1;
 
   private:
     std::vector<RoomTypeMap> prob_maps_;
@@ -70,12 +71,12 @@ class RoomTypeMapper{
 
     std::vector<float> curr_probs_;
 
-    int num_types_ = 0;
-
     bool resizeUntilFitting(std::vector<cv::Point>& points);
     void updateProbs(const vision::VisionMsgConstPtr& msg, int x, int y);
 
   public:
+    RoomTypeMapper();
+
     void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
 
     //std::vector<double> getProbs() const { return probs_; }

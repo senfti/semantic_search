@@ -348,11 +348,15 @@ void RoomMapper::setDoorRoom(const tf::Transform& pose, int other_room, int coun
 
 visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
   visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(id);
+  if(res.markers.empty())
+    return visualization_msgs::MarkerArray();
+
   std::vector<geometry_msgs::Point> points;
   std::vector<std_msgs::ColorRGBA> colors;
+  float scale_2 = 1.f/(obj_mappers_[getBestParticleIdx()]->getResolution()*2);
+  std::cout << scale_2 << std::endl;
   for(int i=0; i<res.markers[0].points.size(); i++){
     auto& p = res.markers[0].points[i];
-    float scale_2 = res.markers[0].scale.x/2;
     if(octo_maps_[getBestParticleIdx()]->isOccupied(p.x-scale_2,p.y-scale_2,p.z-scale_2,p.x+scale_2,p.y+scale_2,p.z+scale_2,0.5)){
       points.push_back(p);
       colors.push_back(res.markers[0].colors[i]);
@@ -365,24 +369,33 @@ visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
 }
 
 visualization_msgs::MarkerArray RoomMapper::getRoomProbMsg(int id) {
-  return room_type_mappers_[getBestParticleIdx()]->getProbMsg(id);
   visualization_msgs::MarkerArray res = room_type_mappers_[getBestParticleIdx()]->getProbMsg(id);
   if(res.markers.empty())
     return visualization_msgs::MarkerArray();
 
   nav_msgs::OccupancyGrid map = getMap();
-  double reso = 1.00 / map.info.resolution;
+  cv::Mat_<uchar> mask(map.info.height, map.info.width, uchar(0));
+  for(int x=0; x<mask.cols; x++){
+    for(int y=0; y<mask.rows; y++){
+      if(map.data[y * map.info.width + x] >= 0)
+        mask(y,x) = 255;
+    }
+  }
+  cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
+
   std::vector<geometry_msgs::Point> points;
   std::vector<std_msgs::ColorRGBA> colors;
+  double reso = 1.00 / map.info.resolution;
   for(int i=0; i<res.markers[0].points.size(); i++){
     auto& p = res.markers[0].points[i];
     int x = (p.x - map.info.origin.position.x)*reso;
     int y = (p.y - map.info.origin.position.y)*reso;
-    if(x>=0 && x<map.info.width && y>=0 && y<map.info.height && map.data[y * map.info.width + x] >= 0){
+    if(x>=0 && x<mask.cols && y>=0 && y<mask.rows && mask(y,x) >= 0){
       points.push_back(p);
       colors.push_back(res.markers[0].colors[i]);
     }
   }
+
   res.markers[0].points = points;
   res.markers[0].colors = colors;
 

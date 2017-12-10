@@ -11,27 +11,21 @@
 #include <vision/ObjectDetectionSample.h>
 #include <visualization_msgs/MarkerArray.h>
 
-const int NUM_OBJECTS = 80;
-const float OBJ_PRIOR_PROB = 0.01f;
-const float OBJ_CONFIDENCE = 0.5f;
-const float OBJ_MIN_PROB = 0.0001f;
-const float OBJ_MAX_PROB = 0.99f;
-
-const float OBJ_DEFAULT_RESOLUTION = 3.f;
-const float OBJ_DEFUALT_MAX_HEIGHT = 2.f;
+class OctoMapper;
 
 class ObjectMap{
   private:
 
-    float resolution_ = OBJ_DEFAULT_RESOLUTION;
+    float resolution_;
     int base_size_;
-    float max_height_ = OBJ_DEFUALT_MAX_HEIGHT;
+    float max_height_;
     std::vector<cv::Mat_<float>> prob_maps_;
+    std::vector<cv::Mat_<uchar>> count_maps_;
     cv::Point origin_;
 
   public:
-    ObjectMap(float resolution = OBJ_DEFAULT_RESOLUTION, float start_size = 10.0f, float max_height = OBJ_DEFUALT_MAX_HEIGHT, float initial_value = OBJ_PRIOR_PROB);
-    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height = OBJ_DEFUALT_MAX_HEIGHT, float initial_value = OBJ_PRIOR_PROB);
+    ObjectMap(float resolution, float start_size, float max_height, float initial_value);
+    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
 
     ObjectMap(const ObjectMap& rhs);
     ObjectMap& operator=(const ObjectMap& rhs);
@@ -40,8 +34,10 @@ class ObjectMap{
 
     void insertMax(int x, int y, int z, float prob);
     void insertMax(float x, float y, float z, float prob) { insertMax(getXPixel(x), getYPixel(y), getZPixel(z), prob); }
-    void insertProb(int x, int y, int z, float prob);
-    void insertProb(float x, float y, float z, float prob) { insertProb(getXPixel(x), getYPixel(y), getZPixel(z), prob); }
+    inline void insertProb(int x, int y, int z, float prob, float prior, float V_H, float V_M, float min, float max);
+    void insertProb(float x, float y, float z, float prob, float prior, float V_H, float V_M, float min, float max) {
+      insertProb(getXPixel(x), getYPixel(y), getZPixel(z), prob, prior, V_H, V_M, min, max);
+    }
 
     float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
     float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
@@ -58,10 +54,36 @@ class ObjectMap{
     cv::Point getOrigin() const { return origin_; }
 
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
+
+    float getObjectProb(const OctoMapper& octo_mapper) const;
 };
 
 
+inline void ObjectMap::insertProb(int x, int y, int z, float prob, float prior, float V_H, float V_M, float min, float max){
+  float p = prob_maps_[z](y,x);
+  float update = (prob*V_H + (1.f-prob)*V_M);
+  float tmp = update / prior * p;
+  float tmp2 = (1.f-update) / (1.f-prior) * (1.f-p);
+  prob_maps_[z](y,x) = std::min(max, std::max(min, tmp/(tmp+tmp2)));
+  count_maps_[z](y,x) = count_maps_[z](y,x) == uchar(255) ? uchar(255) : count_maps_[z](y,x)+uchar(1);
+}
+
+
 class ObjectMapper{
+  public:
+    static std::vector<std::string> getObjNames();
+    static std::string getObjName(int idx);
+
+    float OBJ_PRIOR_PROB = 0.01f;
+    float OBJ_MIN_PROB = 0.0001f;
+    float OBJ_MAX_PROB = 0.9f;
+
+    float OBJ_DEFAULT_RESOLUTION = 3.f;
+    float OBJ_DEFUALT_MAX_HEIGHT = 2.f;
+
+    float V_H = 0.9;
+    float V_M = 0.45;
+
   private:
     std::vector<ObjectMap> maps_;
     float max_height_ = OBJ_DEFUALT_MAX_HEIGHT;
@@ -72,7 +94,10 @@ class ObjectMapper{
     ObjectMapper();
     void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector<vision::ObjectDetectionSample>& samples);
 
-    visualization_msgs::MarkerArray getProbMsg(int id) const { return maps_[id].getProbMsg(id); }
+    visualization_msgs::MarkerArray getProbMsg(int id) const { return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray()); }
+
+    std::vector<float> getObjectProbs(const OctoMapper& octo_mapper, std::vector<size_t>& order) const;
+    float getResolution() const { return maps_[0].getResolution(); }
 };
 
 #endif //SEMANTIC_MAPPING_V2_OBJECTMAP_H

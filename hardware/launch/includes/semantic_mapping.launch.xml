@@ -27,13 +27,7 @@
     <param name="gmapping/temporalUpdate" value="-1.0"/>
     <param name="gmapping/resampleThreshold" value="0.5"/>
     <param name="gmapping/particles" value="10"/>
-  <!--
-    <param name="gmapping/xmin" value="-50.0"/>
-    <param name="gmapping/ymin" value="-50.0"/>
-    <param name="gmapping/xmax" value="50.0"/>
-    <param name="gmapping/ymax" value="50.0"/>
-  make the starting size small for the benefit of the Android client's memory...
-  -->
+
     <param name="gmapping/xmin" value="-1.0"/>
     <param name="gmapping/ymin" value="-1.0"/>
     <param name="gmapping/xmax" value="1.0"/>
@@ -58,6 +52,25 @@
     <param name="Octomap/downproject_dilate_iters" value="2" />
     <param name="Octomap/downproject_erode_iters" value="4" />
     <param name="Octomap/downsample_voxel_size" value="0.03" />                       <!-- maximum range to integrate (speedup!) --> 
+
+    <param name="RoomTypeMapper/V_H" value="0.25" /> 
+    <param name="RoomTypeMapper/V_M" value="0.15" />                
+    <param name="RoomTypeMapper/ROOM_MIN_PROB" value="0.00015" />
+    <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="2.0" />
+    <param name="RoomTypeMapper/ASUS_FOV" value="29" />
+    <param name="RoomTypeMapper/MIN_DIST" value="0.5" />
+    <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  
+    <param name="RoomTypeMapper/ROOM_CELL_PROB" value="0.007" /> 
+    <param name="RoomTypeMapper/ROOM_NOT_CELL_PROB" value="0.004" /> 
+
+    <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.01" />  
+    <param name="ObjectMapper/OBJ_MIN_PROB" value="0.0001" />  
+    <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
+    <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="3.0" />  
+    <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
+    <param name="ObjectMapper/V_H" value="0.05" />   
+    <param name="ObjectMapper/V_M" value="0.001" />  
+    <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
 
   </node>
 </launch>

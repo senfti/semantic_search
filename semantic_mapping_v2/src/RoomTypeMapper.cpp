@@ -3,6 +3,7 @@
 //
 
 #include "semantic_mapping_v2/RoomTypeMapper.h"
+#include <ros/ros.h>
 
 
 RoomTypeMap::RoomTypeMap(float resolution, float start_size, float initial_value, const std::string& name)
@@ -83,6 +84,20 @@ visualization_msgs::MarkerArray RoomTypeMap::getProbMsg(int id) const{
 
 
 
+RoomTypeMapper::RoomTypeMapper(){
+  ros::NodeHandle private_nh("~");
+  private_nh.param("RoomTypeMapper/V_H", V_H, V_H);
+  private_nh.param("RoomTypeMapper/V_M", V_M, V_M);
+  private_nh.param("RoomTypeMapper/ROOM_MIN_PROB", ROOM_MIN_PROB, ROOM_MIN_PROB);
+  private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
+  private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
+  private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
+  private_nh.param("RoomTypeMapper/MAX_DIST", MAX_DIST, MAX_DIST);
+  private_nh.param("RoomTypeMapper/ROOM_CELL_PROB", ROOM_CELL_PROB, ROOM_CELL_PROB);
+  private_nh.param("RoomTypeMapper/ROOM_NOT_CELL_PROB", ROOM_NOT_CELL_PROB, ROOM_NOT_CELL_PROB);
+  ASUS_FOV *= M_PI/180.f;
+}
+
 
 bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
   int x1 = points[0].x;
@@ -121,18 +136,19 @@ bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
 
 
 void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, int y){
-  std::vector<float> probs(prob_maps_.size());
+  std::vector<double> probs(prob_maps_.size());
   for(int i=0; i<prob_maps_.size(); i++){
     probs[i] = prob_maps_[i].getProb(x,y);
   }
 
   double sum = 0.0;
-  for(int i=0; i<num_types_; i++){
-    probs[i] = (ROOM_CONFIDENCE * msg->place_guesses[i].prob/ROOM_PRIOR_PROB + 1-ROOM_CONFIDENCE) * probs[i];
+  for(int i=0; i<NUM_CLASSES; i++){
+    double prob = msg->place_guesses[i].prob;
+    probs[i] = (prob*V_H + (1-prob)*V_M)/ROOM_PRIOR_PROB * probs[i];
     sum += probs[i];
   }
-  std::vector<int> not_low_idx(num_types_);
-  for(int i=0; i<num_types_; i++){
+  std::vector<int> not_low_idx(NUM_CLASSES);
+  for(int i=0; i<NUM_CLASSES; i++){
     probs[i] /= sum;
     not_low_idx[i] = i;
   }
@@ -152,7 +168,7 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
     if(!did_thresh)
       break;
 
-    double rest_sum = 1.0-(num_types_-not_low_idx.size())*ROOM_MIN_PROB;
+    double rest_sum = 1.0-(NUM_CLASSES-not_low_idx.size())*ROOM_MIN_PROB;
     sum = 0.0;
     for(int i=0; i<not_low_idx.size(); i++){
       sum += probs[not_low_idx[i]];
@@ -173,12 +189,13 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
 
 
 void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose){
-  if(num_types_ == 0){
-    num_types_ = msg->place_guesses.size();
-    ROOM_PRIOR_PROB = 1.f/num_types_;
-    prob_maps_.resize(num_types_, RoomTypeMap(ROOM_DEFAULT_RESOLUTION, 10.f, ROOM_PRIOR_PROB));
-    names_.resize(num_types_);
-    for(int i=0; i<num_types_; i++){
+  if(NUM_CLASSES == 0){
+    NUM_CLASSES = msg->place_guesses.size();
+    ROOM_PRIOR_PROB = 1.f/NUM_CLASSES;
+
+    prob_maps_.resize(NUM_CLASSES, RoomTypeMap(ROOM_DEFAULT_RESOLUTION, 10.f, ROOM_PRIOR_PROB));
+    names_.resize(NUM_CLASSES);
+    for(int i=0; i<NUM_CLASSES; i++){
       names_[i] = msg->place_guesses[i].name;
       prob_maps_[i].setName(names_[i]);
     }
@@ -234,12 +251,12 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
     int num = 0;
     for(int x=0; x<prob_maps_[0].getWidth(); x++){
       for(int y=0; y<prob_maps_[0].getHeight(); y++){
-        bool is_valid = false;
         int x_map = ((prob_maps_[0].getXWorld(x) - map.info.origin.position.x))*res;
         int y_map = ((prob_maps_[0].getYWorld(y) - map.info.origin.position.y))*res;
         if(x_map>=0 && x_map < mask.cols && y_map>=0 && y_map<mask.rows && mask(y_map,x_map) > 0){
           for(int i=0; i<probs.size(); i++){
-            probs[i] += std::log(prob_maps_[i].getProb(x,y)) - v;
+            double prob = prob_maps_[i].getProb(x,y);
+            probs[i] += std::log(prob*ROOM_CELL_PROB + (1-prob)*ROOM_NOT_CELL_PROB) - v;
           }
           num++;
         }
@@ -248,7 +265,7 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 
     double sum = 0.0;
     for(int i=0; i<probs.size(); i++){
-      probs[i] /= num;
+      //probs[i] /= num;
       std::cout << probs[i] << std::endl;
       probs[i] = std::exp(probs[i]);
       sum += probs[i];

@@ -26,36 +26,35 @@
 
 class VisionApp{
   public:
-    const std::string model_file   = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt";
-    const std::string trained_file = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel";
-    const std::string mean_file    = "/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat";
-    const std::string label_file   = "/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv";
-    //const int num_place_proposals = 5;
-    const float min_place_prob = 0.f;
+    std::string PLACE_MODEL_FILE   = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt";
+    std::string PLACE_TRAINED_FILE = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel";
+    std::string PLACE_MEAN_FILE    = "/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat";
+    std::string PLACE_LABEL_FILE   = "/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv";
 
-    const std::string object_label_file = "/home/thomas/darknet/data/coco.names";
-    const std::string yolo_cfg = "/home/thomas/darknet/cfg/yolo.cfg";
-    const std::string yolo_weights = "/home/thomas/darknet/data/yolo.weights";
-    float thresh = 0.01f;
-    float hier_thresh = 0.5f;
-    float nms = 0.8f;
+    std::string OBJ_LABEL_FILE = "/home/thomas/darknet/data/coco.names";
+    std::string YOLO_CFG = "/home/thomas/darknet/cfg/yolo.cfg";
+    std::string YOLO_WEIGHTS = "/home/thomas/darknet/data/yolo.weights";
+    float OBJ_THRESH = 0.01f;
+    float OBJ_NMS = 0.8f;
 
-    const int VIEW_DIST_SEGMENTS = 32;
-    const float horizontal_camera_spread_ = 1.1;                    // parameters of xtion pro: position in world = (pixel/num_pixels - 0.5) * camera_spread * distance
-    const float vertical_camera_spread_ = 0.825;
-    const float dist_cutoff_ = 0.1;                                 // only use dist_cutoff to (1-dist_cutoff) depth values for depth estimate
-    const float psnr_thresh = 4.f;
-    const float donwsample_factor = 2.f;
-    const float MIN_Z = 0.8;
-    const float MAX_Z = 3.5;
+//    int VIEW_DIST_SEGMENTS = 32;
+//    float HORIZONTAL_CAMERA_SPREAD = 1.1;                    // parameters of xtion pro: position in world = (pixel/num_pixels - 0.5) * camera_spread * distance
+//    float VERTICAL_CAMERA_SPREAD = 0.825;
+//    float dist_cutoff_ = 0.1;                                 // only use dist_cutoff to (1-dist_cutoff) depth values for depth estimate
+//    float psnr_thresh = 4.f;
+//    float donwsample_factor = 2.f;
+    float MIN_Z = 0.8;
+    float MAX_Z = 3.5;
 
-    const int DETECTION_SAMPLE_NUM = 2000;
-    const float MIN_OBJECT_PROB = 0.001f;
+    int DETECTION_SAMPLE_NUM = 2000;
+    float MIN_OBJECT_PROB = 0.001f;
 
-    const float MAX_DISCARD_TIME = 5.0;
-    const float MIN_ANGLE_DIFF = 0.1;
-    const float MIN_DIST_DIFF = 0.5;
-    const float MAX_ROT_VELOCITY = 0.3;
+    float MAX_DISCARD_TIME = 5.0;
+    float MIN_ANGLE_DIFF = 0.1;
+    float MIN_DIST_DIFF = 0.5;
+    float MAX_ROT_VELOCITY = 0.3;
+
+    bool DEBUG_IMAGES = true;
 
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;

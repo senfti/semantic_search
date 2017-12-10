@@ -13,8 +13,63 @@ const float PI_180 = M_PI/180.0;
 
 //#define DEBUG_OUTPUT
 
+#define PRINT_PARAM(x) std::cout << #x << " = " << x << " " << std::endl;
+
 DoorDetector::DoorDetector()
 {
+  ros::NodeHandle private_nh("~");
+  private_nh.param("door_detection/MIN_DOOR_HEIGHT", MIN_DOOR_HEIGHT, MIN_DOOR_HEIGHT);
+  private_nh.param("door_detection/MAX_DOOR_HEIGHT", MAX_DOOR_HEIGHT, MAX_DOOR_HEIGHT);
+
+  private_nh.param("door_detection/OCC_RES", OCC_RES, OCC_RES);
+
+  private_nh.param("door_detection/FILL_THRESH", FILL_THRESH, FILL_THRESH);
+  private_nh.param("door_detection/MIN_WIDTH", MIN_WIDTH, MIN_WIDTH);
+  private_nh.param("door_detection/MIN_DEPTH", MIN_DEPTH, MIN_DEPTH);
+  private_nh.param("door_detection/MAX_DEPTH", MAX_DEPTH, MAX_DEPTH);
+
+  private_nh.param("door_detection/LASER_IN_DOOR_NARROWING_FACTOR", LASER_IN_DOOR_NARROWING_FACTOR, LASER_IN_DOOR_NARROWING_FACTOR);
+  private_nh.param("door_detection/LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR", LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR, LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR);
+  private_nh.param("door_detection/LASER_IN_FRONT_OF_DOOR_DEPTH_AREA", LASER_IN_FRONT_OF_DOOR_DEPTH_AREA, LASER_IN_FRONT_OF_DOOR_DEPTH_AREA);
+  private_nh.param("door_detection/MAX_LASER_IN_ZONE", MAX_LASER_IN_ZONE, MAX_LASER_IN_ZONE);
+
+  private_nh.param("door_detection/LASER_DOORFRAME_WIDTH", LASER_DOORFRAME_WIDTH, LASER_DOORFRAME_WIDTH);
+  private_nh.param("door_detection/LASER_DOORFRAME_DEPTH", LASER_DOORFRAME_DEPTH, LASER_DOORFRAME_DEPTH);
+  private_nh.param("door_detection/MIN_LASER_IN_DOORFRAME", MIN_LASER_IN_DOORFRAME, MIN_LASER_IN_DOORFRAME);
+
+  private_nh.param("door_detection/RATE", RATE, RATE);
+
+  private_nh.param("door_detection/MIN_ANGLE_DIFF", MIN_ANGLE_DIFF, MIN_ANGLE_DIFF);
+  private_nh.param("door_detection/MIN_DIST_DIFF", MIN_DIST_DIFF, MIN_DIST_DIFF);
+  private_nh.param("door_detection/MAX_DISCARD_TIME", MAX_DISCARD_TIME, MAX_DISCARD_TIME);
+
+  PRINT_PARAM(MIN_DOOR_HEIGHT)
+  PRINT_PARAM(MAX_DOOR_HEIGHT)
+  PRINT_PARAM(OCC_RES)
+  PRINT_PARAM(FILL_THRESH)
+  PRINT_PARAM(MIN_WIDTH)
+  PRINT_PARAM(MIN_DEPTH)
+  PRINT_PARAM(MAX_DEPTH)
+  PRINT_PARAM(LASER_IN_DOOR_NARROWING_FACTOR)
+  PRINT_PARAM(LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR)
+  PRINT_PARAM(LASER_IN_FRONT_OF_DOOR_DEPTH_AREA)
+  PRINT_PARAM(MAX_LASER_IN_ZONE)
+  PRINT_PARAM(LASER_DOORFRAME_WIDTH)
+  PRINT_PARAM(LASER_DOORFRAME_DEPTH)
+  PRINT_PARAM(MIN_LASER_IN_DOORFRAME)
+  PRINT_PARAM(RATE)
+  PRINT_PARAM(MIN_ANGLE_DIFF)
+  PRINT_PARAM(MIN_DIST_DIFF)
+  PRINT_PARAM(MAX_DISCARD_TIME)
+
+  IMG_SIZE = cv::Size(3*OCC_RES, 4*OCC_RES);
+  MIN_WIDTH *= OCC_RES;
+  MIN_DEPTH *= OCC_RES;
+  MAX_DEPTH *= OCC_RES;
+  LASER_IN_FRONT_OF_DOOR_DEPTH_AREA *= OCC_RES;
+  LASER_DOORFRAME_WIDTH *= OCC_RES;
+  LASER_DOORFRAME_DEPTH *= OCC_RES;
+
   cloud_sub_ = nh_.subscribe("/door_asus/camera/depth_registered/points", 1, &DoorDetector::cloudCb, this);
   laser_sub_ = nh_.subscribe("/scan_filtered", 1, &DoorDetector::laserCb, this);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("door_poses", 5);
