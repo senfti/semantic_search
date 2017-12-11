@@ -88,8 +88,12 @@ class RoomMapper : public SlamGMapping{
     visualization_msgs::MarkerArray getRoomProbMsg(int id);
     geometry_msgs::PoseArray getParticlePoseMsg() const;
 
-    std::vector<float> getObjectProbs(std::vector<size_t>& order) { return obj_mappers_[getBestParticleIdx()]->getObjectProbs(*octo_maps_[getBestParticleIdx()], order); }
-    std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) { return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), order); }
+    std::vector<float> getObjectProbs(std::vector<size_t>& order) {
+      return obj_mappers_[getBestParticleIdx()]->getObjectProbs(*octo_maps_[getBestParticleIdx()], door_mappers_[getBestParticleIdx()]->getDoors(), order);
+    }
+    std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) {
+      return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);
+    }
     std::string getRoomName(int id) const { return room_type_mappers_[0]->getName(id); }
 };
 

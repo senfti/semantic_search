@@ -40,7 +40,7 @@
     <param name="gmapping/lasamplestep" value="0.005"/>
     <remap from="scan" to="$(arg scan_topic)"/>
 
-    <param name="Octomap/resolution" value="0.1" />    
+    <param name="Octomap/resolution" value="0.125" />    
     <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    
     <param name="Octomap/sensor_model/max_range" value="4.0" />                 <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/pointcloud_min_z" value="0.25" />                       <!-- maximum range to integrate (speedup!) -->    
@@ -64,7 +64,7 @@
     <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.01" />  
     <param name="ObjectMapper/OBJ_MIN_PROB" value="0.0001" />  
     <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
-    <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="3.0" />  
+    <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="4.0" />  
     <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
     <param name="ObjectMapper/V_H" value="0.3" />   
     <param name="ObjectMapper/V_M" value="0.0002" />  

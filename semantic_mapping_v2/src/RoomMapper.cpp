@@ -354,12 +354,20 @@ visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
   std::vector<geometry_msgs::Point> points;
   std::vector<std_msgs::ColorRGBA> colors;
   float scale_2 = 1.f/(obj_mappers_[getBestParticleIdx()]->getResolution()*2);
-  std::cout << scale_2 << std::endl;
   for(int i=0; i<res.markers[0].points.size(); i++){
     auto& p = res.markers[0].points[i];
     if(octo_maps_[getBestParticleIdx()]->isOccupied(p.x-scale_2,p.y-scale_2,p.z-scale_2,p.x+scale_2,p.y+scale_2,p.z+scale_2,0.5)){
-      points.push_back(p);
-      colors.push_back(res.markers[0].colors[i]);
+      bool behind = false;
+      for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
+        if(door.isBehindDoor(p.x, p.y)){
+          behind = true;
+          break;
+        }
+      }
+      if(!behind){
+        points.push_back(p);
+        colors.push_back(res.markers[0].colors[i]);
+      }
     }
   }
   res.markers[0].points = points;
@@ -390,9 +398,18 @@ visualization_msgs::MarkerArray RoomMapper::getRoomProbMsg(int id) {
     auto& p = res.markers[0].points[i];
     int x = (p.x - map.info.origin.position.x)*reso;
     int y = (p.y - map.info.origin.position.y)*reso;
-    if(x>=0 && x<mask.cols && y>=0 && y<mask.rows && mask(y,x) >= 0){
-      points.push_back(p);
-      colors.push_back(res.markers[0].colors[i]);
+    if(x>=0 && x<mask.cols && y>=0 && y<mask.rows && mask(y,x) > 0){
+      bool behind = false;
+      for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
+        if(door.isBehindDoor(p.x, p.y)){
+          behind = true;
+          break;
+        }
+      }
+      if(!behind){
+        points.push_back(p);
+        colors.push_back(res.markers[0].colors[i]);
+      }
     }
   }
 

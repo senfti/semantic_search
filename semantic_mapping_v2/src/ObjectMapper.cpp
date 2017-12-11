@@ -134,7 +134,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
           c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
           markers.markers[0].colors.push_back(c);
           geometry_msgs::Point p;
-          p.x = (x-origin_.x+0.5)/resolution_;  p.y = (y-origin_.y+0.5)/resolution_;  p.z = (z+0.5)/resolution_;
+          p.x = getXWorld(x);  p.y = getYWorld(y);  p.z = getZWorld(z);
           markers.markers[0].points.push_back(p);
         }
       }
@@ -146,7 +146,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
 }
 
 
-float ObjectMap::getObjectProb(const OctoMapper &octo_mapper) const{
+float ObjectMap::getObjectProb(const ObjectMap& occupancy_map) const{
   double prob = 1.0;
   int num = 0;
   float scale_2 = 1.f/(resolution_*2);
@@ -154,12 +154,7 @@ float ObjectMap::getObjectProb(const OctoMapper &octo_mapper) const{
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
         if(count_maps_[z](y,x) > uchar(0)){
-          geometry_msgs::Point p;
-          p.x = (x - origin_.x + 0.5) / resolution_;
-          p.y = (y - origin_.y + 0.5) / resolution_;
-          p.z = (z + 0.5) / resolution_;
-          float occ = octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
-          prob *= (1.0 - getProb(x, y, z)*occ);
+          prob *= (1.0 - getProb(x, y, z)*occupancy_map.getProb(x,y,z));
         }
       }
     }
@@ -257,11 +252,44 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
   return indices;
 }
 
-std::vector<float> ObjectMapper::getObjectProbs(const OctoMapper& octo_mapper, std::vector<size_t>& order) const{
+std::vector<float> ObjectMapper::getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order) const{
+  if(maps_.empty())
+    return std::vector<float>();
+
   ros::Time t = ros::Time::now();
+
+  ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
+  cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
+  for(int x=0; x<behind_door.cols; x++){
+    for(int y=0; y<behind_door.rows; y++){
+      for(const auto& door : doors){
+        if(door.isBehindDoor(maps_[0].getXWorld(x), maps_[0].getYWorld(y))){
+          behind_door(y,x) = 255;
+          break;
+        }
+      }
+    }
+  }
+
+  float scale_2 = 1.f/(maps_[0].getResolution()*2);
+  for(int x=0; x<occ_map.getWidth(); x++){
+    for(int y=0; y<occ_map.getHeight(); y++){
+      if(behind_door(y,x) == 0){
+        for(int z=0; z<occ_map.getZSteps(); z++){
+          geometry_msgs::Point p;
+          p.x = maps_[0].getXWorld(x);
+          p.y = maps_[0].getYWorld(y);
+          p.z = maps_[0].getZWorld(z);
+          occ_map.insertMax(x,y,z,octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+        }
+      }
+    }
+  }
+
+
   std::vector<float> probs(maps_.size());
   for(int i=0; i<maps_.size(); i++){
-    probs[i] = maps_[i].getObjectProb(octo_mapper);
+    probs[i] = maps_[i].getObjectProb(occ_map);
   }
   order = ordered(probs);
   std::cout << "Object Probs in :" << (ros::Time::now() - t).toSec() << std::endl;

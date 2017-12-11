@@ -228,7 +228,7 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
   return indices;
 }
 
-std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& map, std::vector<size_t>& order){
+std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order){
   if(prob_maps_.empty())
     return std::vector<float>();
 
@@ -247,12 +247,23 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
     double res = 1.00 / map.info.resolution;
     for(int x=0; x<prob_maps_[0].getWidth(); x++){
       for(int y=0; y<prob_maps_[0].getHeight(); y++){
-        int x_map = ((prob_maps_[0].getXWorld(x) - map.info.origin.position.x))*res;
-        int y_map = ((prob_maps_[0].getYWorld(y) - map.info.origin.position.y))*res;
+        float x_world = prob_maps_[0].getXWorld(x);
+        float y_world = prob_maps_[0].getYWorld(y);
+        int x_map = ((x_world - map.info.origin.position.x))*res;
+        int y_map = ((y_world - map.info.origin.position.y))*res;
         if(x_map>=0 && x_map < mask.cols && y_map>=0 && y_map<mask.rows && mask(y_map,x_map) > 0){
-          for(int i=0; i<probs.size(); i++){
-            double prob = prob_maps_[i].getProb(x,y);
-            probs[i] += std::log(prob*ROOM_HIT_MISS_RATIO + (1-prob));
+          bool behind = false;
+          for(const auto& door : doors){
+            if(door.isBehindDoor(x_world, y_world)){
+              behind = true;
+              break;
+            }
+          }
+          if(!behind){
+            for(int i=0; i<probs.size(); i++){
+              double prob = prob_maps_[i].getProb(x,y);
+              probs[i] += std::log(prob*ROOM_HIT_MISS_RATIO + (1-prob));
+            }
           }
         }
       }

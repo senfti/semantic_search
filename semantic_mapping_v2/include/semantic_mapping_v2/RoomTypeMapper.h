@@ -10,6 +10,7 @@
 #include "gmapping/utils/point.h"
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include "semantic_mapping_v2/DoorMapper.h"
 
 class RoomTypeMap{
   private:
@@ -36,8 +37,8 @@ class RoomTypeMap{
     int getXPixel(float x) const { return x*resolution_ + origin_.x; }
     int getYPixel(float y) const { return y*resolution_ + origin_.y; }
 
-    float getXWorld(int x) const { return (x-origin_.x)/resolution_; }
-    float getYWorld(int y) const { return (y-origin_.y)/resolution_; }
+    float getXWorld(float x) const { return (x-origin_.x)/resolution_; }
+    float getYWorld(float y) const { return (y-origin_.y)/resolution_; }
 
     int getBaseSize() const { return base_size_; }
     int getWidth() const { return prob_map_.cols; }
@@ -90,7 +91,7 @@ class RoomTypeMapper{
       return prob_maps_[id].getProbMsg(id);
     }
 
-    std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, std::vector<size_t>& order);
+    std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order);
 };
 
 #endif //SEMANTIC_MAPPING_V2_ROOMTYPEMAPPER_H

@@ -11,6 +11,8 @@
 #include <vision/ObjectDetectionMsg.h>
 #include <visualization_msgs/MarkerArray.h>
 
+#include <semantic_mapping_v2/DoorMapper.h>
+
 class OctoMapper;
 
 class ObjectMap{
@@ -46,6 +48,10 @@ class ObjectMap{
     int getYPixel(float y) const { return y*resolution_ + origin_.y; }
     int getZPixel(float z) const { return std::min(z*resolution_, float(prob_maps_.size()-1)); }
 
+    float getXWorld(float x) const { return (x-origin_.x+0.5f)/resolution_; }
+    float getYWorld(float y) const { return (y-origin_.y+0.5f)/resolution_; }
+    float getZWorld(float z) const { return (z+0.5f)/resolution_; }
+
     int getBaseSize() const { return base_size_; }
     int getWidth() const { return prob_maps_[0].cols; }
     int getHeight() const { return prob_maps_[0].rows; }
@@ -55,7 +61,7 @@ class ObjectMap{
 
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
 
-    float getObjectProb(const OctoMapper& octo_mapper) const;
+    float getObjectProb(const ObjectMap& occupancy_map) const;
 };
 
 
@@ -96,7 +102,7 @@ class ObjectMapper{
 
     visualization_msgs::MarkerArray getProbMsg(int id) const { return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray()); }
 
-    std::vector<float> getObjectProbs(const OctoMapper& octo_mapper, std::vector<size_t>& order) const;
+    std::vector<float> getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order) const;
     float getResolution() const { return maps_[0].getResolution(); }
 };
 

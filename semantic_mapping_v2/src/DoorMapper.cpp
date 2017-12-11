@@ -6,6 +6,13 @@
 #include <tf/transform_datatypes.h>
 
 
+bool Door::isBehindDoor(float x, float y) const{
+  tf::Vector3 pos = pose_.inverse()*tf::Vector3(x,y,0.f);
+  if((std::abs(pos.y())-0.5) / pos.x() < 0.7 && pos.x() > 0.1)
+    return true;
+  return false;
+}
+
 
 DoorMapper::DoorMapper(int this_room, const Door &door)
       : this_room_(this_room)
