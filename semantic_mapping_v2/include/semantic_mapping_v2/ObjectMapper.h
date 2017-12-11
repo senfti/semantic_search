@@ -8,7 +8,7 @@
 #include <opencv2/opencv.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <vision/ObjectDetectionSample.h>
+#include <vision/ObjectDetectionMsg.h>
 #include <visualization_msgs/MarkerArray.h>
 
 class OctoMapper;
@@ -92,7 +92,7 @@ class ObjectMapper{
 
   public:
     ObjectMapper();
-    void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const std::vector<vision::ObjectDetectionSample>& samples);
+    void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg);
 
     visualization_msgs::MarkerArray getProbMsg(int id) const { return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray()); }
 

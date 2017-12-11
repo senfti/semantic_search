@@ -15,7 +15,6 @@ std::vector<std::string> ObjectMapper::getObjNames(){
   std::string obj_name_file = "/home/thomas/darknet/data/coco.names";
   private_nh.param("ObjectMapper/OBJ_NAME_FILE", obj_name_file, obj_name_file);
   if(OBJ_NAMES.empty()){
-    ROS_WARN("LOAD OBJECT NAME FILE %s", obj_name_file.c_str());
     std::ifstream f(obj_name_file);
     if(!f.good()){
       ROS_WARN("CANNOT OPEN OBJECT NAME FILE %s", obj_name_file.c_str());
@@ -129,7 +128,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
           min = std::min(min, getProb(x,y,z));
           max = std::max(max, getProb(x,y,z));
 
-          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(getProb(x,y,z)*150, 255, 255));
+          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::sqrt(getProb(x,y,z))*150, 255, 255));
           cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
           std_msgs::ColorRGBA c;
           c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
@@ -159,9 +158,8 @@ float ObjectMap::getObjectProb(const OctoMapper &octo_mapper) const{
           p.x = (x - origin_.x + 0.5) / resolution_;
           p.y = (y - origin_.y + 0.5) / resolution_;
           p.z = (z + 0.5) / resolution_;
-          if(octo_mapper.isOccupied(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2, 0.5)){
-            prob *= (1.0 - getProb(x, y, z));
-          }
+          float occ = octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
+          prob *= (1.0 - getProb(x, y, z)*occ);
         }
       }
     }
@@ -186,24 +184,41 @@ ObjectMapper::ObjectMapper(){
 }
 
 
-void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const std::vector<vision::ObjectDetectionSample>& samples){
+void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const vision::ObjectDetectionMsg& msg){
   if(cloud.empty())
     return;
 
   if(maps_.empty()){
-    maps_.resize(samples[0].probs.size(), ObjectMap(OBJ_DEFAULT_RESOLUTION, 5.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
+    maps_.resize(msg.num_objects, ObjectMap(OBJ_DEFAULT_RESOLUTION, 5.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
   }
 
   pcl::PointXYZ min, max;
   pcl::getMinMax3D(cloud, min, max);
   expandUntilFitting(min, max);
 
+  std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
+
   for(int i=0; i<cloud.size(); i++){
     int x = maps_[0].getXPixel(cloud[i].x);
     int y = maps_[0].getYPixel(cloud[i].y);
     int z = maps_[0].getZPixel(cloud[i].z);
-    for(int m=0; m<maps_.size(); m++){
-      maps_[m].insertProb(x,y,z,samples[i].probs[m], OBJ_PRIOR_PROB, V_H, V_M, OBJ_MIN_PROB, OBJ_MAX_PROB);
+    for(int m=0; m<tmp.size(); m++){
+      tmp[m].insertMax(x,y,z,OBJ_MIN_PROB);
+      for(const auto& b : msg.samples[i].boxes){
+        tmp[m].insertMax(x,y,z,msg.probs[b*msg.num_objects+m]);
+      }
+    }
+  }
+
+  for(int x=0; x<tmp[0].getWidth(); x++){
+    for(int y=0; y<tmp[0].getHeight(); y++){
+      for(int z=0; z<tmp[0].getZSteps(); z++){
+        if(tmp[0].getProb(x,y,z) >= 0.f){
+          for(int m=0; m<tmp.size(); m++){
+            maps_[m].insertProb(x,y,z,tmp[m].getProb(x,y,z), OBJ_PRIOR_PROB, V_H, V_M, OBJ_MIN_PROB, OBJ_MAX_PROB);
+          }
+        }
+      }
     }
   }
 }

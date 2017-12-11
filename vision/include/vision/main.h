@@ -37,12 +37,6 @@ class VisionApp{
     float OBJ_THRESH = 0.01f;
     float OBJ_NMS = 0.8f;
 
-//    int VIEW_DIST_SEGMENTS = 32;
-//    float HORIZONTAL_CAMERA_SPREAD = 1.1;                    // parameters of xtion pro: position in world = (pixel/num_pixels - 0.5) * camera_spread * distance
-//    float VERTICAL_CAMERA_SPREAD = 0.825;
-//    float dist_cutoff_ = 0.1;                                 // only use dist_cutoff to (1-dist_cutoff) depth values for depth estimate
-//    float psnr_thresh = 4.f;
-//    float donwsample_factor = 2.f;
     float MIN_Z = 0.8;
     float MAX_Z = 3.5;
 
@@ -92,9 +86,7 @@ class VisionApp{
 
     bool useImage(const cv::Mat& img);
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
-    void fillObjectGaussian(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::ObjectDetectionMsg &msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const;
-    void fillObjectDetectionSamples(const std::vector<YoloDetection>& detections, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const;
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
 };
 

@@ -109,6 +109,8 @@ class OctoMapper {
     bool isOccupied(float x, float y, float z, float thresh) const { return getOccupancy(x,y,z) > thresh; }
     bool isOccupied(const pcl::PointXYZ& min, const pcl::PointXYZ& max, float thresh) const { return isOccupied(min.x, min.y, min.z, max.x, max.y, max.z, thresh); }
     bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh) const;
+    float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) const {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
+    float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) const;
 
 
     //bool clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp);

@@ -32,7 +32,6 @@ class YoloDetection{
     YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
-    vision::ObjectDetectionMsg getAsMsg() const;
 };
 
 class YoloDetector{

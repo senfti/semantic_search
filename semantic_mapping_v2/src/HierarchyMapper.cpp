@@ -18,12 +18,6 @@ HierarchyMapper::HierarchyMapper(){
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
-  obj_prob_pub_.resize(80);
-  for(int i=0; i<80; i++)
-    obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>("obj_prob" + std::to_string(i), 1, true);
-  room_prob_pub_.resize(205);
-  for(int i=0; i<205; i++)
-    room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>("room_prob" + std::to_string(i), 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
@@ -141,12 +135,31 @@ void HierarchyMapper::publish(){
   }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+
+  if(obj_prob_pub_.empty()){
+    obj_prob_pub_.resize(80);
+    for(int i=0; i<80; i++){
+      std::string s = "obj_" + ObjectMapper::getObjName(i);
+      std::replace( s.begin(), s.end(), ' ', '_');
+      obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+    }
+  }
   for(int i=0; i<80; i++)
     obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
-  for(int i=0; i<205; i++)
-    room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
+
   std::vector<size_t> order;
   std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
+  if(room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
+    room_prob_pub_.resize(205);
+    for(int i=0; i<205; i++){
+      std::string s = "room_" + room_mapper_[current_mapper_]->getRoomName(i);
+      std::replace( s.begin(), s.end(), ' ', '_');
+      room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+    }
+  }
+  if(!room_prob_pub_.empty())
+    for(int i=0; i<205; i++)
+      room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
   if(!probs.empty())
     for(int i=0; i<10; i++){
       std::cout << room_mapper_[current_mapper_]->getRoomName(order[i]) << ": " << probs[order[i]] << std::endl;

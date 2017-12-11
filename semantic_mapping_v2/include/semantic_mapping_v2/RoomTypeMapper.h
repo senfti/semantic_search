@@ -57,13 +57,11 @@ class RoomTypeMapper{
     float ASUS_FOV = 29.f*M_PI/180.f;
     float MIN_DIST = 0.5f;
     float MAX_DIST = 4.0f;
-    float ROOM_CELL_PROB = 0.3f;
-    float ROOM_NOT_CELL_PROB = (1.f-ROOM_CELL_PROB)/204;
+    float CELL_HIT_MISS_RATIO = 1.3;
+    float ROOM_HIT_MISS_RATIO = 1.3;
 
     int NUM_CLASSES = 0;
     float ROOM_PRIOR_PROB = 1.f/205;
-    float V_H = 0.3;
-    float V_M = 0.1;
 
   private:
     std::vector<RoomTypeMap> prob_maps_;
@@ -81,7 +79,7 @@ class RoomTypeMapper{
 
     //std::vector<double> getProbs() const { return probs_; }
     std::vector<std::string> getNames() const { return names_; }
-    std::string getName(int idx) const { return names_[idx]; }
+    std::string getName(int idx) const { return (idx<names_.size() ? names_[idx] : ""); }
 
 //    std::string getBestName() const { return names_[std::max_element(probs_.begin(), probs_.end())-probs_.begin()]; }
 //    double getBestProb() const { return *std::max_element(probs_.begin(), probs_.end()); }

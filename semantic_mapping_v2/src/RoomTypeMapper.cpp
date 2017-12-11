@@ -67,7 +67,7 @@ visualization_msgs::MarkerArray RoomTypeMap::getProbMsg(int id) const{
       min = std::min(min, getProb(x,y));
       max = std::max(max, getProb(x,y));
 
-      cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(getProb(x,y)*150, 255, 255));
+      cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::sqrt(getProb(x,y))*150, 255, 255));
       cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
       std_msgs::ColorRGBA c;
       c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
@@ -86,15 +86,13 @@ visualization_msgs::MarkerArray RoomTypeMap::getProbMsg(int id) const{
 
 RoomTypeMapper::RoomTypeMapper(){
   ros::NodeHandle private_nh("~");
-  private_nh.param("RoomTypeMapper/V_H", V_H, V_H);
-  private_nh.param("RoomTypeMapper/V_M", V_M, V_M);
+  private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
+  private_nh.param("RoomTypeMapper/ROOM_HIT_MISS_RATIO", ROOM_HIT_MISS_RATIO, ROOM_HIT_MISS_RATIO);
   private_nh.param("RoomTypeMapper/ROOM_MIN_PROB", ROOM_MIN_PROB, ROOM_MIN_PROB);
   private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
   private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
   private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
   private_nh.param("RoomTypeMapper/MAX_DIST", MAX_DIST, MAX_DIST);
-  private_nh.param("RoomTypeMapper/ROOM_CELL_PROB", ROOM_CELL_PROB, ROOM_CELL_PROB);
-  private_nh.param("RoomTypeMapper/ROOM_NOT_CELL_PROB", ROOM_NOT_CELL_PROB, ROOM_NOT_CELL_PROB);
   ASUS_FOV *= M_PI/180.f;
 }
 
@@ -144,7 +142,7 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
   double sum = 0.0;
   for(int i=0; i<NUM_CLASSES; i++){
     double prob = msg->place_guesses[i].prob;
-    probs[i] = (prob*V_H + (1-prob)*V_M)/ROOM_PRIOR_PROB * probs[i];
+    probs[i] = (prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i];      // division by ROOM_PRIOR_PROB cancels out with normalization
     sum += probs[i];
   }
   std::vector<int> not_low_idx(NUM_CLASSES);
@@ -246,9 +244,7 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
     cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
 
     std::vector<double> probs(prob_maps_.size(), 0.0);
-    double v = std::log(ROOM_PRIOR_PROB);
     double res = 1.00 / map.info.resolution;
-    int num = 0;
     for(int x=0; x<prob_maps_[0].getWidth(); x++){
       for(int y=0; y<prob_maps_[0].getHeight(); y++){
         int x_map = ((prob_maps_[0].getXWorld(x) - map.info.origin.position.x))*res;
@@ -256,17 +252,14 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
         if(x_map>=0 && x_map < mask.cols && y_map>=0 && y_map<mask.rows && mask(y_map,x_map) > 0){
           for(int i=0; i<probs.size(); i++){
             double prob = prob_maps_[i].getProb(x,y);
-            probs[i] += std::log(prob*ROOM_CELL_PROB + (1-prob)*ROOM_NOT_CELL_PROB) - v;
+            probs[i] += std::log(prob*ROOM_HIT_MISS_RATIO + (1-prob));
           }
-          num++;
         }
       }
     }
 
     double sum = 0.0;
     for(int i=0; i<probs.size(); i++){
-      //probs[i] /= num;
-      std::cout << probs[i] << std::endl;
       probs[i] = std::exp(probs[i]);
       sum += probs[i];
     }

@@ -181,9 +181,9 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
   //std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
   ros::Time mid = ros::Time::now();
 
-  pcl::PointCloud<pcl::PointXYZ> cloud(msg->detection_samples.size(), 1);
+  pcl::PointCloud<pcl::PointXYZ> cloud(msg->objects.samples.size(), 1);
   for(int i=0; i<cloud.size(); i++){
-    cloud[i] = pcl::PointXYZ(msg->detection_samples[i].x, msg->detection_samples[i].y, msg->detection_samples[i].z);
+    cloud[i] = pcl::PointXYZ(msg->objects.samples[i].point.x, msg->objects.samples[i].point.y, msg->objects.samples[i].point.z);
   }
   Eigen::Matrix4f cam_to_base;
   pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
@@ -194,7 +194,7 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     Eigen::Matrix4f sensorToWorld;
     pcl_ros::transformAsMatrix(getParticlePose3D(i, msg->header.stamp), sensorToWorld);
     pcl::transformPointCloud(cloud, cloud_trans, sensorToWorld);
-    obj_mappers_[i]->addCloud(cloud_trans, msg->detection_samples);
+    obj_mappers_[i]->addCloud(cloud_trans, msg->objects);
   }
 
   ROS_INFO("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());

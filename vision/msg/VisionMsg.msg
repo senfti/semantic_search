@@ -1,5 +1,4 @@
 # vision message including place proposals and detected objects
-ObjectDetectionMsg[] objects
+ObjectDetectionMsg objects
 PlaceRecognitionMsg[] place_guesses
-ObjectDetectionSample[] detection_samples
 Header header

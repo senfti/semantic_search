@@ -648,3 +648,16 @@ bool OctoMapper::isOccupied(float x_min, float y_min, float z_min, float x_max, 
   }
   return false;
 }
+
+
+float OctoMapper::getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) const{
+  float occ = 0.f;
+  for(float x = x_min+0.5f*m_res; x < x_max; x+=m_res){
+    for(float y = y_min+0.5f*m_res; y < y_max; y+=m_res){
+      for(float z = z_min+0.5f*m_res; z < z_max; z+=m_res){
+        occ = std::max(occ, getOccupancy(x,y,z));
+      }
+    }
+  }
+  return occ;
+}

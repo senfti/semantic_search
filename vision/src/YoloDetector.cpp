@@ -24,20 +24,6 @@ void YoloDetection::scale(float factor){
   y2_ *= factor;
 }
 
-vision::ObjectDetectionMsg YoloDetection::getAsMsg() const{
-  vision::ObjectDetectionMsg object_msg;
-  object_msg.name = label_;
-  object_msg.id = id_;
-  object_msg.prob = prob_;
-
-  object_msg.x1 = x1_;
-  object_msg.x2 = x2_;
-  object_msg.y1 = y1_;
-  object_msg.y2 = y2_;
-
-  return object_msg;
-}
-
 
 YoloDetector::YoloDetector(const std::string &label_file, const std::string &config_file, const std::string &weight_file){
   cuda_set_device(0);
