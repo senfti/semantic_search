@@ -4,6 +4,7 @@
 
 #include "semantic_mapping_v2/RoomTypeMapper.h"
 #include <ros/ros.h>
+#include <fstream>
 
 
 RoomTypeMap::RoomTypeMap(float resolution, float start_size, float initial_value, const std::string& name)
@@ -84,11 +85,53 @@ visualization_msgs::MarkerArray RoomTypeMap::getProbMsg(int id) const{
 
 
 
+float RoomTypeMapper::getRoomSimilarity(int i, int j){
+  static std::vector<std::vector<float>> similarity;
+  if(similarity.empty()){
+    ros::NodeHandle private_nh("~");
+    std::string sim_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat";
+    private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
+    std::ifstream f(sim_file);
+    if(!f.good()){
+      ROS_WARN("CANNOT OPEN OBJECT NAME FILE %s", sim_file.c_str());
+      return 1.f;
+    }
+    std::vector<float> tmp;
+    while(!f.eof()){
+      float v;
+      f >> v;
+      tmp.push_back(v);
+    }
+    int n = std::sqrt(tmp.size());
+    similarity.resize(n);
+    for(int r=0; r<n; r++){
+      similarity[r].resize(n);
+      for(int c=0; c<n; c++){
+        similarity[r][c] = tmp[r*n+c];
+      }
+    }
+//    std::ofstream o("/home/thomas/sdfsdfsdfsdf.csv");
+//    for(int c=0; c<n; c++){
+//      for(int r=0; r<n; r++){
+//        if(similarity[c][r] > 1.0){
+//          std::cout << r << " " << c << " " << similarity[c][r] << std::endl;
+//        }
+//        o << similarity[c][r] << ",";
+//      }
+//      o << std::endl;
+//    }
+  }
+  return similarity[i][j];
+}
+
+
+
 RoomTypeMapper::RoomTypeMapper(){
   ros::NodeHandle private_nh("~");
   private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
   private_nh.param("RoomTypeMapper/ROOM_HIT_MISS_RATIO", ROOM_HIT_MISS_RATIO, ROOM_HIT_MISS_RATIO);
-  private_nh.param("RoomTypeMapper/ROOM_MIN_PROB", ROOM_MIN_PROB, ROOM_MIN_PROB);
+  private_nh.param("RoomTypeMapper/CELL_MAX_PROB", CELL_MAX_PROB, CELL_MAX_PROB);
+  private_nh.param("RoomTypeMapper/CELL_MIN_PROB", CELL_MIN_PROB, CELL_MIN_PROB);
   private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
   private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
   private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
@@ -142,7 +185,7 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
   double sum = 0.0;
   for(int i=0; i<NUM_CLASSES; i++){
     double prob = msg->place_guesses[i].prob;
-    probs[i] = (prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i];      // division by ROOM_PRIOR_PROB cancels out with normalization
+    probs[i] = std::min((prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i], double(CELL_MAX_PROB));      // division by ROOM_PRIOR_PROB cancels out with normalization
     sum += probs[i];
   }
   std::vector<int> not_low_idx(NUM_CLASSES);
@@ -156,8 +199,8 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
     not_low_idx.clear();
     bool did_thresh = false;
     for(int i=0; i<old_not_low_idx.size(); i++){
-      if(probs[old_not_low_idx[i]] <= ROOM_MIN_PROB){
-        probs[old_not_low_idx[i]] = ROOM_MIN_PROB;
+      if(probs[old_not_low_idx[i]] <= CELL_MIN_PROB){
+        probs[old_not_low_idx[i]] = CELL_MIN_PROB;
         did_thresh = true;
       }
       else
@@ -166,7 +209,7 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
     if(!did_thresh)
       break;
 
-    double rest_sum = 1.0-(NUM_CLASSES-not_low_idx.size())*ROOM_MIN_PROB;
+    double rest_sum = 1.0-(NUM_CLASSES-not_low_idx.size())*CELL_MIN_PROB;
     sum = 0.0;
     for(int i=0; i<not_low_idx.size(); i++){
       sum += probs[not_low_idx[i]];
@@ -242,9 +285,11 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
       }
     }
     cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
+    cv::erode(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
 
     std::vector<double> probs(prob_maps_.size(), 0.0);
     double res = 1.00 / map.info.resolution;
+    double v = std::log(ROOM_PRIOR_PROB);
     for(int x=0; x<prob_maps_[0].getWidth(); x++){
       for(int y=0; y<prob_maps_[0].getHeight(); y++){
         float x_world = prob_maps_[0].getXWorld(x);
@@ -261,8 +306,11 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
           }
           if(!behind){
             for(int i=0; i<probs.size(); i++){
-              double prob = prob_maps_[i].getProb(x,y);
-              probs[i] += std::log(prob*ROOM_HIT_MISS_RATIO + (1-prob));
+              double prob = 0.0;
+              for(int j=0;j<probs.size(); j++){
+                prob += getRoomSimilarity(i,j)*prob_maps_[j].getProb(x,y);
+              }
+              probs[i] += std::log(prob) - v;
             }
           }
         }
@@ -271,6 +319,7 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 
     double sum = 0.0;
     for(int i=0; i<probs.size(); i++){
+      std::cout << probs[i] << std::endl;
       probs[i] = std::exp(probs[i]);
       sum += probs[i];
     }

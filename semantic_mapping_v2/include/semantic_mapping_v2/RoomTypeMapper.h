@@ -53,7 +53,8 @@ class RoomTypeMap{
 
 class RoomTypeMapper{
   public:
-    float ROOM_MIN_PROB = 0.00015;
+    float CELL_MIN_PROB = 0.00015;
+    float CELL_MAX_PROB = 0.8;
     float ROOM_DEFAULT_RESOLUTION = 2.f;
     float ASUS_FOV = 29.f*M_PI/180.f;
     float MIN_DIST = 0.5f;
@@ -63,6 +64,8 @@ class RoomTypeMapper{
 
     int NUM_CLASSES = 0;
     float ROOM_PRIOR_PROB = 1.f/205;
+
+    static float getRoomSimilarity(int i, int j);
 
   private:
     std::vector<RoomTypeMap> prob_maps_;

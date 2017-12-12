@@ -53,13 +53,15 @@
     <param name="Octomap/downproject_erode_iters" value="4" />
     <param name="Octomap/downsample_voxel_size" value="0.03" />                       <!-- maximum range to integrate (speedup!) --> 
 
-    <param name="RoomTypeMapper/CELL_HIT_MISS_RATIO" value="4.0" /> 
-    <param name="RoomTypeMapper/ROOM_HIT_MISS_RATIO" value="1.2" />                
-    <param name="RoomTypeMapper/ROOM_MIN_PROB" value="0.0005" />
+    <param name="RoomTypeMapper/CELL_HIT_MISS_RATIO" value="2.0" /> 
+    <param name="RoomTypeMapper/ROOM_HIT_MISS_RATIO" value="1.2" />                 
+    <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.75" />             
+    <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
     <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="2.0" />
-    <param name="RoomTypeMapper/ASUS_FOV" value="29" />
-    <param name="RoomTypeMapper/MIN_DIST" value="0.5" />
+    <param name="RoomTypeMapper/ASUS_FOV" value="20" />
+    <param name="RoomTypeMapper/MIN_DIST" value="1.0" />
     <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  
+    <param name="RoomTypeMapper/SIMILARITY_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat" />  
 
     <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.01" />  
     <param name="ObjectMapper/OBJ_MIN_PROB" value="0.0001" />  
