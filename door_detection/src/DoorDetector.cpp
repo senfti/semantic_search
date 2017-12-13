@@ -295,7 +295,8 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
         door_poses.poses.push_back(pose);
     }
   }
-  door_pose_pub_.publish(door_poses);
+  if(door_poses.poses.size() > 0)
+    door_pose_pub_.publish(door_poses);
   std::cout << door_poses.poses.size() << " doors found in " << (ros::Time::now() - start).toSec() << " s" << std::endl;
 
 #ifdef DEBUG_OUTPUT

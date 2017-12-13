@@ -381,7 +381,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
         link.room2 = door.other_room_;
         tf::poseTFToMsg(door.pose_, link.door1_pose);
         if(door.other_room_ >= 0){
-          std::vector<Door> other_doors = room_mapper_[i]->getDoors();
+          std::vector<Door> other_doors = room_mapper_[door.other_room_]->getDoors();
           for(const auto& door2 : other_doors){
             if(door2.id_ == door.counterpart_id_){
               tf::poseTFToMsg(door2.pose_, link.door2_pose);

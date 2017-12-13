@@ -159,12 +159,13 @@ void RoomMapper::doorCb(const geometry_msgs::PoseArray::ConstPtr& msg){
   if(!isInitialized() || msg->header.stamp < activate_time_)
     return;
 
+  int id = Door::getID();
   for(int i=0; i<door_mappers_.size(); i++){
     tf::Transform transform = getParticlePose3D(i, msg->header.stamp);
     for(const auto& pose : msg->poses){
       tf::Transform tf_pose;
       tf::poseMsgToTF(pose, tf_pose);
-      door_mappers_[i]->addDoorProposal(transform*tf_pose, Door::getID());
+      door_mappers_[i]->addDoorProposal(transform*tf_pose, id);
     }
   }
 }
@@ -280,7 +281,7 @@ void RoomMapper::activate(){
   was_map_updated_ = true;
 }
 
-std::string o2s(GMapping::OrientedPoint p) { return std::to_string(p.x) + " " + std::to_string(p.y) + " " + std::to_string(p.theta); }
+
 void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
   if(door2.isValid()){
