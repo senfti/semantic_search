@@ -11,6 +11,8 @@
 #include "semantic_mapping_v2/RoomTypeMapper.h"
 #include "semantic_mapping_v2/ObjectMapper.h"
 
+#include <semantic_mapping_v2/HierarchyLinkMsg.h>
+
 class RoomMapper : public SlamGMapping{
   protected:
     int idx_ = -1;
@@ -39,7 +41,7 @@ class RoomMapper : public SlamGMapping{
     void doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
 
-    int getBestParticleIdx() const { return gsp_->getBestParticleIndex(); }
+    int getBestParticleIdx() const { return std::min(gsp_->getBestParticleIndex(), int(octo_maps_.size())-1); }
     GMapping::OrientedPoint getParticlePose2D(int particle_idx, ros::Time time) const;
     tf::Transform getParticlePose3D(int particle_idx, ros::Time time) const;
     GMapping::OrientedPoint getBestParticlePose2D(ros::Time time) const;
@@ -88,6 +90,12 @@ class RoomMapper : public SlamGMapping{
     visualization_msgs::MarkerArray getRoomProbMsg(int id);
     geometry_msgs::PoseArray getParticlePoseMsg() const;
 
+    semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) const { return obj_mappers_[getBestParticleIdx()]->getObjMapMsg(obj_id); }
+    std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs() const { return obj_mappers_[getBestParticleIdx()]->getAllObjMapMsgs(); }
+
+    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int obj_id) const { return room_type_mappers_[getBestParticleIdx()]->getRoomTypeMapMsg(obj_id); }
+    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs() const { return room_type_mappers_[getBestParticleIdx()]->getAllRoomTypeMapMsgs(); }
+
     std::vector<float> getObjectProbs(std::vector<size_t>& order) {
       return obj_mappers_[getBestParticleIdx()]->getObjectProbs(*octo_maps_[getBestParticleIdx()], door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
@@ -95,6 +103,7 @@ class RoomMapper : public SlamGMapping{
       return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
     std::string getRoomName(int id) const { return room_type_mappers_[0]->getName(id); }
+    std::vector<std::string> getRoomNames() const { return room_type_mappers_[0]->getNames(); }
 };
 
 

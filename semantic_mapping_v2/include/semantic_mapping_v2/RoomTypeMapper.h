@@ -11,6 +11,7 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include "semantic_mapping_v2/DoorMapper.h"
+#include <semantic_mapping_v2/RoomTypeMapMsg.h>
 
 class RoomTypeMap{
   private:
@@ -49,6 +50,7 @@ class RoomTypeMap{
     void setName(const std::string& name) { name_ = name; }
 
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
+    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg() const;
 };
 
 class RoomTypeMapper{
@@ -95,6 +97,9 @@ class RoomTypeMapper{
     }
 
     std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order);
+
+    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int room_type_id) const { return (prob_maps_.size() > room_type_id ? prob_maps_[room_type_id].getRoomTypeMapMsg() : semantic_mapping_v2::RoomTypeMapMsg()); }
+    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs() const;
 };
 
 #endif //SEMANTIC_MAPPING_V2_ROOMTYPEMAPPER_H

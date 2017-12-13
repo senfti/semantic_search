@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   vision
+  message_generation
+  octomap_msgs
   ${PACKAGE_DEPENDENCIES}
 )
 find_package(Boost REQUIRED signals)
@@ -18,6 +20,31 @@ find_package(octomap REQUIRED)
 find_package( OpenCV REQUIRED )
 
 add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
+
+add_message_files(
+  FILES
+  ObjectMapMsg.msg
+  RoomTypeMapMsg.msg
+  HierarchyLinkMsg.msg
+)
+add_service_files(
+  DIRECTORY srv
+  FILES
+  ObjectMapSrv.srv
+  RoomTypeMapSrv.srv
+  HierarchySrv.srv
+  ObjectProbSrv.srv
+  RoomTypeProbSrv.srv
+  MapSrv.srv
+  OctomapSrv.srv
+)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  nav_msgs
+  octomap_msgs
+)
 
 include_directories(
   include

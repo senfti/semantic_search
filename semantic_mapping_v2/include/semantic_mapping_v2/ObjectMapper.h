@@ -10,6 +10,7 @@
 #include <pcl/point_types.h>
 #include <vision/ObjectDetectionMsg.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <semantic_mapping_v2/ObjectMapMsg.h>
 
 #include <semantic_mapping_v2/DoorMapper.h>
 
@@ -61,7 +62,9 @@ class ObjectMap{
 
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
 
-    float getObjectProb(const ObjectMap& occupancy_map) const;
+    float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
+
+    semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
 };
 
 
@@ -86,6 +89,7 @@ class ObjectMapper{
 
     float OBJ_DEFAULT_RESOLUTION = 3.f;
     float OBJ_DEFUALT_MAX_HEIGHT = 2.f;
+    float ROOM_EXPECTED_SIZE = 32.f;
 
     float V_H = 0.9;
     float V_M = 0.45;
@@ -104,6 +108,9 @@ class ObjectMapper{
 
     std::vector<float> getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order) const;
     float getResolution() const { return maps_[0].getResolution(); }
+
+    semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) const { return (maps_.size() > obj_id ? maps_[obj_id].getObjMapMsg() : semantic_mapping_v2::ObjectMapMsg()); }
+    std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs() const;
 };
 
 #endif //SEMANTIC_MAPPING_V2_OBJECTMAP_H

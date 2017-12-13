@@ -84,6 +84,27 @@ visualization_msgs::MarkerArray RoomTypeMap::getProbMsg(int id) const{
 }
 
 
+semantic_mapping_v2::RoomTypeMapMsg RoomTypeMap::getRoomTypeMapMsg() const{
+  semantic_mapping_v2::RoomTypeMapMsg msg;
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = "/map";
+  msg.height = getHeight();
+  msg.width = getWidth();
+  msg.resolution = getResolution();
+  msg.origin_x = getOrigin().x;
+  msg.origin_y = getOrigin().y;
+  msg.data.resize(msg.height*msg.width);
+  int i=0;
+  for(int y=0; y<msg.height; y++){
+    for(int x=0; x<msg.width; x++){
+      msg.data[i] = getProb(x,y);
+      i++;
+    }
+  }
+  return msg;
+}
+
+
 
 float RoomTypeMapper::getRoomSimilarity(int i, int j){
   static std::vector<std::vector<float>> similarity;
@@ -319,7 +340,6 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 
     double sum = 0.0;
     for(int i=0; i<probs.size(); i++){
-      std::cout << probs[i] << std::endl;
       probs[i] = std::exp(probs[i]);
       sum += probs[i];
     }
@@ -332,4 +352,12 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 
   order = ordered(curr_probs_);
   return curr_probs_;
+}
+
+
+std::vector<semantic_mapping_v2::RoomTypeMapMsg> RoomTypeMapper::getAllRoomTypeMapMsgs() const{
+  std::vector<semantic_mapping_v2::RoomTypeMapMsg> res;
+  for(const auto& map : prob_maps_)
+    res.push_back(map.getRoomTypeMapMsg());
+  return res;
 }

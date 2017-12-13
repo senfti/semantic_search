@@ -146,7 +146,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
 }
 
 
-float ObjectMap::getObjectProb(const ObjectMap& occupancy_map) const{
+float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const{
   double prob = 1.0;
   int num = 0;
   float scale_2 = 1.f/(resolution_*2);
@@ -155,12 +155,38 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map) const{
       for(int z=0; z<getZSteps(); z++){
         if(count_maps_[z](y,x) > uchar(0)){
           prob *= (1.0 - getProb(x, y, z)*occupancy_map.getProb(x,y,z));
+          num++;
         }
       }
     }
   }
+  prob *= (std::pow(1.f-0.25f*prior, expected_room_size));
 
   return (1.0-prob);
+}
+
+
+semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
+  semantic_mapping_v2::ObjectMapMsg msg;
+  msg.header.stamp = ros::Time::now();
+  msg.header.frame_id = "/map";
+  msg.height = getHeight();
+  msg.width = getWidth();
+  msg.z_steps = getZSteps();
+  msg.resolution = getResolution();
+  msg.origin_x = getOrigin().x;
+  msg.origin_y = getOrigin().y;
+  msg.data.resize(msg.height*msg.width*msg.z_steps);
+  int i=0;
+  for(int z=0; z<msg.z_steps; z++){
+    for(int y=0; y<msg.height; y++){
+      for(int x=0; x<msg.width; x++){
+        msg.data[i] = getProb(x,y,z);
+        i++;
+      }
+    }
+  }
+  return msg;
 }
 
 
@@ -174,6 +200,7 @@ ObjectMapper::ObjectMapper(){
   private_nh.param("ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT", OBJ_DEFUALT_MAX_HEIGHT, OBJ_DEFUALT_MAX_HEIGHT);
   private_nh.param("ObjectMapper/V_H", V_H, V_H);
   private_nh.param("ObjectMapper/V_M", V_M, V_M);
+  private_nh.param("ObjectMapper/ROOM_EXPECTED_SIZE", ROOM_EXPECTED_SIZE, ROOM_EXPECTED_SIZE);
 
   std::cout << V_H << " " << V_M << " " << OBJ_PRIOR_PROB << " " << std::endl;
 }
@@ -289,9 +316,17 @@ std::vector<float> ObjectMapper::getObjectProbs(const OctoMapper& octo_mapper, c
 
   std::vector<float> probs(maps_.size());
   for(int i=0; i<maps_.size(); i++){
-    probs[i] = maps_[i].getObjectProb(occ_map);
+    probs[i] = maps_[i].getObjectProb(occ_map, OBJ_PRIOR_PROB, ROOM_EXPECTED_SIZE);
   }
   order = ordered(probs);
   std::cout << "Object Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
   return probs;
+}
+
+
+std::vector<semantic_mapping_v2::ObjectMapMsg> ObjectMapper::getAllObjMapMsgs() const {
+  std::vector<semantic_mapping_v2::ObjectMapMsg> res;
+  for(const auto& map : maps_)
+    res.push_back(map.getObjMapMsg());
+  return res;
 }

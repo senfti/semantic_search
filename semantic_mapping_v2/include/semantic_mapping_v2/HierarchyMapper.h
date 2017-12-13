@@ -7,6 +7,14 @@
 
 #include "semantic_mapping_v2/RoomMapper.h"
 
+#include <semantic_mapping_v2/MapSrv.h>
+#include <semantic_mapping_v2/OctomapSrv.h>
+#include <semantic_mapping_v2/HierarchySrv.h>
+#include <semantic_mapping_v2/ObjectMapSrv.h>
+#include <semantic_mapping_v2/ObjectProbSrv.h>
+#include <semantic_mapping_v2/RoomTypeMapSrv.h>
+#include <semantic_mapping_v2/RoomTypeProbSrv.h>
+
 class HierarchyMapper{
   protected:
     std::vector<RoomMapper*> room_mapper_;
@@ -25,6 +33,15 @@ class HierarchyMapper{
     std::vector<ros::Publisher> obj_prob_pub_;
     std::vector<ros::Publisher> room_prob_pub_;
     ros::Publisher particle_pose_pub_;
+
+    ros::ServiceServer gmap_srv_;
+    ros::ServiceServer map_srv_;
+    ros::ServiceServer octomap_srv_;
+    ros::ServiceServer obj_map_srv_;
+    ros::ServiceServer room_type_map_srv_;
+    ros::ServiceServer obj_prob_srv_;
+    ros::ServiceServer room_type_prob_srv_;
+    ros::ServiceServer hierarchy_srv_;
 
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster* tfB_;
@@ -46,6 +63,15 @@ class HierarchyMapper{
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     void doorPoseCb(const geometry_msgs::PoseArray::ConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
+
+    bool gmapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
+    bool mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
+    bool octomapSrvCb(semantic_mapping_v2::OctomapSrv::Request& req, semantic_mapping_v2::OctomapSrv::Response& res);
+    bool roomTypeMapSrvCb(semantic_mapping_v2::RoomTypeMapSrv::Request& req, semantic_mapping_v2::RoomTypeMapSrv::Response& res);
+    bool roomTypeProbSrvCb(semantic_mapping_v2::RoomTypeProbSrv::Request& req, semantic_mapping_v2::RoomTypeProbSrv::Response& res);
+    bool objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res);
+    bool objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& req, semantic_mapping_v2::ObjectProbSrv::Response& res);
+    bool hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res);
 
     void publish();
     void downprojecAndPublishMap();

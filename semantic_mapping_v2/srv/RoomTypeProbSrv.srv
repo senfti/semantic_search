@@ -1,0 +1,4 @@
+int16 room_id
+---
+float32[] probs
+string[] names

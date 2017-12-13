@@ -1,0 +1,3 @@
+int16 room_id
+---
+octomap_msgs/Octomap map
