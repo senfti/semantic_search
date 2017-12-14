@@ -377,6 +377,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<size_t> order;
     room.obj_probs = room_mapper_[i]->getObjectProbs(order);
     room.room_type_probs = room_mapper_[i]->getRoomTypeProbs(order);
+    res.rooms.push_back(room);
   }
 
   for(int i=0; i<room_mapper_.size(); i++){
