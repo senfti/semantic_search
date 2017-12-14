@@ -4,6 +4,7 @@
   <arg name="move_file" default="xbox360_teleop.launch" doc="movement launch file"/>
   <arg name="use_manual_control" default="0" doc="if manual control (keyboard/gamepad) is used"/>
   <arg name="use_mouse_control" default="0" doc="if manual control with mouse is used"/>
+  <arg name="use_move_base" default="1" doc="if move_base used"/>
 
   <include file="$(find hardware)/launch/turtlebot.launch">
     <arg name="3d_sensor" value="own_sensors"/>
@@ -11,14 +12,14 @@
 
   <include file="$(find openni2_launch)/launch/openni2.launch">
     <arg name="depth_registration" value="true"/>
-      <arg name="device_id" value="#1" />
+      <arg name="device_id" value="#2" />
     <!--  <arg name="respawn" value="true" /> -->
   </include>
 
   <group ns="door_asus">
     <include file="$(find openni2_launch)/launch/openni2_tf_prefix.launch">
       <arg name="depth_registration" value="true"/>
-      <arg name="device_id" value="#2" />
+      <arg name="device_id" value="#1" />
       <arg name="tf_prefix" value="door_asus" />
     <!--  <arg name="respawn" value="true" /> -->
     </include>
@@ -40,6 +41,7 @@
   </node>
 
   <node pkg="my_laser_filter" type="my_laser_filter" name="my_laser_filter" args="-1.95 1.95" />  
+  <node pkg="costmap_laser_node" type="costmap_laser_node" name="costmap_laser_node" args="-1.95 1.95 0.1 1.0 4.0" /> 
 
   <group if="$(arg use_manual_control)">    
     <include file="$(find turtlebot_teleop)/launch/$(arg move_file)">
@@ -48,6 +50,12 @@
 
   <group if="$(arg use_mouse_control)">    
     <include file="$(find mouse_control)/launch/mouse_control.launch" >
+    </include>
+  </group>
+
+  <group if="$(arg use_move_base)">
+    <include file="$(find hardware)/launch/includes/move_base.launch.xml"  >
+      <arg name="laser_topic" value="scan_costmap" />
     </include>
   </group>
 

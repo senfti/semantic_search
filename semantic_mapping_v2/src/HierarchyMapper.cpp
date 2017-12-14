@@ -370,7 +370,15 @@ bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& 
 
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
-  res.num_rooms = room_mapper_.size();
+  for(int i=0; i<room_mapper_.size(); i++){
+    semantic_mapping_v2::RoomMsg room;
+    room.header.stamp = ros::Time::now();
+    room.id = i;
+    std::vector<size_t> order;
+    room.obj_probs = room_mapper_[i]->getObjectProbs(order);
+    room.room_type_probs = room_mapper_[i]->getRoomTypeProbs(order);
+  }
+
   for(int i=0; i<room_mapper_.size(); i++){
     std::vector<Door> doors = room_mapper_[i]->getDoors();
     for(const auto& door : doors){

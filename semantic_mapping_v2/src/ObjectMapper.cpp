@@ -210,6 +210,7 @@ void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const v
   if(cloud.empty())
     return;
 
+  curr_probs_.clear();
   if(maps_.empty()){
     maps_.resize(msg.num_objects, ObjectMap(OBJ_DEFAULT_RESOLUTION, 5.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
   }
@@ -279,48 +280,49 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
   return indices;
 }
 
-std::vector<float> ObjectMapper::getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order) const{
+std::vector<float> ObjectMapper::getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order){
   if(maps_.empty())
     return std::vector<float>();
 
-  ros::Time t = ros::Time::now();
+  if(curr_probs_.empty()){
+    ros::Time t = ros::Time::now();
 
-  ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
-  cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
-  for(int x=0; x<behind_door.cols; x++){
-    for(int y=0; y<behind_door.rows; y++){
-      for(const auto& door : doors){
-        if(door.isBehindDoor(maps_[0].getXWorld(x), maps_[0].getYWorld(y))){
-          behind_door(y,x) = 255;
-          break;
+    ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
+    cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
+    for(int x=0; x<behind_door.cols; x++){
+      for(int y=0; y<behind_door.rows; y++){
+        for(const auto& door : doors){
+          if(door.isBehindDoor(maps_[0].getXWorld(x), maps_[0].getYWorld(y))){
+            behind_door(y,x) = 255;
+            break;
+          }
         }
       }
     }
-  }
 
-  float scale_2 = 1.f/(maps_[0].getResolution()*2);
-  for(int x=0; x<occ_map.getWidth(); x++){
-    for(int y=0; y<occ_map.getHeight(); y++){
-      if(behind_door(y,x) == 0){
-        for(int z=0; z<occ_map.getZSteps(); z++){
-          geometry_msgs::Point p;
-          p.x = maps_[0].getXWorld(x);
-          p.y = maps_[0].getYWorld(y);
-          p.z = maps_[0].getZWorld(z);
-          occ_map.insertMax(x,y,z,octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+    float scale_2 = 1.f/(maps_[0].getResolution()*2);
+    for(int x=0; x<occ_map.getWidth(); x++){
+      for(int y=0; y<occ_map.getHeight(); y++){
+        if(behind_door(y,x) == 0){
+          for(int z=0; z<occ_map.getZSteps(); z++){
+            geometry_msgs::Point p;
+            p.x = maps_[0].getXWorld(x);
+            p.y = maps_[0].getYWorld(y);
+            p.z = maps_[0].getZWorld(z);
+            occ_map.insertMax(x,y,z,octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+          }
         }
       }
     }
-  }
 
-
-  std::vector<float> probs(maps_.size());
-  for(int i=0; i<maps_.size(); i++){
-    probs[i] = maps_[i].getObjectProb(occ_map, OBJ_PRIOR_PROB, ROOM_EXPECTED_SIZE);
+    curr_probs_.resize(maps_.size());
+    for(int i=0; i<maps_.size(); i++){
+      curr_probs_[i] = maps_[i].getObjectProb(occ_map, OBJ_PRIOR_PROB, ROOM_EXPECTED_SIZE);
+    }
+    std::cout << "Object Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
   }
-  order = ordered(probs);
-  std::cout << "Object Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
-  return probs;
+  order = ordered(curr_probs_);
+  return curr_probs_;
 }
 
 

@@ -46,7 +46,7 @@
     <param name="Octomap/pointcloud_min_z" value="0.25" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/pointcloud_max_z" value="1.8" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/sensor_model/hit" value="0.65" />                       <!-- maximum range to integrate (speedup!) -->    
-    <param name="Octomap/sensor_model/miss" value="0.4" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/miss" value="0.35" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/occupancy_thresh" value="0.5" />
     <param name="Octomap/downproject_occ_thresh" value="0.6" />
     <param name="Octomap/downproject_dilate_iters" value="2" />

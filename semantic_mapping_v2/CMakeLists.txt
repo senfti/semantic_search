@@ -26,6 +26,7 @@ add_message_files(
   ObjectMapMsg.msg
   RoomTypeMapMsg.msg
   HierarchyLinkMsg.msg
+  RoomMsg.msg
 )
 add_service_files(
   DIRECTORY srv
