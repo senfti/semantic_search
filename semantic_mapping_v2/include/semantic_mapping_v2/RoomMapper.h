@@ -14,6 +14,11 @@
 #include <semantic_mapping_v2/HierarchyLinkMsg.h>
 
 class RoomMapper : public SlamGMapping{
+  public:
+    static double getObjProbGivenRoom(int obj, int room);
+    static std::vector<std::vector<double>> prob_map;
+    static double getObjProbGivenRoomPrior(int obj);
+
   protected:
     int idx_ = -1;
 
@@ -32,6 +37,8 @@ class RoomMapper : public SlamGMapping{
     double downsample_voxel_size_ = 0.03;
     double m_pointcloudMinZ = 0.25;
     double m_pointcloudMaxZ = 1.8;
+    double ROOM_HIT_MISS_RATIO = 1000.0;
+    double OBJ_HIT_MISS_RATIO = 100.0;
 
   public:
     RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door = Door());
@@ -102,6 +109,8 @@ class RoomMapper : public SlamGMapping{
     std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) {
       return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
+    std::vector<float> getObjectProbsComplete(std::vector<float>& room_probs, std::vector<size_t>& order);
+
     std::string getRoomName(int id) const { return room_type_mappers_[0]->getName(id); }
     std::vector<std::string> getRoomNames() const { return room_type_mappers_[0]->getNames(); }
 };

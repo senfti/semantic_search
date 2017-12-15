@@ -22,6 +22,8 @@ std::vector<std::string> ObjectMapper::getObjNames(){
     while(!f.eof()){
       OBJ_NAMES.push_back("");
       std::getline(f, *OBJ_NAMES.rbegin());
+      if(OBJ_NAMES.rbegin()->empty())
+        OBJ_NAMES.pop_back();
     }
   }
   return OBJ_NAMES;

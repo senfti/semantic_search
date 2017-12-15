@@ -114,7 +114,7 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
     private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
     std::ifstream f(sim_file);
     if(!f.good()){
-      ROS_WARN("CANNOT OPEN OBJECT NAME FILE %s", sim_file.c_str());
+      ROS_WARN("CANNOT OPEN SIMILARITY FILE %s", sim_file.c_str());
       return 1.f;
     }
     std::vector<float> tmp;

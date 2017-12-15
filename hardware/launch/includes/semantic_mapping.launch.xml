@@ -63,6 +63,10 @@
     <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  
     <param name="RoomTypeMapper/SIMILARITY_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat" />  
 
+    <param name="RoomMapper/OBJ_PLACE_MAP_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/obj_places_map.dat" />
+    <param name="RoomMapper/ROOM_HIT_MISS_RATIO" value="1000.0" />
+    <param name="RoomMapper/CELL_HIT_MISS_RATIO" value="100.0" />
+
     <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.01" />  
     <param name="ObjectMapper/OBJ_MIN_PROB" value="0.0001" />  
     <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  

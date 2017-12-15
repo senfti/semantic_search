@@ -27,6 +27,9 @@ object_sum = sum(objects)
 place_obj_map = np.dot(np.transpose(objects), places)
 
 place_obj_map = np.transpose(place_obj_map / place_sum)
+print place_obj_map.size
 #place_obj_map = np.vstack([place_obj_map, object_sum / len(lines)])
 
-np.savetxt('/home/thomas/coco_obj_places_map.csv', place_obj_map, delimiter=',')
+#place_obj_map = place_obj_map / sum(place_obj_map)
+
+np.savetxt('/home/thomas/obj_places_map.dat', place_obj_map, delimiter=' ')
