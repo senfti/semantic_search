@@ -85,48 +85,117 @@ void ExecuteActionServer::mapSwitchCb(const std_msgs::Int16ConstPtr &msg){
 }
 
 
+void ExecuteActionServer::doMoveTo(){
+  if(move_base_state_ == MoveBaseState::WAITING) {
+    std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
+    std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
+    sendMoveBaseGoal(goal_.pose);
+  }
+  else if(move_base_state_ == MoveBaseState::RUNNING){
+    ;
+  }
+  else if(move_base_state_ == MoveBaseState::STOPPED){
+    move_base_state_ = MoveBaseState::WAITING;
+  }
+  else if(move_base_state_ == MoveBaseState::FINISHED){
+    if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+      execution::ExecuteResult result;
+      result.error_number = 0;
+      result.num_reached_poses = 1;
+      action_server_.setSucceeded(result, "SUCCESS");
+    }
+    else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
+      execution::ExecuteResult result;
+      result.error_number = 1;
+      result.num_reached_poses = 0;
+      action_server_.setPreempted(result, "PREEMPTED");
+    }
+    else{
+      execution::ExecuteResult result;
+      result.error_number = 2;
+      result.num_reached_poses = 0;
+      action_server_.setAborted(result, "ABORTED");
+    }
+    goal_.action = -1;
+    move_base_state_ = MoveBaseState::WAITING;
+  }
+}
+
+
+void ExecuteActionServer::doExplore(){
+
+  goal_.action = -1;
+}
+
+
+void ExecuteActionServer::doSearch(){
+
+  goal_.action = -1;
+}
+
+
+void ExecuteActionServer::doStartRotation(){
+  if(move_base_state_ == MoveBaseState::WAITING) {
+    geometry_msgs::Pose pose;
+    if(start_rotation_state_machine_.next(pose))
+      sendMoveBaseGoal(pose);
+    else{
+      if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+        execution::ExecuteResult result;
+        result.error_number = 0;
+        result.num_reached_poses = start_rotation_state_machine_.STEPS;
+        action_server_.setSucceeded(result, "SUCCESS");
+        goal_.action = -1;
+      }
+    }
+  }
+  else if(move_base_state_ == MoveBaseState::RUNNING){
+    ;
+  }
+  else if(move_base_state_ == MoveBaseState::STOPPED){
+    start_rotation_state_machine_.reset();
+    move_base_state_ = MoveBaseState::WAITING;
+  }
+  else if(move_base_state_ == MoveBaseState::FINISHED){
+    if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+      ROS_INFO("POS %d reached", start_rotation_state_machine_.state_);
+    }
+    else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
+      execution::ExecuteResult result;
+      result.error_number = 1;
+      result.num_reached_poses = start_rotation_state_machine_.state_;
+      action_server_.setPreempted(result, "PREEMPTED");
+      goal_.action = -1;
+    }
+    else{
+      execution::ExecuteResult result;
+      result.error_number = 2;
+      result.num_reached_poses = start_rotation_state_machine_.state_;
+      action_server_.setAborted(result, "ABORTED");
+      goal_.action = -1;
+    }
+    move_base_state_ = MoveBaseState::WAITING;
+  }
+}
+
+
 void ExecuteActionServer::run(){
   ros::Rate rate(10.0);
   while(ros::ok()){
     ros::spinOnce();
+    rate.sleep();
+    ros::spinOnce();
     if(goal_.action == 0){
-      if(move_base_state_ == MoveBaseState::WAITING) {
-        sendMoveBaseGoal(goal_.pose);
-      }
-      else if(move_base_state_ == MoveBaseState::RUNNING){
-        ;
-      }
-      else if(move_base_state_ == MoveBaseState::STOPPED){
-        move_base_state_ = MoveBaseState::WAITING;
-      }
-      else if(move_base_state_ == MoveBaseState::FINISHED){
-        if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-          execution::ExecuteResult result;
-          result.error_number = 0;
-          result.num_reached_poses = 1;
-          action_server_.setSucceeded(result, "SUCCESS");
-        }
-        else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
-          execution::ExecuteResult result;
-          result.error_number = 1;
-          result.num_reached_poses = 0;
-          action_server_.setPreempted(result, "PREEMPTED");
-        }
-        else{
-          execution::ExecuteResult result;
-          result.error_number = 2;
-          result.num_reached_poses = 0;
-          action_server_.setAborted(result, "ABORTED");
-        }
-        goal_.action = -1;
-        move_base_state_ = MoveBaseState::WAITING;
-      }
+      doMoveTo();
     }
     else if(goal_.action == 1){
-      goal_.action = -1;
+      doExplore();
     }
     else if(goal_.action == 2){
-      goal_.action = -1;
+      doSearch();
+    }
+    else if(goal_.action == 3){
+      doStartRotation();
     }
     rate.sleep();
   }

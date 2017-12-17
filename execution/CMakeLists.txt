@@ -66,7 +66,7 @@ catkin_package(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME} src/main.cpp src/ExecuteActionServer.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/ExecuteActionServer.cpp src/StartRotationStateMachine.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 

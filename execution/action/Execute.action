@@ -1,4 +1,4 @@
-# Define the goal, 0...moveToPose, 1...explore, 2...search
+# Define the goal, 0...moveToPose, 1...explore, 2...search, 3...start rotation
 int16 action
 geometry_msgs/Pose pose
 int16 target
