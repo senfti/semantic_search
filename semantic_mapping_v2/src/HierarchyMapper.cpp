@@ -15,6 +15,7 @@ HierarchyMapper::HierarchyMapper(){
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
+  map_door_blocked_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map_door_blocked", 1, true);
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
@@ -22,6 +23,7 @@ HierarchyMapper::HierarchyMapper(){
 
   gmap_srv_ = nh_.advertiseService("gmap_srv", &HierarchyMapper::gmapSrvCb, this);
   map_srv_ = nh_.advertiseService("map_srv", &HierarchyMapper::mapSrvCb, this);
+  map_door_blocked_srv_ = nh_.advertiseService("map_door_blocked_srv", &HierarchyMapper::mapDoorBlockedSrvCb, this);
   octomap_srv_ = nh_.advertiseService("octomap_srv", &HierarchyMapper::octomapSrvCb, this);
   obj_map_srv_ = nh_.advertiseService("obj_map_srv", &HierarchyMapper::objMapSrvCb, this);
   room_type_map_srv_ = nh_.advertiseService("room_type_map_srv", &HierarchyMapper::roomTypeMapSrvCb, this);
@@ -142,6 +144,10 @@ void HierarchyMapper::publish(){
     map_pub_.publish(map);
     map_info_pub_.publish(map.info);
   }
+  map = room_mapper_[current_mapper_]->getDoorBlockedMap();
+  if(map.data.size() > 0){
+    map_door_blocked_pub_.publish(map);
+  }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
 
@@ -185,6 +191,10 @@ void HierarchyMapper::downprojecAndPublishMap(){
   if(map.data.size() > 0){
     map_pub_.publish(map);
     map_info_pub_.publish(map.info);
+  }
+  map = room_mapper_[current_mapper_]->getDoorBlockedMap();
+  if(map.data.size() > 0){
+    map_door_blocked_pub_.publish(map);
   }
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
@@ -257,6 +267,23 @@ bool HierarchyMapper::mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semant
     return true;
   }
 
+  res.map = nav_msgs::OccupancyGrid();
+  return false;
+}
+
+
+bool HierarchyMapper::mapDoorBlockedSrvCb(semantic_mapping_v2::MapSrv::Request &req, semantic_mapping_v2::MapSrv::Response &res){
+  ROS_INFO("SERVICE MAP");
+  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
+    room_mapper_[req.room_id]->downprojectMap();
+    res.map = room_mapper_[req.room_id]->getDoorBlockedMap();
+    return true;
+  }
+  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
+    room_mapper_[current_mapper_]->downprojectMap();
+    res.map = room_mapper_[current_mapper_]->getDoorBlockedMap();
+    return true;
+  }
 
   res.map = nav_msgs::OccupancyGrid();
   return false;

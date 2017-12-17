@@ -12,12 +12,14 @@ RoomTypeMap::RoomTypeMap(float resolution, float start_size, float initial_value
 {
   origin_ = cv::Point(base_size_/2, base_size_/2);
   prob_map_ = cv::Mat_<float>(base_size_, base_size_, initial_value);
+  seen_map_ = cv::Mat_<uchar>(base_size_, base_size_, uchar(0));
 }
 
 RoomTypeMap::RoomTypeMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float initial_value, const std::string& name)
   : resolution_(resolution), base_size_(base_size), origin_(origin), name_(name)
 {
   prob_map_ = cv::Mat_<float>(base_size_, base_size_, initial_value);
+  seen_map_ = cv::Mat_<uchar>(base_size_, base_size_, uchar(0));
 }
 
 RoomTypeMap::RoomTypeMap(const RoomTypeMap& rhs){
@@ -25,6 +27,7 @@ RoomTypeMap::RoomTypeMap(const RoomTypeMap& rhs){
   base_size_ = rhs.base_size_;
   origin_ = rhs.origin_;
   rhs.prob_map_.copyTo(prob_map_);
+  rhs.seen_map_.copyTo(seen_map_);
   name_ = rhs.name_;
 }
 
@@ -36,6 +39,7 @@ RoomTypeMap& RoomTypeMap::operator=(const RoomTypeMap& rhs){
   base_size_ = rhs.base_size_;
   origin_ = rhs.origin_;
   rhs.prob_map_.copyTo(prob_map_);
+  rhs.seen_map_.copyTo(seen_map_);
   name_ = rhs.name_;
   return *this;
 }
@@ -43,6 +47,7 @@ RoomTypeMap& RoomTypeMap::operator=(const RoomTypeMap& rhs){
 void RoomTypeMap::resize(int left, int right, int top, int bottom, float prior){
   origin_ += cv::Point(left, top);
   cv::copyMakeBorder(prob_map_, prob_map_, top, bottom, left, right, cv::BORDER_CONSTANT, cv::Scalar(prior));
+  cv::copyMakeBorder(seen_map_, seen_map_, top, bottom, left, right, cv::BORDER_CONSTANT, cv::Scalar(0));
 }
 
 visualization_msgs::MarkerArray RoomTypeMap::getProbMsg(int id) const{
@@ -313,25 +318,27 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
     double v = std::log(ROOM_PRIOR_PROB);
     for(int x=0; x<prob_maps_[0].getWidth(); x++){
       for(int y=0; y<prob_maps_[0].getHeight(); y++){
-        float x_world = prob_maps_[0].getXWorld(x);
-        float y_world = prob_maps_[0].getYWorld(y);
-        int x_map = ((x_world - map.info.origin.position.x))*res;
-        int y_map = ((y_world - map.info.origin.position.y))*res;
-        if(x_map>=0 && x_map < mask.cols && y_map>=0 && y_map<mask.rows && mask(y_map,x_map) > 0){
-          bool behind = false;
-          for(const auto& door : doors){
-            if(door.isBehindDoor(x_world, y_world)){
-              behind = true;
-              break;
-            }
-          }
-          if(!behind){
-            for(int i=0; i<probs.size(); i++){
-              double prob = 0.0;
-              for(int j=0;j<probs.size(); j++){
-                prob += getRoomSimilarity(i,j)*prob_maps_[j].getProb(x,y);
+        if(prob_maps_[0].wasSeen(x,y)){
+          float x_world = prob_maps_[0].getXWorld(x);
+          float y_world = prob_maps_[0].getYWorld(y);
+          int x_map = ((x_world - map.info.origin.position.x)) * res;
+          int y_map = ((y_world - map.info.origin.position.y)) * res;
+          if(x_map >= 0 && x_map < mask.cols && y_map >= 0 && y_map < mask.rows && mask(y_map, x_map) > 0){
+            bool behind = false;
+            for(const auto &door : doors){
+              if(door.isBehindDoor(x_world, y_world)){
+                behind = true;
+                break;
               }
-              probs[i] += std::log(prob) - v;
+            }
+            if(!behind){
+              for(int i = 0; i < probs.size(); i++){
+                double prob = 0.0;
+                for(int j = 0; j < probs.size(); j++){
+                  prob += getRoomSimilarity(i, j) * prob_maps_[j].getProb(x, y);
+                }
+                probs[i] += std::log(prob) - v;
+              }
             }
           }
         }

@@ -27,6 +27,7 @@ class HierarchyMapper{
 
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
+    ros::Publisher map_door_blocked_pub_;
     ros::Publisher map_info_pub_;
     ros::Publisher marker_pub_;
     ros::Publisher door_pose_pub_;
@@ -36,6 +37,7 @@ class HierarchyMapper{
 
     ros::ServiceServer gmap_srv_;
     ros::ServiceServer map_srv_;
+    ros::ServiceServer map_door_blocked_srv_;
     ros::ServiceServer octomap_srv_;
     ros::ServiceServer obj_map_srv_;
     ros::ServiceServer room_type_map_srv_;
@@ -66,6 +68,7 @@ class HierarchyMapper{
 
     bool gmapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
     bool mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
+    bool mapDoorBlockedSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
     bool octomapSrvCb(semantic_mapping_v2::OctomapSrv::Request& req, semantic_mapping_v2::OctomapSrv::Response& res);
     bool roomTypeMapSrvCb(semantic_mapping_v2::RoomTypeMapSrv::Request& req, semantic_mapping_v2::RoomTypeMapSrv::Response& res);
     bool roomTypeProbSrvCb(semantic_mapping_v2::RoomTypeProbSrv::Request& req, semantic_mapping_v2::RoomTypeProbSrv::Response& res);

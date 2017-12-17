@@ -262,6 +262,29 @@ void RoomMapper::downprojectMap(){
 }
 
 
+nav_msgs::OccupancyGrid RoomMapper::getDoorBlockedMap(){
+  nav_msgs::OccupancyGrid map = getMap();
+  if(map.data.empty())
+    return nav_msgs::OccupancyGrid();
+
+  double res = 1.0/map.info.resolution;
+  for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
+    double x_door = ((door.pose_.getOrigin().x() - map.info.origin.position.x))*res;
+    double y_door = ((door.pose_.getOrigin().y() - map.info.origin.position.y))*res;
+    double angle = tf::getYaw(door.pose_.getRotation()) + M_PI_2;
+    for(double r=0.0; r<1.0*res; r+=0.02*res){
+      int x = x_door+r*std::cos(angle);
+      int y = y_door+r*std::sin(angle);
+      map.data[y * map.info.width + x] = 100;
+      x = x_door-r*std::cos(angle);
+      y = y_door-r*std::sin(angle);
+      map.data[y * map.info.width + x] = 100;
+    }
+  }
+  return map;
+}
+
+
 GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Time time) const{
   GMapping::GridSlamProcessor::Particle particle = gsp_->getParticles()[particle_idx];
   GMapping::OrientedPoint result;

@@ -71,6 +71,8 @@ class RoomMapper : public SlamGMapping{
       boost::mutex::scoped_lock lock(obstacle_map_mutex_);
       return obstacle_map_;
     }
+    nav_msgs::OccupancyGrid getDoorBlockedMap();
+
     octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now()) const {
       return octo_maps_[getBestParticleIdx()]->getBinaryOctoMapMsg(rostime);
     }

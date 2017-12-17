@@ -18,6 +18,7 @@ class RoomTypeMap{
     float resolution_;
     int base_size_;
     cv::Mat_<float> prob_map_;
+    cv::Mat_<uchar> seen_map_;
     cv::Point origin_;
     std::string name_;
 
@@ -29,11 +30,13 @@ class RoomTypeMap{
     RoomTypeMap& operator=(const RoomTypeMap& rhs);
 
     void resize(int left, int right, int top, int bottom, float prior);
-    void setProb(int x, int y, float prob) { prob_map_(y, x) = prob; }
+    void setProb(int x, int y, float prob) { prob_map_(y, x) = prob; seen_map_(y,x) = 1; }
     void setProb(float x, float y, float prob) { setProb(getXPixel(x), getYPixel(y), prob); }
 
     float getProb(int x, int y) const { return prob_map_(y, x); }
-    float getProb(float x, float y) const { return  getProb(getXPixel(x), getYPixel(y)); }
+    float getProb(float x, float y) const { return getProb(getXPixel(x), getYPixel(y)); }
+    bool wasSeen(int x, int y) const { return seen_map_(y,x) > 0; }
+    bool wasSeen(float x, float y) const { return wasSeen(getXPixel(x), getYPixel(y)); }
 
     int getXPixel(float x) const { return x*resolution_ + origin_.x; }
     int getYPixel(float y) const { return y*resolution_ + origin_.y; }

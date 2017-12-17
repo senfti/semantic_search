@@ -6,7 +6,7 @@
   <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" launch-prefix="xterm -sl 10000 -hold -e" >
     <param name="gmapping/base_frame" value="$(arg base_frame)"/>
     <param name="gmapping/odom_frame" value="$(arg odom_frame)"/>
-    <param name="gmapping/map_update_interval" value="5.0"/>
+    <param name="gmapping/map_update_interval" value="3.0"/>
     <param name="gmapping/maxUrange" value="3.5"/>
     <param name="gmapping/maxRange" value="4.5"/>
     <param name="gmapping/sigma" value="0.05"/>
@@ -53,7 +53,7 @@
     <param name="Octomap/downproject_erode_iters" value="4" />
     <param name="Octomap/downsample_voxel_size" value="0.03" />                       <!-- maximum range to integrate (speedup!) --> 
 
-    <param name="RoomTypeMapper/CELL_HIT_MISS_RATIO" value="2.0" /> 
+    <param name="RoomTypeMapper/CELL_HIT_MISS_RATIO" value="10.0" /> 
     <param name="RoomTypeMapper/ROOM_HIT_MISS_RATIO" value="1.2" />                 
     <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.75" />             
     <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
