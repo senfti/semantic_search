@@ -1,0 +1,11 @@
+# Define the goal, 0...moveToPose, 1...explore, 2...search
+int16 action
+geometry_msgs/Pose pose
+int16 target
+---
+# Define the result
+int16 error_number
+int16 num_reached_poses
+---
+# Define a feedback message
+int16 num_reached_poses

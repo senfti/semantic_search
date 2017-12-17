@@ -4,6 +4,7 @@
 
 #include "semantic_mapping_v2/HierarchyMapper.h"
 #include <tf/transform_datatypes.h>
+#include <std_msgs/Int16.h>
 
 HierarchyMapper::HierarchyMapper(){
   addMapper(Door());
@@ -15,6 +16,7 @@ HierarchyMapper::HierarchyMapper(){
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
+  map_switch_pub_ = nh_.advertise<std_msgs::Int16>("map_switch", 1);
   map_door_blocked_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map_door_blocked", 1, true);
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
@@ -95,6 +97,10 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
       room_mapper_[current_mapper_]->activate();
     }
   }
+  std_msgs::Int16 msg;
+  msg.data = current_mapper_;
+  if(!map_switch_pub_.getTopic().empty())
+    map_switch_pub_.publish(msg);
   ROS_INFO("Switched to MAPPER %d", current_mapper_);
 }
 

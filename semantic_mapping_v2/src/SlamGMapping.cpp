@@ -415,6 +415,7 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
 
 void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   ROS_DEBUG("Update map");
+  ros::Time t = ros::Time::now();
   boost::mutex::scoped_lock map_lock (map_mutex_);
   GMapping::ScanMatcher matcher;
 
@@ -496,6 +497,7 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   //make sure to set the header information on the map
   map_.map.header.stamp = ros::Time::now();
   map_.map.header.frame_id = tf_->resolve( map_frame_ );
+  ROS_INFO("GMap updated in %.3lf s", (ros::Time::now()-t).toSec());
 }
 
 
