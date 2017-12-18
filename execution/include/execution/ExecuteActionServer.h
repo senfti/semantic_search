@@ -10,7 +10,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <execution/ExecuteAction.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <std_msgs/Int16.h>
+#include <semantic_mapping_v2/RoomSwitchMsg.h>
 #include <tf/transform_listener.h>
 
 #include <execution/StartRotationStateMachine.h>
@@ -31,6 +31,7 @@ class ExecuteActionServer{
     execution::ExecuteGoal goal_;
 
     MoveBaseState move_base_state_ = MoveBaseState::WAITING;
+    move_base_msgs::MoveBaseGoal move_base_goal_;
 
     StartRotationStateMachine start_rotation_state_machine_;
     Explorer explorer_;
@@ -55,7 +56,7 @@ class ExecuteActionServer{
     void goalCb();
     void preemptCb();
 
-    void mapSwitchCb(const std_msgs::Int16ConstPtr& msg);
+    void mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr& msg);
 
     void run();
 };

@@ -65,20 +65,20 @@ void ExecuteActionServer::preemptCb(){
 }
 
 
-void ExecuteActionServer::mapSwitchCb(const std_msgs::Int16ConstPtr &msg){
-  if(goal_.action == 0 && msg->data == goal_.target){
-    action_client_.cancelAllGoals();
-    execution::ExecuteResult result;
-    result.error_number = 0;
-    result.num_reached_poses = 1;
-    action_server_.setSucceeded(result, "SUCCESS");
-    goal_.action = -1;
-    move_base_state_ = MoveBaseState::STOPPED;
+void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr &msg){
+  if(goal_.action == 0 && msg->new_room == goal_.target){
+    tf::Transform transform;
+    tf::Transform pose;
+    tf::poseMsgToTF(msg->transform, transform);
+    tf::poseMsgToTF(goal_.pose, pose);
+    geometry_msgs::Pose new_pose;
+    tf::poseTFToMsg(pose*transform, new_pose);
+    sendMoveBaseGoal(new_pose);
   }
   else{
     action_client_.cancelAllGoals();
     execution::ExecuteResult result;
-    result.error_number = 3 + (goal_.action != 0 ? 1 : 0) + (msg->data != goal_.target ? 2 : 0);
+    result.error_number = 3 + (goal_.action != 0 ? 1 : 0) + (msg->new_room != goal_.target ? 2 : 0);
     result.num_reached_poses = 0;
     action_server_.setAborted(result, "ABORTED");
     goal_.action = -1;
@@ -303,13 +303,14 @@ void ExecuteActionServer::run(){
 
 void ExecuteActionServer::sendMoveBaseGoal(const geometry_msgs::Pose& pose){
   static unsigned int seq = 0;
-  move_base_msgs::MoveBaseGoal goal;
-  goal.target_pose.header.stamp = ros::Time::now();
-  goal.target_pose.header.seq = seq++;
-  goal.target_pose.header.frame_id = "/map";
-  goal.target_pose.pose = pose;
+  move_base_goal_.target_pose.header.stamp = ros::Time::now();
+  move_base_goal_.target_pose.header.seq = seq++;
+  move_base_goal_.target_pose.header.frame_id = "/map";
+  move_base_goal_.target_pose.pose = pose;
 
-  ROS_INFO("SENT GOAL: %.3lf, %.3lf, %.3lf, %.3lf", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y, goal.target_pose.pose.orientation.z, goal.target_pose.pose.orientation.w);
-  action_client_.sendGoal(goal, boost::bind(&ExecuteActionServer::doneCb, this, _1, _2), boost::bind(&ExecuteActionServer::activeCb, this), boost::bind(&ExecuteActionServer::feedbackCb, this, _1));
+  ROS_INFO("SENT GOAL: %.3lf, %.3lf, %.3lf, %.3lf", move_base_goal_.target_pose.pose.position.x, move_base_goal_.target_pose.pose.position.y,
+           move_base_goal_.target_pose.pose.orientation.z, move_base_goal_.target_pose.pose.orientation.w);
+  action_client_.sendGoal(move_base_goal_, boost::bind(&ExecuteActionServer::doneCb, this, _1, _2),
+                          boost::bind(&ExecuteActionServer::activeCb, this), boost::bind(&ExecuteActionServer::feedbackCb, this, _1));
   move_base_state_ = MoveBaseState::GOAL_SENT;
 }

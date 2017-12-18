@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib_msgs
   move_base_msgs
+  semantic_mapping_v2
   nav_msgs
   tf
   roscpp

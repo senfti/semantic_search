@@ -4,7 +4,7 @@
 
 #include "semantic_mapping_v2/HierarchyMapper.h"
 #include <tf/transform_datatypes.h>
-#include <std_msgs/Int16.h>
+#include <semantic_mapping_v2/RoomSwitchMsg.h>
 
 HierarchyMapper::HierarchyMapper(){
   addMapper(Door());
@@ -16,7 +16,7 @@ HierarchyMapper::HierarchyMapper(){
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
-  map_switch_pub_ = nh_.advertise<std_msgs::Int16>("map_switch", 1);
+  map_switch_pub_ = nh_.advertise<semantic_mapping_v2::RoomSwitchMsg>("map_switch", 1);
   map_door_blocked_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map_door_blocked", 1, true);
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
@@ -83,6 +83,7 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
   if(old_mapper >= 0 && old_mapper < room_mapper_.size())
     room_mapper_[old_mapper]->deactivate();
 
+  tf::Transform door_tf;
   if(mapper_idx >= 0 && mapper_idx < room_mapper_.size()){
     if(door.isValid()){
       tf::StampedTransform transform;
@@ -94,17 +95,20 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
       }
       GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
       current_mapper_ = mapper_idx;
-      room_mapper_[current_mapper_]->activate(p, door);
+      door_tf = room_mapper_[current_mapper_]->activate(p, door);
     }
     else{
       current_mapper_ = mapper_idx;
       room_mapper_[current_mapper_]->activate();
     }
   }
-  std_msgs::Int16 msg;
-  msg.data = current_mapper_;
+
+  semantic_mapping_v2::RoomSwitchMsg msg;
+  msg.new_room = current_mapper_;
+  tf::poseTFToMsg(door_tf, msg.transform);
   if(!map_switch_pub_.getTopic().empty())
     map_switch_pub_.publish(msg);
+
   ROS_INFO("Switched to MAPPER %d", current_mapper_);
 }
 

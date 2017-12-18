@@ -359,9 +359,11 @@ void RoomMapper::activate(){
 }
 
 
-void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
+tf::Transform RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
+  tf::Transform transform;
   if(door2.isValid()){
+    transform = door.pose_.inverse()*door2.pose_;
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
     GMapping::OrientedPoint pose = transformPointBackward(robot, door1_pose);
@@ -378,6 +380,7 @@ void RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door
   }
 
   activate();
+  return transform;
 }
 
 

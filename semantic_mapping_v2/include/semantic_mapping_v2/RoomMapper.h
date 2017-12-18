@@ -58,7 +58,7 @@ class RoomMapper : public SlamGMapping{
     bool resetWasMapUpdated();
 
     void activate();
-    void activate(const GMapping::OrientedPoint& robot, const Door& door);
+    tf::Transform activate(const GMapping::OrientedPoint& robot, const Door& door);
     void deactivate();
     void downprojectMap();
 
