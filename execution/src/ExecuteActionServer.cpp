@@ -5,7 +5,7 @@
 #include "execution/ExecuteActionServer.h"
 
 ExecuteActionServer::ExecuteActionServer()
-      : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false)
+      : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_)
 {
   goal_.action = -1;
   action_server_.registerGoalCallback(boost::bind(&ExecuteActionServer::goalCb, this));
@@ -16,8 +16,10 @@ ExecuteActionServer::ExecuteActionServer()
   while(!action_client_.waitForServer(ros::Duration(1.0))){
     ROS_WARN("MOVE_BASE Action Server not there");
     ros::spinOnce();
+    break;
   }
   map_switch_sub_ = nh_.subscribe("map_switch", 1, &ExecuteActionServer::mapSwitchCb, this);
+  frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
   ROS_INFO("INITIALIZATION FINISHED");
 }
 
@@ -91,6 +93,9 @@ void ExecuteActionServer::doMoveTo(){
     std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
     sendMoveBaseGoal(goal_.pose);
   }
+  else if(move_base_state_ == MoveBaseState::GOAL_SENT){
+    ;
+  }
   else if(move_base_state_ == MoveBaseState::RUNNING){
     ;
   }
@@ -123,8 +128,97 @@ void ExecuteActionServer::doMoveTo(){
 
 
 void ExecuteActionServer::doExplore(){
+  if(explorer_.finished()){
+    ROS_INFO("Finished exploration");
+    if(move_base_state_ == MoveBaseState::WAITING) {
+      ;
+    }
+    else if(move_base_state_ == MoveBaseState::GOAL_SENT){
+      action_client_.cancelAllGoals();
+    }
+    else if(move_base_state_ == MoveBaseState::RUNNING){
+      action_client_.cancelAllGoals();
+    }
+    else if(move_base_state_ == MoveBaseState::STOPPED){
+      ;
+    }
+    else if(move_base_state_ == MoveBaseState::FINISHED){
+      ;
+    }
+    execution::ExecuteResult result;
+    result.error_number = 0;
+    result.num_reached_poses = 0;
+    action_server_.setSucceeded(result, "SUCCESS");
+    goal_.action = -1;
+    return;
+  }
 
-  goal_.action = -1;
+  if(move_base_state_ == MoveBaseState::WAITING) {
+    geometry_msgs::PoseStamped pose;
+    pose.pose = explorer_.getNextFrontier();
+    pose.header.frame_id = "map";
+    pose.header.stamp = ros::Time::now();
+    static unsigned seq = 0;
+    pose.header.seq = seq++;
+    frontier_pub_.publish(pose);
+    sendMoveBaseGoal(pose.pose);
+  }
+  else if(move_base_state_ == MoveBaseState::GOAL_SENT){
+    ;
+  }
+  else if(move_base_state_ == MoveBaseState::RUNNING){
+    if(explorer_.hasFrontierChanged()){
+      geometry_msgs::PoseStamped pose;
+      pose.pose = explorer_.getNextFrontier();
+      pose.header.frame_id = "map";
+      pose.header.stamp = ros::Time::now();
+      static unsigned seq = 0;
+      pose.header.seq = seq++;
+      frontier_pub_.publish(pose);
+      sendMoveBaseGoal(pose.pose);
+    }
+  }
+  else if(move_base_state_ == MoveBaseState::STOPPED){
+    ;
+  }
+  else if(move_base_state_ == MoveBaseState::FINISHED){
+    if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+      ROS_INFO("POS %d reached", start_rotation_state_machine_.state_);
+      geometry_msgs::PoseStamped pose;
+      pose.pose = explorer_.getNextFrontier();
+      pose.header.frame_id = "map";
+      pose.header.stamp = ros::Time::now();
+      static unsigned seq = 0;
+      pose.header.seq = seq++;
+      frontier_pub_.publish(pose);
+      sendMoveBaseGoal(pose.pose);
+    }
+    else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
+      ;
+    }
+    else{
+      if(explorer_.did_abort_){
+        ROS_INFO("ABORTED completely");
+        execution::ExecuteResult result;
+        result.error_number = 2;
+        result.num_reached_poses = 0;
+        action_server_.setAborted(result, "ABORTED");
+        goal_.action = -1;
+      }
+      else{
+        ROS_INFO("ABORTED first time");
+        geometry_msgs::PoseStamped pose;
+        pose.pose = explorer_.getNextFrontier();
+        pose.header.frame_id = "map";
+        pose.header.stamp = ros::Time::now();
+        static unsigned seq = 0;
+        pose.header.seq = seq++;
+        frontier_pub_.publish(pose);
+        sendMoveBaseGoal(pose.pose);
+        explorer_.did_abort_ = true;
+      }
+    }
+  }
 }
 
 
@@ -148,6 +242,9 @@ void ExecuteActionServer::doStartRotation(){
         goal_.action = -1;
       }
     }
+  }
+  else if(move_base_state_ == MoveBaseState::GOAL_SENT){
+    ;
   }
   else if(move_base_state_ == MoveBaseState::RUNNING){
     ;
@@ -183,8 +280,6 @@ void ExecuteActionServer::run(){
   ros::Rate rate(10.0);
   while(ros::ok()){
     ros::spinOnce();
-    rate.sleep();
-    ros::spinOnce();
     if(goal_.action == 0){
       doMoveTo();
     }
@@ -197,6 +292,10 @@ void ExecuteActionServer::run(){
     else if(goal_.action == 3){
       doStartRotation();
     }
+    else{
+      move_base_state_ = MoveBaseState::WAITING;
+    }
+    ROS_INFO("MOVE_BASE_STATE: %d", int(move_base_state_));
     rate.sleep();
   }
 }
@@ -212,4 +311,5 @@ void ExecuteActionServer::sendMoveBaseGoal(const geometry_msgs::Pose& pose){
 
   ROS_INFO("SENT GOAL: %.3lf, %.3lf, %.3lf, %.3lf", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y, goal.target_pose.pose.orientation.z, goal.target_pose.pose.orientation.w);
   action_client_.sendGoal(goal, boost::bind(&ExecuteActionServer::doneCb, this, _1, _2), boost::bind(&ExecuteActionServer::activeCb, this), boost::bind(&ExecuteActionServer::feedbackCb, this, _1));
+  move_base_state_ = MoveBaseState::GOAL_SENT;
 }

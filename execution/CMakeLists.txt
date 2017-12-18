@@ -13,12 +13,16 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   actionlib_msgs
   move_base_msgs
+  nav_msgs
+  tf
   roscpp
   rospy
   std_msgs
 )
 
-add_definitions( -std=c++11 -g -Wreturn-type)
+find_package( OpenCV REQUIRED )
+
+add_definitions( -std=c++11 -O3 -Wreturn-type)
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
@@ -66,7 +70,7 @@ catkin_package(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME} src/main.cpp src/ExecuteActionServer.cpp src/StartRotationStateMachine.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/ExecuteActionServer.cpp src/StartRotationStateMachine.cpp src/Explorer.cpp)
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
 

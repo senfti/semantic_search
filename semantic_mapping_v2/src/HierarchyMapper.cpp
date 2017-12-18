@@ -51,8 +51,12 @@ HierarchyMapper::~HierarchyMapper(){
 void HierarchyMapper::addMapper(const Door& door){
   if(door.isValid()){
     tf::StampedTransform transform;
-    tf_listener_.lookupTransform("map", "base_laser_link", ros::Time(0), transform);
-
+    try{
+      tf_listener_.lookupTransform("map", "base_laser_link", ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+    }
     room_mapper_.push_back(new RoomMapper(room_mapper_.size(), &tf_listener_,
                                           GMapping::OrientedPoint(transform.getOrigin().x(),transform.getOrigin().y(),tf::getYaw(transform.getRotation())),
                                           room_mapper_[current_mapper_]->getTransform(), door));
