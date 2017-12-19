@@ -4,17 +4,44 @@
 
 #include <execution/Explorer.h>
 #include <deque>
+#include <set>
 
 Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)
 {
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
+  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
+
+  cv::Mat_<uchar> mat(VIEW_DIST*4, VIEW_DIST*4, uchar(0));
+  cv::circle(mat, cv::Point(2*VIEW_DIST, 2*VIEW_DIST), VIEW_DIST, cv::Scalar(255), 1);
+  for(int x=0;x<mat.cols;x++){
+    for(int y=0; y<mat.rows; y++){
+      if(mat(y,x))
+        circle_points_.push_back(cv::Point(x-2*VIEW_DIST,y-2*VIEW_DIST));
+    }
+  }
 }
 
 geometry_msgs::Pose Explorer::getNextFrontier(){
   frontier_changed_ = false;
   did_abort_ = false;
   return curr_frontier_;
+}
+
+void Explorer::start(){
+  running_ = true;
+  finished_ = false;
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(EXPLORE_MAX_ROT_VEL)).c_str());
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(EXPLORE_MAX_TRANS_VEL)).c_str());
+  calcFrontier();
+  ROS_INFO("EXPLORATION STARTED");
+}
+
+void Explorer::stop(){
+  if(running_)
+    ROS_INFO("EXPLORATION STOPPED");
+  running_ = false;
+  finished_ = false;
 }
 
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list){
@@ -49,15 +76,28 @@ bool lineFree(const cv::Point& start, const cv::Point& end, const cv::Mat_<uchar
 }
 
 void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
+  last_map_ = *msg;
+//  std::cout << (running_ ? "run" : "stop") << std::endl;
+  if(running_)
+    calcFrontier();
+}
+
+
+struct CompareFrontier{
+  bool operator() (const std::pair<cv::Point,double>& lhs, const std::pair<cv::Point,double>& rhs) const
+  {return lhs.second<rhs.second;}
+};
+
+void Explorer::calcFrontier(){
   ros::Time t = ros::Time::now();
-  cv::Mat_<uchar> unknown(msg->info.height, msg->info.width, uchar(0));
-  cv::Mat_<uchar> free(msg->info.height, msg->info.width, uchar(0));
-  cv::Mat_<uchar> occupied(msg->info.height, msg->info.width, uchar(0));
-  for(int x=0; x<msg->info.width; x++){
-    for(int y=0; y<msg->info.height; y++){
-      if(msg->data[y * msg->info.width + x] == 0)
+  cv::Mat_<uchar> unknown(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> free(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> occupied(last_map_.info.height, last_map_.info.width, uchar(0));
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      if(last_map_.data[y * last_map_.info.width + x] == 0)
         free(y,x) = 255;
-      else if(msg->data[y * msg->info.width + x] < 0)
+      else if(last_map_.data[y * last_map_.info.width + x] < 0)
         unknown(y,x) = 255;
       else
         occupied(y,x) = 255;
@@ -69,10 +109,20 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::bitwise_and(unknown_dilate, free, frontiers_mask);
 
   cv::Mat_<uchar> occupied_dilate, not_forbidden;
-  int robot_kernel_size = int(0.25/msg->info.resolution)*2+1;
+  int robot_kernel_size = ROBOT_SIZE*2+1;
   cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_not(occupied_dilate, not_forbidden);
+  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
+
+  nav_msgs::OccupancyGrid map = last_map_;
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      map.data[y * last_map_.info.width + x] = (not_forbidden(y,x) ? 0 : 100);
+    }
+  }
+  map_pub_.publish(map);
 
   tf::StampedTransform transform;
   try{
@@ -81,12 +131,117 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
-  cv::Point pos(int((transform.getOrigin().x()-msg->info.origin.position.x)/msg->info.resolution), int((transform.getOrigin().y()-msg->info.origin.position.y)/msg->info.resolution));
+  cv::Point pos(int((transform.getOrigin().x()-last_map_.info.origin.position.x)/last_map_.info.resolution),
+                int((transform.getOrigin().y()-last_map_.info.origin.position.y)/last_map_.info.resolution));
+  cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
+
+  cv::Mat_<uchar> accessible(last_map_.info.height, last_map_.info.width, uchar(0));
+  std::deque<cv::Point> next[2];
+  cv::Mat_<uchar> already_inserted;
+  cv::bitwise_not(not_forbidden, already_inserted);
+  already_inserted(start) = 255;
+  int i=0;
+  next[i].push_back(start);
+  while(!next[i&1].empty()){
+    for(const auto& p : next[i&1]){
+      if(not_forbidden(p)){
+        accessible(p) = 255;
+      }
+      insertNeighbors(p, already_inserted, next[(i+1)&1]);
+    }
+    next[i&1].clear();
+    i++;
+  }
+
+  cv::Mat_<uchar> good_frontiers_mask;
+  cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
+
+  std::set<std::pair<cv::Point,double>, CompareFrontier> frontiers;
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      if(good_frontiers_mask(y,x)){
+        double dist = (x-pos.x)*(x-pos.x) + (y-pos.y)*(y-pos.y);
+        frontiers.insert(std::pair<cv::Point,double>(cv::Point(x,y), dist));
+      }
+    }
+  }
+
+  geometry_msgs::Pose old_frontier = curr_frontier_;
+  for(const auto& f : frontiers){
+    std::set<std::pair<cv::Point,double>, CompareFrontier> view_points;
+    for(const auto& offset : circle_points_){
+      cv::Point p = f.first+offset;
+      if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && accessible(p)){
+        double dist = (p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y);
+        view_points.insert(std::pair<cv::Point,double>(p, dist));
+      }
+    }
+    for(const auto& v : view_points){
+      if(lineFree(f.first, v.first, free)){
+        double angle = std::atan2(f.first.y-v.first.y, f.first.x-v.first.x);
+        tf::Transform tf_t(tf::Quaternion(tf::Vector3(0.0,0.0,1.0),angle),
+                           tf::Vector3(v.first.x*last_map_.info.resolution+last_map_.info.origin.position.x,
+                                       v.first.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
+        tf::poseTFToMsg(tf_t, curr_frontier_);
+        if(old_frontier.position.x != curr_frontier_.position.x || old_frontier.position.y != curr_frontier_.position.y || old_frontier.orientation.w != curr_frontier_.orientation.w){
+          frontier_changed_ = true;
+        }
+        std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
+        return;
+      }
+    }
+  }
+  std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
+  finished_ = true;
+}
+/*
+void Explorer::calcFrontier(){
+  ros::Time t = ros::Time::now();
+  cv::Mat_<uchar> unknown(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> free(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> occupied(last_map_.info.height, last_map_.info.width, uchar(0));
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      if(last_map_.data[y * last_map_.info.width + x] == 0)
+        free(y,x) = 255;
+      else if(last_map_.data[y * last_map_.info.width + x] < 0)
+        unknown(y,x) = 255;
+      else
+        occupied(y,x) = 255;
+    }
+  }
+  cv::Mat_<uchar> unknown_dilate;
+  cv::dilate(unknown, unknown_dilate, cv::Mat_<uchar>::ones(3,3));
+  cv::Mat_<uchar> frontiers_mask;
+  cv::bitwise_and(unknown_dilate, free, frontiers_mask);
+
+  cv::Mat_<uchar> occupied_dilate, not_forbidden;
+  int robot_kernel_size = int(0.25/last_map_.info.resolution)*2+1;
+  cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_not(occupied_dilate, not_forbidden);
+  cv::bitwise_and(not_forbidden, free, not_forbidden);
+
+  nav_msgs::OccupancyGrid map = last_map_;
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      map.data[y * last_map_.info.width + x] = (not_forbidden(y,x) ? 0 : 100);
+    }
+  }
+  map_pub_.publish(map);
+
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
+  cv::Point pos(int((transform.getOrigin().x()-last_map_.info.origin.position.x)/last_map_.info.resolution), int((transform.getOrigin().y()-last_map_.info.origin.position.y)/last_map_.info.resolution));
   //std::cout << pos.x << " " << pos.y << std::endl;
   cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
   //std::cout << start.x << " " << start.y << std::endl;
 
-  cv::Mat_<uchar> accessible(msg->info.height, msg->info.width, uchar(0));
+  cv::Mat_<uchar> accessible(last_map_.info.height, last_map_.info.width, uchar(0));
   std::deque<cv::Point> next[2];
   cv::Mat_<uchar> already_inserted;
   cv::bitwise_not(not_forbidden, already_inserted);
@@ -110,7 +265,7 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
 //    cv::dilate(accessible, accessible, cv::Mat_<uchar>::ones(3,3));
 //    if(accessible(start))
 //      break;
-//    accessible = cv::Mat_<uchar>(msg->info.height, msg->info.width, uchar(0));
+//    accessible = cv::Mat_<uchar>(last_map_.info.height, last_map_.info.width, uchar(0));
 //  }
 //  accessible(start) = 100;
 //  not_forbidden(start) = 100;
@@ -120,8 +275,8 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
 
   double min_dist = std::numeric_limits<double>::max();
   cv::Point frontier(-1,-1);
-  for(int x=0; x<msg->info.width; x++){
-    for(int y=0; y<msg->info.height; y++){
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
       if(good_frontiers_mask(y,x)){
         double dist = (x-pos.x)*(x-pos.x) + (y-pos.y)*(y-pos.y);
         if(dist < min_dist){
@@ -135,23 +290,10 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
     finished_ = true;
     return;
   }
-  else
-    finished_ = false;
 
-  if(frontier.x != curr_point_.x || frontier.y != curr_point_.y){
-    //std::cout << frontier.x << " " << frontier.y << std::endl;
-    curr_point_ = frontier;
-    frontier_changed_ = true;
-//    double cx = 0.0, cy=0.0, sum=0.0;
-//    for(int x=std::max(0,frontier.x-20); x<=std::min(good_frontiers_mask.cols-1,frontier.x+20); x++){
-//      for(int y=std::max(0,frontier.y-20); y<=std::min(good_frontiers_mask.rows-1,frontier.y+20); y++){
-//        if(good_frontiers_mask(y,x)){
-//          cx+=x-frontier.x;
-//          cy+=y-frontier.y;
-//        }
-//      }
-//    }
-//    double angle = std::atan2(cy,cx);
+  geometry_msgs::Pose old_pose = curr_frontier_;
+
+  if(true || frontier.x != curr_point_.x || frontier.y != curr_point_.y){
     double angle = std::atan2(frontier.y-pos.y, frontier.x-pos.x);
     cv::Point view_pos = frontier;
     for(double angle_diff=0.0; angle_diff<M_PI; angle_diff+=M_PI/30){
@@ -170,22 +312,22 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
     }
 
     tf::Transform tf_t(tf::Quaternion(tf::Vector3(0.0,0.0,1.0),angle),
-                       tf::Vector3(view_pos.x*msg->info.resolution+msg->info.origin.position.x, view_pos.y*msg->info.resolution+msg->info.origin.position.y, 0.0));
+                       tf::Vector3(view_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x, view_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
     tf::poseTFToMsg(tf_t, curr_frontier_);
   }
 
   //std::cout << (ros::Time::now()-t).toSec() << std::endl;
 
-  //cv::resize(frontiers_mask, frontiers_mask, cv::Size(msg->info.width*2, msg->info.height*2), 0, 0, cv::INTER_NEAREST);
+  //cv::resize(frontiers_mask, frontiers_mask, cv::Size(last_map_.info.width*2, last_map_.info.height*2), 0, 0, cv::INTER_NEAREST);
   cv::imshow("frontiers", frontiers_mask);
-  //cv::resize(not_forbidden, not_forbidden, cv::Size(msg->info.width*2, msg->info.height*2), 0, 0, cv::INTER_NEAREST);
+  //cv::resize(not_forbidden, not_forbidden, cv::Size(last_map_.info.width*2, last_map_.info.height*2), 0, 0, cv::INTER_NEAREST);
   cv::imshow("not_forbidden", not_forbidden);
-  //cv::resize(accessible, accessible, cv::Size(msg->info.width*2, msg->info.height*2), 0, 0, cv::INTER_NEAREST);
+  //cv::resize(accessible, accessible, cv::Size(last_map_.info.width*2, last_map_.info.height*2), 0, 0, cv::INTER_NEAREST);
   cv::imshow("accessible", accessible);
-  //cv::resize(good_frontiers_mask, good_frontiers_mask, cv::Size(msg->info.width*2, msg->info.height*2), 0, 0, cv::INTER_NEAREST);
+  //cv::resize(good_frontiers_mask, good_frontiers_mask, cv::Size(last_map_.info.width*2, last_map_.info.height*2), 0, 0, cv::INTER_NEAREST);
   cv::imshow("good_frontiers_mask", good_frontiers_mask);
   cv::waitKey(1);
-}
+}*/
 
 cv::Point Explorer::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) const{
   if(valid(y,x))

@@ -54,6 +54,7 @@ class HierarchyMapper{
     void transformPublishLoop(double transform_publish_period);
 
     double transform_publish_period_;
+    double publish_period_;
 
   public:
     HierarchyMapper();
@@ -78,7 +79,7 @@ class HierarchyMapper{
     bool hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res);
 
     void publish();
-    void downprojecAndPublishMap();
+    void downprojecAndPublish();
 
     void run();
 };

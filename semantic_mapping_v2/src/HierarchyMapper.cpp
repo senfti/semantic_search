@@ -34,6 +34,7 @@ HierarchyMapper::HierarchyMapper(){
   hierarchy_srv_ = nh_.advertiseService("hierarchy_srv", &HierarchyMapper::hierarchySrvCb, this);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
+  ros::NodeHandle("~").param("publish_period", publish_period_, 0.5);
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
   std::cout << "HierarchyMapping started" << std::endl;
@@ -152,6 +153,7 @@ void HierarchyMapper::transformPublishLoop(double transform_publish_period){
 
 
 void HierarchyMapper::publish(){
+  ros::Time sdf = ros::Time::now();
   gmap_pub_.publish(room_mapper_[current_mapper_]->getGMap());
   nav_msgs::OccupancyGrid map = room_mapper_[current_mapper_]->getMap();
   if(map.data.size() > 0){
@@ -164,6 +166,7 @@ void HierarchyMapper::publish(){
   }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+  ros::Time sdf2 = ros::Time::now();
 
   if(obj_prob_pub_.empty()){
     obj_prob_pub_.resize(80);
@@ -196,11 +199,15 @@ void HierarchyMapper::publish(){
   probs = room_mapper_[current_mapper_]->getObjectProbs(order);
   for(int i=0; i<probs.size(); i++)
     std::cout << ObjectMapper::getObjName(order[i]) << ": " << probs[order[i]] << std::endl;
+
+  std::cout << "publish time " << (sdf2-sdf).toSec() << " " << (ros::Time::now() - sdf2).toSec() << std::endl;
 }
 
 
-void HierarchyMapper::downprojecAndPublishMap(){
+void HierarchyMapper::downprojecAndPublish(){
+  ros::Time start = ros::Time::now();
   room_mapper_[current_mapper_]->downprojectMap();
+  gmap_pub_.publish(room_mapper_[current_mapper_]->getGMap());
   nav_msgs::OccupancyGrid map = room_mapper_[current_mapper_]->getMap();
   if(map.data.size() > 0){
     map_pub_.publish(map);
@@ -210,25 +217,32 @@ void HierarchyMapper::downprojecAndPublishMap(){
   if(map.data.size() > 0){
     map_door_blocked_pub_.publish(map);
   }
-  door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+  marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
+  door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+
+  std::cout << "Published in " << (ros::Time::now() - start).toSec() << std::endl;
 }
 
 
 void HierarchyMapper::run(){
   ros::Rate rate(50);
-  ros::Time last_publish = ros::TIME_MAX;
+  ros::Time last_publish = ros::Time::now();
   while(ros::ok()){
     ros::spinOnce();
     if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size() && room_mapper_[current_mapper_]->isInitialized()){
-      if(room_mapper_[current_mapper_]->resetWasMapUpdated()){
-        publish();
-        last_publish = ros::Time::now();
-      }
-      else if(ros::Time::now() - last_publish > ros::Duration(0.5)){
-        downprojecAndPublishMap();
-        last_publish = ros::Time::now();
-      }
+//      if(room_mapper_[current_mapper_]->resetWasMapUpdated()){
+//        publish();
+//        last_publish = ros::Time::now();
+//      }
+//      else if(ros::Time::now() - last_publish > ros::Duration(0.5)){
+//        downprojecAndPublishMap();
+//        last_publish = ros::Time::now();
+//      }
+        if(ros::Time::now() - last_publish > ros::Duration(publish_period_)){
+          downprojecAndPublish();
+          last_publish = ros::Time::now();
+        }
 
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
       if(door.isValid()){

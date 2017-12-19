@@ -202,10 +202,10 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   }
   ROS_INFO("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
 
-  if(obstacle_map_.header.stamp != getGMap().header.stamp){
-    downprojectMap();
-    was_map_updated_ = true;
-  }
+//  if(obstacle_map_.header.stamp != getGMap().header.stamp){
+//    downprojectMap();
+//    was_map_updated_ = true;
+//  }
 }
 
 
@@ -363,7 +363,7 @@ tf::Transform RoomMapper::activate(const GMapping::OrientedPoint& robot, const D
   Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
   tf::Transform transform;
   if(door2.isValid()){
-    transform = door.pose_.inverse()*door2.pose_;
+    transform = tf::Transform(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), M_PI), tf::Vector3(0.0,0.0,0.0))*door.pose_.inverse()*door2.pose_;
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
     GMapping::OrientedPoint pose = transformPointBackward(robot, door1_pose);

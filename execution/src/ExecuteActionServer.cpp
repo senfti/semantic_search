@@ -37,7 +37,7 @@ void ExecuteActionServer::doneCb(const actionlib::SimpleClientGoalState &state, 
 
 
 void ExecuteActionServer::feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr &feedback){
-  ROS_INFO("MOVE_BASE WORKING");
+  //ROS_INFO("MOVE_BASE WORKING");
 }
 
 
@@ -128,6 +128,9 @@ void ExecuteActionServer::doMoveTo(){
 
 
 void ExecuteActionServer::doExplore(){
+  if(!explorer_.running()){
+    explorer_.start();
+  }
   if(explorer_.finished()){
     ROS_INFO("Finished exploration");
     if(move_base_state_ == MoveBaseState::WAITING) {
@@ -282,20 +285,28 @@ void ExecuteActionServer::run(){
     ros::spinOnce();
     if(goal_.action == 0){
       doMoveTo();
+      explorer_.stop();
+      start_rotation_state_machine_.reset();
     }
     else if(goal_.action == 1){
       doExplore();
+      start_rotation_state_machine_.reset();
     }
     else if(goal_.action == 2){
       doSearch();
+      explorer_.stop();
+      start_rotation_state_machine_.reset();
     }
     else if(goal_.action == 3){
       doStartRotation();
+      explorer_.stop();
     }
     else{
       move_base_state_ = MoveBaseState::WAITING;
+      explorer_.stop();
+      start_rotation_state_machine_.reset();
     }
-    ROS_INFO("MOVE_BASE_STATE: %d", int(move_base_state_));
+    //ROS_INFO("MOVE_BASE_STATE: %d", int(move_base_state_));
     rate.sleep();
   }
 }

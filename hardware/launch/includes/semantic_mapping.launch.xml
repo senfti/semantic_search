@@ -75,7 +75,10 @@
     <param name="ObjectMapper/V_H" value="0.3" />   
     <param name="ObjectMapper/V_M" value="0.0002" />  
     <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
-    <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="32.0" />  
+    <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="32.0" />
+
+    <param name="transform_publish_period" value="0.05" />   
+    <param name="publish_period" value="0.5" />
 
   </node>
 </launch>
