@@ -35,6 +35,7 @@ HierarchyMapper::HierarchyMapper(){
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   ros::NodeHandle("~").param("publish_period", publish_period_, 0.5);
+  ros::NodeHandle("~").param("debug_publish_interval", debug_publish_interval_, debug_publish_interval_);
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
   std::cout << "HierarchyMapping started" << std::endl;
@@ -220,6 +221,42 @@ void HierarchyMapper::downprojecAndPublish(){
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+
+  static int counter=0;
+  if((counter%debug_publish_interval_) == debug_publish_interval_-1){
+    if(obj_prob_pub_.empty()){
+      obj_prob_pub_.resize(80);
+      for(int i=0; i<80; i++){
+        std::string s = "obj_" + ObjectMapper::getObjName(i);
+        std::replace( s.begin(), s.end(), ' ', '_');
+        obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+      }
+    }
+    for(int i=0; i<80; i++)
+      obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
+
+    std::vector<size_t> order;
+    std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
+    if(room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
+      room_prob_pub_.resize(205);
+      for(int i=0; i<205; i++){
+        std::string s = "room_" + room_mapper_[current_mapper_]->getRoomName(i);
+        std::replace( s.begin(), s.end(), ' ', '_');
+        room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+      }
+    }
+    if(!room_prob_pub_.empty())
+      for(int i=0; i<205; i++)
+        room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
+    if(!probs.empty())
+      for(int i=0; i<10; i++){
+        std::cout << room_mapper_[current_mapper_]->getRoomName(order[i]) << ": " << probs[order[i]] << std::endl;
+      }
+    probs = room_mapper_[current_mapper_]->getObjectProbs(order);
+    for(int i=0; i<probs.size(); i++)
+      std::cout << ObjectMapper::getObjName(order[i]) << ": " << probs[order[i]] << std::endl;
+  }
+  counter++;
 
   std::cout << "Published in " << (ros::Time::now() - start).toSec() << std::endl;
 }
@@ -442,8 +479,14 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       if(door.other_room_ <= i){
         semantic_mapping_v2::HierarchyLinkMsg link;
         link.header.stamp = ros::Time::now();
-        link.room1 = i;
-        link.room2 = door.other_room_;
+        if(door.other_room_ < 0){
+          link.room1 = i;
+          link.room2 = door.other_room_;
+        }
+        else{
+          link.room1 = door.other_room_;
+          link.room2 = i;
+        }
         tf::poseTFToMsg(door.pose_, link.door1_pose);
         if(door.other_room_ >= 0){
           std::vector<Door> other_doors = room_mapper_[door.other_room_]->getDoors();

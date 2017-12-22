@@ -55,6 +55,7 @@ class HierarchyMapper{
 
     double transform_publish_period_;
     double publish_period_;
+    int debug_publish_interval_ = std::numeric_limits<int>::max();
 
   public:
     HierarchyMapper();
