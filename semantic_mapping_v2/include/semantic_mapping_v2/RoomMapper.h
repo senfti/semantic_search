@@ -40,6 +40,10 @@ class RoomMapper : public SlamGMapping{
     double ROOM_HIT_MISS_RATIO = 1000.0;
     double OBJ_HIT_MISS_RATIO = 100.0;
 
+    boost::thread* octomapping_thread_ = nullptr;
+    sensor_msgs::PointCloud2 latest_cloud_;
+    boost::mutex latest_cloud_mutex_;
+
   public:
     RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door = Door());
     ~RoomMapper();
@@ -47,6 +51,8 @@ class RoomMapper : public SlamGMapping{
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
     void doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
+
+    void doOctomapping();
 
     int getBestParticleIdx() const { return std::min(gsp_->getBestParticleIndex(), int(octo_maps_.size())-1); }
     GMapping::OrientedPoint getParticlePose2D(int particle_idx, ros::Time time) const;

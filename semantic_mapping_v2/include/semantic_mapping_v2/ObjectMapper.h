@@ -107,7 +107,7 @@ class ObjectMapper{
 
     visualization_msgs::MarkerArray getProbMsg(int id) const { return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray()); }
 
-    std::vector<float> getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order);
+    std::vector<float> getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order);
     float getResolution() const { return maps_[0].getResolution(); }
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) const { return (maps_.size() > obj_id ? maps_[obj_id].getObjMapMsg() : semantic_mapping_v2::ObjectMapMsg()); }

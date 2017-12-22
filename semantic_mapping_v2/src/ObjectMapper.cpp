@@ -282,7 +282,7 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
   return indices;
 }
 
-std::vector<float> ObjectMapper::getObjectProbs(const OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order){
+std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order){
   if(maps_.empty())
     return std::vector<float>();
 

@@ -39,16 +39,19 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTreeKey.h>
 
+#include <boost/thread.hpp>
 
 class OctoMapper {
   public:
     typedef pcl::PointXYZ PCLPoint;
     typedef pcl::PointCloud<pcl::PointXYZ> PCLPointCloud;
+    typedef pcl::PointCloud<pcl::PointXYZ>::Ptr PCLPointCloudPtr;
     typedef octomap::OcTree OcTreeT;
     typedef octomap_msgs::GetOctomap OctomapSrv;
     typedef octomap_msgs::BoundingBoxQuery BBXSrv;
 
   protected:
+    boost::mutex data_mutex_;
     OcTreeT* m_octree;
     octomap::KeyRay m_keyRay;  // temp storage for ray casting
     octomap::OcTreeKey m_updateBBXMin;
@@ -89,29 +92,26 @@ class OctoMapper {
     OctoMapper(const OctoMapper& rhs);
     virtual ~OctoMapper();
 
-    void reset();
-    void clearBBX(pcl::PointXYZ min, pcl::PointXYZ max);
     void insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorld);
-    virtual bool openFile(const std::string& filename);
+    //virtual bool openFile(const std::string& filename);
 
-    octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now()) const;
-    octomap_msgs::Octomap getFullOctoMapMsg(const ros::Time& rostime = ros::Time::now()) const;
-    visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time& rostime = ros::Time::now()) const;
-    visualization_msgs::MarkerArray getOccupiedAndFreeCellMsg(visualization_msgs::MarkerArray& free_cells, const ros::Time& rostime = ros::Time::now()) const;
+    octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now());
+    octomap_msgs::Octomap getFullOctoMapMsg(const ros::Time& rostime = ros::Time::now());
+    visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time& rostime = ros::Time::now());
+    visualization_msgs::MarkerArray getOccupiedAndFreeCellMsg(visualization_msgs::MarkerArray& free_cells, const ros::Time& rostime = ros::Time::now());
     void getAllPublishMsgs(visualization_msgs::MarkerArray& occupied_cells_vis_array, octomap_msgs::Octomap& octomap_binary,
                            octomap_msgs::Octomap& octomap_full, visualization_msgs::MarkerArray& free_cells_vis_array,
                            const ros::Time& rostime = ros::Time::now());
 
-    nav_msgs::OccupancyGrid addDownprojected(const nav_msgs::OccupancyGrid &map) const;
+    nav_msgs::OccupancyGrid addDownprojected(const nav_msgs::OccupancyGrid &map);
 
-    float getOccupancy(float x, float y, float z) const;
-    float getOccupancy(const pcl::PointXYZ& pos) const { return getOccupancy(pos.x, pos.y, pos.z); }
-    bool isOccupied(float x, float y, float z, float thresh) const { return getOccupancy(x,y,z) > thresh; }
-    bool isOccupied(const pcl::PointXYZ& min, const pcl::PointXYZ& max, float thresh) const { return isOccupied(min.x, min.y, min.z, max.x, max.y, max.z, thresh); }
-    bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh) const;
-    float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) const {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
-    float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) const;
-
+    float getOccupancy(float x, float y, float z);
+    float getOccupancy(const pcl::PointXYZ& pos) { return getOccupancy(pos.x, pos.y, pos.z); }
+    bool isOccupied(float x, float y, float z, float thresh) { return getOccupancy(x,y,z) > thresh; }
+    bool isOccupied(const pcl::PointXYZ& min, const pcl::PointXYZ& max, float thresh) { return isOccupied(min.x, min.y, min.z, max.x, max.y, max.z, thresh); }
+    bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh);
+    float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
+    float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
 
     //bool clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp);
     //bool resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp);
@@ -133,6 +133,9 @@ class OctoMapper {
 
     virtual void insertScan(const tf::Point& sensorOrigin, const PCLPointCloud& cloud);
     static std_msgs::ColorRGBA heightMapColor(double h);
+
+    void clearBBX(pcl::PointXYZ min, pcl::PointXYZ max);
+    void reset();
 };
 
 #endif //SEMANTIC_MAPPING_V2_OCTOMAPPER_H

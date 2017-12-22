@@ -105,6 +105,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
 }
 
 OctoMapper::OctoMapper(const OctoMapper& rhs){
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   m_octree = new OcTreeT(*rhs.m_octree);
   m_keyRay = rhs.m_keyRay;
   m_updateBBXMin = rhs.m_updateBBXMin;
@@ -147,7 +148,7 @@ OctoMapper::~OctoMapper(){
     m_octree = NULL;
   }
 }
-
+/*
 bool OctoMapper::openFile(const std::string& filename){
   if (filename.length() <= 3)
     return false;
@@ -196,7 +197,7 @@ bool OctoMapper::openFile(const std::string& filename){
   m_updateBBXMax[2] = m_octree->coordToKey(maxZ);
 
   return true;
-}
+}*/
 
 void OctoMapper::insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorldTf){
   ros::WallTime startTime = ros::WallTime::now();
@@ -215,9 +216,15 @@ void OctoMapper::insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToW
 
 
 void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& cloud){
+  boost::unique_lock<boost::mutex> lock(data_mutex_);
+  OcTreeT* octree = new OcTreeT(*m_octree);
+  octomap::KeyRay keyRay = m_keyRay;  // temp storage for ray casting
+  octomap::OcTreeKey updateBBXMin = m_updateBBXMin;
+  octomap::OcTreeKey updateBBXMax = m_updateBBXMax;
+  lock.unlock();
   point3d sensorOrigin = pointTfToOctomap(sensorOriginTf);
 
-  if (!m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMin) || !m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMax))  {
+  if (!octree->coordToKeyChecked(sensorOrigin, updateBBXMin) || !octree->coordToKeyChecked(sensorOrigin, updateBBXMax))  {
     ROS_ERROR_STREAM("Could not generate Key for origin "<<sensorOrigin);
   }
 
@@ -230,28 +237,28 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
     // maxrange check
     if ((m_maxRange < 0.0) || ((point - sensorOrigin).norm() <= m_maxRange) ) {
       // free cells
-      if (m_octree->computeRayKeys(sensorOrigin, point, m_keyRay)){
-        free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+      if (octree->computeRayKeys(sensorOrigin, point, keyRay)){
+        free_cells.insert(keyRay.begin(), keyRay.end());
       }
       // occupied endpoint
       OcTreeKey key;
-      if (m_octree->coordToKeyChecked(point, key)){
+      if (octree->coordToKeyChecked(point, key)){
         occupied_cells.insert(key);
 
-        updateMinKey(key, m_updateBBXMin);
-        updateMaxKey(key, m_updateBBXMax);
+        updateMinKey(key, updateBBXMin);
+        updateMaxKey(key, updateBBXMax);
       }
     }
     else {// ray longer than maxrange:;
       point3d new_end = sensorOrigin + (point - sensorOrigin).normalized() * m_maxRange;
-      if (m_octree->computeRayKeys(sensorOrigin, new_end, m_keyRay)){
-        free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+      if (octree->computeRayKeys(sensorOrigin, new_end, keyRay)){
+        free_cells.insert(keyRay.begin(), keyRay.end());
 
         octomap::OcTreeKey endKey;
-        if (m_octree->coordToKeyChecked(new_end, endKey)){
+        if (octree->coordToKeyChecked(new_end, endKey)){
           free_cells.insert(endKey);
-          updateMinKey(endKey, m_updateBBXMin);
-          updateMaxKey(endKey, m_updateBBXMax);
+          updateMinKey(endKey, updateBBXMin);
+          updateMaxKey(endKey, updateBBXMax);
         }
         else{
           ROS_ERROR_STREAM("Could not generate Key for endpoint "<<new_end);
@@ -263,30 +270,39 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
   // mark free cells only if not seen occupied in this cloud
   for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ++it){
     if (occupied_cells.find(*it) == occupied_cells.end()){
-      m_octree->updateNode(*it, false);
+      octree->updateNode(*it, false);
     }
   }
 
   // now mark all occupied cells:
   for (KeySet::iterator it = occupied_cells.begin(), end=occupied_cells.end(); it!= end; it++) {
-    m_octree->updateNode(*it, true);
+    octree->updateNode(*it, true);
   }
 
   octomap::point3d minPt, maxPt;
-  ROS_DEBUG_STREAM("Bounding box keys (before): " << m_updateBBXMin[0] << " " <<m_updateBBXMin[1] << " " << m_updateBBXMin[2] << " / " <<m_updateBBXMax[0] << " "<<m_updateBBXMax[1] << " "<< m_updateBBXMax[2]);
+  ROS_DEBUG_STREAM("Bounding box keys (before): " << updateBBXMin[0] << " " <<updateBBXMin[1] << " " << updateBBXMin[2] << " / " <<updateBBXMax[0] << " "<<updateBBXMax[1] << " "<< updateBBXMax[2]);
 
-  minPt = m_octree->keyToCoord(m_updateBBXMin);
-  maxPt = m_octree->keyToCoord(m_updateBBXMax);
+  minPt = octree->keyToCoord(updateBBXMin);
+  maxPt = octree->keyToCoord(updateBBXMax);
   ROS_DEBUG_STREAM("Updated area bounding box: "<< minPt << " - "<<maxPt);
-  ROS_DEBUG_STREAM("Bounding box keys (after): " << m_updateBBXMin[0] << " " <<m_updateBBXMin[1] << " " << m_updateBBXMin[2] << " / " <<m_updateBBXMax[0] << " "<<m_updateBBXMax[1] << " "<< m_updateBBXMax[2]);
+  ROS_DEBUG_STREAM("Bounding box keys (after): " << updateBBXMin[0] << " " <<updateBBXMin[1] << " " << updateBBXMin[2] << " / " <<updateBBXMax[0] << " "<<updateBBXMax[1] << " "<< updateBBXMax[2]);
 
   if (m_compressMap)
-    m_octree->prune();
+    octree->prune();
+
+  lock.lock();
+  delete m_octree;
+  m_octree = octree;
+  m_keyRay = keyRay;  // temp storage for ray casting
+  m_updateBBXMin = updateBBXMin;
+  m_updateBBXMax = updateBBXMax;
+  lock.unlock();
 }
 
 
 
-float OctoMapper::getOccupancy(float x, float y, float z) const {
+float OctoMapper::getOccupancy(float x, float y, float z) {
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   OcTreeT::NodeType* node = m_octree->search(x,y,z);
   if(!node)
     return -1.f;
@@ -300,11 +316,11 @@ void OctoMapper::getAllPublishMsgs(visualization_msgs::MarkerArray& occupied_cel
                                    const ros::Time& rostime)
 {
   ros::WallTime startTime = ros::WallTime::now();
-  size_t octomapSize = m_octree->size();
-  if (octomapSize <= 1){
-    ROS_WARN("Nothing to publish, octree is empty");
-    return;
-  }
+//  size_t octomapSize = m_octree->size();
+//  if (octomapSize <= 1){
+//    ROS_WARN("Nothing to publish, octree is empty");
+//    return;
+//  }
 
   if(m_publishFreeSpace)
     occupied_cells_vis_array = getOccupiedAndFreeCellMsg(free_cells_vis_array, rostime);
@@ -346,7 +362,8 @@ std_msgs::ColorRGBA getProbColor(double prob){
   return c;
 }
 
-visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &rostime) const{
+visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &rostime) {
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   visualization_msgs::MarkerArray occupiedNodesVis;
   occupiedNodesVis.markers.resize(m_treeDepth+1);
 
@@ -404,7 +421,8 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &
 }
 
 
-visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualization_msgs::MarkerArray& free_cells, const ros::Time &rostime) const{
+visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualization_msgs::MarkerArray& free_cells, const ros::Time &rostime){
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   free_cells.markers.resize(m_treeDepth+1);
   visualization_msgs::MarkerArray occupiedNodesVis;
   occupiedNodesVis.markers.resize(m_treeDepth+1);
@@ -488,6 +506,7 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
 
 
 void OctoMapper::clearBBX(pcl::PointXYZ min, pcl::PointXYZ max){
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   double thresMin = m_octree->getClampingThresMin();
   for(OcTreeT::leaf_bbx_iterator it = m_octree->begin_leafs_bbx(point3d(min.x,min.y,min.z),point3d(max.x,max.y,max.z)), end=m_octree->end_leafs_bbx(); it!= end; ++it){
     it->setLogOdds(octomap::logodds(thresMin));
@@ -497,11 +516,13 @@ void OctoMapper::clearBBX(pcl::PointXYZ min, pcl::PointXYZ max){
 
 
 void OctoMapper::reset(){
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   m_octree->clear();
 }
 
 
-Octomap OctoMapper::getBinaryOctoMapMsg(const ros::Time &rostime) const{
+Octomap OctoMapper::getBinaryOctoMapMsg(const ros::Time &rostime){
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   Octomap map;
   map.header.frame_id = m_worldFrameId;
   map.header.stamp = rostime;
@@ -512,7 +533,8 @@ Octomap OctoMapper::getBinaryOctoMapMsg(const ros::Time &rostime) const{
   return map;
 }
 
-Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) const{
+Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) {
+  boost::lock_guard<boost::mutex> lock(data_mutex_);
   Octomap map;
   map.header.frame_id = m_worldFrameId;
   map.header.stamp = rostime;
@@ -524,11 +546,13 @@ Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) const{
 }
 
 
-nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) const{
+nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) {
   nav_msgs::OccupancyGrid downprojected_map = map;
   cv::Mat_<uchar> tmp_map(map.info.height, map.info.width, uchar(0));
   geometry_msgs::Quaternion orig_quat = downprojected_map.info.origin.orientation;
   double res = 1.00 / downprojected_map.info.resolution;
+
+  boost::unique_lock<boost::mutex> lock(data_mutex_);
   if(is_equal(orig_quat.w, 1.0) && is_equal(orig_quat.x, 0.0) && is_equal(orig_quat.y, 0.0) && is_equal(orig_quat.z, 0.0)){   // should be here
     for(OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
       if(it->getOccupancy() > downproject_occ_thresh_ && it.getZ() <= downprojection_height_){
@@ -563,6 +587,7 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
       }
     }
   }
+  lock.unlock();
 //  cv::Mat sdf;
   //cv::resize(tmp_map, sdf, cv::Size(tmp_map.cols*2, tmp_map.rows*2),0,0,cv::INTER_NEAREST);
 //  cv::flip(tmp_map,sdf,0);
@@ -637,7 +662,7 @@ std_msgs::ColorRGBA OctoMapper::heightMapColor(double h) {
 }
 
 
-bool OctoMapper::isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh) const{
+bool OctoMapper::isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh) {
   for(float x = x_min+0.5f*m_res; x < x_max; x+=m_res){
     for(float y = y_min+0.5f*m_res; y < y_max; y+=m_res){
       for(float z = z_min+0.5f*m_res; z < z_max; z+=m_res){
@@ -650,7 +675,7 @@ bool OctoMapper::isOccupied(float x_min, float y_min, float z_min, float x_max, 
 }
 
 
-float OctoMapper::getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) const{
+float OctoMapper::getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) {
   float occ = 0.f;
   for(float x = x_min+0.5f*m_res; x < x_max; x+=m_res){
     for(float y = y_min+0.5f*m_res; y < y_max; y+=m_res){

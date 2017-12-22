@@ -135,9 +135,13 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
       got_transform = false;
     }
   }
+
+  octomapping_thread_ = new boost::thread(boost::bind(&RoomMapper::doOctomapping, this));
 }
 
 RoomMapper::~RoomMapper(){
+  octomapping_thread_->join();
+  delete octomapping_thread_;
   for(auto& map : octo_maps_)
     delete map;
   for(auto& map : door_mappers_)
@@ -148,12 +152,49 @@ RoomMapper::~RoomMapper(){
     delete map;
 }
 
+void RoomMapper::doOctomapping(){
+  ros::Rate rate(10.0);
+  while(ros::ok()){
+    if(!latest_cloud_.data.empty()){
+      ros::Time t = ros::Time::now();
+
+      OctoMapper::PCLPointCloudPtr pc(new OctoMapper::PCLPointCloud()); // input cloud for filtering and ground-detection
+      boost::unique_lock<boost::mutex> lock(latest_cloud_mutex_);
+      pcl::fromROSMsg(latest_cloud_, *pc);
+      ros::Time stamp = latest_cloud_.header.stamp;
+      latest_cloud_ = sensor_msgs::PointCloud2();
+      lock.unlock();
+
+      Eigen::Matrix4f cam_to_base;
+      pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
+      pcl::transformPointCloud(*pc, *pc, cam_to_base);
+
+      // set up filter for height range, also removes NANs:
+      pcl::PassThrough<OctoMapper::PCLPoint> pass_z;
+      pass_z.setFilterFieldName("z");
+      pass_z.setFilterLimits(m_pointcloudMinZ, m_pointcloudMaxZ);
+      pass_z.setInputCloud(pc);
+      pass_z.filter(*pc);
+
+      pcl::VoxelGrid<OctoMapper::PCLPoint> voxel_grid_filter;
+      voxel_grid_filter.setInputCloud(pc);
+      voxel_grid_filter.setLeafSize(downsample_voxel_size_, downsample_voxel_size_, downsample_voxel_size_);
+      voxel_grid_filter.filter(*pc);
+
+      for(int i = 0; i < octo_maps_.size(); i++){
+        octo_maps_[i]->insertCloud(*pc, getParticlePose3D(i, stamp));
+      }
+      ROS_INFO("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
+    }
+    rate.sleep();
+  }
+}
+
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   if(!isInitialized() || cloud->header.stamp < activate_time_ || !processed_scan_)
     return;
   processed_scan_ = false;
 
-  ros::Time t = ros::Time::now();
   if(!gsp_->getIndexes().empty()){
     try{
       for(int i=0; i<gsp_->getIndexes().size(); i++){
@@ -178,29 +219,8 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     gsp_->resetIndexes();
   }
 
-  OctoMapper::PCLPointCloud pc; // input cloud for filtering and ground-detection
-  pcl::fromROSMsg(*cloud, pc);
-
-  Eigen::Matrix4f cam_to_base;
-  pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
-  pcl::transformPointCloud(pc, pc, cam_to_base);
-
-  // set up filter for height range, also removes NANs:
-  pcl::PassThrough<OctoMapper::PCLPoint> pass_z;
-  pass_z.setFilterFieldName("z");
-  pass_z.setFilterLimits(m_pointcloudMinZ, m_pointcloudMaxZ);
-  pass_z.setInputCloud(pc.makeShared());
-  pass_z.filter(pc);
-
-  pcl::VoxelGrid<OctoMapper::PCLPoint> voxel_grid_filter;
-  voxel_grid_filter.setInputCloud(pc.makeShared());
-  voxel_grid_filter.setLeafSize(downsample_voxel_size_, downsample_voxel_size_, downsample_voxel_size_);
-  voxel_grid_filter.filter(pc);
-
-  for(int i=0; i<octo_maps_.size(); i++){
-    octo_maps_[i]->insertCloud(pc, getParticlePose3D(i, cloud->header.stamp));
-  }
-  ROS_INFO("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
+  boost::lock_guard<boost::mutex> lock(latest_cloud_mutex_);
+  latest_cloud_ = *cloud;
 
 //  if(obstacle_map_.header.stamp != getGMap().header.stamp){
 //    downprojectMap();
