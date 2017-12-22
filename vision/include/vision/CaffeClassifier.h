@@ -32,6 +32,7 @@ class CaffeClassifier {
     int num_channels_;
     cv::Mat mean_;
     std::vector<std::string> labels_;
+    std::vector<bool> used_classes_;
     bool is_ok_ = false;
 
     void setMean(const std::string& mean_file);

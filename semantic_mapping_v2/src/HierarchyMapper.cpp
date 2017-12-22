@@ -183,15 +183,16 @@ void HierarchyMapper::publish(){
   std::vector<size_t> order;
   std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
   if(room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
-    room_prob_pub_.resize(205);
-    for(int i=0; i<205; i++){
+    int num = room_mapper_[current_mapper_]->getRoomNames().size();
+    room_prob_pub_.resize(num);
+    for(int i=0; i<num; i++){
       std::string s = "room_" + room_mapper_[current_mapper_]->getRoomName(i);
       std::replace( s.begin(), s.end(), ' ', '_');
       room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
     }
   }
   if(!room_prob_pub_.empty())
-    for(int i=0; i<205; i++)
+    for(int i=0; i<room_mapper_[current_mapper_]->getRoomNames().size(); i++)
       room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
   if(!probs.empty())
     for(int i=0; i<10; i++){
@@ -238,15 +239,16 @@ void HierarchyMapper::downprojecAndPublish(){
     std::vector<size_t> order;
     std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
     if(room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
-      room_prob_pub_.resize(205);
-      for(int i=0; i<205; i++){
+      int num = room_mapper_[current_mapper_]->getRoomNames().size();
+      room_prob_pub_.resize(num);
+      for(int i=0; i<num; i++){
         std::string s = "room_" + room_mapper_[current_mapper_]->getRoomName(i);
         std::replace( s.begin(), s.end(), ' ', '_');
         room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
       }
     }
     if(!room_prob_pub_.empty())
-      for(int i=0; i<205; i++)
+      for(int i=0; i<room_mapper_[current_mapper_]->getRoomNames().size(); i++)
         room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
     if(!probs.empty())
       for(int i=0; i<10; i++){
@@ -462,6 +464,7 @@ bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& 
 
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
+  ros::Time start = ros::Time::now();
   for(int i=0; i<room_mapper_.size(); i++){
     semantic_mapping_v2::RoomMsg room;
     room.header.stamp = ros::Time::now();
@@ -501,6 +504,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       }
     }
   }
+  ROS_INFO("SERVICE HIERARCHY IN %.4lf", (ros::Time::now()-start).toSec());
   return true;
 }
 

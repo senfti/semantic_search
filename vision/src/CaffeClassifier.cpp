@@ -37,6 +37,9 @@ CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::strin
   std::string line;
   while (std::getline(labels, line))
     labels_.push_back(std::string(line));
+  for(int i=0; i<labels_.size(); i++){
+    used_classes_.push_back((labels_[i][0] != '_'));
+  }
 
   caffe::Blob<float>* output_layer = net_->output_blobs()[0];
   if (labels_.size() != output_layer->channels()){
@@ -72,8 +75,15 @@ static std::vector<int> argmax(const std::vector<float>& v, int N) {
 std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img){
   std::vector<float> output = predict(img);
   std::vector<CaffeRecognition> predictions;
+  double sum = 0.0;
   for(int i = 0; i < output.size(); ++i){
-    predictions.push_back(CaffeRecognition(labels_[i], i, output[i]));
+    if(used_classes_[i]){
+      predictions.push_back(CaffeRecognition(labels_[i], i, output[i]));
+      sum += output[i];
+    }
+  }
+  for(auto& pred : predictions){
+    pred.prob_ /= sum;
   }
 
   return predictions;

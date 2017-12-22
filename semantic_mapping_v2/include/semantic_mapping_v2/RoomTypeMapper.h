@@ -68,7 +68,7 @@ class RoomTypeMapper{
     float ROOM_HIT_MISS_RATIO = 1.3;
 
     int NUM_CLASSES = 0;
-    float ROOM_PRIOR_PROB = 1.f/205;
+    float ROOM_PRIOR_PROB = 1.f/82;
 
     static float getRoomSimilarity(int i, int j);
 
