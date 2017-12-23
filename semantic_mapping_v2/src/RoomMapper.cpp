@@ -291,9 +291,9 @@ nav_msgs::OccupancyGrid RoomMapper::getDoorBlockedMap(){
 
   double res = 1.0/map.info.resolution;
   for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
-    double x_door = ((door.pose_.getOrigin().x() - map.info.origin.position.x))*res;
-    double y_door = ((door.pose_.getOrigin().y() - map.info.origin.position.y))*res;
-    double angle = tf::getYaw(door.pose_.getRotation()) + M_PI_2;
+    double x_door = ((door.getPose().getOrigin().x() - map.info.origin.position.x))*res;
+    double y_door = ((door.getPose().getOrigin().y() - map.info.origin.position.y))*res;
+    double angle = tf::getYaw(door.getPose().getRotation()) + M_PI_2;
     for(double r=0.0; r<1.0*res; r+=0.02*res){
       int x = x_door+r*std::cos(angle);
       int y = y_door+r*std::sin(angle);
@@ -383,10 +383,10 @@ void RoomMapper::activate(){
 
 
 tf::Transform RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
-  Door door2 = door_mappers_[0]->getDoor(door.counterpart_id_);
+  Door door2 = door_mappers_[0]->getDoor(door.getCounterpartId());
   tf::Transform transform;
   if(door2.isValid()){
-    transform = tf::Transform(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), M_PI), tf::Vector3(0.0,0.0,0.0))*door.pose_.inverse()*door2.pose_;
+    transform = tf::Transform(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), M_PI), tf::Vector3(0.0,0.0,0.0))*door.getPose().inverse()*door2.getPose();
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
     GMapping::OrientedPoint pose = transformPointBackward(robot, door1_pose);
@@ -396,9 +396,9 @@ tf::Transform RoomMapper::activate(const GMapping::OrientedPoint& robot, const D
     resume(pose);
   }
   else{
-    ROS_ERROR("Counterpart door exists but not found, counterpart_id: %d, number of doors in new room: %d", door.counterpart_id_, int(door_mappers_[0]->getDoors().size()));
+    ROS_ERROR("Counterpart door exists but not found, counterpart_id: %d, number of doors in new room: %d", door.getCounterpartId(), int(door_mappers_[0]->getDoors().size()));
     for(const auto& d : door_mappers_[0]->getDoors()){
-      std::cout << d.id_ << std::endl;
+      std::cout << d.getId() << std::endl;
     }
   }
 
@@ -443,9 +443,9 @@ void RoomMapper::deactivate(){
 }
 
 
-void RoomMapper::setDoorRoom(const tf::Transform& pose, int other_room, int counterpart_id){
+void RoomMapper::setDoorRoom(int id, int other_room, int counterpart_id){
   for(int i=0; i<door_mappers_.size(); i++){
-    door_mappers_[i]->setDoorRoom(pose, other_room, counterpart_id);
+    door_mappers_[i]->setDoorRoom(id, other_room, counterpart_id);
   }
 }
 

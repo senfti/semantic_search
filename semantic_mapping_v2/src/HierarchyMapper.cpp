@@ -291,15 +291,15 @@ void HierarchyMapper::run(){
 
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
       if(door.isValid()){
-        ROS_INFO("Door %d, c_id: %d, r: %d, c_r: %d", door.id_, door.counterpart_id_, door.this_room_, door.other_room_);
-        int other_room = door.other_room_;
+        ROS_INFO("Door %d, c_id: %d, r: %d, c_r: %d", door.getId(), door.getCounterpartId(), door.getRoom(), door.getOtherRoom());
+        int other_room = door.getOtherRoom();
         if(other_room < 0){
           int new_id = Door::getID();
-          room_mapper_[current_mapper_]->setDoorRoom(door.pose_, room_mapper_.size(), new_id);
+          room_mapper_[current_mapper_]->setDoorRoom(door.getId(), room_mapper_.size(), new_id);
 
-          Door counterpart_door(room_mapper_.size(), door.pose_, std::min(door.proposal_count_, 5), current_mapper_, new_id, door.id_);
-          counterpart_door.pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), door.pose_.getRotation().getAngle() + M_PI));
-          ROS_INFO("New Door %d, c_id: %d, r: %d, c_r: %d", counterpart_door.id_, counterpart_door.counterpart_id_, counterpart_door.this_room_, counterpart_door.other_room_);
+          Door counterpart_door(room_mapper_.size(), door.getPose(), current_mapper_, new_id, door.getId(), 5);
+          counterpart_door.flipPose();
+          ROS_INFO("New Door %d, c_id: %d, r: %d, c_r: %d", counterpart_door.getId(), counterpart_door.getCounterpartId(), counterpart_door.getRoom(), counterpart_door.getOtherRoom());
           addMapper(counterpart_door);
         }
         else
@@ -487,23 +487,23 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
   for(int i=0; i<room_mapper_.size(); i++){
     std::vector<Door> doors = room_mapper_[i]->getDoors();
     for(const auto& door : doors){
-      if(door.other_room_ <= i){
+      if(door.getOtherRoom() <= i){
         semantic_mapping_v2::HierarchyLinkMsg link;
         link.header.stamp = ros::Time::now();
-        if(door.other_room_ < 0){
+        if(door.getOtherRoom() < 0){
           link.room1 = i;
-          link.room2 = door.other_room_;
+          link.room2 = door.getOtherRoom();
         }
         else{
-          link.room1 = door.other_room_;
+          link.room1 = door.getOtherRoom();
           link.room2 = i;
         }
-        tf::poseTFToMsg(door.pose_, link.door1_pose);
-        if(door.other_room_ >= 0){
-          std::vector<Door> other_doors = room_mapper_[door.other_room_]->getDoors();
+        tf::poseTFToMsg(door.getPose(), link.door1_pose);
+        if(door.getOtherRoom() >= 0){
+          std::vector<Door> other_doors = room_mapper_[door.getOtherRoom()]->getDoors();
           for(const auto& door2 : other_doors){
-            if(door2.id_ == door.counterpart_id_){
-              tf::poseTFToMsg(door2.pose_, link.door2_pose);
+            if(door2.getId() == door.getCounterpartId()){
+              tf::poseTFToMsg(door2.getPose(), link.door2_pose);
               break;
             }
           }
