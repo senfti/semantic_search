@@ -103,7 +103,7 @@ class ObjectMapper{
 
   public:
     ObjectMapper();
-    void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg);
+    void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z);
 
     visualization_msgs::MarkerArray getProbMsg(int id) const { return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray()); }
 

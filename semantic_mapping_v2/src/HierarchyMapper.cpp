@@ -47,6 +47,9 @@ HierarchyMapper::~HierarchyMapper(){
   for(auto& mapper : room_mapper_)
     delete mapper;
   delete tfB_;
+
+  ROS_ERROR("THIS IS THE END");
+  std::cout << "THIS IS THE END" << std::endl;
 }
 
 
@@ -302,6 +305,8 @@ void HierarchyMapper::run(){
     }
     rate.sleep();
   }
+  ROS_WARN("OUT OF MAIN LOOP NOW");
+  std::cout << "OUT OF MAIN LOOP NOW" << std::endl;
 }
 
 

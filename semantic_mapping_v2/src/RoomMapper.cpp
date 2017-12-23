@@ -101,6 +101,7 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
       map = new RoomTypeMapper();
   }
   catch(std::exception& e){
+    ROS_ERROR("%s",e.what());
     std::cout << e.what() << std::endl;
     ros::Rate r(0.1);
     r.sleep();
@@ -212,6 +213,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     }
     catch(std::exception& e){
       ROS_ERROR("%s",e.what());
+      std::cout << e.what() << std::endl;
       ros::Rate r(0.1);
       r.sleep();
       ros::shutdown();
@@ -269,7 +271,7 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     Eigen::Matrix4f sensorToWorld;
     pcl_ros::transformAsMatrix(getParticlePose3D(i, msg->header.stamp), sensorToWorld);
     pcl::transformPointCloud(cloud, cloud_trans, sensorToWorld);
-    obj_mappers_[i]->addCloud(cloud_trans, msg->objects);
+    obj_mappers_[i]->addCloud(cloud_trans, msg->objects, m_pointcloudMinZ, m_pointcloudMaxZ);
   }
 
   ROS_INFO("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
@@ -369,6 +371,7 @@ void RoomMapper::activate(){
     }
     catch(std::exception& e){
       ROS_ERROR("%s",e.what());
+      std::cout << e.what() << std::endl;
       ros::Rate r(0.1);
       r.sleep();
       ros::shutdown();

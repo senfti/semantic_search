@@ -208,7 +208,7 @@ ObjectMapper::ObjectMapper(){
 }
 
 
-void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const vision::ObjectDetectionMsg& msg){
+void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z){
   if(cloud.empty())
     return;
 
@@ -220,6 +220,8 @@ void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const v
   pcl::PointXYZ min, max;
   pcl::getMinMax3D(cloud, min, max);
   expandUntilFitting(min, max);
+  min_z = std::max(min_z, 0.f);
+  max_z = std::min(max_z, max_height_-0.001f);
 
   std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
 
@@ -227,10 +229,12 @@ void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const v
     int x = maps_[0].getXPixel(cloud[i].x);
     int y = maps_[0].getYPixel(cloud[i].y);
     int z = maps_[0].getZPixel(cloud[i].z);
-    for(int m=0; m<tmp.size(); m++){
-      tmp[m].insertMax(x,y,z,OBJ_MIN_PROB);
-      for(const auto& b : msg.samples[i].boxes){
-        tmp[m].insertMax(x,y,z,msg.probs[b*msg.num_objects+m]);
+    if(z>=min_z && z<=max_z){
+      for(int m=0; m<tmp.size(); m++){
+        tmp[m].insertMax(x,y,z,OBJ_MIN_PROB);
+        for(const auto& b : msg.samples[i].boxes){
+          tmp[m].insertMax(x,y,z,msg.probs[b*msg.num_objects+m]);
+        }
       }
     }
   }
