@@ -2,6 +2,7 @@ import numpy as np
 
 object_input_file = '/home/thomas/coco_data_objects.txt'
 places_input_file = '/home/thomas/coco_places.txt'
+label_file = "/home/thomas/BVLCcaffe/models/googlenet_places205/categories_places205.csv"
 
 f = open(object_input_file, 'r')
 lines = f.readlines()
@@ -27,9 +28,19 @@ object_sum = sum(objects)
 place_obj_map = np.dot(np.transpose(objects), places)
 
 place_obj_map = np.transpose(place_obj_map / place_sum)
-print place_obj_map.size
 #place_obj_map = np.vstack([place_obj_map, object_sum / len(lines)])
 
 #place_obj_map = place_obj_map / sum(place_obj_map)
 
-np.savetxt('/home/thomas/obj_places_map.dat', place_obj_map, delimiter=' ')
+with open(label_file) as f:
+    content = f.readlines()
+f.close()
+content = [x.strip() for x in content]
+reduced_place_obj_map = np.zeros((0,80), np.float64)
+for i, c in enumerate(content):
+    if c[0] != '_':
+        print c
+        reduced_place_obj_map = np.vstack((reduced_place_obj_map, place_obj_map[i]))
+
+print reduced_place_obj_map.shape
+np.savetxt('/home/thomas/obj_places_map.dat', reduced_place_obj_map, delimiter=' ')

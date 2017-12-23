@@ -79,7 +79,7 @@ class HierarchyMapper{
     bool objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& req, semantic_mapping_v2::ObjectProbSrv::Response& res);
     bool hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res);
 
-    void publish();
+    //void publish();
     void downprojecAndPublish();
 
     void run();

@@ -226,10 +226,10 @@ void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const v
   std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
 
   for(int i=0; i<cloud.size(); i++){
-    int x = maps_[0].getXPixel(cloud[i].x);
-    int y = maps_[0].getYPixel(cloud[i].y);
-    int z = maps_[0].getZPixel(cloud[i].z);
-    if(z>=min_z && z<=max_z){
+    if(cloud[i].z>=min_z && cloud[i].z<=max_z){
+      int x = maps_[0].getXPixel(cloud[i].x);
+      int y = maps_[0].getYPixel(cloud[i].y);
+      int z = maps_[0].getZPixel(cloud[i].z);
       for(int m=0; m<tmp.size(); m++){
         tmp[m].insertMax(x,y,z,OBJ_MIN_PROB);
         for(const auto& b : msg.samples[i].boxes){
