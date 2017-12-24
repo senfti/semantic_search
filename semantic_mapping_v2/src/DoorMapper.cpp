@@ -36,11 +36,15 @@ bool Door::didDriveThrough(const tf::Transform &robot_pose) const{
 }
 
 void Door::updatePose(const tf::Transform &pose){
+  std::cout << "Pose update " << pose_array_.size() << " " << pose_.getOrigin().x() << " " << pose_.getOrigin().y() << " " << MAX_CONFIDENCE << std::endl;
   if(pose_array_.size() < MAX_CONFIDENCE)
     pose_array_.push_back(pose);
   else
-    pose_array_[array_pos_++] = pose;
+    pose_array_[array_pos_] = pose;
 
+  array_pos_ = (array_pos_+1)%MAX_CONFIDENCE;
+
+  std::cout << "Pose update " << array_pos_ << " " << pose_array_.size() << std::endl;
   tf::Vector3 pos;
   for(const auto& p : pose_array_)
     pos += p.getOrigin();
@@ -51,6 +55,13 @@ void Door::updatePose(const tf::Transform &pose){
     pos += p.getBasis().getColumn(0);
   }
   pose_.setRotation(tf::createQuaternionFromYaw(std::atan2(pos.y(), pos.x())));
+  std::cout << "Pose updated " << pose_array_.size() << " " << pose_.getOrigin().x() << " " << pose_.getOrigin().y() << " "  << std::endl;
+}
+
+void Door::flipPose(){
+  pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), pose_.getRotation().getAngle() + M_PI));
+  for(auto& p : pose_array_)
+    p.setRotation(tf::Quaternion(tf::Vector3(0,0,1), p.getRotation().getAngle() + M_PI));
 }
 
 
@@ -62,15 +73,13 @@ DoorMapper::DoorMapper(int this_room, const Door &door)
 }
 
 
-Door DoorMapper::isDoorNearPose(const tf::Transform& pose) const{
+int DoorMapper::isDoorNearPose(const tf::Transform& pose) const{
   double best_confidence = 0.0;
-  Door best_door;
+  int best_door = -1;
   for(int i=0; i<doors_.size(); i++){
     double confidence = doors_[i].getIsDoorConfidence(pose);
-    std::cout << "conf: " << confidence << std::endl;
     if(confidence > best_confidence){
-      std::cout << "best: " << doors_[i].getId() << std::endl;
-      best_door = doors_[i];
+      best_door = i;
       best_confidence = confidence;
     }
   }
@@ -79,16 +88,16 @@ Door DoorMapper::isDoorNearPose(const tf::Transform& pose) const{
 
 
 bool DoorMapper::addDoor(const tf::Transform &pose, int other_room, int counterpart_id){
-  if(isDoorNearPose(pose).isValid())
+  if(isDoorNearPose(pose) >= 0)
     return false;
 
-  doors_.push_back(Door(this_room_, pose, other_room, Door::getID(), counterpart_id, 5));
+  doors_.push_back(Door(this_room_, pose, other_room, Door::getID(), counterpart_id, 1));
   return true;
 }
 
 
 bool DoorMapper::addDoor(const Door& door){
-  if(isDoorNearPose(door.getPose()).isValid())
+  if(isDoorNearPose(door.getPose()) >= 0)
     return false;
 
   doors_.push_back(door);
@@ -109,13 +118,13 @@ bool DoorMapper::setDoorRoom(int id, int other_room, int counterpart_id){
 
 
 bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
-  Door best_door = isDoorNearPose(pose);
-  if(best_door.isValid()){
-    best_door.updatePose(pose);
+  int best_door = isDoorNearPose(pose);
+  if(best_door >= 0){
+    doors_[best_door].updatePose(pose);
     return true;
   }
 
-  doors_.push_back(Door(this_room_, pose, -1, new_id, -1, 5));
+  doors_.push_back(Door(this_room_, pose, -1, new_id, -1, 1));
   return false;
 }
 

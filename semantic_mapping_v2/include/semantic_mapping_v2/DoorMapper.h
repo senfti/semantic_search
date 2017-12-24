@@ -45,7 +45,7 @@ class Door{
     bool didDriveThrough(const tf::Transform &robot_pose) const;
 
     void setCounterpart(int counterpart_id, int other_room) { counterpart_id_ = counterpart_id; other_room_ = other_room; }
-    void flipPose() { pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), pose_.getRotation().getAngle() + M_PI)); }
+    void flipPose();
     void updatePose(const tf::Transform &pose);
 
     static int getID() { static int id=0; return id++; }
@@ -61,7 +61,7 @@ class DoorMapper{
   public:
     DoorMapper(int this_room, const Door& door = Door());
 
-    Door isDoorNearPose(const tf::Transform& pose) const;
+    int isDoorNearPose(const tf::Transform& pose) const;
     bool addDoor(const tf::Transform& pose, int other_room = -1, int counterpart_id = -1);
     bool addDoor(const Door& door);
     bool setDoorRoom(int id, int other_room = -1, int counterpart_id = -1);

@@ -19,7 +19,7 @@ find_package(Boost REQUIRED signals)
 find_package(octomap REQUIRED)
 find_package( OpenCV REQUIRED )
 
-add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
+add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type )
 
 add_message_files(
   FILES
