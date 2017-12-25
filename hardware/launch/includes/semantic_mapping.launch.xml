@@ -57,7 +57,7 @@
     <param name="RoomTypeMapper/ROOM_HIT_MISS_RATIO" value="1.2" />                 
     <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.75" />             
     <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
-    <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="2.0" />
+    <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="4.0" />
     <param name="RoomTypeMapper/ASUS_FOV" value="20" />
     <param name="RoomTypeMapper/MIN_DIST" value="1.0" />
     <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  

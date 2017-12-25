@@ -159,6 +159,12 @@ cv::Mat_<cv::Vec3b> tmp(4*50, 3*50, cv::Vec3b(0,0,0));
 #endif
 cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contour) const{
   cv::RotatedRect rect = cv::minAreaRect(contour);
+  cv::Point2f box_points[4];
+  rect.points(box_points);
+  for(int i = 0; i < 4; i++)
+    if(box_points[i].x < 0 || box_points[i].x >= IMG_SIZE.width || box_points[i].y < 0 || box_points[i].y >= IMG_SIZE.height)
+      return cv::RotatedRect();
+
   if(rect.size.width < rect.size.height){
     std::swap(rect.size.width, rect.size.height);
     rect.angle += 90;         // OpenCV is in degree
@@ -291,7 +297,7 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
     cv::RotatedRect rect = isContourDoor(contour);
     if(rect.size.area() >= MIN_WIDTH*MIN_DEPTH){
       geometry_msgs::Pose pose = rectToPose(rect);
-      if(pose.position.x >= 0)
+      if(pose.position.x >= 0.2)
         door_poses.poses.push_back(pose);
     }
   }

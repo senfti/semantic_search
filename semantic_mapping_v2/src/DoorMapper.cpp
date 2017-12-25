@@ -20,23 +20,22 @@ bool Door::isBehindDoor(float x, float y) const{
 
 double Door::getIsDoorConfidence(const tf::Transform &pose) const{
   double dist = (pose_.getOrigin()-pose.getOrigin()).length();
-  if(dist >= MIN_DOOR_DIST)
-    return 0.0;
-
   double angle = pose_.getRotation().angleShortestPath(pose.getRotation());
-  return (MIN_DOOR_DIST-dist)/MIN_DOOR_DIST * (1.0-angle/(1.1*M_PI));
+  return (MAX_SAME_DOOR_DIST-dist)/MAX_SAME_DOOR_DIST * (MAX_SAME_DOOR_ANGLE-angle/MAX_SAME_DOOR_ANGLE);
 }
 
 bool Door::didDriveThrough(const tf::Transform &robot_pose) const{
+  tf::Transform robot_door = pose_.inverse()*robot_pose;
+  return (robot_door.getOrigin().length() < MAX_SAME_DOOR_DIST && robot_door.getOrigin().x() > MIN_THROUGH_DOOR_DIST);
+
   tf::Vector3 diff = robot_pose.getOrigin() - pose_.getOrigin();
-  if(diff.length() < MIN_DOOR_DIST && pose_.getBasis().getColumn(0).dot(diff) > 0 && pose_.getBasis().getColumn(0).dot(robot_pose.getBasis().getColumn(0)) > 0){
+  if(diff.length() < MAX_SAME_DOOR_DIST && pose_.getBasis().getColumn(0).dot(diff) > 0 && pose_.getBasis().getColumn(0).dot(robot_pose.getBasis().getColumn(0)) > 0){
     return true;
   }
   return false;
 }
 
 void Door::updatePose(const tf::Transform &pose){
-  std::cout << "Pose update " << pose_array_.size() << " " << pose_.getOrigin().x() << " " << pose_.getOrigin().y() << " " << MAX_CONFIDENCE << std::endl;
   if(pose_array_.size() < MAX_CONFIDENCE)
     pose_array_.push_back(pose);
   else
@@ -44,24 +43,22 @@ void Door::updatePose(const tf::Transform &pose){
 
   array_pos_ = (array_pos_+1)%MAX_CONFIDENCE;
 
-  std::cout << "Pose update " << array_pos_ << " " << pose_array_.size() << std::endl;
-  tf::Vector3 pos;
+  tf::Vector3 pos(0.0,0.0,0.0);
   for(const auto& p : pose_array_)
     pos += p.getOrigin();
   pose_.setOrigin(pos/double(pose_array_.size()));
 
-  pos = tf::Vector3();
+  pos = tf::Vector3(0.0,0.0,0.);
   for(const auto& p : pose_array_){
     pos += p.getBasis().getColumn(0);
   }
   pose_.setRotation(tf::createQuaternionFromYaw(std::atan2(pos.y(), pos.x())));
-  std::cout << "Pose updated " << pose_array_.size() << " " << pose_.getOrigin().x() << " " << pose_.getOrigin().y() << " "  << std::endl;
 }
 
 void Door::flipPose(){
-  pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), pose_.getRotation().getAngle() + M_PI));
+  pose_.setRotation(tf::Quaternion(tf::Vector3(0,0,1), tf::getYaw(pose_.getRotation()) + M_PI));
   for(auto& p : pose_array_)
-    p.setRotation(tf::Quaternion(tf::Vector3(0,0,1), p.getRotation().getAngle() + M_PI));
+    p.setRotation(tf::Quaternion(tf::Vector3(0,0,1), tf::getYaw(p.getRotation()) + M_PI));
 }
 
 

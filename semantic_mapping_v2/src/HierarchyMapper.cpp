@@ -114,6 +114,7 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
   if(!map_switch_pub_.getTopic().empty())
     map_switch_pub_.publish(msg);
 
+  last_map_switch_time_ = ros::Time::now();
   ROS_INFO("Switched to MAPPER %d", current_mapper_);
 }
 
@@ -290,7 +291,7 @@ void HierarchyMapper::run(){
         }
 
       Door door = room_mapper_[current_mapper_]->droveThroughDoor();
-      if(door.isValid()){
+      if(door.isValid() && (ros::Time::now() - last_map_switch_time_).toSec() > MIN_MAP_SWITCH_TIME){
         ROS_INFO("Door %d, c_id: %d, r: %d, c_r: %d", door.getId(), door.getCounterpartId(), door.getRoom(), door.getOtherRoom());
         int other_room = door.getOtherRoom();
         if(other_room < 0){

@@ -19,6 +19,7 @@ class HierarchyMapper{
   protected:
     std::vector<RoomMapper*> room_mapper_;
     int current_mapper_ = -1;
+    ros::Time last_map_switch_time_;
 
     ros::Subscriber laser_sub_;
     ros::Subscriber cloud_sub_;
@@ -56,6 +57,7 @@ class HierarchyMapper{
     double transform_publish_period_;
     double publish_period_;
     int debug_publish_interval_ = std::numeric_limits<int>::max();
+    double MIN_MAP_SWITCH_TIME = 2.0;
 
   public:
     HierarchyMapper();
