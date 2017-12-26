@@ -208,12 +208,31 @@ ObjectMapper::ObjectMapper(){
 }
 
 
+ObjectMapper::ObjectMapper(const ObjectMapper& rhs){
+  OBJ_PRIOR_PROB = rhs.OBJ_PRIOR_PROB;
+  OBJ_MIN_PROB = rhs.OBJ_MIN_PROB;
+  OBJ_MAX_PROB = rhs.OBJ_MAX_PROB;
+
+  OBJ_DEFAULT_RESOLUTION = rhs.OBJ_DEFAULT_RESOLUTION;
+  OBJ_DEFUALT_MAX_HEIGHT = rhs.OBJ_DEFUALT_MAX_HEIGHT;
+  ROOM_EXPECTED_SIZE = rhs.ROOM_EXPECTED_SIZE;
+
+  V_H = rhs.V_H;
+  V_M = rhs.V_M;
+
+  maps_ = rhs.maps_;
+  max_height_ = rhs.max_height_;
+  curr_probs_ = rhs.curr_probs_;
+}
+
+
 void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z){
   if(cloud.empty())
     return;
 
   curr_probs_.clear();
   if(maps_.empty()){
+    boost::lock_guard<boost::mutex> lock(maps_mutex_);
     maps_.resize(msg.num_objects, ObjectMap(OBJ_DEFAULT_RESOLUTION, 5.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
   }
 
@@ -272,6 +291,7 @@ bool ObjectMapper::expandUntilFitting(const pcl::PointXYZ& min, const pcl::Point
   if(top==0 && bottom==0 && left==0 && right==0)
     return false;
 
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   for(auto& map : maps_)
     map.resize(left, right, top, bottom, OBJ_PRIOR_PROB);
   return true;
@@ -293,6 +313,7 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
   if(curr_probs_.empty()){
     ros::Time t = ros::Time::now();
 
+    boost::lock_guard<boost::mutex> lock(maps_mutex_);
     ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
     cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
     for(int x=0; x<behind_door.cols; x++){
@@ -332,8 +353,9 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
 }
 
 
-std::vector<semantic_mapping_v2::ObjectMapMsg> ObjectMapper::getAllObjMapMsgs() const {
+std::vector<semantic_mapping_v2::ObjectMapMsg> ObjectMapper::getAllObjMapMsgs() {
   std::vector<semantic_mapping_v2::ObjectMapMsg> res;
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   for(const auto& map : maps_)
     res.push_back(map.getObjMapMsg());
   return res;

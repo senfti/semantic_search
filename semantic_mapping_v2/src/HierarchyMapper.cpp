@@ -6,7 +6,9 @@
 #include <tf/transform_datatypes.h>
 #include <semantic_mapping_v2/RoomSwitchMsg.h>
 
-HierarchyMapper::HierarchyMapper(){
+HierarchyMapper::HierarchyMapper()
+  : service_spinner_(1, &service_queue_)
+{
   addMapper(Door());
 
   laser_sub_ = nh_.subscribe("scan_filtered", 1, &HierarchyMapper::laserCallback, this);
@@ -23,25 +25,31 @@ HierarchyMapper::HierarchyMapper(){
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
 
-  gmap_srv_ = nh_.advertiseService("gmap_srv", &HierarchyMapper::gmapSrvCb, this);
-  map_srv_ = nh_.advertiseService("map_srv", &HierarchyMapper::mapSrvCb, this);
-  map_door_blocked_srv_ = nh_.advertiseService("map_door_blocked_srv", &HierarchyMapper::mapDoorBlockedSrvCb, this);
-  octomap_srv_ = nh_.advertiseService("octomap_srv", &HierarchyMapper::octomapSrvCb, this);
-  obj_map_srv_ = nh_.advertiseService("obj_map_srv", &HierarchyMapper::objMapSrvCb, this);
-  room_type_map_srv_ = nh_.advertiseService("room_type_map_srv", &HierarchyMapper::roomTypeMapSrvCb, this);
-  obj_prob_srv_ = nh_.advertiseService("obj_prob_srv", &HierarchyMapper::objProbSrvCb, this);
-  room_type_prob_srv_ = nh_.advertiseService("room_type_prob_srv", &HierarchyMapper::roomTypeProbSrvCb, this);
-  hierarchy_srv_ = nh_.advertiseService("hierarchy_srv", &HierarchyMapper::hierarchySrvCb, this);
+  ros::NodeHandle service_nh;
+  service_nh.setCallbackQueue(&service_queue_);
+  gmap_srv_ = service_nh.advertiseService("gmap_srv", &HierarchyMapper::gmapSrvCb, this);
+  map_srv_ = service_nh.advertiseService("map_srv", &HierarchyMapper::mapSrvCb, this);
+  map_door_blocked_srv_ = service_nh.advertiseService("map_door_blocked_srv", &HierarchyMapper::mapDoorBlockedSrvCb, this);
+  octomap_srv_ = service_nh.advertiseService("octomap_srv", &HierarchyMapper::octomapSrvCb, this);
+  obj_map_srv_ = service_nh.advertiseService("obj_map_srv", &HierarchyMapper::objMapSrvCb, this);
+  room_type_map_srv_ = service_nh.advertiseService("room_type_map_srv", &HierarchyMapper::roomTypeMapSrvCb, this);
+  obj_prob_srv_ = service_nh.advertiseService("obj_prob_srv", &HierarchyMapper::objProbSrvCb, this);
+  room_type_prob_srv_ = service_nh.advertiseService("room_type_prob_srv", &HierarchyMapper::roomTypeProbSrvCb, this);
+  hierarchy_srv_ = service_nh.advertiseService("hierarchy_srv", &HierarchyMapper::hierarchySrvCb, this);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   ros::NodeHandle("~").param("publish_period", publish_period_, 0.5);
   ros::NodeHandle("~").param("debug_publish_interval", debug_publish_interval_, debug_publish_interval_);
+
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
+  service_spinner_.start();
+
   std::cout << "HierarchyMapping started" << std::endl;
 }
 
 HierarchyMapper::~HierarchyMapper(){
+  service_spinner_.stop();
   transform_thread_->join();
   delete transform_thread_;
   for(auto& mapper : room_mapper_)
@@ -54,6 +62,7 @@ HierarchyMapper::~HierarchyMapper(){
 
 
 void HierarchyMapper::addMapper(const Door& door){
+  boost::unique_lock<boost::mutex> lock(mapper_mutex_);
   if(door.isValid()){
     tf::StampedTransform transform;
     try{
@@ -78,6 +87,7 @@ void HierarchyMapper::addMapper(const Door& door){
     room_mapper_.push_back(new RoomMapper(room_mapper_.size(), &tf_listener_, GMapping::OrientedPoint(0,0,0), transform, door));
   }
   ROS_INFO("Added MAPPER %d", int(room_mapper_.size()) - 1);
+  lock.unlock();
   switchMapper(room_mapper_.size() - 1);
 }
 
@@ -316,84 +326,58 @@ void HierarchyMapper::run(){
 
 bool HierarchyMapper::gmapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res){
   ROS_INFO("SERVICE GMAP");
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    res.map = room_mapper_[req.room_id]->getGMap();
-    return true;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    res.map = room_mapper_[current_mapper_]->getGMap();
-    return true;
-  }
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
+    return false;
 
-  res.map = nav_msgs::OccupancyGrid();
-  return false;
+  res.map = room_mapper_[id]->getGMap();
+  return true;
 }
 
 
 bool HierarchyMapper::mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res){
   ROS_INFO("SERVICE MAP");
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    room_mapper_[req.room_id]->downprojectMap();
-    res.map = room_mapper_[req.room_id]->getMap();
-    return true;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    room_mapper_[current_mapper_]->downprojectMap();
-    res.map = room_mapper_[current_mapper_]->getMap();
-    return true;
-  }
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
+    return false;
 
-  res.map = nav_msgs::OccupancyGrid();
-  return false;
+  res.map = room_mapper_[id]->getMap();
+  return true;
 }
 
 
 bool HierarchyMapper::mapDoorBlockedSrvCb(semantic_mapping_v2::MapSrv::Request &req, semantic_mapping_v2::MapSrv::Response &res){
-  ROS_INFO("SERVICE MAP");
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    room_mapper_[req.room_id]->downprojectMap();
-    res.map = room_mapper_[req.room_id]->getDoorBlockedMap();
-    return true;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    room_mapper_[current_mapper_]->downprojectMap();
-    res.map = room_mapper_[current_mapper_]->getDoorBlockedMap();
-    return true;
-  }
+  ROS_INFO("SERVICE MAP DOOR BLOCKED");
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
+    return false;
 
-  res.map = nav_msgs::OccupancyGrid();
-  return false;
+  res.map = room_mapper_[id]->getDoorBlockedMap();
+  return true;
 }
 
 
 bool HierarchyMapper::octomapSrvCb(semantic_mapping_v2::OctomapSrv::Request& req, semantic_mapping_v2::OctomapSrv::Response& res){
   ROS_INFO("SERVICE OCTOMAP");
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    res.map = room_mapper_[req.room_id]->getFullOctoMapMsg();
-    return true;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    res.map = room_mapper_[current_mapper_]->getFullOctoMapMsg();
-    return true;
-  }
-  res.map = octomap_msgs::Octomap();
-  return false;
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
+    return false;
+
+  res.map = room_mapper_[id]->getFullOctoMapMsg();
+  return true;
 }
 
 
 bool HierarchyMapper::roomTypeMapSrvCb(semantic_mapping_v2::RoomTypeMapSrv::Request& req, semantic_mapping_v2::RoomTypeMapSrv::Response& res){
   ROS_INFO("SERVICE ROOM_MAP");
-  int id = 0;
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    id = req.room_id;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    id = current_mapper_;
-  }
-  else{
-    res = semantic_mapping_v2::RoomTypeMapSrv::Response();
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
     return false;
-  }
 
   if(req.id < 0)
     res.maps = room_mapper_[id]->getAllRoomTypeMapMsgs();
@@ -406,21 +390,14 @@ bool HierarchyMapper::roomTypeMapSrvCb(semantic_mapping_v2::RoomTypeMapSrv::Requ
 
 bool HierarchyMapper::roomTypeProbSrvCb(semantic_mapping_v2::RoomTypeProbSrv::Request& req, semantic_mapping_v2::RoomTypeProbSrv::Response& res){
   ROS_INFO("SERVICE ROOM_PROB");
-  int id = 0;
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    id = req.room_id;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    id = current_mapper_;
-  }
-  else{
-    res = semantic_mapping_v2::RoomTypeProbSrv::Response();
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
     return false;
-  }
 
   std::vector<size_t> order;
   res.probs = room_mapper_[id]->getRoomTypeProbs(order);
-  res.names = room_mapper_[current_mapper_]->getRoomNames();
+  res.names = room_mapper_[id]->getRoomNames();
 
   return true;
 }
@@ -428,17 +405,10 @@ bool HierarchyMapper::roomTypeProbSrvCb(semantic_mapping_v2::RoomTypeProbSrv::Re
 
 bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res){
   ROS_INFO("SERVICE OBJ_MAP");
-  int id = 0;
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    id = req.room_id;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    id = current_mapper_;
-  }
-  else{
-    res = semantic_mapping_v2::ObjectMapSrv::Response();
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
     return false;
-  }
 
   if(req.id < 0)
     res.maps = room_mapper_[id]->getAllObjMapMsgs();
@@ -451,17 +421,10 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
 
 bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& req, semantic_mapping_v2::ObjectProbSrv::Response& res){
   ROS_INFO("SERVICE OBJ_PROB");
-  int id = 0;
-  if(req.room_id >= 0 && req.room_id < room_mapper_.size()){
-    id = req.room_id;
-  }
-  else if(req.room_id < 0 && current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    id = current_mapper_;
-  }
-  else{
-    res = semantic_mapping_v2::ObjectProbSrv::Response();
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
+  if(id < 0 || id >= room_mapper_.size())
     return false;
-  }
 
   std::vector<size_t> order;
   res.probs = room_mapper_[id]->getObjectProbs(order);
@@ -473,6 +436,7 @@ bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& 
 
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
   ros::Time start = ros::Time::now();
   for(int i=0; i<room_mapper_.size(); i++){
     semantic_mapping_v2::RoomMsg room;

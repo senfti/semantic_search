@@ -12,6 +12,8 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include "semantic_mapping_v2/DoorMapper.h"
 #include <semantic_mapping_v2/RoomTypeMapMsg.h>
+#include <boost/thread.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 class RoomTypeMap{
   private:
@@ -74,6 +76,7 @@ class RoomTypeMapper{
 
   private:
     std::vector<RoomTypeMap> prob_maps_;
+    boost::mutex maps_mutex_;
     std::vector<std::string> names_;
 
     std::vector<float> curr_probs_;
@@ -83,6 +86,7 @@ class RoomTypeMapper{
 
   public:
     RoomTypeMapper();
+    RoomTypeMapper(const RoomTypeMapper& rhs);
 
     void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
 
@@ -101,8 +105,11 @@ class RoomTypeMapper{
 
     std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order);
 
-    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int room_type_id) const { return (prob_maps_.size() > room_type_id ? prob_maps_[room_type_id].getRoomTypeMapMsg() : semantic_mapping_v2::RoomTypeMapMsg()); }
-    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs() const;
+    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int room_type_id) {
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
+      return (prob_maps_.size() > room_type_id ? prob_maps_[room_type_id].getRoomTypeMapMsg() : semantic_mapping_v2::RoomTypeMapMsg());
+    }
+    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs();
 };
 
 #endif //SEMANTIC_MAPPING_V2_ROOMTYPEMAPPER_H

@@ -18,6 +18,7 @@
 class HierarchyMapper{
   protected:
     std::vector<RoomMapper*> room_mapper_;
+    boost::mutex mapper_mutex_;
     int current_mapper_ = -1;
     ros::Time last_map_switch_time_;
 
@@ -37,6 +38,8 @@ class HierarchyMapper{
     std::vector<ros::Publisher> room_prob_pub_;
     ros::Publisher particle_pose_pub_;
 
+    ros::CallbackQueue service_queue_;
+    ros::AsyncSpinner service_spinner_;
     ros::ServiceServer gmap_srv_;
     ros::ServiceServer map_srv_;
     ros::ServiceServer map_door_blocked_srv_;

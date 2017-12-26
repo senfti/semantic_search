@@ -198,6 +198,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
 
   if(!gsp_->getIndexes().empty()){
     try{
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
       for(int i=0; i<gsp_->getIndexes().size(); i++){
         if(i != gsp_->getIndexes()[i]){
           delete octo_maps_[i];
@@ -290,7 +291,10 @@ nav_msgs::OccupancyGrid RoomMapper::getDoorBlockedMap(){
     return nav_msgs::OccupancyGrid();
 
   double res = 1.0/map.info.resolution;
-  for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
+  boost::unique_lock<boost::mutex> maps_lock(maps_mutex_);
+  std::vector<Door> doors = door_mappers_[getBestParticleIdx()]->getDoors();
+  maps_lock.unlock();
+  for(const auto& door : doors){
     double x_door = ((door.getPose().getOrigin().x() - map.info.origin.position.x))*res;
     double y_door = ((door.getPose().getOrigin().y() - map.info.origin.position.y))*res;
     double angle = tf::getYaw(door.getPose().getRotation()) + M_PI_2;
@@ -357,6 +361,7 @@ bool RoomMapper::resetWasMapUpdated() {
 
 void RoomMapper::activate(){
   if(octo_maps_.size() < particles_){
+    boost::lock_guard<boost::mutex> lock(maps_mutex_);
     octo_maps_.resize(particles_, nullptr);
     door_mappers_.resize(particles_, nullptr);
     obj_mappers_.resize(particles_, nullptr);
@@ -414,6 +419,7 @@ void RoomMapper::deactivate(){
   }
 
   std::cout << best_particle << std::endl;
+  boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
   if(best_particle != 0){
     delete octo_maps_[0];
     octo_maps_[0] = octo_maps_[best_particle];

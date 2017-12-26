@@ -13,6 +13,8 @@
 #include <semantic_mapping_v2/ObjectMapMsg.h>
 
 #include <semantic_mapping_v2/DoorMapper.h>
+#include <boost/thread.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 class OctoMapper;
 
@@ -96,22 +98,30 @@ class ObjectMapper{
 
   private:
     std::vector<ObjectMap> maps_;
+    boost::mutex maps_mutex_;
     float max_height_ = OBJ_DEFUALT_MAX_HEIGHT;
+    std::vector<float> curr_probs_;
 
     bool expandUntilFitting(const pcl::PointXYZ& min, const pcl::PointXYZ& max);
-    std::vector<float> curr_probs_;
 
   public:
     ObjectMapper();
+    ObjectMapper(const ObjectMapper& rhs);
     void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z);
 
-    visualization_msgs::MarkerArray getProbMsg(int id) const { return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray()); }
+    visualization_msgs::MarkerArray getProbMsg(int id) {
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
+      return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray());
+    }
 
     std::vector<float> getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order);
     float getResolution() const { return maps_[0].getResolution(); }
 
-    semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) const { return (maps_.size() > obj_id ? maps_[obj_id].getObjMapMsg() : semantic_mapping_v2::ObjectMapMsg()); }
-    std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs() const;
+    semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) {
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
+      return (maps_.size() > obj_id ? maps_[obj_id].getObjMapMsg() : semantic_mapping_v2::ObjectMapMsg());
+    }
+    std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs();
 };
 
 #endif //SEMANTIC_MAPPING_V2_OBJECTMAP_H

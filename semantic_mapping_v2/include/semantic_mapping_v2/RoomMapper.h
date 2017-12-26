@@ -26,6 +26,7 @@ class RoomMapper : public SlamGMapping{
     std::vector<DoorMapper*> door_mappers_;
     std::vector<ObjectMapper*> obj_mappers_;
     std::vector<RoomTypeMapper*> room_type_mappers_;
+    boost::mutex maps_mutex_;
 
     nav_msgs::OccupancyGrid obstacle_map_;
     boost::mutex obstacle_map_mutex_;
@@ -82,7 +83,8 @@ class RoomMapper : public SlamGMapping{
     octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now()) const {
       return octo_maps_[getBestParticleIdx()]->getBinaryOctoMapMsg(rostime);
     }
-    octomap_msgs::Octomap getFullOctoMapMsg(const ros::Time& rostime = ros::Time::now()) const{
+    octomap_msgs::Octomap getFullOctoMapMsg(const ros::Time& rostime = ros::Time::now()){
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return octo_maps_[getBestParticleIdx()]->getFullOctoMapMsg(rostime);
     }
     visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time& rostime = ros::Time::now()) const{
@@ -105,16 +107,30 @@ class RoomMapper : public SlamGMapping{
     visualization_msgs::MarkerArray getRoomProbMsg(int id);
     geometry_msgs::PoseArray getParticlePoseMsg() const;
 
-    semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) const { return obj_mappers_[getBestParticleIdx()]->getObjMapMsg(obj_id); }
-    std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs() const { return obj_mappers_[getBestParticleIdx()]->getAllObjMapMsgs(); }
+    semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return obj_mappers_[getBestParticleIdx()]->getObjMapMsg(obj_id);
+    }
+    std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs() {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return obj_mappers_[getBestParticleIdx()]->getAllObjMapMsgs();
+    }
 
-    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int obj_id) const { return room_type_mappers_[getBestParticleIdx()]->getRoomTypeMapMsg(obj_id); }
-    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs() const { return room_type_mappers_[getBestParticleIdx()]->getAllRoomTypeMapMsgs(); }
+    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int obj_id) {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_[getBestParticleIdx()]->getRoomTypeMapMsg(obj_id);
+    }
+    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs() {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_[getBestParticleIdx()]->getAllRoomTypeMapMsgs();
+    }
 
     std::vector<float> getObjectProbs(std::vector<size_t>& order) {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return obj_mappers_[getBestParticleIdx()]->getObjectProbs(*octo_maps_[getBestParticleIdx()], door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
     std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
     std::vector<float> getObjectProbsComplete(std::vector<float>& room_probs, std::vector<size_t>& order);

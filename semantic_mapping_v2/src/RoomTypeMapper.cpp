@@ -166,6 +166,25 @@ RoomTypeMapper::RoomTypeMapper(){
 }
 
 
+RoomTypeMapper::RoomTypeMapper(const RoomTypeMapper& rhs){
+  CELL_MIN_PROB = rhs.CELL_MIN_PROB;
+  CELL_MAX_PROB = rhs.CELL_MAX_PROB;
+  ROOM_DEFAULT_RESOLUTION = rhs.ROOM_DEFAULT_RESOLUTION;
+  ASUS_FOV = rhs.ASUS_FOV;
+  MIN_DIST = rhs.MIN_DIST;
+  MAX_DIST = rhs.MAX_DIST;
+  CELL_HIT_MISS_RATIO = rhs.CELL_HIT_MISS_RATIO;
+  ROOM_HIT_MISS_RATIO = rhs.ROOM_HIT_MISS_RATIO;
+
+  NUM_CLASSES = rhs.NUM_CLASSES;
+  ROOM_PRIOR_PROB = rhs.ROOM_PRIOR_PROB;
+
+  prob_maps_ = rhs.prob_maps_;
+  names_ = rhs.names_;
+  curr_probs_ = rhs.curr_probs_;
+}
+
+
 bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
   int x1 = points[0].x;
   int x2 = points[0].x;
@@ -191,8 +210,10 @@ bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
   if(top==0 && bottom==0 && left==0 && right==0)
     return false;
 
+  boost::unique_lock<boost::mutex> lock(maps_mutex_);
   for(auto& map : prob_maps_)
     map.resize(left, right, top, bottom, ROOM_PRIOR_PROB);
+  lock.unlock();
 
   for(int i=0; i<points.size(); i++){
     points[i].x += left;
@@ -260,6 +281,7 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMap
     NUM_CLASSES = msg->place_guesses.size();
     ROOM_PRIOR_PROB = 1.f/NUM_CLASSES;
 
+    boost::lock_guard<boost::mutex> lock(maps_mutex_);
     prob_maps_.resize(NUM_CLASSES, RoomTypeMap(ROOM_DEFAULT_RESOLUTION, 10.f, ROOM_PRIOR_PROB));
     names_.resize(NUM_CLASSES);
     for(int i=0; i<NUM_CLASSES; i++){
@@ -313,6 +335,7 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
     cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
     cv::erode(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
 
+    boost::lock_guard<boost::mutex> lock(maps_mutex_);
     std::vector<double> probs(prob_maps_.size(), 0.0);
     double res = 1.00 / map.info.resolution;
     double v = std::log(ROOM_PRIOR_PROB);
@@ -362,9 +385,11 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 }
 
 
-std::vector<semantic_mapping_v2::RoomTypeMapMsg> RoomTypeMapper::getAllRoomTypeMapMsgs() const{
+std::vector<semantic_mapping_v2::RoomTypeMapMsg> RoomTypeMapper::getAllRoomTypeMapMsgs(){
   std::vector<semantic_mapping_v2::RoomTypeMapMsg> res;
-  for(const auto& map : prob_maps_)
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+  for(const auto& map : prob_maps_){
     res.push_back(map.getRoomTypeMapMsg());
+  }
   return res;
 }
