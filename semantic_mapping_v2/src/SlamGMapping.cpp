@@ -368,6 +368,7 @@ bool SlamGMapping::addScan(const sensor_msgs::LaserScan& scan, GMapping::Oriente
   reading.setPose(gmap_pose);
   ROS_DEBUG("processing scan");
 
+  boost::lock_guard<boost::mutex> lock(gsp_mutex_);
   return gsp_->processScan(reading);
 }
 
@@ -392,7 +393,9 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     processed_scan_ = true;
     ROS_DEBUG("scan processed");
 
+    boost::unique_lock<boost::mutex> lock(gsp_mutex_);
     GMapping::OrientedPoint mpose = gsp_->getParticles()[gsp_->getBestParticleIndex()].pose;
+    lock.unlock();
     ROS_DEBUG("new best pose: %.3f %.3f %.3f", mpose.x, mpose.y, mpose.theta);
     ROS_DEBUG("odom pose: %.3f %.3f %.3f", odom_pose.x, odom_pose.y, odom_pose.theta);
     ROS_DEBUG("correction: %.3f %.3f %.3f", mpose.x - odom_pose.x, mpose.y - odom_pose.y, mpose.theta - odom_pose.theta);
@@ -426,7 +429,9 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   matcher.setusableRange(maxUrange_);
   matcher.setgenerateMap(true);
 
+  boost::unique_lock<boost::mutex> lock(gsp_mutex_);
   GMapping::GridSlamProcessor::Particle best = gsp_->getParticles()[gsp_->getBestParticleIndex()];
+  lock.unlock();
 
   if(!got_map_) {
     map_.map.info.resolution = delta_;
@@ -523,6 +528,7 @@ void SlamGMapping::resume(const GMapping::OrientedPoint& new_pose){
 
   boost::mutex::scoped_lock lock(map_to_odom_mutex_);
   map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
+  boost::lock_guard<boost::mutex> gsp_lock(gsp_mutex_);
   gsp_->resume(new_pose, odom_pose);
 }
 

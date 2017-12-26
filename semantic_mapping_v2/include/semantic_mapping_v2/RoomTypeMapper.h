@@ -110,6 +110,11 @@ class RoomTypeMapper{
       return (prob_maps_.size() > room_type_id ? prob_maps_[room_type_id].getRoomTypeMapMsg() : semantic_mapping_v2::RoomTypeMapMsg());
     }
     std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs();
+
+    std::vector<RoomTypeMap> getMaps() {
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
+      return prob_maps_;
+    }
 };
 
 #endif //SEMANTIC_MAPPING_V2_ROOMTYPEMAPPER_H

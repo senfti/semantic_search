@@ -92,6 +92,7 @@ class OctoMapper {
     OctoMapper(const OctoMapper& rhs);
     virtual ~OctoMapper();
 
+    OctoMapper getCopy();
     void insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorld);
     //virtual bool openFile(const std::string& filename);
 

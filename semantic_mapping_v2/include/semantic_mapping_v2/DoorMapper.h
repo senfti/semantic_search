@@ -8,6 +8,7 @@
 #include <tf/tf.h>
 #include <geometry_msgs/PoseArray.h>
 #include "gmapping/gridfastslam/gridslamprocessor.h"
+#include <boost/thread.hpp>
 
 class RoomMapper;
 
@@ -58,10 +59,12 @@ class DoorMapper{
 
   private:
     std::vector<Door> doors_;
+    boost::mutex doors_mutex_;
     int this_room_ = -1;
 
   public:
     DoorMapper(int this_room, const Door& door = Door());
+    DoorMapper(const DoorMapper& rhs);
 
     int isDoorNearPose(const tf::Transform& pose) const;
     bool addDoor(const tf::Transform& pose, int other_room = -1, int counterpart_id = -1);
@@ -71,7 +74,10 @@ class DoorMapper{
 
     Door droveThroughDoor(const tf::Transform &robot_pose) const;
 
-    std::vector<Door> getDoors() const { return doors_; }
+    std::vector<Door> getDoors() {
+      boost::lock_guard<boost::mutex> lock(doors_mutex_);
+      return doors_;
+    }
     Door getDoor(int id) const;
     geometry_msgs::PoseArray getDoorPoseMsg() const;
 };

@@ -70,6 +70,12 @@ DoorMapper::DoorMapper(int this_room, const Door &door)
 }
 
 
+DoorMapper::DoorMapper(const DoorMapper &rhs){
+  doors_ = rhs.doors_;
+  this_room_ = rhs.this_room_;
+}
+
+
 int DoorMapper::isDoorNearPose(const tf::Transform& pose) const{
   double best_confidence = 0.0;
   int best_door = -1;
@@ -88,6 +94,7 @@ bool DoorMapper::addDoor(const tf::Transform &pose, int other_room, int counterp
   if(isDoorNearPose(pose) >= 0)
     return false;
 
+  boost::lock_guard<boost::mutex> lock(doors_mutex_);
   doors_.push_back(Door(this_room_, pose, other_room, Door::getID(), counterpart_id, 1));
   return true;
 }
@@ -97,6 +104,7 @@ bool DoorMapper::addDoor(const Door& door){
   if(isDoorNearPose(door.getPose()) >= 0)
     return false;
 
+  boost::lock_guard<boost::mutex> lock(doors_mutex_);
   doors_.push_back(door);
   return true;
 }
@@ -105,6 +113,7 @@ bool DoorMapper::addDoor(const Door& door){
 bool DoorMapper::setDoorRoom(int id, int other_room, int counterpart_id){
   for(int i=0; i<doors_.size(); i++){
     if(doors_[i].getId() == id){
+      boost::lock_guard<boost::mutex> lock(doors_mutex_);
       doors_[i].setCounterpart(counterpart_id, other_room);
       return true;
     }
@@ -117,10 +126,12 @@ bool DoorMapper::setDoorRoom(int id, int other_room, int counterpart_id){
 bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
   int best_door = isDoorNearPose(pose);
   if(best_door >= 0){
+    boost::lock_guard<boost::mutex> lock(doors_mutex_);
     doors_[best_door].updatePose(pose);
     return true;
   }
 
+  boost::lock_guard<boost::mutex> lock(doors_mutex_);
   doors_.push_back(Door(this_room_, pose, -1, new_id, -1, 1));
   return false;
 }

@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
+    <arg name="scan_topic" value="scan_filtered" />
+  </include>
+</launch>

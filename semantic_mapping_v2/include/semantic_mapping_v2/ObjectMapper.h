@@ -122,6 +122,11 @@ class ObjectMapper{
       return (maps_.size() > obj_id ? maps_[obj_id].getObjMapMsg() : semantic_mapping_v2::ObjectMapMsg());
     }
     std::vector<semantic_mapping_v2::ObjectMapMsg> getAllObjMapMsgs();
+
+    std::vector<ObjectMap> getMaps() {
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
+      return maps_;
+    }
 };
 
 #endif //SEMANTIC_MAPPING_V2_OBJECTMAP_H

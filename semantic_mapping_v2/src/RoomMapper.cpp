@@ -196,6 +196,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     return;
   processed_scan_ = false;
 
+  boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
   if(!gsp_->getIndexes().empty()){
     try{
       boost::lock_guard<boost::mutex> lock(maps_mutex_);
@@ -221,6 +222,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
     }
     gsp_->resetIndexes();
   }
+  gsp_lock.unlock();
 
   boost::lock_guard<boost::mutex> lock(latest_cloud_mutex_);
   latest_cloud_ = *cloud;
@@ -311,8 +313,10 @@ nav_msgs::OccupancyGrid RoomMapper::getDoorBlockedMap(){
 }
 
 
-GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Time time) const{
+GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Time time){
+  boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
   GMapping::GridSlamProcessor::Particle particle = gsp_->getParticles()[particle_idx];
+  gsp_lock.unlock();
   GMapping::OrientedPoint result;
   if(!particle.node){
     result = GMapping::OrientedPoint(0, 0, 0);
@@ -342,7 +346,7 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
 }
 
 
-tf::Transform RoomMapper::getParticlePose3D(int particle_idx, ros::Time time) const{
+tf::Transform RoomMapper::getParticlePose3D(int particle_idx, ros::Time time){
   GMapping::OrientedPoint point = getParticlePose2D(particle_idx, time);
   tf::Transform pose(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, -base_to_laser_transform_.getOrigin().z()));
 
@@ -456,7 +460,7 @@ void RoomMapper::setDoorRoom(int id, int other_room, int counterpart_id){
 }
 
 
-visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) const {
+visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) {
   visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(id);
   if(res.markers.empty())
     return visualization_msgs::MarkerArray();
@@ -530,13 +534,13 @@ visualization_msgs::MarkerArray RoomMapper::getRoomProbMsg(int id) {
 }
 
 
-GMapping::OrientedPoint RoomMapper::getBestParticlePose2D(ros::Time time) const{
+GMapping::OrientedPoint RoomMapper::getBestParticlePose2D(ros::Time time){
   tf::Transform transform = getBestParticlePose3D(time);
   return GMapping::OrientedPoint(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
 }
 
 
-tf::Transform RoomMapper::getBestParticlePose3D(ros::Time time) const{
+tf::Transform RoomMapper::getBestParticlePose3D(ros::Time time){
   tf::StampedTransform transform;
   try{
     tf_->lookupTransform("map", "base_link", time, transform);
@@ -555,7 +559,7 @@ tf::Transform RoomMapper::getBestParticlePose3D(ros::Time time) const{
 }
 
 
-geometry_msgs::PoseArray RoomMapper::getParticlePoseMsg() const{
+geometry_msgs::PoseArray RoomMapper::getParticlePoseMsg(){
   static int seq = 0;
   geometry_msgs::PoseArray msg;
   msg.header.seq = seq++;
@@ -563,7 +567,9 @@ geometry_msgs::PoseArray RoomMapper::getParticlePoseMsg() const{
   msg.header.stamp = ros::Time::now();
   msg.poses.resize(particles_);
   for(int i=0; i<particles_; i++){
+    boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
     tf::Transform pose(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), gsp_->getParticles()[i].pose.theta), tf::Vector3(gsp_->getParticles()[i].pose.x, gsp_->getParticles()[i].pose.y, 0.0));
+    gsp_lock.unlock();
     tf::poseTFToMsg(pose, msg.poses[i]);
   }
 

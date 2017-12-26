@@ -70,6 +70,7 @@ class SlamGMapping
     tf::TransformListener* tf_;
 
     MyGridSlamProcessor* gsp_;
+    boost::mutex gsp_mutex_;
     GMapping::RangeSensor* gsp_laser_;
     // The angles in the laser, going from -x to x (adjustment is made to get the laser between
     // symmetrical bounds as that's what gmapping expects)
