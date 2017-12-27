@@ -64,6 +64,9 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
   prob_maps_.resize(getZSteps());
   for(auto& map : prob_maps_)
     map = cv::Mat_<float>(height, width, 0.f);
+  count_maps_.resize(getZSteps());
+  for(auto& map : count_maps_)
+    map = cv::Mat_<uchar>(height, width, uchar(0));
 
   float scale_2 = 1.f/(resolution*2);
   for(int x=0; x<getWidth(); x++){
@@ -77,10 +80,6 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
       }
     }
   }
-
-  count_maps_.resize(getZSteps());
-  for(auto& map : count_maps_)
-    map = cv::Mat_<uchar>(height, width, uchar(1));
 }
 
 
@@ -205,7 +204,7 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, floa
 cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps(); z++){
-    map2D = map2D.mul(1.f-prob_maps_[z]*occ_map.prob_maps_[z]);
+    map2D = map2D.mul(1.f-prob_maps_[z].mul(occ_map.prob_maps_[z]));
   }
   return (1.f - map2D).mul(1.f-behind_door_mask);
 }
@@ -276,7 +275,7 @@ void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const v
   curr_probs_.clear();
   if(maps_.empty()){
     boost::lock_guard<boost::mutex> lock(maps_mutex_);
-    maps_.resize(msg.num_objects, ObjectMap(OBJ_DEFAULT_RESOLUTION, 5.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
+    maps_.resize(msg.num_objects, ObjectMap(OBJ_DEFAULT_RESOLUTION, 4.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
   }
 
   pcl::PointXYZ min, max;

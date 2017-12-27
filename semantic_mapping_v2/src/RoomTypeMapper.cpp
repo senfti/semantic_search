@@ -22,6 +22,12 @@ RoomTypeMap::RoomTypeMap(float resolution, int base_size, int width, int height,
   seen_map_ = cv::Mat_<uchar>(base_size_, base_size_, uchar(0));
 }
 
+RoomTypeMap::RoomTypeMap(const cv::Mat_<float>& prob_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin){
+  prob_map.copyTo(prob_map_);
+  seen_map.copyTo(seen_map_);
+  origin_ = origin;
+}
+
 RoomTypeMap::RoomTypeMap(const RoomTypeMap& rhs){
   resolution_ = rhs.resolution_;
   base_size_ = rhs.base_size_;
@@ -185,6 +191,13 @@ RoomTypeMapper::RoomTypeMapper(const RoomTypeMapper& rhs){
 }
 
 
+RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, const cv::Mat_<uchar> &seen_map, const cv::Point &origin){
+  for(const auto& m : prob_maps){
+    prob_maps_.push_back(RoomTypeMap(m,seen_map,origin));
+  }
+}
+
+
 bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
   int x1 = points[0].x;
   int x2 = points[0].x;
@@ -282,7 +295,7 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMap
     ROOM_PRIOR_PROB = 1.f/NUM_CLASSES;
 
     boost::lock_guard<boost::mutex> lock(maps_mutex_);
-    prob_maps_.resize(NUM_CLASSES, RoomTypeMap(ROOM_DEFAULT_RESOLUTION, 10.f, ROOM_PRIOR_PROB));
+    prob_maps_.resize(NUM_CLASSES, RoomTypeMap(ROOM_DEFAULT_RESOLUTION, 4.f, ROOM_PRIOR_PROB));
     names_.resize(NUM_CLASSES);
     for(int i=0; i<NUM_CLASSES; i++){
       names_[i] = msg->place_guesses[i].name;

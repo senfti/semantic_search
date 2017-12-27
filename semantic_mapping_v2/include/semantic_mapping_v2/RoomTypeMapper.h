@@ -27,6 +27,7 @@ class RoomTypeMap{
   public:
     RoomTypeMap(float resolution, float start_size, float initial_value, const std::string& name = "");
     RoomTypeMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float initial_value, const std::string& name = "");
+    RoomTypeMap(const cv::Mat_<float>& prob_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin);
 
     RoomTypeMap(const RoomTypeMap& rhs);
     RoomTypeMap& operator=(const RoomTypeMap& rhs);
@@ -56,6 +57,9 @@ class RoomTypeMap{
 
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
     semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg() const;
+
+    cv::Mat_<float> getMap() const { return prob_map_; }
+    cv::Mat_<uchar> getSeenMap() const { return seen_map_; }
 };
 
 class RoomTypeMapper{
@@ -87,6 +91,7 @@ class RoomTypeMapper{
   public:
     RoomTypeMapper();
     RoomTypeMapper(const RoomTypeMapper& rhs);
+    RoomTypeMapper(const std::vector<cv::Mat_<float>>& prob_maps, const cv::Mat_<uchar>& seen_map, const cv::Point& origin);
 
     void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
 

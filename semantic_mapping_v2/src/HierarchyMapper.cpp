@@ -437,12 +437,15 @@ bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& 
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
   ros::Time start = ros::Time::now();
+
   boost::unique_lock<boost::mutex> maps_lock(mapper_mutex_);
   std::vector<OctoMapper> octomaps;
+  std::vector<nav_msgs::OccupancyGrid> grid_maps;
   std::vector<std::vector<Door>> doors;
   std::vector<std::vector<ObjectMap>> obj_maps;
   std::vector<std::vector<RoomTypeMap>> room_type_maps;
   for(int i=0; i<room_mapper_.size(); i++){
+    grid_maps.push_back(room_mapper_[i]->getMap());
     octomaps.push_back(room_mapper_[i]->getOctomap());
     doors.push_back(room_mapper_[i]->getDoors());
     obj_maps.push_back(room_mapper_[i]->getObjMaps());
@@ -450,8 +453,8 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
   }
   maps_lock.unlock();
 
-  for(int i=0; i<room_mapper_.size(); i++){
-    if(doors[i].empty() || obj_maps[i].empty() || room_type_maps[i].empty())
+  for(int i=0; i<grid_maps.size(); i++){
+    if(obj_maps[i].empty() || room_type_maps[i].empty())
       continue;
 
     cv::Mat_<float> behind_door_mask(obj_maps[i][0].getHeight(),obj_maps[i][0].getWidth(), 0.f);
@@ -466,23 +469,60 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
 
     ObjectMap occ_map(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
                       obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), octomaps[i]);
-    semantic_mapping_v2::RoomMsg room;
+    std::vector<cv::Mat_<float>> prob_2d_area(obj_maps[i].size());
     for(int o=0; o<obj_maps[i].size(); o++){
       cv::Mat_<float> prob_2d = 1.f - obj_maps[i][o].get2D(behind_door_mask, occ_map);
-      cv::Mat_<float> prob_2d_area(prob_2d.size());
+      prob_2d_area[o] = cv::Mat_<float>(prob_2d.rows, prob_2d.cols, 1.f);
       int kernel_size = 8;
       cv::copyMakeBorder(prob_2d, prob_2d, kernel_size, kernel_size, kernel_size, kernel_size, cv::BORDER_CONSTANT, cv::Scalar(1.f));
       for(int x=kernel_size; x<prob_2d.cols-kernel_size; x++){
         for(int y=kernel_size; y<prob_2d.rows-kernel_size; y++){
           for(int xk=x-kernel_size; xk<=x+kernel_size; xk++){
             for(int yk=y-kernel_size; yk<=y+kernel_size; yk++){
-              prob_2d_area(y,x) *= prob_2d(yk,xk);
+              prob_2d_area[o](y-kernel_size,x-kernel_size) *= prob_2d(yk,xk);
             }
           }
         }
       }
+      prob_2d_area[o] = 1.f-prob_2d_area[o];
+      if(obj_maps[i][0].getOrigin() != room_type_maps[i][0].getOrigin())
+        cv::copyMakeBorder(prob_2d_area[o], prob_2d_area[o], room_type_maps[i][0].getOrigin().y - obj_maps[i][0].getOrigin().y, 0,
+                           room_type_maps[i][0].getOrigin().x - obj_maps[i][0].getOrigin().x, 0, cv::BORDER_CONSTANT, cv::Scalar(0.5f));
+      if(prob_2d_area[o].cols != room_type_maps[i][0].getWidth() || prob_2d_area[o].rows != room_type_maps[i][0].getHeight())
+        cv::copyMakeBorder(prob_2d_area[o], prob_2d_area[o], 0, room_type_maps[i][0].getHeight() - prob_2d_area[o].rows,
+                           0, room_type_maps[i][0].getWidth() - prob_2d_area[o].cols, cv::BORDER_CONSTANT, cv::Scalar(0.5f));
     }
+
+    std::vector<cv::Mat_<float>> room_type_map(room_type_maps[i].size());
+    cv::Mat_<float> max_mat(room_type_maps[i][0].getHeight(), room_type_maps[i][0].getWidth(), -99999999999.9f);
+    for(int r=0; r<room_type_map.size(); r++){
+      room_type_maps[i][r].getMap().copyTo(room_type_map[r]);
+      for(int o=0; o<prob_2d_area.size(); o++){
+        float or_prob = RoomMapper::getObjProbGivenRoom(o,r);
+        float o_prob = RoomMapper::getObjProbGivenRoomPrior(o);
+        float N = room_type_map.size();
+        cv::Mat_<float> tmp;
+        cv::log(prob_2d_area[o]*or_prob/N/(o_prob/N) + (1.0-prob_2d_area[o])*(1.0-or_prob)/N/(1.0-o_prob/N), tmp);
+        room_type_map[r] += tmp;
+      }
+      max_mat = cv::max(max_mat, room_type_map[r]);
+    }
+    cv::Mat_<float> sum_mat(room_type_map[0].rows, room_type_map[0].cols, 0.f);
+    for(int r=0; r<room_type_map.size(); r++){
+      cv::exp(room_type_map[r]-max_mat, room_type_map[r]);
+      sum_mat += room_type_map[r];
+    }
+    for(int r=0; r<room_type_map.size(); r++){
+      cv::divide(room_type_map[r], sum_mat, room_type_map[r]);
+    }
+    RoomTypeMapper tmp_mapper(room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin());
+    std::vector<size_t> order;
+    res.rooms.push_back(semantic_mapping_v2::RoomMsg());
+    res.rooms.rbegin()->room_type_probs = tmp_mapper.getRoomProb(grid_maps[i],doors[i],order);
+
+    
   }
+
 
 //  for(int i=0; i<room_mapper_.size(); i++){
 //    semantic_mapping_v2::RoomMsg room;

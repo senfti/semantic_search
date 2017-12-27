@@ -55,7 +55,7 @@ double RoomMapper::getObjProbGivenRoomPrior(int obj){
     }
     for(int o=0; o<no; o++){
       prob_sum[o] /= nr;
-      std::cout << "__________________ " << prob_sum[o]  << std::endl;
+      //std::cout << "__________________ " << prob_sum[o]  << std::endl;
     }
   }
   return prob_sum[obj];
@@ -589,15 +589,7 @@ std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_t
   double v = -std::log(N);
   for(int r=0; r<room_probs.size(); r++){
     for(int o=0; o<obj_probs.size(); o++){
-//      if(obj_probs[o]*getObjProbGivenRoom(o,r)/N/getObjProbGivenRoomPrior(o) > 1000)
-//        std::cout << "1 HHHHHHHHHHHHHHHHHHHH " << r << " " << o << " " << obj_probs[r] << getObjProbGivenRoom(o,r) << N << getObjProbGivenRoomPrior(o) << obj_probs[r]*getObjProbGivenRoom(o,r)/N/getObjProbGivenRoomPrior(o) << std::endl;
-//      if((1.0-obj_probs[o])*(1.0-getObjProbGivenRoom(o,r))/N/(1.0-getObjProbGivenRoomPrior(o)) > 1000)
-//        std::cout << "2 HHHHHHHHHHHHHHHHHHHH " << r << " " << o << " " << obj_probs[r] << getObjProbGivenRoom(o,r) << N << getObjProbGivenRoomPrior(o) << (1.0-obj_probs[r])*(1.0-getObjProbGivenRoom(o,r))/N/(1.0-getObjProbGivenRoomPrior(o)) << std::endl;
       Pro[r] += std::log(obj_probs[o]*getObjProbGivenRoom(o,r)/N/(getObjProbGivenRoomPrior(o)/N) + (1.0-obj_probs[o])*(1.0-getObjProbGivenRoom(o,r))/N/(1.0-getObjProbGivenRoomPrior(o)/N));
-//      if(!std::isfinite(Pro[r])){
-//        std::cout << Pro[r] << " r "  << r << " o " << o << " op " << obj_probs[o] << " opr " << getObjProbGivenRoom(o,r)/N << " pr " << (getObjProbGivenRoomPrior(o)/N)
-//              << " t1 " << obj_probs[o]*getObjProbGivenRoom(o,r)/N/(getObjProbGivenRoomPrior(o)/N) << " t2 " << (1.0-obj_probs[r])*(1.0-getObjProbGivenRoom(o,r))/N/(1.0-getObjProbGivenRoomPrior(o)/N) << std::endl;
-//      }
     }
     max = std::max(max, Pro[r]);
   }
@@ -607,7 +599,6 @@ std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_t
   }
   for(int r=0; r<room_probs.size(); r++){
     Pro[r] = Pro[r]/sum;
-    //std::cout << "Pro[r] " << Pro[r] << std::endl;
   }
   sum=0.0;
   for(int r=0; r<room_probs.size(); r++){
@@ -616,7 +607,6 @@ std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_t
   }
   for(int r=0; r<room_probs.size(); r++){
     Prr[r] /= sum;
-    //std::cout << "Prr[r] " << Prr[r] << "room_probs[r]" << room_probs[r] << std::endl;
   }
   sum=0.0;
   for(int r=0; r<room_probs.size(); r++){
@@ -625,7 +615,6 @@ std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_t
   }
   for(int r=0; r<room_probs.size(); r++){
     Pro[r] /= sum;
-    //std::cout << "Pro[r]2 " << Pro[r] << std::endl;
   }
   sum = 0.0;
   for(int r=0; r<room_probs.size(); r++){
@@ -634,7 +623,6 @@ std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_t
   }
   for(int r=0; r<room_probs.size(); r++){
     room_type_probs[r] = Prr[r] / sum;
-    std::cout << "ges " << room_type_probs[r] << std::endl;
   }
 
   std::vector<float> res(obj_probs.size());
