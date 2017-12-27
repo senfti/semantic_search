@@ -436,6 +436,7 @@ bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& 
 
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
+  ros::Time start = ros::Time::now();
   boost::unique_lock<boost::mutex> maps_lock(mapper_mutex_);
   std::vector<OctoMapper> octomaps;
   std::vector<std::vector<Door>> doors;
@@ -449,7 +450,40 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
   }
   maps_lock.unlock();
 
-  ros::Time start = ros::Time::now();
+  for(int i=0; i<room_mapper_.size(); i++){
+    if(doors[i].empty() || obj_maps[i].empty() || room_type_maps[i].empty())
+      continue;
+
+    cv::Mat_<float> behind_door_mask(obj_maps[i][0].getHeight(),obj_maps[i][0].getWidth(), 0.f);
+    for(int x=0; x<behind_door_mask.cols; x++){
+      for(int y=0; y<behind_door_mask.rows; y++){
+        for(const auto& d : doors[i]){
+          if(d.isBehindDoor(x,y))
+            behind_door_mask(y,x) = 1.f;
+        }
+      }
+    }
+
+    ObjectMap occ_map(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
+                      obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), octomaps[i]);
+    semantic_mapping_v2::RoomMsg room;
+    for(int o=0; o<obj_maps[i].size(); o++){
+      cv::Mat_<float> prob_2d = 1.f - obj_maps[i][o].get2D(behind_door_mask, occ_map);
+      cv::Mat_<float> prob_2d_area(prob_2d.size());
+      int kernel_size = 8;
+      cv::copyMakeBorder(prob_2d, prob_2d, kernel_size, kernel_size, kernel_size, kernel_size, cv::BORDER_CONSTANT, cv::Scalar(1.f));
+      for(int x=kernel_size; x<prob_2d.cols-kernel_size; x++){
+        for(int y=kernel_size; y<prob_2d.rows-kernel_size; y++){
+          for(int xk=x-kernel_size; xk<=x+kernel_size; xk++){
+            for(int yk=y-kernel_size; yk<=y+kernel_size; yk++){
+              prob_2d_area(y,x) *= prob_2d(yk,xk);
+            }
+          }
+        }
+      }
+    }
+  }
+
 //  for(int i=0; i<room_mapper_.size(); i++){
 //    semantic_mapping_v2::RoomMsg room;
 //    room.header.stamp = ros::Time::now();
@@ -461,34 +495,33 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
 //    res.rooms.push_back(room);
 //  }
 //
-//  for(int i=0; i<room_mapper_.size(); i++){
-//    std::vector<Door> doors = room_mapper_[i]->getDoors();
-//    for(const auto& door : doors){
-//      if(door.getOtherRoom() <= i){
-//        semantic_mapping_v2::HierarchyLinkMsg link;
-//        link.header.stamp = ros::Time::now();
-//        if(door.getOtherRoom() < 0){
-//          link.room1 = i;
-//          link.room2 = door.getOtherRoom();
-//        }
-//        else{
-//          link.room1 = door.getOtherRoom();
-//          link.room2 = i;
-//        }
-//        tf::poseTFToMsg(door.getPose(), link.door1_pose);
-//        if(door.getOtherRoom() >= 0){
-//          std::vector<Door> other_doors = room_mapper_[door.getOtherRoom()]->getDoors();
-//          for(const auto& door2 : other_doors){
-//            if(door2.getId() == door.getCounterpartId()){
-//              tf::poseTFToMsg(door2.getPose(), link.door2_pose);
-//              break;
-//            }
-//          }
-//        }
-//        res.links.push_back(link);
-//      }
-//    }
-//  }
+  for(int i=0; i<doors.size(); i++){
+    for(const auto& door : doors[i]){
+      if(door.getOtherRoom() <= i){
+        semantic_mapping_v2::HierarchyLinkMsg link;
+        link.header.stamp = ros::Time::now();
+        if(door.getOtherRoom() < 0){
+          link.room1 = i;
+          link.room2 = door.getOtherRoom();
+        }
+        else{
+          link.room1 = door.getOtherRoom();
+          link.room2 = i;
+        }
+        tf::poseTFToMsg(door.getPose(), link.door1_pose);
+        if(door.getOtherRoom() >= 0){
+          std::vector<Door> other_doors = doors[door.getOtherRoom()];
+          for(const auto& door2 : other_doors){
+            if(door2.getId() == door.getCounterpartId()){
+              tf::poseTFToMsg(door2.getPose(), link.door2_pose);
+              break;
+            }
+          }
+        }
+        res.links.push_back(link);
+      }
+    }
+  }
   ROS_INFO("SERVICE HIERARCHY IN %.4lf", (ros::Time::now()-start).toSec());
   return true;
 }

@@ -59,7 +59,9 @@ catkin_package(
   CATKIN_DEPENDS ${PACKAGE_DEPENDENCIES}
 )
 
-add_executable(semantic_mapping src/main.cpp src/ObjectMapper.cpp src/HierarchyMapper.cpp src/OctoMapper.cpp src/RoomMapper.cpp src/SlamGMapping.cpp src/DoorMapper.cpp src/RoomTypeMapper.cpp)
+add_executable(semantic_mapping src/main.cpp src/ObjectMapper.cpp src/HierarchyMapper.cpp src/OctoMapper.cpp src/RoomMapper.cpp src/SlamGMapping.cpp src/DoorMapper.cpp src/RoomTypeMapper.cpp
+  include/semantic_mapping_v2/DoorMapper.h include/semantic_mapping_v2/HierarchyMapper.h include/semantic_mapping_v2/ObjectMapper.h include/semantic_mapping_v2/OctoMapper.h
+  include/semantic_mapping_v2/RoomMapper.h include/semantic_mapping_v2/RoomTypeMapper.h include/semantic_mapping_v2/SlamGMapping.h)
 target_link_libraries(semantic_mapping ${Boost_LIBRARIES} ${OCTOMAP_LIBRARIES} ${catkin_LIBRARIES} ${OpenCV_LIBS})
 if(catkin_EXPORTED_TARGETS)
   add_dependencies(semantic_mapping ${catkin_EXPORTED_TARGETS})

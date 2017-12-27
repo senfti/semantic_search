@@ -31,6 +31,9 @@ class ObjectMap{
   public:
     ObjectMap(float resolution, float start_size, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
+    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap);
+
+    ObjectMap operator*(const ObjectMap& rhs) const;
 
     ObjectMap(const ObjectMap& rhs);
     ObjectMap& operator=(const ObjectMap& rhs);
@@ -59,6 +62,7 @@ class ObjectMap{
     int getWidth() const { return prob_maps_[0].cols; }
     int getHeight() const { return prob_maps_[0].rows; }
     int getZSteps() const { return std::ceil(max_height_*resolution_); }
+    float getMaxHeight() const { return max_height_; }
     float getResolution() const { return resolution_; }
     cv::Point getOrigin() const { return origin_; }
 
@@ -67,6 +71,7 @@ class ObjectMap{
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
+    cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
 };
 
 
