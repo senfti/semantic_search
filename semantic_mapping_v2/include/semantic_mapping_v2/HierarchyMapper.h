@@ -64,11 +64,15 @@ class HierarchyMapper{
     int debug_publish_interval_ = std::numeric_limits<int>::max();
     double MIN_MAP_SWITCH_TIME = 2.0;
 
-    float ROOM_CELL_OBJ_KERNEL_SIZE = 2.f;
+    float ROOM_CELL_OBJ_KERNEL_SIZE = 4.f;
     float OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE = 2.f;
     float OBJ_FILL_FRACTION = 1.f/16.f;
     float ROOM_ESTIMATED_VOLUME = 32.f;
     float CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA = 2.f;
+    float SINGLE_VIEW_OBJ_KERNEL_SIZE = 2.f;
+    float TRAVEL_DIST_LIN_FACTOR = 4.f;
+    float TRAVEL_DIST_QUAD_FACTOR = 0.5f;
+    float SEARCH_TIME_PER_GRID_CELL = 0.05f;
 
   public:
     HierarchyMapper();
@@ -102,7 +106,7 @@ class HierarchyMapper{
 
     cv::Mat_<float> getBehindDoorMask(const std::vector<Door>& doors, int width, int height);
     std::vector<cv::Mat_<float>> get2dAreaObjProbMaps(const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float> behind_door_mask, const ObjectMap& occ_map,
-                                                      const cv::Point& room_origin, int room_width, int room_height);
+                                                      const cv::Point& room_origin, int room_width, int room_height, float kernel_size);
     std::vector<cv::Mat_<float>> getObjBasedRoomTypeMap(const std::vector<cv::Mat_<float>>& obj_prob_2d_area, int num_room_types);
     std::vector<cv::Mat_<float>> getCompleteRoomTypeMap(const std::vector<RoomTypeMap>& room_type_map, const std::vector<cv::Mat_<float>>& obj_based_room_type_map);
     std::vector<float> getRoomTypeProbs(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin,
@@ -110,6 +114,8 @@ class HierarchyMapper{
     std::vector<ObjectMap> getCompleteObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map, const std::vector<ObjectMap>& obj_map,
                                              const ObjectMap& occ_map, const cv::Point& new_orig);
     std::vector<float> getCompleteObjProbs(const std::vector<ObjectMap>& complete_obj_map, std::vector<float> room_type_probs, const cv::Mat_<float> behind_door_mask);
+    std::vector<float> getTravelTimes(const std::vector<Door>& doors);
+    float getSearchTime(const nav_msgs::OccupancyGrid& grid_map);
 };
 
 #endif //SEMANTIC_MAPPING_V2_HIERARCHYMAPPER_H
