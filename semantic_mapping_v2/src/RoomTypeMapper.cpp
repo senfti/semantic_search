@@ -22,7 +22,9 @@ RoomTypeMap::RoomTypeMap(float resolution, int base_size, int width, int height,
   seen_map_ = cv::Mat_<uchar>(base_size_, base_size_, uchar(0));
 }
 
-RoomTypeMap::RoomTypeMap(const cv::Mat_<float>& prob_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin){
+RoomTypeMap::RoomTypeMap(const cv::Mat_<float>& prob_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin, float resolution, int base_size)
+  : resolution_(resolution), base_size_(base_size)
+{
   prob_map.copyTo(prob_map_);
   seen_map.copyTo(seen_map_);
   origin_ = origin;
@@ -191,9 +193,9 @@ RoomTypeMapper::RoomTypeMapper(const RoomTypeMapper& rhs){
 }
 
 
-RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, const cv::Mat_<uchar> &seen_map, const cv::Point &origin){
+RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, const cv::Mat_<uchar> &seen_map, const cv::Point &origin, float resolution, int base_size){
   for(const auto& m : prob_maps){
-    prob_maps_.push_back(RoomTypeMap(m,seen_map,origin));
+    prob_maps_.push_back(RoomTypeMap(m,seen_map,origin,resolution, base_size));
   }
 }
 

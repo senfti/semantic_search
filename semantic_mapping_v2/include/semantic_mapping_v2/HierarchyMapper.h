@@ -86,6 +86,8 @@ class HierarchyMapper{
 
     //void publish();
     void downprojecAndPublish();
+    void publishRoomTypeProbMap(const RoomTypeMap& map, int idx);
+    void publishObjProbMap(const ObjectMap& map, int idx);
 
     void run();
 };
