@@ -87,9 +87,10 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
   *this = object_map;
   for(int z=0; z<getZSteps(); z++){
     cv::Mat_<float> tmp = 1.f - prob_maps_[z];
-    prob_maps_[z] = object_map.prob_maps_[z].mul(occ_map.prob_maps_[z]).mul(obj_from_room);
-    tmp = tmp.mul(1.f-occ_map.prob_maps_[z]).mul(1.f-obj_from_room);
+    prob_maps_[z] = object_map.prob_maps_[z].mul(obj_from_room);
+    tmp = tmp.mul(1.f-obj_from_room);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
+    prob_maps_[z] = prob_maps_[z].mul(occ_map.prob_maps_[z]);
   }
 }
 
@@ -213,9 +214,9 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, floa
 
 
 float ObjectMap::getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const{
+  expected_room_size*=resolution_*resolution_*resolution_;
   double prob = 1.0;
   int num = 0;
-  float scale_2 = 1.f/(resolution_*2);
   for(int x=0; x<getWidth(); x++){
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
@@ -226,7 +227,7 @@ float ObjectMap::getObjectProb(const cv::Mat_<float>& behind_door_mask, float pr
       }
     }
   }
-  prob *= (std::pow(1.f-prior, expected_room_size));
+  prob *= (std::pow(1.f-prior, std::max(expected_room_size-num, 0.f)));
 
   return (1.0-prob);
 }

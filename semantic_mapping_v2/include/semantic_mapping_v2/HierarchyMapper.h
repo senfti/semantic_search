@@ -37,6 +37,8 @@ class HierarchyMapper{
     std::vector<ros::Publisher> obj_prob_pub_;
     std::vector<ros::Publisher> room_prob_pub_;
     ros::Publisher particle_pose_pub_;
+    std::vector<ros::Publisher> base_obj_prob_pub_;
+    std::vector<ros::Publisher> base_room_prob_pub_;
 
     ros::CallbackQueue service_queue_;
     ros::AsyncSpinner service_spinner_;
@@ -61,6 +63,12 @@ class HierarchyMapper{
     double publish_period_;
     int debug_publish_interval_ = std::numeric_limits<int>::max();
     double MIN_MAP_SWITCH_TIME = 2.0;
+
+    float ROOM_CELL_OBJ_KERNEL_SIZE = 2.f;
+    float OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE = 2.f;
+    float OBJ_FILL_FRACTION = 1.f/16.f;
+    float ROOM_ESTIMATED_VOLUME = 32.f;
+    float CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA = 2.f;
 
   public:
     HierarchyMapper();
@@ -90,6 +98,18 @@ class HierarchyMapper{
     void publishObjProbMap(const ObjectMap& map, int idx);
 
     void run();
+
+
+    cv::Mat_<float> getBehindDoorMask(const std::vector<Door>& doors, int width, int height);
+    std::vector<cv::Mat_<float>> get2dAreaObjProbMaps(const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float> behind_door_mask, const ObjectMap& occ_map,
+                                                      const cv::Point& room_origin, int room_width, int room_height);
+    std::vector<cv::Mat_<float>> getObjBasedRoomTypeMap(const std::vector<cv::Mat_<float>>& obj_prob_2d_area, int num_room_types);
+    std::vector<cv::Mat_<float>> getCompleteRoomTypeMap(const std::vector<RoomTypeMap>& room_type_map, const std::vector<cv::Mat_<float>>& obj_based_room_type_map);
+    std::vector<float> getRoomTypeProbs(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin,
+                                        const nav_msgs::OccupancyGrid& grid_map, const std::vector<Door>& doors, float resolution, int base_size);
+    std::vector<ObjectMap> getCompleteObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map, const std::vector<ObjectMap>& obj_map,
+                                             const ObjectMap& occ_map, const cv::Point& new_orig);
+    std::vector<float> getCompleteObjProbs(const std::vector<ObjectMap>& complete_obj_map, std::vector<float> room_type_probs, const cv::Mat_<float> behind_door_mask);
 };
 
 #endif //SEMANTIC_MAPPING_V2_HIERARCHYMAPPER_H
