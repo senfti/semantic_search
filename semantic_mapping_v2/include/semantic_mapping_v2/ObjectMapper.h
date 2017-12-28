@@ -32,6 +32,7 @@ class ObjectMap{
     ObjectMap(float resolution, float start_size, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap);
+    ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room);
 
     ObjectMap operator*(const ObjectMap& rhs) const;
 
@@ -69,6 +70,7 @@ class ObjectMap{
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
+    float getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const;
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;

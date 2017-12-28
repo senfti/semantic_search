@@ -518,9 +518,34 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     RoomTypeMapper tmp_mapper(room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin());
     std::vector<size_t> order;
     res.rooms.push_back(semantic_mapping_v2::RoomMsg());
-    res.rooms.rbegin()->room_type_probs = tmp_mapper.getRoomProb(grid_maps[i],doors[i],order);
+    std::vector<float> room_type_probs = tmp_mapper.getRoomProb(grid_maps[i],doors[i],order);
+    res.rooms.rbegin()->room_type_probs = room_type_probs;
 
-    
+
+    std::vector<cv::Mat_<float>> obj_from_room_map(obj_maps[i].size());
+    std::vector<ObjectMap> total_obj_map;
+    res.rooms.rbegin()->obj_probs.resize(obj_from_room_map.size());
+    for(int o=0; o<obj_from_room_map.size(); o++){
+      obj_from_room_map[o] = cv::Mat_<float>(room_type_map[0].rows, room_type_map[0].cols, 0.f);
+      cv::Mat_<float> inv;
+      obj_from_room_map[o].copyTo(inv);
+      for(int r = 0; r < room_type_map.size(); r++){
+        obj_from_room_map[o] += room_type_map[r] * RoomMapper::getObjProbGivenRoom(o, r);
+        inv += room_type_map[r] * (1.0 - RoomMapper::getObjProbGivenRoom(o, r));
+      }
+      cv::divide(obj_from_room_map[o], obj_from_room_map[o] + inv, obj_from_room_map[o]);
+      cv::GaussianBlur(obj_from_room_map[o], obj_from_room_map[o], cv::Size(13,13), 2, 2, cv::BORDER_REPLICATE);
+      obj_from_room_map[o] = obj_from_room_map[o](cv::Rect(room_type_maps[i][0].getOrigin().x - obj_maps[i][0].getOrigin().x,
+                                                           room_type_maps[i][0].getOrigin().y - obj_maps[i][0].getOrigin().y,
+                                                           obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight()));
+
+      total_obj_map.push_back(ObjectMap(obj_maps[i][o], occ_map, obj_from_room_map[o]));
+      float unseen_prob_estimate = 0.f;
+      for(int r=0; r<room_type_probs.size(); r++){
+        unseen_prob_estimate += room_type_probs[r]*RoomMapper::getObjProbGivenRoom(o,r);
+      }
+      res.rooms.rbegin()->obj_probs[o] = total_obj_map.rbegin()->getObjectProb(behind_door_mask, 1.f-std::pow(1.0-unseen_prob_estimate, 1.0/256.0), 32.f);
+    }
   }
 
 
