@@ -170,6 +170,7 @@ RoomTypeMapper::RoomTypeMapper(){
   private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
   private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
   private_nh.param("RoomTypeMapper/MAX_DIST", MAX_DIST, MAX_DIST);
+  private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
   ASUS_FOV *= M_PI/180.f;
 }
 
@@ -189,7 +190,6 @@ RoomTypeMapper::RoomTypeMapper(const RoomTypeMapper& rhs){
 
   prob_maps_ = rhs.prob_maps_;
   names_ = rhs.names_;
-  curr_probs_ = rhs.curr_probs_;
 }
 
 
@@ -331,8 +331,6 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMap
         updateProbs(msg, x, y);
     }
   }
-
-  curr_probs_.clear();
 }
 
 
@@ -348,65 +346,74 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
   if(prob_maps_.empty())
     return std::vector<float>();
 
-  if(curr_probs_.empty()){
-    ros::Time t = ros::Time::now();
-    cv::Mat_<uchar> mask(map.info.height, map.info.width, uchar(0));
-    for(int x=0; x<mask.cols; x++){
-      for(int y=0; y<mask.rows; y++){
-        if(map.data[y * map.info.width + x] >= 0)
-          mask(y,x) = 255;
-      }
+  ros::Time t = ros::Time::now();
+  cv::Mat_<uchar> mask(map.info.height, map.info.width, uchar(0));
+  for(int x=0; x<mask.cols; x++){
+    for(int y=0; y<mask.rows; y++){
+      if(map.data[y * map.info.width + x] >= 0)
+        mask(y,x) = 255;
     }
-    cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
-    cv::erode(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
+  }
+  cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
+  cv::erode(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
 
-    boost::lock_guard<boost::mutex> lock(maps_mutex_);
-    std::vector<double> probs(prob_maps_.size(), 0.0);
-    double res = 1.00 / map.info.resolution;
-    double v = std::log(ROOM_PRIOR_PROB);
-    for(int x=0; x<prob_maps_[0].getWidth(); x++){
-      for(int y=0; y<prob_maps_[0].getHeight(); y++){
-        if(prob_maps_[0].wasSeen(x,y)){
-          float x_world = prob_maps_[0].getXWorld(x);
-          float y_world = prob_maps_[0].getYWorld(y);
-          int x_map = ((x_world - map.info.origin.position.x)) * res;
-          int y_map = ((y_world - map.info.origin.position.y)) * res;
-          if(x_map >= 0 && x_map < mask.cols && y_map >= 0 && y_map < mask.rows && mask(y_map, x_map) > 0){
-            bool behind = false;
-            for(const auto &door : doors){
-              if(door.isBehindDoor(x_world, y_world)){
-                behind = true;
-                break;
-              }
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+  std::vector<double> probs(prob_maps_.size(), 0.0);
+  double res = 1.00 / map.info.resolution;
+  double v = std::log(ROOM_PRIOR_PROB);
+  for(int x=0; x<prob_maps_[0].getWidth(); x++){
+    for(int y=0; y<prob_maps_[0].getHeight(); y++){
+      if(prob_maps_[0].wasSeen(x,y)){
+        float x_world = prob_maps_[0].getXWorld(x);
+        float y_world = prob_maps_[0].getYWorld(y);
+        int x_map = ((x_world - map.info.origin.position.x)) * res;
+        int y_map = ((y_world - map.info.origin.position.y)) * res;
+        if(x_map >= 0 && x_map < mask.cols && y_map >= 0 && y_map < mask.rows && mask(y_map, x_map) > 0){
+          bool behind = false;
+          for(const auto &door : doors){
+            if(door.isBehindDoor(x_world, y_world)){
+              behind = true;
+              break;
             }
-            if(!behind){
-              for(int i = 0; i < probs.size(); i++){
-                double prob = 0.0;
-                for(int j = 0; j < probs.size(); j++){
-                  prob += getRoomSimilarity(i, j) * prob_maps_[j].getProb(x, y);
-                }
-                probs[i] += std::log(prob) - v;
+          }
+          if(!behind){
+            for(int i = 0; i < probs.size(); i++){
+              double prob = 0.0;
+              for(int j = 0; j < probs.size(); j++){
+                prob += getRoomSimilarity(i, j) * prob_maps_[j].getProb(x, y);
               }
+              probs[i] += std::log(prob) - v;
             }
           }
         }
       }
     }
-
-    double sum = 0.0;
-    for(int i=0; i<probs.size(); i++){
-      probs[i] = std::exp(probs[i]);
-      sum += probs[i];
-    }
-    curr_probs_.resize(probs.size());
-    for(int i=0; i<probs.size(); i++){
-      curr_probs_[i] = probs[i]/sum;
-    }
-    std::cout << "Room Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
   }
 
-  order = ordered(curr_probs_);
-  return curr_probs_;
+  double sum = 0.0, sum2 = 0.0;
+  for(int i=0; i<probs.size(); i++){
+    probs[i] = std::exp(probs[i]);
+    sum += probs[i];
+  }
+  int clamp_idx = -1;
+  for(int i=0; i<probs.size(); i++){
+    probs[i] = probs[i]/sum;
+    if(probs[i] > ROOM_MAX_PROB)
+      clamp_idx = i;
+    else
+      sum2 += probs[i];
+  }
+  std::vector<float> probs_float(prob_maps_.size());
+  for(int i=0; i<probs.size(); i++){
+    if(i==clamp_idx)
+      probs_float[i] = ROOM_MAX_PROB;
+    else
+      probs_float[i] = probs[i]/sum2*(1.0-ROOM_MAX_PROB);
+  }
+  std::cout << "Room Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
+
+  order = ordered(probs_float);
+  return probs_float;
 }
 
 

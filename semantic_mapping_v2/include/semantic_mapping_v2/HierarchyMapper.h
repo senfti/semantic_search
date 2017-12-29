@@ -75,7 +75,6 @@ class HierarchyMapper{
     float TRAVEL_DIST_LIN_FACTOR = 4.f;
     float TRAVEL_DIST_QUAD_FACTOR = 0.5f;
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
-    float ROOM_MAX_PROB = 0.8f;
 
   public:
     HierarchyMapper();

@@ -49,7 +49,6 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("TRAVEL_DIST_LIN_FACTOR", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
   ros::NodeHandle("~").param("TRAVEL_DIST_QUAD_FACTOR", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
   ros::NodeHandle("~").param("SEARCH_TIME_PER_GRID_CELL", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
-  ros::NodeHandle("~").param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
 
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
@@ -574,16 +573,7 @@ std::vector<float> HierarchyMapper::getRoomTypeProbs(const std::vector<cv::Mat_<
                                     const nav_msgs::OccupancyGrid& grid_map, const std::vector<Door>& doors, float resolution, int base_size){
   RoomTypeMapper tmp_mapper(complete_room_type_map, seen_map, origin, resolution, base_size);
   std::vector<size_t> order;
-  std::vector<float> probs = tmp_mapper.getRoomProb(grid_map,doors,order);
-  double sum = 0.0;
-  for(int i=0; i<probs.size(); i++){
-    probs[i] = std::min(probs[i], ROOM_MAX_PROB);
-    sum += probs[i];
-  }
-  for(int i=0; i<probs.size(); i++){
-    probs[i] /= sum;
-  }
-  return probs;
+  return tmp_mapper.getRoomProb(grid_map,doors,order);
 }
 
 

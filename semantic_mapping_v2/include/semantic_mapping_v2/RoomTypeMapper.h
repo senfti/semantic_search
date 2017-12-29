@@ -66,6 +66,7 @@ class RoomTypeMapper{
   public:
     float CELL_MIN_PROB = 0.0005;
     float CELL_MAX_PROB = 0.75;
+    float ROOM_MAX_PROB = 0.9;
     float ROOM_DEFAULT_RESOLUTION = 4.f;
     float ASUS_FOV = 29.f;
     float MIN_DIST = 1.f;
@@ -82,8 +83,6 @@ class RoomTypeMapper{
     std::vector<RoomTypeMap> prob_maps_;
     boost::mutex maps_mutex_;
     std::vector<std::string> names_;
-
-    std::vector<float> curr_probs_;
 
     bool resizeUntilFitting(std::vector<cv::Point>& points);
     void updateProbs(const vision::VisionMsgConstPtr& msg, int x, int y);
