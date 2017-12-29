@@ -42,9 +42,9 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("debug_publish_interval", debug_publish_interval_, debug_publish_interval_);
   ros::NodeHandle("~").param("ROOM_CELL_OBJ_KERNEL_SIZE", ROOM_CELL_OBJ_KERNEL_SIZE, ROOM_CELL_OBJ_KERNEL_SIZE);
   ros::NodeHandle("~").param("OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE", OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE, OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE);
-  ros::NodeHandle("~").param("ROOM_CELL_OBJ_KERNEL_SIZE", OBJ_FILL_FRACTION, OBJ_FILL_FRACTION);
-  ros::NodeHandle("~").param("ROOM_CELL_OBJ_KERNEL_SIZE", ROOM_ESTIMATED_VOLUME, ROOM_ESTIMATED_VOLUME);
-  ros::NodeHandle("~").param("ROOM_CELL_OBJ_KERNEL_SIZE", CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA);
+  ros::NodeHandle("~").param("OBJ_FILL_FRACTION", OBJ_FILL_FRACTION, OBJ_FILL_FRACTION);
+  ros::NodeHandle("~").param("ROOM_ESTIMATED_VOLUME", ROOM_ESTIMATED_VOLUME, ROOM_ESTIMATED_VOLUME);
+  ros::NodeHandle("~").param("CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA", CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA);
   ros::NodeHandle("~").param("SINGLE_VIEW_OBJ_KERNEL_SIZE", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
   ros::NodeHandle("~").param("TRAVEL_DIST_LIN_FACTOR", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
   ros::NodeHandle("~").param("TRAVEL_DIST_QUAD_FACTOR", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
@@ -610,7 +610,7 @@ std::vector<float> HierarchyMapper::getCompleteObjProbs(const std::vector<Object
     for(int r = 0; r < room_type_probs.size(); r++){
       unseen_prob_estimate += room_type_probs[r] * getObjProbGivenRoomPerCell(o, r, OBJ_FILL_FRACTION);
     }
-    complete_obj_probs[o] = complete_obj_map[0].getObjectProb(behind_door_mask, unseen_prob_estimate*0.5, ROOM_ESTIMATED_VOLUME);
+    complete_obj_probs[o] = complete_obj_map[0].getObjectProb(behind_door_mask, unseen_prob_estimate*0.1, ROOM_ESTIMATED_VOLUME);
   }
   return complete_obj_probs;
 }
@@ -711,11 +711,9 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(complete_room_type_map, obj_maps[i], occ_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin());
     std::vector<float> complete_obj_probs = getCompleteObjProbs(complete_obj_map, complete_room_type_probs, behind_door_mask);
 
-
-
     if(i==current_mapper_){
       for(int j = 0; j < complete_obj_map.size(); j++){
-        publishObjProbMap(obj_maps[i][j], j);
+        publishObjProbMap(complete_obj_map[j], j);
       }
       for(int j = 0; j < complete_room_type_map.size(); j++){
         publishRoomTypeProbMap(RoomTypeMap(complete_room_type_map[j], room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),

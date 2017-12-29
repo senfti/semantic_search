@@ -111,7 +111,6 @@ class ObjectMapper{
     std::vector<ObjectMap> maps_;
     boost::mutex maps_mutex_;
     float max_height_ = OBJ_DEFUALT_MAX_HEIGHT;
-    std::vector<float> curr_probs_;
 
     bool expandUntilFitting(const pcl::PointXYZ& min, const pcl::PointXYZ& max);
 

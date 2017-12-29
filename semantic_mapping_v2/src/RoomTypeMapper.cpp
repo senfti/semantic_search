@@ -248,6 +248,67 @@ void RoomTypeMapper::resizeToObjMap(const cv::Point &origin, const cv::Size &siz
 }
 
 
+void applyMinAndMax(std::vector<double>& probs, double min, double max){
+  double sum = 0.0;
+  int clamp_idx = -1;
+  for(int i=0; i<probs.size(); i++){
+    if(probs[i] > max){
+      clamp_idx = i;
+      probs[i] = max;
+    }
+    else
+      sum += probs[i];
+  }
+  if(clamp_idx > 0){
+    for(int i=0; i<probs.size(); i++){
+      if(i!=clamp_idx)
+        probs[i] = probs[i]/sum*(1.0-max);
+    }
+  }
+  sum = 0.0;
+  for(int i=0; i<probs.size(); i++){
+    sum += probs[i];
+  }
+  if(sum < 0.99 || sum > 1.01)
+    std::cout << "1 _______________________________ sum bad " << sum << std::endl;
+
+  std::vector<int> not_low_idx(probs.size());
+  for(int i=0; i<probs.size(); i++){
+    not_low_idx[i] = i;
+  }
+  while(true){
+    std::vector<int> old_not_low_idx = not_low_idx;
+    not_low_idx.clear();
+    bool did_thresh = false;
+    for(int i=0; i<old_not_low_idx.size(); i++){
+      if(probs[old_not_low_idx[i]] < min){
+        probs[old_not_low_idx[i]] = min;
+        did_thresh = true;
+      }
+      else
+        not_low_idx.push_back(old_not_low_idx[i]);
+    }
+    if(!did_thresh)
+      break;
+
+    double rest_sum = 1.0-(probs.size()-not_low_idx.size())*min;
+    sum = 0.0;
+    for(int i=0; i<not_low_idx.size(); i++){
+      sum += probs[not_low_idx[i]];
+    }
+    for(int i=0; i<not_low_idx.size(); i++){
+      probs[not_low_idx[i]] *= rest_sum/sum;
+    }
+  }
+  sum = 0.0;
+  for(int i=0; i<probs.size(); i++){
+    sum += probs[i];
+  }
+  if(sum < 0.99 || sum > 1.01)
+    std::cout << "2 _______________________________ sum bad " << sum << std::endl;
+}
+
+
 void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, int y){
   std::vector<double> probs(prob_maps_.size());
   for(int i=0; i<prob_maps_.size(); i++){
@@ -257,39 +318,14 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
   double sum = 0.0;
   for(int i=0; i<NUM_CLASSES; i++){
     double prob = msg->place_guesses[i].prob;
-    probs[i] = std::min((prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i], double(CELL_MAX_PROB));      // division by ROOM_PRIOR_PROB cancels out with normalization
+    probs[i] = (prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i];      // division by ROOM_PRIOR_PROB cancels out with normalization
     sum += probs[i];
   }
-  std::vector<int> not_low_idx(NUM_CLASSES);
   for(int i=0; i<NUM_CLASSES; i++){
     probs[i] /= sum;
-    not_low_idx[i] = i;
   }
 
-  while(true){
-    std::vector<int> old_not_low_idx = not_low_idx;
-    not_low_idx.clear();
-    bool did_thresh = false;
-    for(int i=0; i<old_not_low_idx.size(); i++){
-      if(probs[old_not_low_idx[i]] <= CELL_MIN_PROB){
-        probs[old_not_low_idx[i]] = CELL_MIN_PROB;
-        did_thresh = true;
-      }
-      else
-        not_low_idx.push_back(old_not_low_idx[i]);
-    }
-    if(!did_thresh)
-      break;
-
-    double rest_sum = 1.0-(NUM_CLASSES-not_low_idx.size())*CELL_MIN_PROB;
-    sum = 0.0;
-    for(int i=0; i<not_low_idx.size(); i++){
-      sum += probs[not_low_idx[i]];
-    }
-    for(int i=0; i<not_low_idx.size(); i++){
-      probs[not_low_idx[i]] *= rest_sum/sum;
-    }
-  }
+  applyMinAndMax(probs, CELL_MIN_PROB, CELL_MAX_PROB);
 
   sum = 0.0;
   for(int i=0; i<prob_maps_.size(); i++){
@@ -390,25 +426,19 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
     }
   }
 
-  double sum = 0.0, sum2 = 0.0;
+  double sum = 0.0;
   for(int i=0; i<probs.size(); i++){
     probs[i] = std::exp(probs[i]);
     sum += probs[i];
   }
-  int clamp_idx = -1;
   for(int i=0; i<probs.size(); i++){
     probs[i] = probs[i]/sum;
-    if(probs[i] > ROOM_MAX_PROB)
-      clamp_idx = i;
-    else
-      sum2 += probs[i];
   }
+  applyMinAndMax(probs, CELL_MIN_PROB, ROOM_MAX_PROB);
+
   std::vector<float> probs_float(prob_maps_.size());
   for(int i=0; i<probs.size(); i++){
-    if(i==clamp_idx)
-      probs_float[i] = ROOM_MAX_PROB;
-    else
-      probs_float[i] = probs[i]/sum2*(1.0-ROOM_MAX_PROB);
+    probs_float[i] = probs[i];
   }
   std::cout << "Room Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
 
