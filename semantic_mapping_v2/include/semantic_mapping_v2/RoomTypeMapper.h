@@ -64,14 +64,14 @@ class RoomTypeMap{
 
 class RoomTypeMapper{
   public:
-    float CELL_MIN_PROB = 0.00015;
-    float CELL_MAX_PROB = 0.8;
-    float ROOM_DEFAULT_RESOLUTION = 2.f;
-    float ASUS_FOV = 29.f*M_PI/180.f;
-    float MIN_DIST = 0.5f;
+    float CELL_MIN_PROB = 0.0005;
+    float CELL_MAX_PROB = 0.75;
+    float ROOM_DEFAULT_RESOLUTION = 4.f;
+    float ASUS_FOV = 29.f;
+    float MIN_DIST = 1.f;
     float MAX_DIST = 4.0f;
-    float CELL_HIT_MISS_RATIO = 1.3;
-    float ROOM_HIT_MISS_RATIO = 1.3;
+    float CELL_HIT_MISS_RATIO = 5.0;
+    float ROOM_HIT_MISS_RATIO = 1.2;
 
     int NUM_CLASSES = 0;
     float ROOM_PRIOR_PROB = 1.f/82;
@@ -94,6 +94,7 @@ class RoomTypeMapper{
     RoomTypeMapper(const std::vector<cv::Mat_<float>>& prob_maps, const cv::Mat_<uchar>& seen_map, const cv::Point& origin, float resolution, int base_size);
 
     void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
+    void resizeToObjMap(const cv::Point& origin, const cv::Size& size);
 
     //std::vector<double> getProbs() const { return probs_; }
     std::vector<std::string> getNames() const { return names_; }

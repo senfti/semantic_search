@@ -47,6 +47,7 @@ class ObjectMap{
     void insertProb(float x, float y, float z, float prob, float prior, float V_H, float V_M, float min, float max) {
       insertProb(getXPixel(x), getYPixel(y), getZPixel(z), prob, prior, V_H, V_M, min, max);
     }
+    void applyObjAppearVanish(float still_there_prob, float got_there_prob);
 
     float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
     float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
@@ -96,12 +97,15 @@ class ObjectMapper{
     float OBJ_MIN_PROB = 0.0001f;
     float OBJ_MAX_PROB = 0.9f;
 
-    float OBJ_DEFAULT_RESOLUTION = 3.f;
-    float OBJ_DEFUALT_MAX_HEIGHT = 2.f;
+    float OBJ_DEFAULT_RESOLUTION = 4.f;
+    float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
     float ROOM_EXPECTED_SIZE = 32.f;
 
-    float V_H = 0.9;
-    float V_M = 0.45;
+    float V_H = 0.3;
+    float V_M = 0.0002;
+
+    float STILL_THERE_PROB = 0.9f;
+    float GOT_THERE_PROB = 0.0005f;
 
   private:
     std::vector<ObjectMap> maps_;
@@ -114,7 +118,8 @@ class ObjectMapper{
   public:
     ObjectMapper();
     ObjectMapper(const ObjectMapper& rhs);
-    void addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z);
+    std::pair<cv::Point,cv::Size> addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z);
+    void applyObjAppearVanish();
 
     visualization_msgs::MarkerArray getProbMsg(int id) {
       boost::lock_guard<boost::mutex> lock(maps_mutex_);

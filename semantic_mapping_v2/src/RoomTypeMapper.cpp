@@ -238,6 +238,16 @@ bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
 }
 
 
+void RoomTypeMapper::resizeToObjMap(const cv::Point &origin, const cv::Size &size){
+  int top = std::max(origin.y-prob_maps_[0].getOrigin().y, 0);
+  int left = std::max(origin.x-prob_maps_[0].getOrigin().x, 0);
+  int bottom = std::max((size.height-origin.y)-(prob_maps_[0].getHeight()-prob_maps_[0].getOrigin().y), 0);
+  int right = std::max((size.width-origin.x)-(prob_maps_[0].getWidth()-prob_maps_[0].getOrigin().x), 0);
+  for(auto& map : prob_maps_)
+    map.resize(left, right, top, bottom, ROOM_PRIOR_PROB);
+}
+
+
 void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, int y){
   std::vector<double> probs(prob_maps_.size());
   for(int i=0; i<prob_maps_.size(); i++){

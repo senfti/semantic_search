@@ -51,6 +51,8 @@ class HierarchyMapper{
     ros::ServiceServer obj_prob_srv_;
     ros::ServiceServer room_type_prob_srv_;
     ros::ServiceServer hierarchy_srv_;
+    std::vector<semantic_mapping_v2::RoomMsg> last_room_msgs_;
+    std::vector<bool> room_changed_;
 
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster* tfB_;
@@ -61,7 +63,7 @@ class HierarchyMapper{
 
     double transform_publish_period_;
     double publish_period_;
-    int debug_publish_interval_ = std::numeric_limits<int>::max();
+    int debug_publish_interval_ = 10;//std::numeric_limits<int>::max();
     double MIN_MAP_SWITCH_TIME = 2.0;
 
     float ROOM_CELL_OBJ_KERNEL_SIZE = 4.f;
@@ -73,6 +75,7 @@ class HierarchyMapper{
     float TRAVEL_DIST_LIN_FACTOR = 4.f;
     float TRAVEL_DIST_QUAD_FACTOR = 0.5f;
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
+    float ROOM_MAX_PROB = 0.8f;
 
   public:
     HierarchyMapper();

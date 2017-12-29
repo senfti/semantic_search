@@ -150,6 +150,13 @@ void ObjectMap::insertMax(int x, int y, int z, float prob){
 }
 
 
+void ObjectMap::applyObjAppearVanish(float still_there_prob, float got_there_prob){
+  for(int z=0; z<getZSteps(); z++){
+    prob_maps_[z] = prob_maps_[z]*still_there_prob + (1.f-prob_maps_[z])*got_there_prob;
+  }
+}
+
+
 visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
   static int seq=0;
   visualization_msgs::Marker def;
@@ -277,6 +284,8 @@ ObjectMapper::ObjectMapper(){
   private_nh.param("ObjectMapper/V_H", V_H, V_H);
   private_nh.param("ObjectMapper/V_M", V_M, V_M);
   private_nh.param("ObjectMapper/ROOM_EXPECTED_SIZE", ROOM_EXPECTED_SIZE, ROOM_EXPECTED_SIZE);
+  private_nh.param("ObjectMapper/STILL_THERE_PROB", STILL_THERE_PROB, STILL_THERE_PROB);
+  private_nh.param("ObjectMapper/GOT_THERE_PROB", GOT_THERE_PROB, GOT_THERE_PROB);
 
   std::cout << V_H << " " << V_M << " " << OBJ_PRIOR_PROB << " " << std::endl;
 }
@@ -300,9 +309,9 @@ ObjectMapper::ObjectMapper(const ObjectMapper& rhs){
 }
 
 
-void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z){
+std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z){
   if(cloud.empty())
-    return;
+    return std::pair<cv::Point,cv::Size>(cv::Point(-1,-1), cv::Size(-1,-1));
 
   curr_probs_.clear();
   if(maps_.empty()){
@@ -343,6 +352,13 @@ void ObjectMapper::addCloud(const pcl::PointCloud<pcl::PointXYZ> &cloud, const v
       }
     }
   }
+  return std::pair<cv::Point,cv::Size>(maps_[0].getOrigin(), cv::Size(maps_[0].getWidth(), maps_[0].getHeight()));
+}
+
+
+void ObjectMapper::applyObjAppearVanish(){
+  for(auto& m : maps_)
+    m.applyObjAppearVanish(STILL_THERE_PROB, GOT_THERE_PROB);
 }
 
 

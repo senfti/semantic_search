@@ -274,7 +274,8 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     Eigen::Matrix4f sensorToWorld;
     pcl_ros::transformAsMatrix(getParticlePose3D(i, msg->header.stamp), sensorToWorld);
     pcl::transformPointCloud(cloud, cloud_trans, sensorToWorld);
-    obj_mappers_[i]->addCloud(cloud_trans, msg->objects, m_pointcloudMinZ, m_pointcloudMaxZ);
+    std::pair<cv::Point, cv::Size> obj_size = obj_mappers_[i]->addCloud(cloud_trans, msg->objects, m_pointcloudMinZ, m_pointcloudMaxZ);
+    room_type_mappers_[i]->resizeToObjMap(obj_size.first, obj_size.second);
   }
 
   ROS_INFO("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
@@ -450,6 +451,7 @@ void RoomMapper::deactivate(){
   door_mappers_.resize(1);
   obj_mappers_.resize(1);
   room_type_mappers_.resize(1);
+  obj_mappers_[0]->applyObjAppearVanish();
 }
 
 

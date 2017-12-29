@@ -76,6 +76,8 @@
     <param name="ObjectMapper/V_M" value="0.0002" />  
     <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
     <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="32.0" />
+    <param name="ObjectMapper/STILL_THERE_PROB" value="0.9" />
+    <param name="ObjectMapper/GOT_THERE_PROB" value="0.0005" />
 
     <param name="transform_publish_period" value="0.05" />   
     <param name="publish_period" value="0.5" />
@@ -90,5 +92,6 @@
     <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.5" />
     <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.5" />
     <param name="SEARCH_TIME_PER_GRID_CELL" value="0.05" />
+    <param name="ROOM_MAX_PROB" value="0.8" />
   </node>
 </launch>
