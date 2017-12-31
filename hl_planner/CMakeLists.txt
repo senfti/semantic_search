@@ -19,7 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
 )
-add_definitions( -std=c++11 -O3 -Wreturn-type)
+find_package(Boost REQUIRED graph)
+add_definitions( -std=c++11 -g -Wreturn-type)
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
@@ -64,9 +65,10 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp src/Planner.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/Planner.cpp include/hl_planner/State.h include/hl_planner/Action.h include/hl_planner/Plan.h include/hl_planner/HierarchyMap.h src/HierarchyMap.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 if(catkin_EXPORTED_TARGETS)

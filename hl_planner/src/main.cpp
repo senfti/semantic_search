@@ -5,10 +5,47 @@
 #include <ros/ros.h>
 #include <hl_planner/Planner.h>
 
+semantic_mapping_v2::RoomMsg getRoom(int id, float single_view_obj_probs, float obj_probs, float single_view_search_time, float search_time, std::vector<short> links, float to_link_travel_time){
+  semantic_mapping_v2::RoomMsg room;
+  room.id = id;
+  room.single_view_obj_probs = std::vector<float>(80, single_view_obj_probs);
+  room.obj_probs = std::vector<float>(80, obj_probs);
+  room.single_view_search_time = single_view_search_time;
+  room.search_time = search_time;
+  room.links = links;
+  room.to_link_travel_times = std::vector<float>(links.size(), to_link_travel_time);
+
+  return room;
+}
+
+semantic_mapping_v2::HierarchyLinkMsg getLink(int r1, int r2, std::vector<float> dists){
+  semantic_mapping_v2::HierarchyLinkMsg link;
+  link.room1 = r1;
+  link.room2 = r2;
+  link.dists = dists;
+
+  return link;
+}
+
 int main(int argc, char** argv){
   ros::init(argc, argv, "hl_planner");
-  Planner planner;
-  planner.exploreAll();
+  //Planner planner;
+  //planner.exploreAll();
+
+  semantic_mapping_v2::HierarchySrvResponse res;
+  res.rooms.push_back(getRoom(0, 0.1f, 0.5f, 20.f, 200.f, {0,1}, 19.f));
+  res.rooms.push_back(getRoom(1,0.04f,0.05f,20.f,200.f,{0,2}, 17.f));
+  res.rooms.push_back(getRoom(2,0.1f,0.5f,50.f,500.f,{1}, 16.f));
+  res.rooms.push_back(getRoom(3,0.25f,0.3f,10.f,10000.f,{2,3}, 15.f));
+  res.links.push_back(getLink(0,1,{0.f,20.f,30.f,std::numeric_limits<float>::max()}));
+  res.links.push_back(getLink(0,2,{20.f,0.f,std::numeric_limits<float>::max(),std::numeric_limits<float>::max()}));
+  res.links.push_back(getLink(1,3,{30.f,std::numeric_limits<float>::max(),0.f,10.f}));
+  res.links.push_back(getLink(3,-1,{std::numeric_limits<float>::max(),std::numeric_limits<float>::max(),10.f,0.f}));
+  res.curr_room = 0;
+  HierarchyMap m(res,0);
+  Planner p;
+  State s(m, res.curr_room);
+  p.generatePlan(m,s);
 
   return 0;
 }

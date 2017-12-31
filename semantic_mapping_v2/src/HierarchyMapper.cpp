@@ -628,6 +628,12 @@ std::vector<float> HierarchyMapper::getTravelTimes(const std::vector<Door> &door
 }
 
 
+float HierarchyMapper::getTravelTime(const geometry_msgs::Pose &door1, const geometry_msgs::Pose &door2){
+  double dist_2 = std::pow(door1.position.x-door2.position.x,2) + std::pow(door1.position.y-door2.position.y,2) + std::pow(door1.position.z-door2.position.z,2);
+  return std::sqrt(dist_2)*TRAVEL_DIST_LIN_FACTOR + dist_2*TRAVEL_DIST_QUAD_FACTOR;
+}
+
+
 inline bool isOcc(int x, int y, const nav_msgs::OccupancyGrid& map) {
   return map.data[y * map.info.width + x] > 0;
 }
@@ -685,6 +691,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     base_obj_probs.push_back(room_mapper_[i]->getObjectProbs(order));
     room_changed_[i] = false;
   }
+  res.curr_room = current_mapper_;
   maps_lock.unlock();
 
   for(int i=0; i<grid_maps.size(); i++){
@@ -739,8 +746,9 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     room.room_type_probs_2 = base_room_type_probs[i];
     room.obj_probs_2 = base_obj_probs[i];
     room.single_view_obj_probs = single_view_max_probs;
-    room.travel_times = getTravelTimes(doors[i]);
-    room.single_view_search_time = (room.travel_times.empty() ? 10.f : std::accumulate(room.travel_times.begin(), room.travel_times.end(), 0.f) / room.travel_times.size() / 2.f);
+    //room.travel_times = getTravelTimes(doors[i]);
+    room.to_link_travel_times.resize(doors[i].size(), 20.f);
+    room.single_view_search_time = (room.to_link_travel_times.empty() ? 10.f : std::accumulate(room.to_link_travel_times.begin(), room.to_link_travel_times.end(), 0.f) / room.to_link_travel_times.size());
     room.search_time = getSearchTime(grid_maps[i]);
     last_room_msgs[i] = room;
     res.rooms.push_back(room);
@@ -778,6 +786,21 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       }
     }
   }
+
+  for(int i=0; i<res.links.size(); i++){
+    res.links[i].dists.resize(res.links.size(), std::numeric_limits<float>::max());
+    for(int j=0; j<res.links.size(); j++){
+      if(res.links[i].room1 == res.links[j].room1)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door1_pose, res.links[j].door1_pose);
+      else if(res.links[i].room1 == res.links[j].room2)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door1_pose, res.links[j].door2_pose);
+      else if(res.links[i].room2 == res.links[j].room1)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door2_pose, res.links[j].door1_pose);
+      else if(res.links[i].room2 != -1 && res.links[i].room2 == res.links[j].room2)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door2_pose, res.links[j].door2_pose);
+    }
+  }
+
   maps_lock.lock();
   last_room_msgs_ = last_room_msgs;
   maps_lock.unlock();
