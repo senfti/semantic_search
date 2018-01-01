@@ -50,7 +50,7 @@ class RoomMapper : public SlamGMapping{
     ~RoomMapper();
 
     virtual void cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud);
-    void doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
+    bool doorCb(const geometry_msgs::PoseArray::ConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
 
     void doOctomapping();

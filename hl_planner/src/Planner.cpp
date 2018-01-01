@@ -197,79 +197,16 @@ void Planner::run(int obj){
 }
 
 
-//bool Planner::exploreRoom(semantic_mapping_v2::HierarchyLinkMsg link){
-//  ros::Rate rate(10.0);
-//  ros::Rate wait_rate(0.5);
-//  int this_room = num_visited_rooms_;
-//
-//  geometry_msgs::Pose pose = link.door1_pose;
-//  double angle = 2*std::acos(pose.orientation.w);
-//  pose.position.x += 0.2*std::cos(angle);
-//  pose.position.y += 0.2*std::sin(angle);
-//  sendGoal(pose, 0, num_visited_rooms_);
-//  while(curr_goal_.action != -1){
-//    ros::spinOnce();
-//    rate.sleep();
-//  }
-//  if(last_state_.state_ != actionlib::SimpleClientGoalState::SUCCEEDED){
-//    ROS_ERROR("MOVE TO ROOM FAILED");
-//    return false;
-//  }
-//  num_visited_rooms_++;
-//  wait_rate.sleep();
-//
-//  sendGoal(geometry_msgs::Pose(), 1, 0);
-//  while(curr_goal_.action != -1){
-//    ros::spinOnce();
-//  }
-//  if(last_state_.state_ != actionlib::SimpleClientGoalState::SUCCEEDED){
-//    ROS_ERROR("EXPLORE FAILED");
-//    return false;
-//  }
-//
-//  semantic_mapping_v2::HierarchySrvRequest req;
-//  semantic_mapping_v2::HierarchySrvResponse res;
-//  if(!hierarchy_service_client_.call(req, res)){
-//    ROS_ERROR("SEMANTIC MAP CALL FAILED");
-//    return false;
-//  }
-//
-//  for(const auto& l : res.links){
-//    if(l.room1 == this_room && l.room2 < 0){
-//      if(!exploreRoom(link))
-//        return false;
-//    }
-//  }
-//
-//  if(!hierarchy_service_client_.call(req, res)){
-//    ROS_ERROR("SEMANTIC MAP CALL FAILED");
-//    return false;
-//  }
-//
-//  semantic_mapping_v2::HierarchyLinkMsg link_updated;
-//  for(const auto& l : res.links){
-//    if(link.room1 == l.room1 && l.room2 == this_room){
-//      link_updated = l;
-//    }
-//  }
-//  if(link_updated.room1 < 0){
-//    ROS_ERROR("LINK NOT FOUND AGAIN");
-//    return false;
-//  }
-//
-//  wait_rate.sleep();
-//  pose = link_updated.door2_pose;
-//  angle = 2*std::acos(pose.orientation.w);
-//  pose.position.x += 0.2*std::cos(angle);
-//  pose.position.y += 0.2*std::sin(angle);
-//  sendGoal(pose, 0, link_updated.room2);
-//  while(curr_goal_.action != -1){
-//    ros::spinOnce();
-//  }
-//  if(last_state_.state_ != actionlib::SimpleClientGoalState::SUCCEEDED){
-//    ROS_ERROR("MOVE BACK TO ROOM FAILED");
-//    return false;
-//  }
-//
-//  return true;
-//}
+void Planner::justPlan(int obj){
+  std::cout << "Start just plan" << std::endl;
+  state_ = State();
+  semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);if(hierarchy.rooms.empty())
+    return;
+
+  std::cout << "Got " << hierarchy.rooms.size() << " rooms" << std::endl;
+
+  HierarchyMap graph_map(hierarchy, obj);
+  state_.updateState(graph_map, hierarchy.curr_room);
+
+  Plan plan = generatePlan(graph_map, state_);
+}

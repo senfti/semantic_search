@@ -15,7 +15,6 @@
 
 class Planner{
   public:
-    double PLANNER_RATE = 0.2;
     int HIERARCHY_MAX_TRIES = 5;
 
   private:
@@ -36,6 +35,7 @@ class Planner{
 
     //bool exploreRoom(semantic_mapping_v2::HierarchyLinkMsg link);
     void run(int obj);
+    void justPlan(int obj);
 
     actionlib::SimpleClientGoalState sendGoal(const Action& action);
 };

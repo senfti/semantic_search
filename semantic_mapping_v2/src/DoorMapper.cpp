@@ -128,12 +128,12 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
   if(best_door >= 0){
     boost::lock_guard<boost::mutex> lock(doors_mutex_);
     doors_[best_door].updatePose(pose);
-    return true;
+    return false;
   }
 
   boost::lock_guard<boost::mutex> lock(doors_mutex_);
   doors_.push_back(Door(this_room_, pose, -1, new_id, -1, 1));
-  return false;
+  return true;
 }
 
 

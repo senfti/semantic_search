@@ -5,6 +5,7 @@
 #include "semantic_mapping_v2/HierarchyMapper.h"
 #include <tf/transform_datatypes.h>
 #include <semantic_mapping_v2/RoomSwitchMsg.h>
+#include <std_msgs/Int8.h>
 
 HierarchyMapper::HierarchyMapper()
   : service_spinner_(1, &service_queue_)
@@ -24,6 +25,7 @@ HierarchyMapper::HierarchyMapper()
   marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("occupied_cells_vis_array", 1, true);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
+  door_found_pub_ = nh_.advertise<std_msgs::Int8>("door_found", 1);
 
   ros::NodeHandle service_nh;
   service_nh.setCallbackQueue(&service_queue_);
@@ -160,7 +162,8 @@ void HierarchyMapper::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan
 
 void HierarchyMapper::doorPoseCb(const geometry_msgs::PoseArray::ConstPtr &msg){
   if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    room_mapper_[current_mapper_]->doorCb(msg);
+    if(room_mapper_[current_mapper_]->doorCb(msg))
+      door_found_pub_.publish(std_msgs::Int8());
     room_changed_[current_mapper_] = true;
   }
 }

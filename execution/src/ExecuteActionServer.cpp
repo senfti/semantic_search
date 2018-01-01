@@ -145,7 +145,7 @@ void ExecuteActionServer::doExplore(){
       ;
     }
     execution::ExecuteResult result;
-    result.result_number = 0;
+    result.result_number = (explorer_.doorFoundStopped() ? 1 : 0);
     action_server_.setSucceeded(result, "SUCCESS");
     goal_.action = -1;
     return;

@@ -10,6 +10,7 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)
 {
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
+  door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
 
   cv::Mat_<uchar> mat(VIEW_DIST*4, VIEW_DIST*4, uchar(0));
@@ -30,6 +31,7 @@ geometry_msgs::Pose Explorer::getNextFrontier(){
 
 void Explorer::start(){
   running_ = true;
+  door_found_stopped_ = false;
   finished_ = false;
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(EXPLORE_MAX_ROT_VEL)).c_str());
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(EXPLORE_MAX_TRANS_VEL)).c_str());
@@ -41,6 +43,7 @@ void Explorer::stop(){
   if(running_)
     ROS_INFO("EXPLORATION STOPPED");
   running_ = false;
+  door_found_stopped_ = false;
   finished_ = false;
 }
 
@@ -80,6 +83,12 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
 //  std::cout << (running_ ? "run" : "stop") << std::endl;
   if(running_)
     calcFrontier();
+}
+
+
+void Explorer::doorFoundCb(const std_msgs::Int8& msg){
+  door_found_stopped_ = true;
+  finished_ = true;
 }
 
 
