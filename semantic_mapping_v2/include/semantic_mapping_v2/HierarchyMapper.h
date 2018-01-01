@@ -14,6 +14,7 @@
 #include <semantic_mapping_v2/ObjectProbSrv.h>
 #include <semantic_mapping_v2/RoomTypeMapSrv.h>
 #include <semantic_mapping_v2/RoomTypeProbSrv.h>
+#include <std_msgs/Int8.h>
 
 class HierarchyMapper{
   protected:
@@ -26,6 +27,7 @@ class HierarchyMapper{
     ros::Subscriber cloud_sub_;
     ros::Subscriber door_pose_sub_;
     ros::Subscriber vision_sub_;
+    ros::Subscriber current_searched_obj_sub_;
 
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
@@ -40,6 +42,7 @@ class HierarchyMapper{
     ros::Publisher particle_pose_pub_;
     std::vector<ros::Publisher> base_obj_prob_pub_;
     std::vector<ros::Publisher> base_room_prob_pub_;
+    ros::Publisher obj_found_pub_;
 
     ros::CallbackQueue service_queue_;
     ros::AsyncSpinner service_spinner_;
@@ -77,6 +80,8 @@ class HierarchyMapper{
     float TRAVEL_DIST_QUAD_FACTOR = 0.5f;
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
 
+    int current_searched_obj_ = -1;
+
   public:
     HierarchyMapper();
     ~HierarchyMapper();
@@ -88,6 +93,7 @@ class HierarchyMapper{
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     void doorPoseCb(const geometry_msgs::PoseArray::ConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
+    void currentSearchedObjCb(const std_msgs::Int8& msg);
 
     bool gmapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
     bool mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);

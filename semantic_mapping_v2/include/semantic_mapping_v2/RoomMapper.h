@@ -75,6 +75,12 @@ class RoomMapper : public SlamGMapping{
     void setDoorRoom(int id, int other_room, int counterpart_id);
     geometry_msgs::PoseArray getDoorPoseMsg() { return door_mappers_[getBestParticleIdx()]->getDoorPoseMsg(); }
     Door droveThroughDoor() { return door_mappers_[getBestParticleIdx()]->droveThroughDoor(getBestParticlePose3D(ros::Time::now())); }
+    bool objFound() {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return obj_mappers_[getBestParticleIdx()]->objectFound(*octo_maps_[getBestParticleIdx()], door_mappers_[getBestParticleIdx()]->getDoors());
+    }
+
+    void setCurrentSearchedObj(int obj);
 
     nav_msgs::OccupancyGrid getMap() {
       boost::mutex::scoped_lock lock(obstacle_map_mutex_);

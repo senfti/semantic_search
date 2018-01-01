@@ -157,6 +157,14 @@ void ObjectMap::applyObjAppearVanish(float still_there_prob, float got_there_pro
 }
 
 
+void ObjectMap::resetProbs(float prior){
+  for(int z=0; z<getZSteps(); z++){
+    count_maps_[z] = cv::Mat_<uchar>(count_maps_[z].rows, count_maps_[z].cols, uchar(0));
+    prob_maps_[z] = cv::Mat_<float>(prob_maps_[z].rows, prob_maps_[z].cols, prior);
+  }
+}
+
+
 visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
   static int seq=0;
   visualization_msgs::Marker def;
@@ -240,6 +248,21 @@ float ObjectMap::getObjectProb(const cv::Mat_<float>& behind_door_mask, float pr
 }
 
 
+float ObjectMap::getMaxObjectProb(const ObjectMap &occupancy_map) const{
+  float max_prob = 0.0;
+  for(int x=0; x<getWidth(); x++){
+    for(int y=0; y<getHeight(); y++){
+      for(int z=0; z<getZSteps(); z++){
+        if(count_maps_[z](y,x) > uchar(0)){
+          max_prob = std::max(max_prob, getProb(x, y, z)*occupancy_map.getProb(x,y,z));
+        }
+      }
+    }
+  }
+  return max_prob;
+}
+
+
 cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps(); z++){
@@ -274,7 +297,9 @@ semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
 
 
 
-ObjectMapper::ObjectMapper(){
+ObjectMapper::ObjectMapper()
+  : current_search_map_(OBJ_DEFAULT_RESOLUTION, 4.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB)
+{
   ros::NodeHandle private_nh("~");
   private_nh.param("ObjectMapper/OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
   private_nh.param("ObjectMapper/OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
@@ -291,7 +316,9 @@ ObjectMapper::ObjectMapper(){
 }
 
 
-ObjectMapper::ObjectMapper(const ObjectMapper& rhs){
+ObjectMapper::ObjectMapper(const ObjectMapper& rhs)
+  : current_search_map_(rhs.current_search_map_)
+{
   OBJ_PRIOR_PROB = rhs.OBJ_PRIOR_PROB;
   OBJ_MIN_PROB = rhs.OBJ_MIN_PROB;
   OBJ_MAX_PROB = rhs.OBJ_MAX_PROB;
@@ -305,6 +332,7 @@ ObjectMapper::ObjectMapper(const ObjectMapper& rhs){
 
   maps_ = rhs.maps_;
   max_height_ = rhs.max_height_;
+  current_search_obj_ = rhs.current_search_obj_;
 }
 
 
@@ -324,6 +352,7 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
   max_z = std::min(max_z, max_height_-0.001f);
 
   std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
+  ObjectMap curr_tmp(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f);
 
   for(int i=0; i<cloud.size(); i++){
     if(cloud[i].z>=min_z && cloud[i].z<=max_z){
@@ -336,6 +365,12 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
           tmp[m].insertMax(x,y,z,msg.probs[b*msg.num_objects+m]);
         }
       }
+      if(current_search_obj_ >= 0){
+        curr_tmp.insertMax(x,y,z,OBJ_MIN_PROB);
+        for(const auto& b : msg.samples[i].boxes){
+          curr_tmp.insertMax(x,y,z,msg.probs[b*msg.num_objects+current_search_obj_]);
+        }
+      }
     }
   }
 
@@ -345,6 +380,9 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
         if(tmp[0].getProb(x,y,z) >= 0.f){
           for(int m=0; m<tmp.size(); m++){
             maps_[m].insertProb(x,y,z,tmp[m].getProb(x,y,z), OBJ_PRIOR_PROB, V_H, V_M, OBJ_MIN_PROB, OBJ_MAX_PROB);
+          }
+          if(current_search_obj_ >= 0){
+            current_search_map_.insertProb(x,y,z,curr_tmp.getProb(x,y,z), OBJ_PRIOR_PROB, V_H, V_M, OBJ_MIN_PROB, OBJ_MAX_PROB);
           }
         }
       }
@@ -357,6 +395,13 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
 void ObjectMapper::applyObjAppearVanish(){
   for(auto& m : maps_)
     m.applyObjAppearVanish(STILL_THERE_PROB, GOT_THERE_PROB);
+}
+
+
+void ObjectMapper::resetCurrentSearchMap(int obj){
+  current_search_obj_ = obj;
+  current_search_map_ = maps_[0];
+
 }
 
 
@@ -382,6 +427,7 @@ bool ObjectMapper::expandUntilFitting(const pcl::PointXYZ& min, const pcl::Point
   boost::lock_guard<boost::mutex> lock(maps_mutex_);
   for(auto& map : maps_)
     map.resize(left, right, top, bottom, OBJ_PRIOR_PROB);
+  current_search_map_.resize(left, right, top, bottom, OBJ_PRIOR_PROB);
   return true;
 }
 
@@ -437,6 +483,43 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
 
   order = ordered(probs);
   return probs;
+}
+
+
+bool ObjectMapper::objectFound(OctoMapper& octo_mapper, const std::vector<Door>& doors){
+  if(current_search_obj_ < 0)
+    return false;
+
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+  ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
+  cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
+  for(int x=0; x<behind_door.cols; x++){
+    for(int y=0; y<behind_door.rows; y++){
+      for(const auto& door : doors){
+        if(door.isBehindDoor(maps_[0].getXWorld(x), maps_[0].getYWorld(y))){
+          behind_door(y,x) = 255;
+          break;
+        }
+      }
+    }
+  }
+
+  float scale_2 = 1.f/(maps_[0].getResolution()*2);
+  for(int x=0; x<occ_map.getWidth(); x++){
+    for(int y=0; y<occ_map.getHeight(); y++){
+      if(behind_door(y,x) == 0){
+        for(int z=0; z<occ_map.getZSteps(); z++){
+          geometry_msgs::Point p;
+          p.x = maps_[0].getXWorld(x);
+          p.y = maps_[0].getYWorld(y);
+          p.z = maps_[0].getZWorld(z);
+          occ_map.insertMax(x,y,z,octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+        }
+      }
+    }
+  }
+
+  return current_search_map_.getMaxObjectProb(occ_map) >= FOUND_THRESH;
 }
 
 

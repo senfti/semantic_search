@@ -82,6 +82,9 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
     }
   }
 
+  if(room_idx == 1)
+    not_explored_[0] = true;
+
   std::vector<std::vector<float>> edges;
   edges.resize(response.links.size());
   for(int i=0; i<response.links.size(); i++){
