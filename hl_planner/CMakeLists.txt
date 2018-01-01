@@ -68,7 +68,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp src/Planner.cpp include/hl_planner/State.h include/hl_planner/Action.h include/hl_planner/Plan.h include/hl_planner/HierarchyMap.h src/HierarchyMap.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/Planner.cpp include/hl_planner/Planner.h include/hl_planner/State.h include/hl_planner/Action.h include/hl_planner/Plan.h include/hl_planner/HierarchyMap.h src/HierarchyMap.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 if(catkin_EXPORTED_TARGETS)

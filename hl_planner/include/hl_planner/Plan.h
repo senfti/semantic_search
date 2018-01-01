@@ -48,7 +48,7 @@ class SearchPlan{
       std::string s;
       for(const auto& a : actions_)
          s = s + (a.type_ == SearchAction::SEARCH ? "F" : "Q") + std::to_string(a.target_) + " ";
-      s = s + "\n" + "exp: " + std::to_string(expected_search_time_) + ", full: " + std::to_string(full_search_time_) + ", prob: " + std::to_string(found_prob_);
+      s = s + "\t\t" + "exp: " + std::to_string(expected_search_time_) + ", full: " + std::to_string(full_search_time_) + ", prob: " + std::to_string(found_prob_);
       return s;
     }
 };
@@ -56,9 +56,17 @@ class SearchPlan{
 class Plan{
   public:
     std::list<Action> actions_;
+    std::list<State> states_;
 
-    Plan() {}
-    Plan(const SearchPlan& search_plan){}
+    bool finished() const { return actions_.empty(); }
+
+    std::string getPlanString() {
+      std::vector<std::string> type_strings = {"M", "E", "S", "Q"};
+      std::string s;
+      for(const auto& a : actions_)
+        s = s + type_strings[a.type_] + std::to_string(a.target_) + " ";
+      return s;
+    }
 };
 
 #endif //HL_PLANNER_PLAN_H

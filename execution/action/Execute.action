@@ -4,8 +4,6 @@ geometry_msgs/Pose pose
 int16 target
 ---
 # Define the result
-int16 error_number
-int16 num_reached_poses
+int16 result_number
 ---
 # Define a feedback message
-int16 num_reached_poses

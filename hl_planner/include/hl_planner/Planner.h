@@ -23,9 +23,6 @@ class Planner{
     actionlib::SimpleActionClient<execution::ExecuteAction> execute_action_client_;
     ros::ServiceClient hierarchy_service_client_;
 
-    execution::ExecuteGoal curr_goal_;
-    actionlib::SimpleClientGoalState last_state_;
-
     State state_;
 
     semantic_mapping_v2::HierarchySrvResponse getHierarchy(int max_tries);
@@ -33,17 +30,14 @@ class Planner{
   public:
     Planner();
 
-    void activeCb();
-    void feedbackCb(const execution::ExecuteFeedbackConstPtr& feedback);
-    void doneCb(const actionlib::SimpleClientGoalState& state, const execution::ExecuteResultConstPtr& result);
-
     SearchPlan greedyPlan(const HierarchyMap& graph, const State& state);
+    Plan generateFullPlan(const SearchPlan &search_plan, State state, const HierarchyMap& graph);
     Plan generatePlan(const HierarchyMap& graph, const State& state);
 
     //bool exploreRoom(semantic_mapping_v2::HierarchyLinkMsg link);
     void run(int obj);
 
-    void sendGoal(const geometry_msgs::Pose& pose, int action, int target);
+    actionlib::SimpleClientGoalState sendGoal(const Action& action);
 };
 
 #endif //HL_PLANNER_PLANNER_H

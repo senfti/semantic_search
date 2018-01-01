@@ -57,7 +57,7 @@ void ExecuteActionServer::goalCb(){
 void ExecuteActionServer::preemptCb(){
   ROS_INFO("Preempted");
   execution::ExecuteResult result;
-  result.error_number = 3;
+  result.result_number = -3;
   action_server_.setPreempted(result);
   action_client_.cancelAllGoals();
   goal_.action = -1;
@@ -78,8 +78,7 @@ void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgCo
   else{
     action_client_.cancelAllGoals();
     execution::ExecuteResult result;
-    result.error_number = 3 + (goal_.action != 0 ? 1 : 0) + (msg->new_room != goal_.target ? 2 : 0);
-    result.num_reached_poses = 0;
+    result.result_number = -3 - (goal_.action != 0 ? 1 : 0) - (msg->new_room != goal_.target ? 2 : 0);
     action_server_.setAborted(result, "ABORTED");
     goal_.action = -1;
     move_base_state_ = MoveBaseState::STOPPED;
@@ -105,20 +104,17 @@ void ExecuteActionServer::doMoveTo(){
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
       execution::ExecuteResult result;
-      result.error_number = 0;
-      result.num_reached_poses = 1;
+      result.result_number = 0;
       action_server_.setSucceeded(result, "SUCCESS");
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       execution::ExecuteResult result;
-      result.error_number = 1;
-      result.num_reached_poses = 0;
+      result.result_number = -1;
       action_server_.setPreempted(result, "PREEMPTED");
     }
     else{
       execution::ExecuteResult result;
-      result.error_number = 2;
-      result.num_reached_poses = 0;
+      result.result_number = -2;
       action_server_.setAborted(result, "ABORTED");
     }
     goal_.action = -1;
@@ -149,8 +145,7 @@ void ExecuteActionServer::doExplore(){
       ;
     }
     execution::ExecuteResult result;
-    result.error_number = 0;
-    result.num_reached_poses = 0;
+    result.result_number = 0;
     action_server_.setSucceeded(result, "SUCCESS");
     goal_.action = -1;
     return;
@@ -203,8 +198,7 @@ void ExecuteActionServer::doExplore(){
       if(explorer_.did_abort_){
         ROS_INFO("ABORTED completely");
         execution::ExecuteResult result;
-        result.error_number = 2;
-        result.num_reached_poses = 0;
+        result.result_number = -2;
         action_server_.setAborted(result, "ABORTED");
         goal_.action = -1;
       }
@@ -239,8 +233,7 @@ void ExecuteActionServer::doStartRotation(){
     else{
       if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
         execution::ExecuteResult result;
-        result.error_number = 0;
-        result.num_reached_poses = start_rotation_state_machine_.STEPS;
+        result.result_number = 0;
         action_server_.setSucceeded(result, "SUCCESS");
         goal_.action = -1;
       }
@@ -262,15 +255,13 @@ void ExecuteActionServer::doStartRotation(){
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       execution::ExecuteResult result;
-      result.error_number = 1;
-      result.num_reached_poses = start_rotation_state_machine_.state_;
+      result.result_number = -1;
       action_server_.setPreempted(result, "PREEMPTED");
       goal_.action = -1;
     }
     else{
       execution::ExecuteResult result;
-      result.error_number = 2;
-      result.num_reached_poses = start_rotation_state_machine_.state_;
+      result.result_number = -2;
       action_server_.setAborted(result, "ABORTED");
       goal_.action = -1;
     }

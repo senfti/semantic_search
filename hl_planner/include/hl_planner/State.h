@@ -27,6 +27,8 @@ class State{
       updateState(graph, current_room);
     }
 
+    bool fullySearched() const { return searchable_.empty(); }
+
     void updateState(const HierarchyMap& graph, int current_room){
       current_room_ = current_room;
       if(graph.search_prob_.size() > num_rooms_){
@@ -60,6 +62,9 @@ class State{
       else if(action.type_ == Action::EXPLORE){
         not_explored_.remove(action.target_);
         quick_searchable_.push_back(action.target_);
+        current_room_ = action.target_;
+      }
+      else if(action.type_ == Action::MOVE_TO){
         current_room_ = action.target_;
       }
     }

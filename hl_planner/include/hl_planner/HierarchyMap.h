@@ -20,6 +20,7 @@ class HierarchyMap{
     std::vector<float> expected_search_times_;
     std::vector<float> quick_search_times_;
     std::vector<std::vector<float>> travel_times_;
+    std::vector<std::vector<float>> search_speeds_;
     std::vector<std::vector<std::vector<int>>> travel_path_;
     std::vector<std::vector<std::vector<geometry_msgs::Pose>>> travel_waypoints_;
     std::vector<bool> not_explored_;
@@ -29,10 +30,11 @@ class HierarchyMap{
 
     HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res, int obj);
 
-    float getSearchSpeed(int curr_idx, int idx) const { return search_prob_[idx]/(search_times_[idx] + travel_times_[curr_idx][idx]); }
     float getFullSearchTime(int curr_idx, int idx) const { return search_times_[idx] + travel_times_[curr_idx][idx]; }
     float getExpectedSearchTime(int curr_idx, int idx) const { return expected_search_times_[idx] + travel_times_[curr_idx][idx]; }
     float getQuickSearchTime(int curr_idx, int idx) const { return quick_search_times_[idx] + travel_times_[curr_idx][idx]; }
+
+    float getSearchSpeed(int curr_idx, int idx) const { return search_speeds_[curr_idx][idx]; }
 };
 
 #endif //HL_PLANNER_HIERARCHYMAP_H

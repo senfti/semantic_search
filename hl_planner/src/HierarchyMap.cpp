@@ -73,7 +73,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
       expected_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE/2.f);
       search_prob_.push_back(UNEXPLORED_PROB_ESTIMATE);
       quick_search_prob_.push_back(UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
-      not_explored_.push_back(false);
+      not_explored_.push_back(true);
       semantic_mapping_v2::RoomMsg unknown_room;
       unknown_room.links.push_back(i);
       unknown_room.to_link_travel_times.push_back(0.f);
@@ -92,6 +92,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
   floydWarshall(edges, link_travel_times, link_travel_path);
 
   travel_times_.resize(response.rooms.size(), std::vector<float>(response.rooms.size(), std::numeric_limits<float>::max()));
+  search_speeds_.resize(response.rooms.size(), std::vector<float>(response.rooms.size(), 0.f));
   travel_path_.resize(response.rooms.size(), std::vector<std::vector<int>>(response.rooms.size()));
   travel_waypoints_.resize(response.rooms.size(), std::vector<std::vector<geometry_msgs::Pose>>(response.rooms.size()));
   for(int r1=0; r1<response.rooms.size(); r1++){
@@ -114,7 +115,9 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
       }
       else
         travel_times_[r1][r2] = 0.f;
+
       travel_path_[r1][r2].push_back(r1);
+      travel_waypoints_[r1][r2].push_back(geometry_msgs::Pose());
       int curr_room = r1;
       for(int i=0; i<link_path.size(); i++){
         auto& link = response.links[link_path[i]];
@@ -129,7 +132,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
           travel_waypoints_[r1][r2].push_back(link.door2_pose);
         }
       }
+      search_speeds_[r1][r2] = search_prob_[r2]/(search_times_[r2] + travel_times_[r1][r2]);
     }
   }
-  std::cout << "sldfj";
 }
