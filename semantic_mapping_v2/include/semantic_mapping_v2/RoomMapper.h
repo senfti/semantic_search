@@ -40,6 +40,7 @@ class RoomMapper : public SlamGMapping{
     double m_pointcloudMaxZ = 1.8;
     double ROOM_HIT_MISS_RATIO = 1000.0;
     double OBJ_HIT_MISS_RATIO = 100.0;
+    int NUM_USED_DETECTION_SAMPLES = 2000;
 
     boost::thread* octomapping_thread_ = nullptr;
     sensor_msgs::PointCloud2 latest_cloud_;

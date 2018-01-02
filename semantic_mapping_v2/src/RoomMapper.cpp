@@ -115,6 +115,7 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
   private_nh_.param("RoomMapper/ROOM_HIT_MISS_RATIO", ROOM_HIT_MISS_RATIO, ROOM_HIT_MISS_RATIO);
   private_nh_.param("RoomMapper/OBJ_HIT_MISS_RATIO", OBJ_HIT_MISS_RATIO, OBJ_HIT_MISS_RATIO);
+  private_nh_.param("RoomMapper/NUM_USED_DETECTION_SAMPLES", NUM_USED_DETECTION_SAMPLES, NUM_USED_DETECTION_SAMPLES);
 
   bool got_transform = false;
   while(!got_transform && ros::ok()){
@@ -278,7 +279,7 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
   //std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
   ros::Time mid = ros::Time::now();
 
-  pcl::PointCloud<pcl::PointXYZ> cloud(msg->objects.samples.size(), 1);
+  pcl::PointCloud<pcl::PointXYZ> cloud(NUM_USED_DETECTION_SAMPLES, 1);
   for(int i=0; i<cloud.size(); i++){
     cloud[i] = pcl::PointXYZ(msg->objects.samples[i].point.x, msg->objects.samples[i].point.y, msg->objects.samples[i].point.z);
   }
