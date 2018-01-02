@@ -19,11 +19,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  octomap_msgs
+  pcl_ros
 )
 
 find_package( OpenCV REQUIRED )
+find_package(octomap REQUIRED)
 
-add_definitions( -std=c++11 -O3 -Wreturn-type)
+add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
@@ -55,7 +58,7 @@ generate_messages(DEPENDENCIES geometry_msgs actionlib_msgs)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${OCTOMAP_INCLUDE_DIRS})
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -71,7 +74,8 @@ catkin_package(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME} src/main.cpp src/ExecuteActionServer.cpp src/StartRotationStateMachine.cpp src/Explorer.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/ExecuteActionServer.cpp src/StartRotationStateMachine.cpp src/Explorer.cpp include/execution/Searcher.h src/Searcher.cpp
+  src/ObjectMapper.cpp src/OctoMapper.cpp include/execution/OctoMapper.h include/execution/ObjectMapper.h)
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS} ${OCTOMAP_LIBRARIES})
 

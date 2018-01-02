@@ -465,13 +465,6 @@ void RoomMapper::setDoorRoom(int id, int other_room, int counterpart_id){
 }
 
 
-void RoomMapper::setCurrentSearchedObj(int obj){
-  for(int i=0; i<obj_mappers_.size(); i++){
-    obj_mappers_[i]->resetCurrentSearchMap(obj);
-  }
-}
-
-
 visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) {
   visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(id);
   if(res.markers.empty())

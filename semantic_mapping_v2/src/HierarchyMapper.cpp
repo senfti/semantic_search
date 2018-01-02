@@ -16,7 +16,6 @@ HierarchyMapper::HierarchyMapper()
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &HierarchyMapper::cloudCb, this);
   door_pose_sub_ = nh_.subscribe("door_poses", 1, &HierarchyMapper::doorPoseCb, this);
   vision_sub_ = nh_.subscribe("vision_result", 1, &HierarchyMapper::visionCb, this);
-  current_searched_obj_sub_ = nh_.subscribe("currently_searched_obj", 1, &HierarchyMapper::currentSearchedObjCb, this);
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
@@ -27,7 +26,6 @@ HierarchyMapper::HierarchyMapper()
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
   door_found_pub_ = nh_.advertise<std_msgs::Int8>("door_found", 1);
-  obj_found_pub_ = nh_.advertise<std_msgs::Int8>("object_found", 1);
 
   ros::NodeHandle service_nh;
   service_nh.setCallbackQueue(&service_queue_);
@@ -128,14 +126,10 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
       GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
       current_mapper_ = mapper_idx;
       door_tf = room_mapper_[current_mapper_]->activate(p, door);
-      if(current_searched_obj_ >= 0)
-        room_mapper_[current_mapper_]->setCurrentSearchedObj(current_searched_obj_);
     }
     else{
       current_mapper_ = mapper_idx;
       room_mapper_[current_mapper_]->activate();
-      if(current_searched_obj_ >= 0)
-        room_mapper_[current_mapper_]->setCurrentSearchedObj(current_searched_obj_);
     }
   }
 
@@ -183,14 +177,6 @@ void HierarchyMapper::visionCb(const vision::VisionMsgConstPtr &msg){
 }
 
 
-void HierarchyMapper::currentSearchedObjCb(const std_msgs::Int8 &msg){
-  current_searched_obj_ = msg.data;
-  if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-    room_mapper_[current_mapper_]->setCurrentSearchedObj(current_searched_obj_);
-  }
-}
-
-
 void HierarchyMapper::transformPublishLoop(double transform_publish_period){
   if(transform_publish_period == 0)
     return;
@@ -203,60 +189,6 @@ void HierarchyMapper::transformPublishLoop(double transform_publish_period){
     r.sleep();
   }
 }
-
-
-//void HierarchyMapper::publish(){
-//  ros::Time sdf = ros::Time::now();
-//  gmap_pub_.publish(room_mapper_[current_mapper_]->getGMap());
-//  nav_msgs::OccupancyGrid map = room_mapper_[current_mapper_]->getMap();
-//  if(map.data.size() > 0){
-//    map_pub_.publish(map);
-//    map_info_pub_.publish(map.info);
-//  }
-//  map = room_mapper_[current_mapper_]->getDoorBlockedMap();
-//  if(map.data.size() > 0){
-//    map_door_blocked_pub_.publish(map);
-//  }
-//  marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
-//  door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
-//  ros::Time sdf2 = ros::Time::now();
-//
-//  if(obj_prob_pub_.empty()){
-//    obj_prob_pub_.resize(80);
-//    for(int i=0; i<80; i++){
-//      std::string s = "obj_" + ObjectMapper::getObjName(i);
-//      std::replace( s.begin(), s.end(), ' ', '_');
-//      obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
-//    }
-//  }
-//  for(int i=0; i<80; i++)
-//    obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
-//
-//  std::vector<size_t> order;
-//  std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
-//  if(room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
-//    int num = room_mapper_[current_mapper_]->getRoomNames().size();
-//    room_prob_pub_.resize(num);
-//    for(int i=0; i<num; i++){
-//      std::string s = "room_" + room_mapper_[current_mapper_]->getRoomName(i);
-//      std::replace( s.begin(), s.end(), ' ', '_');
-//      room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
-//    }
-//  }
-//  if(!room_prob_pub_.empty())
-//    for(int i=0; i<room_mapper_[current_mapper_]->getRoomNames().size(); i++)
-//      room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
-//  if(!probs.empty())
-//    for(int i=0; i<probs.size(); i++){
-//      std::cout << room_mapper_[current_mapper_]->getRoomName(order[i]) << ": " << probs[order[i]] << std::endl;
-//  }
-//  std::cout << std::endl;
-//  probs = room_mapper_[current_mapper_]->getObjectProbs(order);
-//  for(int i=0; i<probs.size(); i++)
-//    std::cout << ObjectMapper::getObjName(order[i]) << ": " << probs[order[i]] << std::endl;
-//
-//  std::cout << "publish time " << (sdf2-sdf).toSec() << " " << (ros::Time::now() - sdf2).toSec() << std::endl;
-//}
 
 
 void HierarchyMapper::downprojecAndPublish(){
@@ -375,9 +307,6 @@ void HierarchyMapper::run(){
         else
           switchMapper(other_room, door);
       }
-      std_msgs::Int8 obj_found_msg;
-      obj_found_msg.data = (room_mapper_[current_mapper_]->objFound() ? 1 : 0);
-      obj_found_pub_.publish(obj_found_msg);
     }
     rate.sleep();
   }

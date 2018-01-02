@@ -12,7 +12,6 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <semantic_mapping_v2/ObjectMapMsg.h>
 
-#include <semantic_mapping_v2/DoorMapper.h>
 #include <boost/thread.hpp>
 #include <boost/thread/lock_guard.hpp>
 
@@ -48,6 +47,7 @@ class ObjectMap{
       insertProb(getXPixel(x), getYPixel(y), getZPixel(z), prob, prior, V_H, V_M, min, max);
     }
     void applyObjAppearVanish(float still_there_prob, float got_there_prob);
+    void resetProbs(float prior);
 
     float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
     float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
@@ -72,6 +72,7 @@ class ObjectMap{
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
     float getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const;
+    float getMaxObjectProb(const ObjectMap& occupancy_map) const;
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
@@ -107,8 +108,12 @@ class ObjectMapper{
     float STILL_THERE_PROB = 0.9f;
     float GOT_THERE_PROB = 0.0005f;
 
+    float FOUND_THRESH = 0.5f;
+
   private:
     std::vector<ObjectMap> maps_;
+    ObjectMap current_search_map_;
+    int current_search_obj_ = -1;
     boost::mutex maps_mutex_;
     float max_height_ = OBJ_DEFUALT_MAX_HEIGHT;
 
@@ -119,6 +124,7 @@ class ObjectMapper{
     ObjectMapper(const ObjectMapper& rhs);
     std::pair<cv::Point,cv::Size> addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z);
     void applyObjAppearVanish();
+    void resetCurrentSearchMap(int obj);
 
     visualization_msgs::MarkerArray getProbMsg(int id) {
       boost::lock_guard<boost::mutex> lock(maps_mutex_);
@@ -126,6 +132,7 @@ class ObjectMapper{
     }
 
     std::vector<float> getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order);
+    bool objectFound(OctoMapper& octo_mapper, const std::vector<Door>& doors);
     float getResolution() const { return maps_[0].getResolution(); }
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) {
