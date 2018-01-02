@@ -93,7 +93,7 @@ class OctoMapper {
     virtual ~OctoMapper();
 
     OctoMapper getCopy();
-    void insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorld);
+    void insertCloud(const PCLPointCloud& cloud, const PCLPointCloud& cloud_ground, const tf::Transform& sensorToWorld);
     //virtual bool openFile(const std::string& filename);
 
     octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now());
@@ -132,7 +132,7 @@ class OctoMapper {
     };
 
 
-    virtual void insertScan(const tf::Point& sensorOrigin, const PCLPointCloud& cloud);
+    virtual void insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& cloud, const PCLPointCloud& cloud_ground);
     static std_msgs::ColorRGBA heightMapColor(double h);
 
     void clearBBX(pcl::PointXYZ min, pcl::PointXYZ max);

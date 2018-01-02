@@ -53,6 +53,7 @@ class OctoMapper {
   protected:
     boost::mutex data_mutex_;
     OcTreeT* m_octree;
+    OcTreeT* count_octree_;
     octomap::KeyRay m_keyRay;  // temp storage for ray casting
     octomap::OcTreeKey m_updateBBXMin;
     octomap::OcTreeKey m_updateBBXMax;
@@ -92,19 +93,7 @@ class OctoMapper {
     OctoMapper(const OctoMapper& rhs);
     virtual ~OctoMapper();
 
-    OctoMapper getCopy();
     void insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorld);
-    //virtual bool openFile(const std::string& filename);
-
-    octomap_msgs::Octomap getBinaryOctoMapMsg(const ros::Time& rostime = ros::Time::now());
-    octomap_msgs::Octomap getFullOctoMapMsg(const ros::Time& rostime = ros::Time::now());
-    visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time& rostime = ros::Time::now());
-    visualization_msgs::MarkerArray getOccupiedAndFreeCellMsg(visualization_msgs::MarkerArray& free_cells, const ros::Time& rostime = ros::Time::now());
-    void getAllPublishMsgs(visualization_msgs::MarkerArray& occupied_cells_vis_array, octomap_msgs::Octomap& octomap_binary,
-                           octomap_msgs::Octomap& octomap_full, visualization_msgs::MarkerArray& free_cells_vis_array,
-                           const ros::Time& rostime = ros::Time::now());
-
-    nav_msgs::OccupancyGrid addDownprojected(const nav_msgs::OccupancyGrid &map);
 
     float getOccupancy(float x, float y, float z);
     float getOccupancy(const pcl::PointXYZ& pos) { return getOccupancy(pos.x, pos.y, pos.z); }
@@ -113,12 +102,6 @@ class OctoMapper {
     bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh);
     float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
     float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
-
-    //bool clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp);
-    //bool resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp);
-    //virtual bool octomapBinarySrv(OctomapSrv::Request  &req, OctomapSrv::GetOctomap::Response &res);
-    //virtual bool octomapFullSrv(OctomapSrv::Request  &req, OctomapSrv::GetOctomap::Response &res);
-
 
   protected:
     inline static void updateMinKey(const octomap::OcTreeKey& in, octomap::OcTreeKey& min) {
@@ -133,10 +116,6 @@ class OctoMapper {
 
 
     virtual void insertScan(const tf::Point& sensorOrigin, const PCLPointCloud& cloud);
-    static std_msgs::ColorRGBA heightMapColor(double h);
-
-    void clearBBX(pcl::PointXYZ min, pcl::PointXYZ max);
-    void reset();
 };
 
 #endif //SEMANTIC_MAPPING_V2_OCTOMAPPER_H

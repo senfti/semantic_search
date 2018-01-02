@@ -156,23 +156,26 @@ OctoMapper OctoMapper::getCopy(){
 }
 
 
-void OctoMapper::insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorldTf){
+void OctoMapper::insertCloud(const PCLPointCloud& cloud, const PCLPointCloud& cloud_ground, const tf::Transform& sensorToWorldTf){
   ros::WallTime startTime = ros::WallTime::now();
 
   Eigen::Matrix4f sensorToWorld;
   pcl_ros::transformAsMatrix(sensorToWorldTf, sensorToWorld);
 
   // directly transform to map frame:
-  pcl::transformPointCloud(cloud, cloud, sensorToWorld);
+  PCLPointCloud cloud_transformed;
+  pcl::transformPointCloud(cloud, cloud_transformed, sensorToWorld);
+  PCLPointCloud cloud_ground_transformed;
+  pcl::transformPointCloud(cloud_ground, cloud_ground_transformed, sensorToWorld);
 
-  insertScan(sensorToWorldTf.getOrigin(), cloud);
+  insertScan(sensorToWorldTf.getOrigin(), cloud_transformed, cloud_ground_transformed);
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
   ROS_DEBUG("Pointcloud insertion in OctoMapper done (%zu pts , %f sec)", cloud.size(), total_elapsed);
 }
 
 
-void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& cloud){
+void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& cloud, const PCLPointCloud& cloud_ground){
   boost::unique_lock<boost::mutex> lock(data_mutex_);
   OcTreeT* octree = new OcTreeT(*m_octree);
   octomap::KeyRay keyRay = m_keyRay;  // temp storage for ray casting
@@ -187,6 +190,26 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
 
   // instead of direct scan insertion, compute update to filter ground:
   KeySet free_cells, occupied_cells;
+  for (PCLPointCloud::const_iterator it = cloud_ground.begin(); it != cloud_ground.end(); ++it){
+    point3d point(it->x, it->y, it->z);
+    // maxrange check
+    if ((m_maxRange > 0.0) && ((point - sensorOrigin).norm() > m_maxRange) ) {
+      point = sensorOrigin + (point - sensorOrigin).normalized() * m_maxRange;
+    }
+
+    // only clear space (ground points)
+    if (m_octree->computeRayKeys(sensorOrigin, point, m_keyRay)){
+      free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+    }
+
+    octomap::OcTreeKey endKey;
+    if (m_octree->coordToKeyChecked(point, endKey)){
+      updateMinKey(endKey, m_updateBBXMin);
+      updateMaxKey(endKey, m_updateBBXMax);
+    } else{
+      ROS_ERROR_STREAM("Could not generate Key for endpoint "<<point);
+    }
+  }
 
   // free on ray, occupied on endpoint:
   for (PCLPointCloud::const_iterator it = cloud.begin(); it != cloud.end(); ++it){
