@@ -35,7 +35,7 @@ class RoomMapper : public SlamGMapping{
     tf::StampedTransform camera_to_base_transform_;
     tf::StampedTransform base_to_laser_transform_;
 
-    double downsample_voxel_size_ = 0.03;
+    int downsample_factor_ = 4;
     double m_pointcloudMinZ = 0.25;
     double m_pointcloudMaxZ = 1.8;
     double ROOM_HIT_MISS_RATIO = 1000.0;

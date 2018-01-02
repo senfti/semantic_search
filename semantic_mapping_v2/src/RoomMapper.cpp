@@ -110,7 +110,7 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
 
   obstacle_map_.info.resolution = 10;
 
-  private_nh_.param("Octomap/downsample_voxel_size", downsample_voxel_size_, downsample_voxel_size_);
+  private_nh_.param("Octomap/downsample_factor", downsample_factor_, downsample_factor_);
   private_nh_.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
   private_nh_.param("RoomMapper/ROOM_HIT_MISS_RATIO", ROOM_HIT_MISS_RATIO, ROOM_HIT_MISS_RATIO);
@@ -159,13 +159,20 @@ void RoomMapper::doOctomapping(){
     if(!latest_cloud_.data.empty()){
       ros::Time t = ros::Time::now();
 
-      OctoMapper::PCLPointCloudPtr pc(new OctoMapper::PCLPointCloud());
       OctoMapper::PCLPointCloudPtr pc_ground(new OctoMapper::PCLPointCloud());
       boost::unique_lock<boost::mutex> lock(latest_cloud_mutex_);
-      pcl::fromROSMsg(latest_cloud_, *pc);
+      pcl::fromROSMsg(latest_cloud_, *pc_ground);
       ros::Time stamp = latest_cloud_.header.stamp;
       latest_cloud_ = sensor_msgs::PointCloud2();
       lock.unlock();
+
+      int downsample_factor = 4;
+      OctoMapper::PCLPointCloudPtr pc(new OctoMapper::PCLPointCloud(pc_ground->width/downsample_factor, pc_ground->height/downsample_factor));
+      for(int x=0; x<pc_ground->width/downsample_factor; x++){
+        for(int y=0; y<pc_ground->height/downsample_factor; y++){
+          pc->at(x,y) = pc_ground->at(downsample_factor*x,downsample_factor*y);
+        }
+      }
 
       Eigen::Matrix4f cam_to_base;
       pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
@@ -182,15 +189,17 @@ void RoomMapper::doOctomapping(){
       pass_z.setInputCloud(pc);
       pass_z.filter(*pc);
 
-      pcl::VoxelGrid<OctoMapper::PCLPoint> voxel_grid_filter;
-      voxel_grid_filter.setInputCloud(pc);
-      voxel_grid_filter.setLeafSize(downsample_voxel_size_, downsample_voxel_size_, downsample_voxel_size_);
-      voxel_grid_filter.filter(*pc);
+//      pcl::VoxelGrid<OctoMapper::PCLPoint> voxel_grid_filter;
+//      voxel_grid_filter.setInputCloud(pc);
+//      voxel_grid_filter.setLeafSize(downsample_voxel_size_, downsample_voxel_size_, downsample_voxel_size_);
+//      voxel_grid_filter.filter(*pc);
+//      voxel_grid_filter.setInputCloud(pc_ground);
+//      voxel_grid_filter.filter(*pc_ground);
 
       for(int i = 0; i < octo_maps_.size(); i++){
         octo_maps_[i]->insertCloud(*pc, *pc_ground, getParticlePose3D(i, stamp));
       }
-      ROS_INFO("Octomaps update in %.3lf, downsample: %.3lf", ros::Time::now().toSec() - t.toSec(), downsample_voxel_size_);
+      ROS_INFO("Octomaps update in %.3lf, downsample: %d", ros::Time::now().toSec() - t.toSec(), downsample_factor_);
     }
     rate.sleep();
   }
