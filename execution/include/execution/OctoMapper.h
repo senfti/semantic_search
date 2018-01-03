@@ -51,7 +51,6 @@ class OctoMapper {
     typedef octomap_msgs::BoundingBoxQuery BBXSrv;
 
   protected:
-    boost::mutex data_mutex_;
     OcTreeT* m_octree;
     OcTreeT* count_octree_;
     octomap::KeyRay m_keyRay;  // temp storage for ray casting
@@ -93,7 +92,7 @@ class OctoMapper {
     OctoMapper(const OctoMapper& rhs);
     virtual ~OctoMapper();
 
-    void insertCloud(PCLPointCloud cloud, const tf::Transform& sensorToWorld);
+    void insertCloud(const PCLPointCloud& cloud, const PCLPointCloud& cloud_ground, const tf::Point& sensorOriginTf);
 
     float getOccupancy(float x, float y, float z);
     float getOccupancy(const pcl::PointXYZ& pos) { return getOccupancy(pos.x, pos.y, pos.z); }
@@ -102,6 +101,8 @@ class OctoMapper {
     bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh);
     float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
     float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
+    float getCount(float x, float y, float z);
+    float getCount(const pcl::PointXYZ& pos) { return getCount(pos.x, pos.y, pos.z); }
 
   protected:
     inline static void updateMinKey(const octomap::OcTreeKey& in, octomap::OcTreeKey& min) {
@@ -115,7 +116,7 @@ class OctoMapper {
     };
 
 
-    virtual void insertScan(const tf::Point& sensorOrigin, const PCLPointCloud& cloud);
+    virtual void insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& cloud, const PCLPointCloud& cloud_ground);
 };
 
 #endif //SEMANTIC_MAPPING_V2_OCTOMAPPER_H

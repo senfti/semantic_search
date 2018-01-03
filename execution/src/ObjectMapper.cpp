@@ -70,6 +70,25 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
 }
 
 
+ObjectMap::ObjectMap(const semantic_mapping_v2::ObjectMapMsg &msg){
+  resolution_ = msg.resolution;
+  origin_ = cv::Point(msg.origin_x, msg.origin_y);
+  max_height_ = msg.z_steps/resolution_;
+  prob_maps_.resize(msg.z_steps);
+  count_maps_.resize(msg.z_steps, cv::Mat_<uchar>::ones(msg.height, msg.width));
+  int i=0;
+  for(int z=0; z<msg.z_steps; z++){
+    prob_maps_[z] = cv::Mat_<float>(msg.height, msg.width, 0.f);
+    for(int y=0; y<msg.height; y++){
+      for(int x=0; x<msg.width; x++){
+        prob_maps_[z](y, x) = msg.data[i];
+        i++;
+      }
+    }
+  }
+}
+
+
 ObjectMap ObjectMap::operator*(const ObjectMap &rhs) const{
   ObjectMap res(resolution_, base_size_, getWidth(), getHeight(), origin_, max_height_, 0.f);
   for(int z=0; z<getZSteps(); z++){

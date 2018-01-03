@@ -32,6 +32,7 @@ class ObjectMap{
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap);
     ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room);
+    ObjectMap(const semantic_mapping_v2::ObjectMapMsg& msg);
 
     ObjectMap operator*(const ObjectMap& rhs) const;
 
