@@ -30,7 +30,7 @@ class ObjectMap{
   public:
     ObjectMap(float resolution, float start_size, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
-    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap);
+    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, ObjectMap* count_map = nullptr);
     ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room);
     ObjectMap(const semantic_mapping_v2::ObjectMapMsg& msg);
 
@@ -49,6 +49,8 @@ class ObjectMap{
     }
     void applyObjAppearVanish(float still_there_prob, float got_there_prob);
     void resetProbs(float prior);
+
+    bool isInMap(float x, float y, float z) { return getXPixel(x)>=0 && getXPixel(x)<getWidth() && getYPixel(y)>=0 && getYPixel(y)<getHeight() && z>=0 && z<max_height_; }
 
     float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
     float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }

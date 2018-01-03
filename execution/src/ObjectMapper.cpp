@@ -33,7 +33,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
     map = cv::Mat_<uchar>(height, width, uchar(0));
 }
 
-ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap)
+ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, ObjectMap* count_map)
   : resolution_(resolution), base_size_(base_size), max_height_(max_height), origin_(origin)
 {
   prob_maps_.resize(getZSteps());
@@ -52,6 +52,27 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
         p.y = getYWorld(y);
         p.z = getZWorld(z);
         insertMax(x,y,z,octomap.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+      }
+    }
+  }
+  if(count_map != 0){
+    prob_maps_.resize(getZSteps());
+    for(auto& map : prob_maps_)
+      map = cv::Mat_<float>(height, width, 0.f);
+    count_maps_.resize(getZSteps());
+    for(auto& map : count_maps_)
+      map = cv::Mat_<uchar>(height, width, uchar(0));
+
+    float scale_2 = 1.f/(resolution*2);
+    for(int x=0; x<getWidth(); x++){
+      for(int y=0; y<getHeight(); y++){
+        for(int z=0; z<getZSteps(); z++){
+          geometry_msgs::Point p;
+          p.x = getXWorld(x);
+          p.y = getYWorld(y);
+          p.z = getZWorld(z);
+          count_map->insertMax(x,y,z,octomap.getCount(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+        }
       }
     }
   }

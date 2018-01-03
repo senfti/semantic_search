@@ -394,22 +394,6 @@ bool HierarchyMapper::roomTypeProbSrvCb(semantic_mapping_v2::RoomTypeProbSrv::Re
 }
 
 
-bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res){
-  ROS_INFO("SERVICE OBJ_MAP");
-  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
-  int id = (req.room_id >= 0 ? req.room_id : current_mapper_);
-  if(id < 0 || id >= room_mapper_.size())
-    return false;
-
-  if(req.id < 0)
-    res.maps = room_mapper_[id]->getAllObjMapMsgs();
-  else
-    res.maps = std::vector<semantic_mapping_v2::ObjectMapMsg>({room_mapper_[id]->getObjMapMsg(req.id)});
-
-  return true;
-}
-
-
 bool HierarchyMapper::objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& req, semantic_mapping_v2::ObjectProbSrv::Response& res){
   ROS_INFO("SERVICE OBJ_PROB");
   boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
@@ -601,6 +585,56 @@ float HierarchyMapper::getSearchTime(const nav_msgs::OccupancyGrid &grid_map){
     num_cells = std::max(num_cells, 320) + 160;
 
   return num_cells*SEARCH_TIME_PER_GRID_CELL;
+}
+
+
+bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res){
+  ROS_INFO("SERVICE OBJ_MAP");
+  ros::Time start = ros::Time::now();
+
+  std::vector<OctoMapper> octomaps;
+  std::vector<nav_msgs::OccupancyGrid> grid_maps;
+  std::vector<std::vector<Door>> doors;
+  std::vector<std::vector<ObjectMap>> obj_maps;
+  std::vector<std::vector<RoomTypeMap>> room_type_maps;
+  std::vector<std::vector<float>> base_room_type_probs;
+  std::vector<std::vector<float>> base_obj_probs;
+
+  boost::unique_lock<boost::mutex> maps_lock(mapper_mutex_);
+  for(int i=0; i<room_mapper_.size(); i++){
+    grid_maps.push_back(room_mapper_[i]->getMap());
+    octomaps.push_back(room_mapper_[i]->getOctomap());
+    doors.push_back(room_mapper_[i]->getDoors());
+    obj_maps.push_back(room_mapper_[i]->getObjMaps());
+    room_type_maps.push_back(room_mapper_[i]->getRoomTypeMaps());
+    std::vector<size_t> order;
+    base_room_type_probs.push_back(room_mapper_[i]->getRoomTypeProbs(order));
+    base_obj_probs.push_back(room_mapper_[i]->getObjectProbs(order));
+  }
+  maps_lock.unlock();
+
+  cv::Mat_<float> behind_door_mask = getBehindDoorMask(doors[req.room_id], obj_maps[req.room_id][0].getWidth(), obj_maps[req.room_id][0].getHeight());
+  ObjectMap occ_map(obj_maps[req.room_id][0].getResolution(), obj_maps[req.room_id][0].getBaseSize(), obj_maps[req.room_id][0].getWidth(), obj_maps[req.room_id][0].getHeight(),
+                    obj_maps[req.room_id][0].getOrigin(), obj_maps[req.room_id][0].getMaxHeight(), octomaps[req.room_id]);
+
+  std::vector<cv::Mat_<float>> obj_prob_2d_area = get2dAreaObjProbMaps(obj_maps[req.room_id], behind_door_mask, occ_map, room_type_maps[req.room_id][0].getOrigin(),
+                                                                       room_type_maps[req.room_id][0].getWidth(), room_type_maps[req.room_id][0].getHeight(), ROOM_CELL_OBJ_KERNEL_SIZE);
+  std::vector<cv::Mat_<float>> obj_based_room_type_map = getObjBasedRoomTypeMap(obj_prob_2d_area, room_type_maps[req.room_id].size());
+  std::vector<cv::Mat_<float>> complete_room_type_map = getCompleteRoomTypeMap(room_type_maps[req.room_id], obj_based_room_type_map);
+  std::vector<float> complete_room_type_probs = getRoomTypeProbs(complete_room_type_map, room_type_maps[req.room_id][0].getSeenMap(), room_type_maps[req.room_id][0].getOrigin(),
+                                                                 grid_maps[req.room_id], doors[req.room_id], room_type_maps[req.room_id][0].getResolution(), room_type_maps[req.room_id][0].getBaseSize());
+
+  std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(complete_room_type_map, obj_maps[req.room_id], occ_map, room_type_maps[req.room_id][0].getOrigin() - obj_maps[req.room_id][0].getOrigin());
+
+  if(req.id < 0){
+    for(int i=0; i<complete_obj_map.size(); i++){
+      res.maps.push_back(complete_obj_map[i].getObjMapMsg());
+    }
+  }
+  else
+    res.maps.push_back(complete_obj_map[req.id].getObjMapMsg());
+
+  return true;
 }
 
 

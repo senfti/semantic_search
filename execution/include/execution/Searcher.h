@@ -59,9 +59,9 @@ class Searcher{
     cv::Mat_<uchar> accessible_mat_;
 
     std::vector<std::vector<cv::Point>> circle_points_;
-    
 
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
+    cv::Mat_<float> getProbMap();
 
   public:
     Searcher(int searched_obj, int curr_room, tf::TransformListener* tf_listener);

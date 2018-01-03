@@ -25,7 +25,6 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
   vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
   octo_mapper_ = new OctoMapper();
 
-  obj_map_ = new ObjectMap(OBJ_DEFAULT_RESOLUTION, 4.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB);
 
   ros::ServiceClient service_client(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"));
   while(!service_client.waitForExistence(ros::Duration(0.1))){
@@ -41,6 +40,7 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
     return;
   }
   prior_prob_map_ = new ObjectMap(res.maps[0]);
+  obj_map_ = new ObjectMap(prior_prob_map_->getResolution(), 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
 }
@@ -240,4 +240,13 @@ bool Searcher::objFound(){
   std::cout << "Max: " << max_prob << std::endl;
   octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
   return max_prob > OBJECT_FOUND_THRESH;
+}
+
+
+cv::Mat_<float> Searcher::getProbMap(){
+  ObjectMap count_map(1.f,1.f,1.f,0.f);
+  ObjectMap occ_map(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
+                    obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_, &count_map);
+
+
 }
