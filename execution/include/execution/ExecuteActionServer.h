@@ -15,6 +15,7 @@
 
 #include <execution/StartRotationStateMachine.h>
 #include <execution/Explorer.h>
+#include <execution/Searcher.h>
 
 class ExecuteActionServer{
   public:

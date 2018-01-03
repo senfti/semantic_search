@@ -83,7 +83,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
 
   count_octree_ = new OcTreeT(m_res);
   count_octree_->setProbHit(1. - ( 1. / (1. + exp(1.0))));
-  count_octree_->setProbMiss(1. - ( 1. / (1. + exp(1.0))));
+  count_octree_->setProbMiss(1. - ( 1. / (1. + exp(-1.0))));
   count_octree_->setClampingThresMin(0.0);
   count_octree_->setClampingThresMax(1.0);
   m_treeDepth = count_octree_->getTreeDepth();
@@ -327,7 +327,7 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
   // mark free cells only if not seen occupied in this cloud
   for(KeySet::iterator it = free_cells2.begin(), end=free_cells2.end(); it!= end; ++it){
     if (occupied_cells2.find(*it) == occupied_cells2.end()){
-      count_octree_->updateNode(*it, false);
+      count_octree_->updateNode(*it, true);
     }
   }
 
@@ -384,10 +384,104 @@ float OctoMapper::getOccupancy(float x_min, float y_min, float z_min, float x_ma
 }
 
 
-float OctoMapper::getCount(float x, float y, float z){
+int OctoMapper::getCount(float x, float y, float z){
   OcTreeT::NodeType* node = count_octree_->search(x,y,z);
   if(!node)
     return -1.f;
   else
     return node->getLogOdds();
+}
+
+
+int OctoMapper::getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max){
+  int count = 0;
+  for(float x = x_min+0.5f*m_res; x < x_max; x+=m_res){
+    for(float y = y_min+0.5f*m_res; y < y_max; y+=m_res){
+      for(float z = z_min+0.5f*m_res; z < z_max; z+=m_res){
+        count += getCount(x,y,z);
+      }
+    }
+  }
+  return count;
+}
+
+
+std_msgs::ColorRGBA getProbColor(double prob){
+  int v = prob*13;
+  std_msgs::ColorRGBA c;
+  c.a = 1.0;
+  switch(v){
+    case 0:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 1:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 2:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 3:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 4:   c.r = 0.2;  c.g = 0.0;  c.b = 0.0;  break;
+    case 5:   c.r = 0.5;  c.g = 0.0;  c.b = 0.0;  break;
+    case 6:   c.r = 0.8;  c.g = 0.0;  c.b = 0.0;  break;
+    case 7:   c.r = 1.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 8:   c.r = 1.0;  c.g = 1.0;  c.b = 0.0;  break;
+    case 9:   c.r = 0.0;  c.g = 1.0;  c.b = 0.0;  break;
+    case 10:  c.r = 0.0;  c.g = 1.0;  c.b = 1.0;  break;
+    case 11:  c.r = 0.0;  c.g = 0.0;  c.b = 1.0;  break;
+    case 12:  c.r = 1.0;  c.g = 0.0;  c.b = 1.0;  break;
+    default:  c.r = 1.0;  c.g = 0.7;  c.b = 1.0;  break;
+  }
+  return c;
+}
+
+visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &rostime) {
+  visualization_msgs::MarkerArray occupiedNodesVis;
+  occupiedNodesVis.markers.resize(m_treeDepth+1);
+
+  // now, traverse all leafs in the tree:
+  for (OcTreeT::iterator it = m_octree->begin(m_maxTreeDepth), end = m_octree->end(); it != end; ++it){
+    if(it->getOccupancy() > occupancy_thresh_){
+      double z = it.getZ();
+      if(z > m_occupancyMinZ && z < m_occupancyMaxZ){
+        double x = it.getX();
+        double y = it.getY();
+
+        unsigned idx = it.getDepth();
+        assert(idx < occupiedNodesVis.markers.size());
+
+        geometry_msgs::Point cubeCenter;
+        cubeCenter.x = x;
+        cubeCenter.y = y;
+        cubeCenter.z = z;
+
+        occupiedNodesVis.markers[idx].points.push_back(cubeCenter);
+        if (m_useHeightMap){
+          double minX, minY, minZ, maxX, maxY, maxZ;
+          m_octree->getMetricMin(minX, minY, minZ);
+          m_octree->getMetricMax(maxX, maxY, maxZ);
+
+          double h = (1.0 - std::min(std::max((cubeCenter.z-minZ)/ (maxZ - minZ), 0.0), 1.0)) *m_colorFactor;
+          occupiedNodesVis.markers[idx].colors.push_back(getProbColor(it->getOccupancy())); //heightMapColor(h));
+        }
+      }
+    }
+  }
+
+  // finish MarkerArray:
+  for (unsigned i= 0; i < occupiedNodesVis.markers.size(); ++i){
+    double size = m_octree->getNodeSize(i);
+
+    occupiedNodesVis.markers[i].header.frame_id = m_worldFrameId;
+    occupiedNodesVis.markers[i].header.stamp = rostime;
+    occupiedNodesVis.markers[i].ns = "map";
+    occupiedNodesVis.markers[i].id = i;
+    occupiedNodesVis.markers[i].type = visualization_msgs::Marker::CUBE_LIST;
+    occupiedNodesVis.markers[i].scale.x = size;
+    occupiedNodesVis.markers[i].scale.y = size;
+    occupiedNodesVis.markers[i].scale.z = size;
+    if (!m_useColoredMap)
+      occupiedNodesVis.markers[i].color = m_color;
+
+
+    if (occupiedNodesVis.markers[i].points.size() > 0)
+      occupiedNodesVis.markers[i].action = visualization_msgs::Marker::ADD;
+    else
+      occupiedNodesVis.markers[i].action = visualization_msgs::Marker::DELETE;
+  }
+  return occupiedNodesVis;
 }

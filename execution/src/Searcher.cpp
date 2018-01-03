@@ -22,6 +22,7 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
   private_nh.param("Octomap/pointcloud_max_z", POINTCLOUD_MAX_Z,POINTCLOUD_MAX_Z);
 
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
   octo_mapper_ = new OctoMapper();
 
   obj_map_ = new ObjectMap(OBJ_DEFAULT_RESOLUTION, 4.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB);
@@ -40,6 +41,8 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
     return;
   }
   prior_prob_map_ = new ObjectMap(res.maps[0]);
+
+  octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
 }
 
 
@@ -99,6 +102,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
     next[i&1].clear();
     i++;
   }
+  std::cout << "Map processed" << std::endl;
 }
 
 
@@ -194,6 +198,7 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
       }
     }
   }
+  std::cout << "Obj inserted" << std::endl;
 }
 
 
@@ -201,16 +206,19 @@ void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, con
   pcl::PointCloud<pcl::PointXYZ> pc, pc_ground;
   pcl::PassThrough<OctoMapper::PCLPoint> pass_z;
   pass_z.setFilterFieldName("z");
-  pass_z.setFilterLimits(-1.0, POINTCLOUD_MIN_Z);
-  pass_z.setInputCloud(cloud);
-  pass_z.filter(pc_ground);
-
-  pass_z.setFilterFieldName("z");
   pass_z.setFilterLimits(POINTCLOUD_MIN_Z, POINTCLOUD_MAX_Z);
   pass_z.setInputCloud(cloud);
   pass_z.filter(pc);
 
+  pass_z.setFilterFieldName("z");
+  pass_z.setFilterLimits(-1.0, POINTCLOUD_MIN_Z);
+  pass_z.setInputCloud(cloud);
+  pass_z.filter(pc_ground);
+
+  std::cout << pc.size() << " " << pc_ground.size() << std::endl;
+
   octo_mapper_->insertCloud(pc, pc_ground, sensorOriginTf);
+  std::cout << "Cloud inserted" << std::endl;
 }
 
 
@@ -229,5 +237,7 @@ bool Searcher::objFound(){
       }
     }
   }
+  std::cout << "Max: " << max_prob << std::endl;
+  octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
   return max_prob > OBJECT_FOUND_THRESH;
 }

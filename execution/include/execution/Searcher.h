@@ -38,27 +38,30 @@ class Searcher{
     float V_H = 0.3;
     float V_M = 0.0002;
 
-    float POINTCLOUD_MIN_Z;
-    float POINTCLOUD_MAX_Z;
+    float POINTCLOUD_MIN_Z = 0.0f;
+    float POINTCLOUD_MAX_Z = 1.8f;
 
     float OBJECT_FOUND_THRESH = 0.7;
 
   private:
     ros::Subscriber map_sub_;
+    ros::Subscriber vision_sub_;
     tf::TransformListener* tf_listener_;
+
+    ros::Publisher octomap_pub_;
 
     int searched_obj_ = 0;
     ObjectMap* obj_map_ = nullptr;
     ObjectMap* prior_prob_map_ = nullptr;
     OctoMapper* octo_mapper_ = nullptr;
 
-    cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
-    void calcFrontier();
-
     ros::Publisher map_pub_;
     cv::Mat_<uchar> accessible_mat_;
 
     std::vector<std::vector<cv::Point>> circle_points_;
+    
+
+    cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
 
   public:
     Searcher(int searched_obj, int curr_room, tf::TransformListener* tf_listener);
@@ -70,6 +73,8 @@ class Searcher{
     void insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const tf::Point& sensorOriginTf);
 
     bool objFound();
+
+    void calcNextViewpoint();
 };
 
 

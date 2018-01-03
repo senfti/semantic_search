@@ -101,8 +101,12 @@ class OctoMapper {
     bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh);
     float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
     float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
-    float getCount(float x, float y, float z);
-    float getCount(const pcl::PointXYZ& pos) { return getCount(pos.x, pos.y, pos.z); }
+    int getCount(float x, float y, float z);
+    int getCount(const pcl::PointXYZ& pos) { return getCount(pos.x, pos.y, pos.z); }
+    int getCount(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getCount(min.x, min.y, min.z, max.x, max.y, max.z); }
+    int getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
+
+    visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time &rostime);
 
   protected:
     inline static void updateMinKey(const octomap::OcTreeKey& in, octomap::OcTreeKey& min) {

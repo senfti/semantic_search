@@ -672,10 +672,17 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<cv::Mat_<float>> single_view_prob_map = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, occ_map, complete_obj_map[0].getOrigin(),
                                                                              complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), SINGLE_VIEW_OBJ_KERNEL_SIZE);
     std::vector<float> single_view_max_probs(single_view_prob_map.size());
+    std::vector<geometry_msgs::Point> single_view_points(single_view_prob_map.size());
     for(int o=0;o<single_view_max_probs.size();o++){
       double min, max;
-      cv::minMaxLoc(single_view_prob_map[o], &min, &max);
+      cv::Point min_loc, max_loc;
+      cv::minMaxLoc(single_view_prob_map[o], &min, &max, &min_loc, &max_loc);
       single_view_max_probs[o] = max;
+      geometry_msgs::Point point;
+      point.x = complete_obj_map[0].getXWorld(min_loc.x);
+      point.y = complete_obj_map[0].getXWorld(min_loc.y);
+      point.z = 0;
+      single_view_points.push_back(point);
     }
 
     semantic_mapping_v2::RoomMsg room;
@@ -687,7 +694,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     room.room_type_probs_2 = base_room_type_probs[i];
     room.obj_probs_2 = base_obj_probs[i];
     room.single_view_obj_probs = single_view_max_probs;
-    //room.travel_times = getTravelTimes(doors[i]);
+    room.single_view_points = single_view_points;
     room.to_link_travel_times.resize(doors[i].size(), 20.f);
     room.single_view_search_time = (room.to_link_travel_times.empty() ? 10.f : std::accumulate(room.to_link_travel_times.begin(), room.to_link_travel_times.end(), 0.f) / room.to_link_travel_times.size());
     room.search_time = getSearchTime(grid_maps[i]);
