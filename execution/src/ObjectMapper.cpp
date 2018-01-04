@@ -310,3 +310,40 @@ semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
   return msg;
 }
 
+
+cv::Mat_<float> ObjectMap::get2D(ObjectMap occ_map, ObjectMap prior_map, ObjectMap count_map, int count_thresh, cv::Point& origin) const{
+  ObjectMap prob_map = *this;
+  int left_this = prob_map.getOrigin().x;
+  int top_this = prob_map.getOrigin().y;
+  int right_this = prob_map.getWidth()-prob_map.getOrigin().x;
+  int bottom_this = prob_map.getHeight()-prob_map.getOrigin().y;
+  int left_prior = prior_map.getOrigin().x;
+  int top_prior = prior_map.getOrigin().y;
+  int right_prior = prior_map.getWidth()-prior_map.getOrigin().x;
+  int bottom_prior = prior_map.getHeight()-prior_map.getOrigin().y;
+  int left = std::max(left_this, left_prior);
+  int top = std::max(top_this, top_prior);
+  int right = std::max(right_this, right_prior);
+  int bottom = std::max(bottom_this, bottom_prior);
+  origin = cv::Point(left,top);
+
+  prob_map.resize(left-left_this, right-right_this, top-top_this, bottom-bottom_this, 0.0);
+  occ_map.resize(left-left_this, right-right_this, top-top_this, bottom-bottom_this, 0.0);
+  count_map.resize(left-left_this, right-right_this, top-top_this, bottom-bottom_this, 0.0);
+  prior_map.resize(left-left_prior, right-right_prior, top-top_prior, bottom-bottom_prior, 0.0);
+
+  cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
+  for(int z=0; z<getZSteps(); z++){
+    for(int x=0; x<prob_map.getWidth(); x++){
+      for(int y=0; y<prob_map.getHeight(); y++){
+        if(count_map.getProb(x,y,z) < count_thresh){
+          float s = std::sqrt(float(count_map.getProb(x,y,z)/count_thresh));
+          float val = prior_map.getProb(x,y,z)*(1.f-s) + prob_map.getProb(x,y,z)*occ_map.getProb(x,y,z)*s;
+          map2D(y,x) = map2D(y,x) * (1.f-val);
+        }
+      }
+    }
+  }
+  return (1.f - map2D);
+}
+

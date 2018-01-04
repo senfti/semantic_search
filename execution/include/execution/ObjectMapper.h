@@ -79,6 +79,8 @@ class ObjectMap{
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
+    cv::Mat_<float> get2D(ObjectMap occ_map, ObjectMap prior_map, ObjectMap count_map, int count_thresh, cv::Point& origin) const;
+
 };
 
 

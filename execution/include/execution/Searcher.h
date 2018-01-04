@@ -43,6 +43,17 @@ class Searcher{
 
     float OBJECT_FOUND_THRESH = 0.7;
 
+    int VIEW_ANGLE_STEPS = 12;
+    int SAMPLE_COUNT_THRESH = 10000;
+
+    float VIEW_MIN_DIST = 0.8f;
+    float VIEW_MAX_DIST = 3.5f;
+    float VIEW_ANGLE = 50.f;
+
+    float TURN_SPEED = 0.5;
+    float MOVE_SPEED = 0.1;
+    float VIEW_TIME = 0.2;
+
   private:
     ros::Subscriber map_sub_;
     ros::Subscriber vision_sub_;
@@ -57,11 +68,17 @@ class Searcher{
 
     ros::Publisher map_pub_;
     cv::Mat_<uchar> accessible_mat_;
+    cv::Point accessible_origin_;
+    float accessible_resolution_;
 
-    std::vector<std::vector<cv::Point>> circle_points_;
+    geometry_msgs::Pose curr_view_pose_;
+    bool curr_view_changed_;
+    bool finished_ = false;
 
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
-    cv::Mat_<float> getProbMap();
+    cv::Mat_<float> getProbMap(cv::Point& origin);
+    cv::Mat_<float> getViewKernel(int angle_step) const;
+    cv::Mat_<float> calcMoveTime(int width, int height, int angle_step, const cv::Point& curr_pos, float curr_angle);
 
   public:
     Searcher(int searched_obj, int curr_room, tf::TransformListener* tf_listener);
@@ -74,7 +91,7 @@ class Searcher{
 
     bool objFound();
 
-    void calcNextViewpoint();
+    void calcNextViewpoint(const tf::Transform& curr_pose);
 };
 
 
