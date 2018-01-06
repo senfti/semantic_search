@@ -88,7 +88,7 @@ class OctoMapper {
     bool m_useColoredMap;
 
   public:
-    OctoMapper(ros::NodeHandle private_nh_ = ros::NodeHandle("~"));
+    OctoMapper(double resolution, ros::NodeHandle private_nh_ = ros::NodeHandle("~"));
     OctoMapper(const OctoMapper& rhs);
     virtual ~OctoMapper();
 

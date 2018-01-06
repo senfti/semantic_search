@@ -14,7 +14,7 @@ bool is_equal (double a, double b, double epsilon = 1.0e-7)
   return std::abs(a - b) < epsilon;
 }
 
-OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
+OctoMapper::OctoMapper(double resolution, ros::NodeHandle private_nh_)
       : m_octree(NULL),
         count_octree_(NULL),
         m_maxRange(4.0),
@@ -24,7 +24,7 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
         m_colorFactor(0.8),
         m_latchedTopics(true),
         m_publishFreeSpace(false),
-        m_res(0.125),
+        m_res(1/resolution),
         m_treeDepth(0),
         m_maxTreeDepth(0),
         m_occupancyMinZ(0.25),
@@ -55,7 +55,6 @@ OctoMapper::OctoMapper(ros::NodeHandle private_nh_)
 
   private_nh.param("Octomap/sensor_model/max_range", m_maxRange, m_maxRange);
 
-  private_nh.param("Octomap/resolution", m_res, m_res);
   private_nh.param("Octomap/sensor_model/hit", probHit, 0.65);
   private_nh.param("Octomap/sensor_model/miss", probMiss, 0.35);
   private_nh.param("Octomap/sensor_model/min", thresMin, 0.12);

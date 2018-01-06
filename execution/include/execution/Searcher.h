@@ -19,6 +19,34 @@
 
 #include <vision/VisionMsg.h>
 
+template <class T>
+class Map{
+  public:
+    static constexpr int BASE_SIZE = 100;
+
+    float resolution_ = 0.05;
+    double default_value_ = 0.0;
+    cv::Point origin_;
+    cv::Mat_<T> map_;
+
+    Map(float resolution, double initial_value = 0.0)
+      : resolution_(resolution), default_value_(initial_value), origin_(BASE_SIZE/2, BASE_SIZE/2), map_(BASE_SIZE, BASE_SIZE, T(initial_value))
+    { }
+    Map(const cv::Mat_<T>& map, float resolution, const cv::Point& origin, double default_value = 0.0);
+    Map(const Map& rhs);
+
+    void resize(int x1, int x2, int y1, int y2);
+    void resample(float new_resolution);
+    void makeNiceSize();
+    void makeSame(Map& other_map, float resolution);
+
+    Map operator*(const Map& rhs);
+    Map operator*(const cv::Mat_<T>& rhs);
+
+    T& operator()(const cv::Point& p) { return map_(p); }
+    T& operator()(int y, int x) { return map_(y,x); }
+};
+
 
 class Searcher{
   public:
@@ -31,7 +59,7 @@ class Searcher{
     float OBJ_MIN_PROB = 0.0001f;
     float OBJ_MAX_PROB = 0.9f;
 
-    float OBJ_DEFAULT_RESOLUTION = 4.f;
+    float RESOLUTION = 10.f;
     float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
     float ROOM_EXPECTED_SIZE = 32.f;
 
@@ -54,6 +82,9 @@ class Searcher{
     float MOVE_SPEED = 0.1;
     float VIEW_TIME = 0.2;
 
+    int SEEN_MAP_STEPS = 24;
+    int BORDER_SEEN_THRESH = 3;
+
   private:
     ros::Subscriber map_sub_;
     ros::Subscriber vision_sub_;
@@ -66,19 +97,22 @@ class Searcher{
     ObjectMap* prior_prob_map_ = nullptr;
     OctoMapper* octo_mapper_ = nullptr;
 
+    std::vector<Map<float>> seen_maps_;
+
     ros::Publisher map_pub_;
-    cv::Mat_<uchar> accessible_mat_;
-    cv::Point accessible_origin_;
-    float accessible_resolution_;
+    Map<float> accessible_map_;
+    Map<float> border_map_;
+    Map<float> border_dir_map_;
 
     geometry_msgs::Pose curr_view_pose_;
     bool curr_view_changed_;
     bool finished_ = false;
 
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
-    cv::Mat_<float> getProbMap(cv::Point& origin);
-    cv::Mat_<float> getViewKernel(int angle_step) const;
-    cv::Mat_<float> calcMoveTime(int width, int height, int angle_step, const cv::Point& curr_pos, float curr_angle);
+    Map<float> getProbMap(cv::Point& origin);
+    cv::Mat_<float> getViewKernel(float angle, float resolution) const;
+    Map<float> calcMoveTime(int width, int height, int angle_step, const cv::Point& curr_pos, float curr_angle, const cv::Point& origin);
+    bool inserteIntoSeenMaps(const tf::Transform& curr_pose);
 
   public:
     Searcher(int searched_obj, int curr_room, tf::TransformListener* tf_listener);
