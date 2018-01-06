@@ -43,7 +43,6 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
   for(auto& map : count_maps_)
     map = cv::Mat_<uchar>(height, width, uchar(0));
 
-  float scale_2 = 1.f/(resolution*2);
   for(int x=0; x<getWidth(); x++){
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
@@ -51,19 +50,12 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
         p.x = getXWorld(x);
         p.y = getYWorld(y);
         p.z = getZWorld(z);
-        insertMax(x,y,z,octomap.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+        insertMax(x,y,z,octomap.getOccupancy(p.x, p.y, p.z));
       }
     }
   }
   if(count_map != 0){
-    prob_maps_.resize(getZSteps());
-    for(auto& map : prob_maps_)
-      map = cv::Mat_<float>(height, width, 0.f);
-    count_maps_.resize(getZSteps());
-    for(auto& map : count_maps_)
-      map = cv::Mat_<uchar>(height, width, uchar(0));
-
-    float scale_2 = 1.f/(resolution*2);
+    *count_map = ObjectMap(resolution, base_size, width, height, origin, max_height, 0.f);
     for(int x=0; x<getWidth(); x++){
       for(int y=0; y<getHeight(); y++){
         for(int z=0; z<getZSteps(); z++){
@@ -71,7 +63,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
           p.x = getXWorld(x);
           p.y = getYWorld(y);
           p.z = getZWorld(z);
-          count_map->insertMax(x,y,z,octomap.getCount(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+          count_map->insertMax(x,y,z,octomap.getCount(p.x, p.y, p.z));
         }
       }
     }
@@ -159,12 +151,33 @@ void ObjectMap::resize(int left, int right, int top, int bottom, float prior){
 }
 
 
+std::vector<int> ObjectMap::expandUntilFitting(int x1, int x2, int y1, int y2, float prior){
+  int top=0, bottom=0, left=0, right=0, old_width=getWidth(), old_height=getHeight();
+  while(x1+left < 0)
+    left += base_size_;
+  while(x2 >= old_width+right)
+    right += base_size_;
+  while(y1+top < 0)
+    top += base_size_;
+  while(y2 >= old_height+bottom)
+    bottom += base_size_;
+
+  if(top!=0 || bottom!=0 || left!=0 || right!=0){
+    resize(left, right, top, bottom, prior);
+    return std::vector<int>({top, bottom, left, right});
+  }
+
+  return std::vector<int>();
+}
+
+
 void ObjectMap::resample(const ObjectMap &target, float prior){
   std::vector<cv::Mat_<float>> prob_tmp(target.getZSteps());
   std::vector<cv::Mat_<uchar>> count_tmp(target.getZSteps());
   for(int z=0; z<target.getZSteps(); z++){
-    prob_tmp = cv::Mat_<float>(target.getHeight(), target.getWidth(), prior);
-    count_tmp = cv::Mat_<uchar>(target.getHeight(), target.getWidth(), uchar(0));
+    std::cout << target.getHeight() << " " << target.getWidth() << std::endl;
+    prob_tmp[z] = cv::Mat_<float>(target.getHeight(), target.getWidth(), prior);
+    count_tmp[z] = cv::Mat_<uchar>(target.getHeight(), target.getWidth(), uchar(0));
     for(int x=0; x<target.getWidth(); x++){
       for(int y=0; y<target.getHeight(); y++){
         if(isWithin(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z))){
@@ -174,6 +187,8 @@ void ObjectMap::resample(const ObjectMap &target, float prior){
       }
     }
   }
+  prob_maps_ = prob_tmp;
+  count_maps_ = count_tmp;
   resolution_ = target.getResolution();
   base_size_ = target.getBaseSize();
   max_height_ = target.getMaxHeight();
@@ -334,33 +349,13 @@ semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
 
 
 cv::Mat_<float> ObjectMap::get2D(ObjectMap occ_map, ObjectMap prior_map, ObjectMap count_map, int count_thresh, cv::Point& origin) const{
-  ObjectMap prob_map = *this;
-  int left_this = prob_map.getOrigin().x;
-  int top_this = prob_map.getOrigin().y;
-  int right_this = prob_map.getWidth()-prob_map.getOrigin().x;
-  int bottom_this = prob_map.getHeight()-prob_map.getOrigin().y;
-  int left_prior = prior_map.getOrigin().x;
-  int top_prior = prior_map.getOrigin().y;
-  int right_prior = prior_map.getWidth()-prior_map.getOrigin().x;
-  int bottom_prior = prior_map.getHeight()-prior_map.getOrigin().y;
-  int left = std::max(left_this, left_prior);
-  int top = std::max(top_this, top_prior);
-  int right = std::max(right_this, right_prior);
-  int bottom = std::max(bottom_this, bottom_prior);
-  origin = cv::Point(left,top);
-
-  prob_map.resize(left-left_this, right-right_this, top-top_this, bottom-bottom_this, 0.0);
-  occ_map.resize(left-left_this, right-right_this, top-top_this, bottom-bottom_this, 0.0);
-  count_map.resize(left-left_this, right-right_this, top-top_this, bottom-bottom_this, 0.0);
-  prior_map.resize(left-left_prior, right-right_prior, top-top_prior, bottom-bottom_prior, 0.0);
-
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps(); z++){
-    for(int x=0; x<prob_map.getWidth(); x++){
-      for(int y=0; y<prob_map.getHeight(); y++){
+    for(int x=0; x<getWidth(); x++){
+      for(int y=0; y<getHeight(); y++){
         if(count_map.getProb(x,y,z) < count_thresh){
           float s = std::sqrt(float(count_map.getProb(x,y,z)/count_thresh));
-          float val = prior_map.getProb(x,y,z)*(1.f-s) + prob_map.getProb(x,y,z)*occ_map.getProb(x,y,z)*s;
+          float val = prior_map.getProb(x,y,z)*(1.f-s) + getProb(x,y,z)*occ_map.getProb(x,y,z)*s;
           map2D(y,x) = map2D(y,x) * (1.f-val);
         }
       }

@@ -40,7 +40,10 @@ class ObjectMap{
     ObjectMap& operator=(const ObjectMap& rhs);
 
     void resize(int left, int right, int top, int bottom, float prior);
-    void resize(float left, float right, float top, float bottom, float prior) { resize(getXPixel(left), getXPixel(right), getYPixel(top), getYPixel(bottom), prior); }
+    std::vector<int> expandUntilFitting(int x1, int x2, int y1, int y2, float prior);
+    std::vector<int> expandUntilFitting(float x1, float x2, float y1, float y2, float prior) {
+      return expandUntilFitting(getXPixel(x1), getXPixel(x2), getYPixel(y1), getYPixel(y2), prior);
+    }
     void resample(const ObjectMap& target, float prior);
 
     void insertMax(int x, int y, int z, float prob);
