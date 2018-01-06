@@ -142,7 +142,9 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
     return;
   }
   prior_prob_map_ = new ObjectMap(res.maps[0]);
-  obj_map_ = new ObjectMap(prior_prob_map_->getResolution(), 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
+  obj_map_ = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
+  obj_map_->resize(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
+  prior_prob_map_->resample(*obj_map_, OBJ_PRIOR_PROB);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
 }
@@ -217,8 +219,9 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::Sobel(dists, grad_y, CV_32F, 0, 1);
   cv::cartToPolar(grad_x, grad_y, mag, dir);
   border_dir_map_ = Map<float>(dir, accessible_map_.resolution_, accessible_map_.origin_);
-  cv::Mat_<uchar> tmp2 = (dists == 1.f);
-  tmp2.convertTo(tmp2, CV_32FC1);
+  tmp = (dists == 1.f);
+  cv::Mat_<float> tmp2;
+  tmp.convertTo(tmp2, CV_32F);
   border_map_ = Map<float>(tmp2, accessible_map_.resolution_, accessible_map_.origin_);
 
   std::cout << "Map processed" << std::endl;

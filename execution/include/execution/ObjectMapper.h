@@ -40,6 +40,8 @@ class ObjectMap{
     ObjectMap& operator=(const ObjectMap& rhs);
 
     void resize(int left, int right, int top, int bottom, float prior);
+    void resize(float left, float right, float top, float bottom, float prior) { resize(getXPixel(left), getXPixel(right), getYPixel(top), getYPixel(bottom), prior); }
+    void resample(const ObjectMap& target, float prior);
 
     void insertMax(int x, int y, int z, float prob);
     void insertMax(float x, float y, float z, float prob) { insertMax(getXPixel(x), getYPixel(y), getZPixel(z), prob); }
@@ -53,7 +55,17 @@ class ObjectMap{
     bool isInMap(float x, float y, float z) { return getXPixel(x)>=0 && getXPixel(x)<getWidth() && getYPixel(y)>=0 && getYPixel(y)<getHeight() && z>=0 && z<max_height_; }
 
     float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
-    float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
+    float getProb(float x, float y, float z) const { return getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
+    uchar getCount(int x, int y, int z) const { return count_maps_[z](y, x); }
+    uchar getCount(float x, float y, float z) const { return getCount(getXPixel(x), getYPixel(y), getZPixel(z)); }
+
+    float getMinX() const { return getXWorld(0); }
+    float getMinY() const { return getYWorld(0); }
+    float getMaxX() const { return getXWorld(getWidth()); }
+    float getMaxY() const { return getYWorld(getHeight()); }
+
+    bool isWithin(int x, int y, int z) const { return (x>=0 && y>=0 && z>=0 && x<getWidth() && y<getHeight() && z<getZSteps()); }
+    bool isWithin(float x, float y, float z) const { return isWithin(getXPixel(x), getYPixel(y), getZPixel(z)); }
 
     int getXPixel(float x) const { return x*resolution_ + origin_.x; }
     int getYPixel(float y) const { return y*resolution_ + origin_.y; }

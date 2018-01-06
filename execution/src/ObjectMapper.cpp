@@ -159,6 +159,28 @@ void ObjectMap::resize(int left, int right, int top, int bottom, float prior){
 }
 
 
+void ObjectMap::resample(const ObjectMap &target, float prior){
+  std::vector<cv::Mat_<float>> prob_tmp(target.getZSteps());
+  std::vector<cv::Mat_<uchar>> count_tmp(target.getZSteps());
+  for(int z=0; z<target.getZSteps(); z++){
+    prob_tmp = cv::Mat_<float>(target.getHeight(), target.getWidth(), prior);
+    count_tmp = cv::Mat_<uchar>(target.getHeight(), target.getWidth(), uchar(0));
+    for(int x=0; x<target.getWidth(); x++){
+      for(int y=0; y<target.getHeight(); y++){
+        if(isWithin(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z))){
+          prob_tmp[z](y,x) = getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
+          count_tmp[z](y,x) = (target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
+        }
+      }
+    }
+  }
+  resolution_ = target.getResolution();
+  base_size_ = target.getBaseSize();
+  max_height_ = target.getMaxHeight();
+  origin_ = target.getOrigin();
+}
+
+
 void ObjectMap::insertMax(int x, int y, int z, float prob){
   prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
   count_maps_[z](y,x) = count_maps_[z](y,x) == uchar(255) ? uchar(255) : count_maps_[z](y,x)+uchar(1);
