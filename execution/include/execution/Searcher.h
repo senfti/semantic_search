@@ -19,35 +19,6 @@
 
 #include <vision/VisionMsg.h>
 
-template <class T>
-class Map{
-  public:
-    static constexpr int BASE_SIZE = 100;
-
-    float resolution_ = 0.05;
-    double default_value_ = 0.0;
-    cv::Point origin_;
-    cv::Mat_<T> map_;
-
-    Map(float resolution, double initial_value = 0.0)
-      : resolution_(resolution), default_value_(initial_value), origin_(BASE_SIZE/2, BASE_SIZE/2), map_(BASE_SIZE, BASE_SIZE, T(initial_value))
-    { }
-    Map(const cv::Mat_<T>& map, float resolution, const cv::Point& origin, double default_value = 0.0);
-    Map(const Map& rhs);
-
-    void resize(int x1, int x2, int y1, int y2);
-    void resample(float new_resolution);
-    void makeNiceSize();
-    void makeSame(Map& other_map, float resolution);
-
-    Map operator*(const Map& rhs);
-    Map operator*(const cv::Mat_<T>& rhs);
-
-    T& operator()(const cv::Point& p) { return map_(p); }
-    T& operator()(int y, int x) { return map_(y,x); }
-};
-
-
 class Searcher{
   public:
     const float SEARCH_MAX_ROT_VEL = 1.0;
@@ -82,8 +53,8 @@ class Searcher{
     float MOVE_SPEED = 0.1;
     float VIEW_TIME = 0.2;
 
-    int SEEN_MAP_STEPS = 24;
     int BORDER_SEEN_THRESH = 3;
+    float BORDER_SEEN_MAX_ANGLE = 15.f*M_PI/180.0;
     int SEEN_MAP_MAX_DIST = 2.5;
 
   private:
@@ -99,8 +70,8 @@ class Searcher{
     ObjectMap* obj_map_ = nullptr;
     ObjectMap* prior_prob_map_ = nullptr;
     OctoMapper* octo_mapper_ = nullptr;
-    std::vector<cv::Mat_<float>> seen_maps_;
-    cv::Mat_<float> accessible_map_;
+    std::vector<cv::Mat_<uchar>> seen_maps_;
+    cv::Mat_<uchar> accessible_map_;
     cv::Mat_<uchar> border_map_;
     cv::Mat_<float> border_dir_map_;
 
@@ -109,11 +80,15 @@ class Searcher{
     bool curr_view_changed_;
     bool finished_ = false;
 
+    std::vector<std::vector<cv::Point>> seen_kernel_points;
+
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
     cv::Mat_<float> getProbMap(cv::Point& origin);
-    cv::Mat_<float> getViewKernel(float angle, float max_dist, float resolution) const;
-    cv::Mat_<float> calcMoveTime(int width, int height, int angle_step, const cv::Point& curr_pos, float curr_angle);
+    cv::Mat_<uchar> getViewKernel(float angle, float max_dist, float resolution) const;
+    float calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle);
     bool insertIntoSeenMaps(const tf::Transform& curr_pose);
+    float calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float>& prob_map, const cv::Point& curr_pos, float curr_angle);
+    void calcSeenKernels();
 
     void resize(float x1, float x2, float y1, float y2);
 
