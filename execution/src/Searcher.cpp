@@ -207,7 +207,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
                 int((transform.getOrigin().y()-msg->info.origin.position.y)/msg->info.resolution));
   cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
 
-  cv::Mat_<float> accessible_mat = cv::Mat_<uchar>(msg->info.height, msg->info.width, uchar(0));
+  cv::Mat_<float> accessible_mat = cv::Mat_<float>(msg->info.height, msg->info.width, 0.f);
   std::deque<cv::Point> next[2];
   cv::Mat_<uchar> already_inserted;
   cv::bitwise_not(not_forbidden, already_inserted);
@@ -224,6 +224,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
     next[i&1].clear();
     i++;
   }
+  cv::imshow("not_forbidden", not_forbidden);
 
   resize(msg->info.origin.position.x, msg->info.width*msg->info.resolution+msg->info.origin.position.x,
          msg->info.origin.position.y, msg->info.height*msg->info.resolution+msg->info.origin.position.y);
@@ -432,13 +433,14 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::resize(mat, tmp, cv::Size(mat.cols*resize_factor, mat.rows*resize_factor));
   double min, max;
   cv::minMaxIdx(tmp, &min, &max);
+  std::cout << "minmax " << min << " " << max << std::endl;
   cv::flip(tmp, tmp, 0);
 
   tmp.convertTo(tmp, CV_8U, 150.f);
 
   cv::Mat o(tmp.rows, tmp.cols, CV_8UC1, cv::Scalar(255));
   cv::merge(std::vector<cv::Mat>({tmp, o, o}), tmp);
-  cv::cvtColor(tmp, tmp, CV_HSV2RGB);
+  cv::cvtColor(tmp, tmp, CV_HSV2BGR);
   cv::imshow(name, tmp);
 }
 
@@ -478,7 +480,8 @@ void Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   showProbImage("border_dir", border_dir_map_, 2);
   cv::Mat tmp;
   cv::resize(border_map_, tmp, cv::Size(border_map_.cols*2, border_map_.rows*2), 0, 0, cv::INTER_NEAREST);
-  cv::imshow("border_map", border_map_);
+  cv::flip(tmp, tmp, 0);
+  cv::imshow("border_map", tmp);
   cv::waitKey(1);
 
   tf::Transform curr_view(tf::createQuaternionFromYaw(max_i/VIEW_ANGLE_STEPS*M_PI*2.f),

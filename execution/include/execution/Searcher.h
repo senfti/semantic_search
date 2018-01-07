@@ -55,9 +55,9 @@ class Searcher{
     const int VIEW_DIST = 1.0/0.05;
     const int ROBOT_SIZE = 0.3/0.05;
 
-    float OBJ_PRIOR_PROB = 0.01f;
-    float OBJ_MIN_PROB = 0.0001f;
-    float OBJ_MAX_PROB = 0.9f;
+    float OBJ_PRIOR_PROB = 0.0005f;
+    float OBJ_MIN_PROB = 0.00001f;
+    float OBJ_MAX_PROB = 0.7f;
 
     float RESOLUTION = 10.f;
     float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;

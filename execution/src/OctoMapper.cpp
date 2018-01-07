@@ -351,7 +351,7 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
 float OctoMapper::getOccupancy(float x, float y, float z) {
   OcTreeT::NodeType* node = m_octree->search(x,y,z);
   if(!node)
-    return -1.f;
+    return 0.f;
   else
     return node->getOccupancy();
 }
@@ -386,7 +386,7 @@ float OctoMapper::getOccupancy(float x_min, float y_min, float z_min, float x_ma
 int OctoMapper::getCount(float x, float y, float z){
   OcTreeT::NodeType* node = count_octree_->search(x,y,z);
   if(!node)
-    return -1.f;
+    return 0;
   else
     return node->getLogOdds();
 }

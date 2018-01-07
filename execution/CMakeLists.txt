@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package( OpenCV REQUIRED )
 find_package(octomap REQUIRED)
 
-add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
+add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -g -Wreturn-type)
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
