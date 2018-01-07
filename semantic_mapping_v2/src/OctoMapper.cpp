@@ -388,6 +388,8 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &
     occupiedNodesVis.markers[i].scale.x = size;
     occupiedNodesVis.markers[i].scale.y = size;
     occupiedNodesVis.markers[i].scale.z = size;
+    occupiedNodesVis.markers[i].pose.orientation.x = occupiedNodesVis.markers[i].pose.orientation.y = occupiedNodesVis.markers[i].pose.orientation.z = 0.0;
+    occupiedNodesVis.markers[i].pose.orientation.w = 1.0;
     if (!m_useColoredMap)
       occupiedNodesVis.markers[i].color = m_color;
 
@@ -450,6 +452,9 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
     occupiedNodesVis.markers[i].scale.x = size;
     occupiedNodesVis.markers[i].scale.y = size;
     occupiedNodesVis.markers[i].scale.z = size;
+    occupiedNodesVis.markers[i].pose.orientation.x = occupiedNodesVis.markers[i].pose.orientation.y = occupiedNodesVis.markers[i].pose.orientation.z = 0.0;
+    occupiedNodesVis.markers[i].pose.orientation.w = 1.0;
+
     if (!m_useColoredMap)
       occupiedNodesVis.markers[i].color = m_color;
 
@@ -472,6 +477,8 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedAndFreeCellMsg(visualizat
     free_cells.markers[i].scale.x = size;
     free_cells.markers[i].scale.y = size;
     free_cells.markers[i].scale.z = size;
+    occupiedNodesVis.markers[i].pose.orientation.x = occupiedNodesVis.markers[i].pose.orientation.y = occupiedNodesVis.markers[i].pose.orientation.z = 0.0;
+    occupiedNodesVis.markers[i].pose.orientation.w = 1.0;
     free_cells.markers[i].color = m_colorFree;
 
 

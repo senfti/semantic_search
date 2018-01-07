@@ -76,7 +76,7 @@ class Searcher{
 
     float VIEW_MIN_DIST = 0.8f;
     float VIEW_MAX_DIST = 3.5f;
-    float VIEW_ANGLE = 50.f;
+    float VIEW_ANGLE = 50.f*M_PI/180.0;
 
     float TURN_SPEED = 0.5;
     float MOVE_SPEED = 0.1;
@@ -92,6 +92,8 @@ class Searcher{
     tf::TransformListener* tf_listener_;
 
     ros::Publisher octomap_pub_;
+    ros::Publisher obj_pub_;
+    ros::Publisher next_pose_pub_;
 
     int searched_obj_ = 0;
     ObjectMap* obj_map_ = nullptr;
@@ -102,9 +104,8 @@ class Searcher{
     cv::Mat_<uchar> border_map_;
     cv::Mat_<float> border_dir_map_;
 
-    ros::Publisher map_pub_;
-
     geometry_msgs::Pose curr_view_pose_;
+    geometry_msgs::Pose old_view_pose_;
     bool curr_view_changed_;
     bool finished_ = false;
 
@@ -127,7 +128,7 @@ class Searcher{
 
     bool objFound();
 
-    void calcNextViewpoint(const tf::Transform& curr_pose);
+    bool calcNextViewpoint(const tf::Transform& curr_pose);
 };
 
 

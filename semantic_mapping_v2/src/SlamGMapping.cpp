@@ -422,6 +422,7 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
   ros::Time t = ros::Time::now();
   boost::mutex::scoped_lock map_lock (map_mutex_);
   GMapping::ScanMatcher matcher;
+  matcher.setenlargeStep(2.0);
 
   matcher.setLaserParameters(scan.ranges.size(), &(laser_angles_[0]), gsp_laser_->getPose());
 
@@ -472,7 +473,7 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
     xmin_ = wmin.x; ymin_ = wmin.y;
     xmax_ = wmax.x; ymax_ = wmax.y;
 
-    ROS_DEBUG("map size is now %dx%d pixels (%f,%f)-(%f, %f)", smap.getMapSizeX(), smap.getMapSizeY(), xmin_, ymin_, xmax_, ymax_);
+    ROS_INFO("map size is now %dx%d pixels (%f,%f)-(%f, %f)", smap.getMapSizeX(), smap.getMapSizeY(), xmin_, ymin_, xmax_, ymax_);
 
     map_.map.info.width = smap.getMapSizeX();
     map_.map.info.height = smap.getMapSizeY();
@@ -480,7 +481,7 @@ void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
     map_.map.info.origin.position.y = ymin_;
     map_.map.data.resize(map_.map.info.width * map_.map.info.height);
 
-    ROS_DEBUG("map origin: (%f, %f)", map_.map.info.origin.position.x, map_.map.info.origin.position.y);
+    ROS_INFO("map origin: (%f, %f)", map_.map.info.origin.position.x, map_.map.info.origin.position.y);
   }
 
   for(int x=0; x < smap.getMapSizeX(); x++) {

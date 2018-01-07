@@ -230,6 +230,8 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
   def.scale.y = def.scale.x;
   def.scale.z = def.scale.x;
   def.action = visualization_msgs::Marker::ADD;
+  def.pose.orientation.x = def.pose.orientation.y = def.pose.orientation.z = 0.0;
+  def.pose.orientation.w = 1.0;
 
   visualization_msgs::MarkerArray markers;
   markers.markers.resize(1);
