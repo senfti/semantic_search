@@ -43,14 +43,15 @@ class Searcher{
     float OBJECT_FOUND_THRESH = 0.7;
 
     int VIEW_ANGLE_STEPS = 12;
+    int SEEN_MAP_STEPS = 36;
     int SAMPLE_COUNT_THRESH = 10000;
 
-    float VIEW_MIN_DIST = 0.8f;
+    float VIEW_MIN_DIST = 0.55f;
     float VIEW_MAX_DIST = 3.5f;
     float VIEW_ANGLE = 50.f*M_PI/180.0;
 
     float TURN_SPEED = 0.5;
-    float MOVE_SPEED = 0.1;
+    float MOVE_SPEED = 0.01;
     float VIEW_TIME = 0.2;
 
     int BORDER_SEEN_THRESH = 3;
@@ -74,13 +75,17 @@ class Searcher{
     cv::Mat_<uchar> accessible_map_;
     cv::Mat_<uchar> border_map_;
     cv::Mat_<float> border_dir_map_;
+    cv::Mat_<uchar> not_fully_viewed_border_;
 
     geometry_msgs::Pose curr_view_pose_;
     geometry_msgs::Pose old_view_pose_;
-    bool curr_view_changed_;
+    bool curr_view_changed_ = true;
+    bool got_map_ = false;
     bool finished_ = false;
+    bool obj_found_ = false;
 
-    std::vector<std::vector<cv::Point>> seen_kernel_points;
+    std::vector<std::vector<cv::Point>> seen_kernel_points_;
+    std::vector<std::vector<float>> seen_kernel_points_value_;
 
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
     cv::Mat_<float> getProbMap(cv::Point& origin);

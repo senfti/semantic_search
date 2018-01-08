@@ -318,7 +318,6 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   gsp_->setlasamplerange(lasamplerange_);
   gsp_->setlasamplestep(lasamplestep_);
   gsp_->setminimumScore(minimum_score_);
-  gsp_->setUpdatePeriod(2.0);
 
   // Call the sampling function once to set the seed.
   GMapping::sampleGaussian(1,seed_);

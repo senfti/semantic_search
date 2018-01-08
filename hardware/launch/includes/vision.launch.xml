@@ -11,7 +11,7 @@
     <param name="vision/OBJ_THRESH" value="0.01"/>
     <param name="vision/OBJ_NMS" value="0.8"/>
 
-    <param name="vision/MIN_Z" value="0.8"/>
+    <param name="vision/MIN_Z" value="0.55"/>
     <param name="vision/MAX_Z" value="3.5"/>
 
     <param name="vision/DETECTION_SAMPLE_NUM" value="20000"/>
