@@ -8,8 +8,8 @@
 #include <tf/transform_datatypes.h>
 
 
-Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_listener)
-  : searched_obj_(searched_obj), tf_listener_(tf_listener)
+Searcher::Searcher(tf::TransformListener *tf_listener)
+  : tf_listener_(tf_listener), obj_map_service_client_(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
 {
   ros::NodeHandle private_nh("~");
   private_nh.param("ObjectMapper/OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
@@ -23,30 +23,13 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
   private_nh.param("Octomap/pointcloud_min_z", POINTCLOUD_MIN_Z,POINTCLOUD_MIN_Z);
   private_nh.param("Octomap/pointcloud_max_z", POINTCLOUD_MAX_Z,POINTCLOUD_MAX_Z);
 
-  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
-  vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
-  octo_mapper_ = new OctoMapper(RESOLUTION);
-
-  ros::ServiceClient service_client(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"));
-  while(!service_client.waitForExistence(ros::Duration(0.1))){
+  while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
     ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
     ros::spinOnce();
   }
-  semantic_mapping_v2::ObjectMapSrvRequest req;
-  req.id = searched_obj_;
-  req.room_id = curr_room;
-  semantic_mapping_v2::ObjectMapSrvResponse res;
-  if(!service_client.call(req, res)){
-    ROS_WARN("TRY SEMANTIC MAP CALL FAILED");
-    return;
-  }
-  prior_prob_map_ = new ObjectMap(res.maps[0]);
-  obj_map_ = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
-  obj_map_->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
-  prior_prob_map_->resample(*obj_map_, OBJ_PRIOR_PROB);
-  seen_maps_.resize(SEEN_MAP_STEPS);
-  for(auto& map : seen_maps_)
-    map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+
+  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
@@ -57,6 +40,64 @@ Searcher::Searcher(int searched_obj, int curr_room, tf::TransformListener *tf_li
 
 
 Searcher::~Searcher(){
+  delete obj_map_;
+  delete prior_prob_map_;
+  delete octo_mapper_;
+}
+
+
+geometry_msgs::Pose Searcher::getNextViewPose(){
+  curr_view_changed_ = false;
+  did_abort_ = false;
+  return curr_view_pose_;
+}
+
+void Searcher::start(int searched_obj){
+  if(running_)
+    return;
+
+  int searched_obj_ = searched_obj;
+  running_ = true;
+  finished_ = false;
+  obj_found_ = false;
+  have_curr_view_ = false;
+  curr_view_changed_= true;
+  got_map_ = false;
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
+  octo_mapper_ = new OctoMapper(RESOLUTION);
+
+  semantic_mapping_v2::ObjectMapSrvRequest req;
+  req.id = searched_obj_;
+  req.room_id = -1;
+  semantic_mapping_v2::ObjectMapSrvResponse res;
+  if(!obj_map_service_client_.call(req, res)){
+    ROS_WARN("SEMANTIC MAP CALL FAILED");
+    return;
+  }
+  prior_prob_map_ = new ObjectMap(res.maps[0]);
+  obj_map_ = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
+  obj_map_->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
+  prior_prob_map_->resample(*obj_map_, OBJ_PRIOR_PROB);
+  seen_maps_.resize(SEEN_MAP_STEPS);
+  for(auto& map : seen_maps_)
+    map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+  ROS_INFO("SEARCH STARTED");
+}
+
+void Searcher::stop(){
+  if(running_)
+    ROS_INFO("SEARCH STOPPED");
+  running_ = false;
+  finished_ = false;
+  have_curr_view_ = false;
+
+  seen_maps_.clear();
+  accessible_map_ = cv::Mat_<uchar>();
+  border_map_ = cv::Mat_<uchar>();
+  border_dir_map_ = cv::Mat_<float>();
+  not_fully_viewed_border_ = cv::Mat_<uchar>();
+
   delete obj_map_;
   delete prior_prob_map_;
   delete octo_mapper_;
@@ -107,6 +148,9 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
 void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
+  if(!running_)
+    return;
+
   ros::Time t = ros::Time::now();
   cv::Mat_<uchar> free(msg->info.height, msg->info.width, uchar(0));
   cv::Mat_<uchar> occupied(msg->info.height, msg->info.width, uchar(0));
@@ -199,7 +243,7 @@ cv::Point Searcher::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) c
 
 
 void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
-  if(!got_map_)
+  if(!got_map_ || !running_)
     return;
 
   ros::Time t = ros::Time::now();
@@ -447,6 +491,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   pose.pose = curr_view_pose_;
   pose.header.frame_id = "map";
   next_pose_pub_.publish(pose);
+  have_curr_view_ = true;
 
   return false;
 }

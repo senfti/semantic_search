@@ -46,7 +46,7 @@
     <param name="Octomap/pointcloud_min_z" value="0.25" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/pointcloud_max_z" value="1.8" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/sensor_model/hit" value="0.7" />                       <!-- maximum range to integrate (speedup!) -->    
-    <param name="Octomap/sensor_model/miss" value="0.3" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/miss" value="0.35" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/occupancy_thresh" value="0.5" />
     <param name="Octomap/downproject_occ_thresh" value="0.6" />
     <param name="Octomap/downproject_dilate_iters" value="2" />
@@ -56,7 +56,7 @@
     <param name="RoomTypeMapper/CELL_HIT_MISS_RATIO" value="5.0" /> 
     <param name="RoomTypeMapper/ROOM_HIT_MISS_RATIO" value="1.2" />                 
     <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.75" />             
-    <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
+    <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0001" />
     <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="4.0" />
     <param name="RoomTypeMapper/ASUS_FOV" value="20" />
     <param name="RoomTypeMapper/MIN_DIST" value="1.0" />
@@ -67,18 +67,18 @@
     <param name="RoomMapper/ROOM_HIT_MISS_RATIO" value="1000.0" />
     <param name="RoomMapper/CELL_HIT_MISS_RATIO" value="100.0" />
 
-    <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.01" />  
-    <param name="ObjectMapper/OBJ_MIN_PROB" value="0.0001" />  
+    <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.003" />  
+    <param name="ObjectMapper/OBJ_MIN_PROB" value="0.00001" />  
     <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
     <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="4.0" />  
     <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
-    <param name="ObjectMapper/V_H" value="0.3" />   
-    <param name="ObjectMapper/V_M" value="0.0002" />  
+    <param name="ObjectMapper/V_H" value="0.08" />   
+    <param name="ObjectMapper/V_M" value="0.0003" />  
     <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
-    <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="32.0" />
+    <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="16.0" />
     <param name="ObjectMapper/STILL_THERE_PROB" value="0.9" />
-    <param name="ObjectMapper/GOT_THERE_PROB" value="0.0005" />NUM_USED_DETECTION_SAMPLES
-    <param name="ObjectMapper/NUM_USED_DETECTION_SAMPLES" value="2000" />
+    <param name="ObjectMapper/GOT_THERE_PROB" value="0.0005" />
+    <param name="ObjectMapper/NUM_USED_DETECTION_SAMPLES" value="4000" />
 
     <param name="transform_publish_period" value="0.05" />   
     <param name="publish_period" value="0.5" />

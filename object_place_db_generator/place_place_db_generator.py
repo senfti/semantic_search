@@ -27,7 +27,7 @@ for w1 in places:
     #min = 0.0
     for w2 in places:
         try:
-            s = spread.entry_named(w1, w2)+0.1
+            s = spread.entry_named(w1, w2)+8.0
             ss.append(s)
             sum += s
             if(s < 0):

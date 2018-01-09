@@ -76,7 +76,9 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
         p.x = getXWorld(x);
         p.y = getYWorld(y);
         p.z = getZWorld(z);
-        insertMax(x,y,z,octomap.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+        float occ = octomap.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
+        if(occ >= 0.f)
+          insertMax(x,y,z,occ);
       }
     }
   }
@@ -91,6 +93,7 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
     tmp = tmp.mul(1.f-obj_from_room);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
     prob_maps_[z] = prob_maps_[z].mul(occ_map.prob_maps_[z]);
+    cv::bitwise_or(count_maps_[z], occ_map.count_maps_[z], count_maps_[z]);
   }
 }
 
@@ -144,12 +147,6 @@ void ObjectMap::resize(int left, int right, int top, int bottom, float prior){
 }
 
 
-void ObjectMap::insertMax(int x, int y, int z, float prob){
-  prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
-  count_maps_[z](y,x) = count_maps_[z](y,x) == uchar(255) ? uchar(255) : count_maps_[z](y,x)+uchar(1);
-}
-
-
 void ObjectMap::applyObjAppearVanish(float still_there_prob, float got_there_prob){
   for(int z=0; z<getZSteps(); z++){
     prob_maps_[z] = prob_maps_[z]*still_there_prob + (1.f-prob_maps_[z])*got_there_prob;
@@ -157,7 +154,7 @@ void ObjectMap::applyObjAppearVanish(float still_there_prob, float got_there_pro
 }
 
 
-visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
+visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id, float thresh) const{
   static int seq=0;
   visualization_msgs::Marker def;
 
@@ -183,15 +180,16 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
         if(count_maps_[z](y,x) > uchar(0)){
           min = std::min(min, getProb(x,y,z));
           max = std::max(max, getProb(x,y,z));
-
-          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::sqrt(getProb(x,y,z))*150, 255, 255));
-          cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
-          std_msgs::ColorRGBA c;
-          c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
-          markers.markers[0].colors.push_back(c);
-          geometry_msgs::Point p;
-          p.x = getXWorld(x);  p.y = getYWorld(y);  p.z = getZWorld(z);
-          markers.markers[0].points.push_back(p);
+          if(getProb(x,y,z) >= thresh){
+            cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::sqrt(getProb(x,y,z))*150, 255, 255));
+            cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
+            std_msgs::ColorRGBA c;
+            c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
+            markers.markers[0].colors.push_back(c);
+            geometry_msgs::Point p;
+            p.x = getXWorld(x);  p.y = getYWorld(y);  p.z = getZWorld(z);
+            markers.markers[0].points.push_back(p);
+          }
         }
       }
     }
@@ -203,20 +201,20 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
 
 
 float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const{
+  expected_room_size*=resolution_*resolution_*resolution_;
   double prob = 1.0;
   int num = 0;
-  float scale_2 = 1.f/(resolution_*2);
   for(int x=0; x<getWidth(); x++){
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
-        if(count_maps_[z](y,x) > uchar(0)){
+        if(count_maps_[z](y,x) > uchar(0))
           prob *= (1.0 - getProb(x, y, z)*occupancy_map.getProb(x,y,z));
+        if(occupancy_map.getCount(x,y,z))
           num++;
-        }
       }
     }
   }
-  prob *= (std::pow(1.f-prior, expected_room_size));
+  prob *= (std::pow(1.f-prior, std::max(expected_room_size-num, 0.f)));
 
   return (1.0-prob);
 }
@@ -326,7 +324,6 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
   max_z = std::min(max_z, max_height_-0.001f);
 
   std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
-
   for(int i=0; i<cloud.size(); i++){
     if(cloud[i].z>=min_z && cloud[i].z<=max_z){
       int x = maps_[0].getXPixel(cloud[i].x);
@@ -403,7 +400,6 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
   ros::Time t = ros::Time::now();
 
   boost::lock_guard<boost::mutex> lock(maps_mutex_);
-  ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
   cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
   for(int x=0; x<behind_door.cols; x++){
     for(int y=0; y<behind_door.rows; y++){
@@ -416,6 +412,7 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
     }
   }
 
+  ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
   float scale_2 = 1.f/(maps_[0].getResolution()*2);
   for(int x=0; x<occ_map.getWidth(); x++){
     for(int y=0; y<occ_map.getHeight(); y++){
@@ -425,7 +422,9 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
           p.x = maps_[0].getXWorld(x);
           p.y = maps_[0].getYWorld(y);
           p.z = maps_[0].getZWorld(z);
-          occ_map.insertMax(x,y,z,octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2));
+          float occ = octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
+          if(occ >= 0.f)
+            occ_map.insertMax(x,y,z,occ);
         }
       }
     }

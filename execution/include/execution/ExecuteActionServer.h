@@ -36,6 +36,7 @@ class ExecuteActionServer{
 
     StartRotationStateMachine start_rotation_state_machine_;
     Explorer explorer_;
+    Searcher searcher_;
 
     ros::Subscriber map_switch_sub_;
 

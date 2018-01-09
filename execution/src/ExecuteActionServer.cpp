@@ -5,7 +5,7 @@
 #include "execution/ExecuteActionServer.h"
 
 ExecuteActionServer::ExecuteActionServer()
-      : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_)
+      : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_), searcher_(&tf_listener_)
 {
   goal_.action = -1;
   action_server_.registerGoalCallback(boost::bind(&ExecuteActionServer::goalCb, this));

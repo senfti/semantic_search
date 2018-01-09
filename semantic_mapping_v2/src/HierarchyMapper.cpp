@@ -276,7 +276,7 @@ void HierarchyMapper::publishObjProbMap(const ObjectMap &map, int idx){
       obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
     }
   }
-  obj_prob_pub_[idx].publish(map.getProbMsg());
+  obj_prob_pub_[idx].publish(map.getProbMsg(0, 0.01));
 }
 
 
@@ -535,7 +535,7 @@ std::vector<float> HierarchyMapper::getCompleteObjProbs(const std::vector<Object
     for(int r = 0; r < room_type_probs.size(); r++){
       unseen_prob_estimate += room_type_probs[r] * getObjProbGivenRoomPerCell(o, r, OBJ_FILL_FRACTION);
     }
-    complete_obj_probs[o] = complete_obj_map[0].getObjectProb(behind_door_mask, unseen_prob_estimate*0.1, ROOM_ESTIMATED_VOLUME);
+    complete_obj_probs[o] = complete_obj_map[o].getObjectProb(behind_door_mask, unseen_prob_estimate, ROOM_ESTIMATED_VOLUME);
   }
   return complete_obj_probs;
 }

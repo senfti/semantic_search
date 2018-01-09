@@ -41,7 +41,7 @@ class ObjectMap{
 
     void resize(int left, int right, int top, int bottom, float prior);
 
-    void insertMax(int x, int y, int z, float prob);
+    inline void insertMax(int x, int y, int z, float prob);
     void insertMax(float x, float y, float z, float prob) { insertMax(getXPixel(x), getYPixel(y), getZPixel(z), prob); }
     inline void insertProb(int x, int y, int z, float prob, float prior, float V_H, float V_M, float min, float max);
     void insertProb(float x, float y, float z, float prob, float prior, float V_H, float V_M, float min, float max) {
@@ -51,6 +51,8 @@ class ObjectMap{
 
     float getProb(int x, int y, int z) const { return prob_maps_[z](y, x); }
     float getProb(float x, float y, float z) const { return  getProb(getXPixel(x), getYPixel(y), getZPixel(z)); }
+    uchar getCount(int x, int y, int z) const { return count_maps_[z](y, x); }
+    uchar getCount(float x, float y, float z) const { return  getCount(getXPixel(x), getYPixel(y), getZPixel(z)); }
 
     int getXPixel(float x) const { return x*resolution_ + origin_.x; }
     int getYPixel(float y) const { return y*resolution_ + origin_.y; }
@@ -68,7 +70,7 @@ class ObjectMap{
     float getResolution() const { return resolution_; }
     cv::Point getOrigin() const { return origin_; }
 
-    visualization_msgs::MarkerArray getProbMsg(int id=0) const;
+    visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = 0.f) const;
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
     float getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const;
@@ -84,7 +86,13 @@ inline void ObjectMap::insertProb(int x, int y, int z, float prob, float prior, 
   float tmp = update / prior * p;
   float tmp2 = (1.f-update) / (1.f-prior) * (1.f-p);
   prob_maps_[z](y,x) = std::min(max, std::max(min, tmp/(tmp+tmp2)));
-  count_maps_[z](y,x) = count_maps_[z](y,x) == uchar(255) ? uchar(255) : count_maps_[z](y,x)+uchar(1);
+  count_maps_[z](y,x) = count_maps_[z](y,x) | uchar(1);
+}
+
+
+inline void ObjectMap::insertMax(int x, int y, int z, float prob){
+  prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
+  count_maps_[z](y,x) = count_maps_[z](y,x) | uchar(1);
 }
 
 

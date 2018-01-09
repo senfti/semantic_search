@@ -67,6 +67,8 @@ class Searcher{
     ros::Publisher obj_pub_;
     ros::Publisher next_pose_pub_;
 
+    ros::ServiceClient obj_map_service_client_;
+
     int searched_obj_ = 0;
     ObjectMap* obj_map_ = nullptr;
     ObjectMap* prior_prob_map_ = nullptr;
@@ -80,9 +82,13 @@ class Searcher{
     geometry_msgs::Pose curr_view_pose_;
     geometry_msgs::Pose old_view_pose_;
     bool curr_view_changed_ = true;
+    bool have_curr_view_ = false;
     bool got_map_ = false;
     bool finished_ = false;
+    bool running_ = false;
     bool obj_found_ = false;
+
+    bool did_abort_ = false;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
     std::vector<std::vector<float>> seen_kernel_points_value_;
@@ -98,8 +104,18 @@ class Searcher{
     void resize(float x1, float x2, float y1, float y2);
 
   public:
-    Searcher(int searched_obj, int curr_room, tf::TransformListener* tf_listener);
+    Searcher(tf::TransformListener* tf_listener);
     ~Searcher();
+
+    geometry_msgs::Pose getNextViewPose();
+    bool hasViewPoseChanged() const { return curr_view_changed_; }
+    bool haveViewPose() const { return have_curr_view_; }
+    bool finished() const { return finished_; }
+    bool running() const { return running_; }
+    bool objectFound() const { return obj_found_; }
+
+    void start(int searched_obj);
+    void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
