@@ -9,6 +9,23 @@
 
 #include <fstream>
 
+float ObjectMapper::OBJ_PRIOR_PROB = 0.01f;
+float ObjectMapper::OBJ_MIN_PROB = 0.0001f;
+float ObjectMapper::OBJ_MAX_PROB = 0.9f;
+
+float ObjectMapper::OBJ_DEFAULT_RESOLUTION = 4.f;
+float ObjectMapper::OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
+float ObjectMapper::ROOM_EXPECTED_SIZE = 32.f;
+
+float ObjectMapper::V_H = 0.3;
+float ObjectMapper::V_M = 0.0002;
+
+float ObjectMapper::STILL_THERE_PROB = 0.9f;
+float ObjectMapper::GOT_THERE_PROB = 0.0005f;
+bool ObjectMapper::PARAMS_LOADED = false;
+
+float ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE = 0.7f;
+
 std::vector<std::string> ObjectMapper::getObjNames(){
   static std::vector<std::string> OBJ_NAMES;
   ros::NodeHandle private_nh("~");
@@ -58,7 +75,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
     map = cv::Mat_<uchar>(height, width, uchar(0));
 }
 
-ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap)
+ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, const std::vector<Door>& doors)
   : resolution_(resolution), base_size_(base_size), max_height_(max_height), origin_(origin)
 {
   prob_maps_.resize(getZSteps());
@@ -68,17 +85,31 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
   for(auto& map : count_maps_)
     map = cv::Mat_<uchar>(height, width, uchar(0));
 
+  cv::Mat_<uchar> behind_door(getHeight(), getWidth(), uchar(0));
+  for(int x=0; x<behind_door.cols; x++){
+    for(int y=0; y<behind_door.rows; y++){
+      for(const auto& door : doors){
+        if(door.isBehindDoor(getXWorld(x), getYWorld(y))){
+          behind_door(y,x) = 255;
+          break;
+        }
+      }
+    }
+  }
+
   float scale_2 = 1.f/(resolution*2);
   for(int x=0; x<getWidth(); x++){
     for(int y=0; y<getHeight(); y++){
-      for(int z=0; z<getZSteps(); z++){
-        geometry_msgs::Point p;
-        p.x = getXWorld(x);
-        p.y = getYWorld(y);
-        p.z = getZWorld(z);
-        float occ = octomap.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
-        if(occ >= 0.f)
-          insertMax(x,y,z,occ);
+      if(behind_door(y,x) == 0){
+        for(int z = 0; z < getZSteps(); z++){
+          geometry_msgs::Point p;
+          p.x = getXWorld(x);
+          p.y = getYWorld(y);
+          p.z = getZWorld(z);
+          float occ = octomap.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
+          if(occ >= 0.f)
+            insertMax(x, y, z, occ);
+        }
       }
     }
   }
@@ -87,13 +118,14 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
 
 ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room){
   *this = object_map;
+  cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
   for(int z=0; z<getZSteps(); z++){
-    cv::Mat_<float> tmp = 1.f - prob_maps_[z];
-    prob_maps_[z] = object_map.prob_maps_[z].mul(obj_from_room);
-    tmp = tmp.mul(1.f-obj_from_room);
-    cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
     prob_maps_[z] = prob_maps_[z].mul(occ_map.prob_maps_[z]);
-    cv::bitwise_or(count_maps_[z], occ_map.count_maps_[z], count_maps_[z]);
+    cv::Mat_<float> tmp = 1.f - prob_maps_[z];
+    prob_maps_[z] = prob_maps_[z].mul(obj_from_room_new);
+    tmp = tmp.mul(1.f-obj_from_room_new);
+    cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
+    //cv::bitwise_or(object_map.count_maps_[z], occ_map.count_maps_[z], count_maps_[z]);
   }
 }
 
@@ -200,7 +232,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id, float thresh) cons
 }
 
 
-float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const{
+float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size, bool multiply_occ) const{
   expected_room_size*=resolution_*resolution_*resolution_;
   double prob = 1.0;
   int num = 0;
@@ -208,7 +240,7 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, floa
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
         if(count_maps_[z](y,x) > uchar(0))
-          prob *= (1.0 - getProb(x, y, z)*occupancy_map.getProb(x,y,z));
+          prob *= (1.0 - getProb(x, y, z)*(multiply_occ ? occupancy_map.getProb(x,y,z) : 1.f));
         if(occupancy_map.getCount(x,y,z))
           num++;
       }
@@ -220,14 +252,14 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, floa
 }
 
 
-float ObjectMap::getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const{
+float ObjectMap::getObjectProb(float prior, float expected_room_size) const{
   expected_room_size*=resolution_*resolution_*resolution_;
   double prob = 1.0;
   int num = 0;
   for(int x=0; x<getWidth(); x++){
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
-        if(count_maps_[z](y,x) > uchar(0) && behind_door_mask(y,x) < 0.5f){
+        if(count_maps_[z](y,x) > uchar(0)){
           prob *= (1.0 - getProb(x, y, z));
           num++;
         }
@@ -275,36 +307,41 @@ semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
 
 
 ObjectMapper::ObjectMapper(){
-  ros::NodeHandle private_nh("~");
-  private_nh.param("ObjectMapper/OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
-  private_nh.param("ObjectMapper/OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
-  private_nh.param("ObjectMapper/OBJ_MAX_PROB", OBJ_MAX_PROB, OBJ_MAX_PROB);
-  private_nh.param("ObjectMapper/OBJ_DEFAULT_RESOLUTION", OBJ_DEFAULT_RESOLUTION, OBJ_DEFAULT_RESOLUTION);
-  private_nh.param("ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT", OBJ_DEFUALT_MAX_HEIGHT, OBJ_DEFUALT_MAX_HEIGHT);
-  private_nh.param("ObjectMapper/V_H", V_H, V_H);
-  private_nh.param("ObjectMapper/V_M", V_M, V_M);
-  private_nh.param("ObjectMapper/ROOM_EXPECTED_SIZE", ROOM_EXPECTED_SIZE, ROOM_EXPECTED_SIZE);
-  private_nh.param("ObjectMapper/STILL_THERE_PROB", STILL_THERE_PROB, STILL_THERE_PROB);
-  private_nh.param("ObjectMapper/GOT_THERE_PROB", GOT_THERE_PROB, GOT_THERE_PROB);
+  if(!PARAMS_LOADED){
+    ros::NodeHandle private_nh("~");
+    private_nh.param("ObjectMapper/OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
+    private_nh.param("ObjectMapper/OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
+    private_nh.param("ObjectMapper/OBJ_MAX_PROB", OBJ_MAX_PROB, OBJ_MAX_PROB);
+    private_nh.param("ObjectMapper/OBJ_DEFAULT_RESOLUTION", OBJ_DEFAULT_RESOLUTION, OBJ_DEFAULT_RESOLUTION);
+    private_nh.param("ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT", OBJ_DEFUALT_MAX_HEIGHT, OBJ_DEFUALT_MAX_HEIGHT);
+    private_nh.param("ObjectMapper/V_H", V_H, V_H);
+    private_nh.param("ObjectMapper/V_M", V_M, V_M);
+    private_nh.param("ObjectMapper/ROOM_EXPECTED_SIZE", ROOM_EXPECTED_SIZE, ROOM_EXPECTED_SIZE);
+    private_nh.param("ObjectMapper/STILL_THERE_PROB", STILL_THERE_PROB, STILL_THERE_PROB);
+    private_nh.param("ObjectMapper/GOT_THERE_PROB", GOT_THERE_PROB, GOT_THERE_PROB);
+    private_nh.param("ObjectMapper/OBJ_FROM_ROOM_CONFIDENCE", OBJ_FROM_ROOM_CONFIDENCE, OBJ_FROM_ROOM_CONFIDENCE);
 
-  std::cout << V_H << " " << V_M << " " << OBJ_PRIOR_PROB << " " << std::endl;
+    ROS_ERROR("OBJ PARAMETERS LOADED: %f %f %f %f %f %f %f %f %f %f %f", OBJ_PRIOR_PROB, OBJ_MIN_PROB,OBJ_MAX_PROB, OBJ_DEFAULT_RESOLUTION,
+              OBJ_DEFUALT_MAX_HEIGHT, V_H, V_M, ROOM_EXPECTED_SIZE, STILL_THERE_PROB, GOT_THERE_PROB, OBJ_FROM_ROOM_CONFIDENCE);
+
+    PARAMS_LOADED = true;
+  }
 }
 
 
 ObjectMapper::ObjectMapper(const ObjectMapper& rhs){
-  OBJ_PRIOR_PROB = rhs.OBJ_PRIOR_PROB;
-  OBJ_MIN_PROB = rhs.OBJ_MIN_PROB;
-  OBJ_MAX_PROB = rhs.OBJ_MAX_PROB;
-
-  OBJ_DEFAULT_RESOLUTION = rhs.OBJ_DEFAULT_RESOLUTION;
-  OBJ_DEFUALT_MAX_HEIGHT = rhs.OBJ_DEFUALT_MAX_HEIGHT;
-  ROOM_EXPECTED_SIZE = rhs.ROOM_EXPECTED_SIZE;
-
-  V_H = rhs.V_H;
-  V_M = rhs.V_M;
-
-  maps_ = rhs.maps_;
   max_height_ = rhs.max_height_;
+  maps_ = rhs.maps_;
+}
+
+
+ObjectMapper& ObjectMapper::operator=(const ObjectMapper &rhs){
+  if(this == &rhs)
+    return *this;
+
+  max_height_ = rhs.max_height_;
+  maps_ = rhs.maps_;
+  return *this;
 }
 
 

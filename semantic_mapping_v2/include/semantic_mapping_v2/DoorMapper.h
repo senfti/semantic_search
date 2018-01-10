@@ -14,10 +14,10 @@ class RoomMapper;
 
 class Door{
   public:
-    double MAX_SAME_DOOR_DIST = 1.0;
-    double MAX_SAME_DOOR_ANGLE = M_PI_2;
-    double MIN_THROUGH_DOOR_DIST = 0.1;
-    int MAX_CONFIDENCE = 10;
+    static double MAX_SAME_DOOR_DIST;
+    static double MAX_SAME_DOOR_ANGLE;
+    static double MIN_THROUGH_DOOR_DIST;
+    static int MAX_CONFIDENCE;
 
   private:
     int id_ = -1;

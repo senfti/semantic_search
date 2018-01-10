@@ -160,42 +160,59 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
   return similarity[i][j];
 }
 
-
+float RoomTypeMapper::CELL_MIN_PROB = 0.0005;
+float RoomTypeMapper::CELL_MAX_PROB = 0.75;
+float RoomTypeMapper::ROOM_MAX_PROB = 0.9;
+float RoomTypeMapper::ROOM_DEFAULT_RESOLUTION = 4.f;
+float RoomTypeMapper::ASUS_FOV = 29.f;
+float RoomTypeMapper::MIN_DIST = 1.f;
+float RoomTypeMapper::MAX_DIST = 4.0f;
+float RoomTypeMapper::CELL_HIT_MISS_RATIO = 5.0;
+bool RoomTypeMapper::PARAMS_LOADED = false;
 
 RoomTypeMapper::RoomTypeMapper(){
-  ros::NodeHandle private_nh("~");
-  private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
-  private_nh.param("RoomTypeMapper/ROOM_HIT_MISS_RATIO", ROOM_HIT_MISS_RATIO, ROOM_HIT_MISS_RATIO);
-  private_nh.param("RoomTypeMapper/CELL_MAX_PROB", CELL_MAX_PROB, CELL_MAX_PROB);
-  private_nh.param("RoomTypeMapper/CELL_MIN_PROB", CELL_MIN_PROB, CELL_MIN_PROB);
-  private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
-  private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
-  private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
-  private_nh.param("RoomTypeMapper/MAX_DIST", MAX_DIST, MAX_DIST);
-  private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
-  ASUS_FOV *= M_PI/180.f;
+  if(!PARAMS_LOADED){
+    PARAMS_LOADED = true;
+    ros::NodeHandle private_nh("~");
+    private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
+    private_nh.param("RoomTypeMapper/CELL_MAX_PROB", CELL_MAX_PROB, CELL_MAX_PROB);
+    private_nh.param("RoomTypeMapper/CELL_MIN_PROB", CELL_MIN_PROB, CELL_MIN_PROB);
+    private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
+    private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
+    private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
+    private_nh.param("RoomTypeMapper/MAX_DIST", MAX_DIST, MAX_DIST);
+    private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
+    ASUS_FOV *= M_PI / 180.f;
+
+    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f", CELL_HIT_MISS_RATIO,CELL_MAX_PROB, CELL_MIN_PROB,
+              ROOM_DEFAULT_RESOLUTION, ASUS_FOV, MIN_DIST, MAX_DIST, ROOM_MAX_PROB);
+  }
 }
 
 
 RoomTypeMapper::RoomTypeMapper(const RoomTypeMapper& rhs){
-  CELL_MIN_PROB = rhs.CELL_MIN_PROB;
-  CELL_MAX_PROB = rhs.CELL_MAX_PROB;
-  ROOM_DEFAULT_RESOLUTION = rhs.ROOM_DEFAULT_RESOLUTION;
-  ASUS_FOV = rhs.ASUS_FOV;
-  MIN_DIST = rhs.MIN_DIST;
-  MAX_DIST = rhs.MAX_DIST;
-  CELL_HIT_MISS_RATIO = rhs.CELL_HIT_MISS_RATIO;
-  ROOM_HIT_MISS_RATIO = rhs.ROOM_HIT_MISS_RATIO;
-
-  NUM_CLASSES = rhs.NUM_CLASSES;
-  ROOM_PRIOR_PROB = rhs.ROOM_PRIOR_PROB;
-
   prob_maps_ = rhs.prob_maps_;
   names_ = rhs.names_;
 }
 
 
 RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, const cv::Mat_<uchar> &seen_map, const cv::Point &origin, float resolution, int base_size){
+  if(!PARAMS_LOADED){
+    PARAMS_LOADED = true;
+    ros::NodeHandle private_nh("~");
+    private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
+    private_nh.param("RoomTypeMapper/CELL_MAX_PROB", CELL_MAX_PROB, CELL_MAX_PROB);
+    private_nh.param("RoomTypeMapper/CELL_MIN_PROB", CELL_MIN_PROB, CELL_MIN_PROB);
+    private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
+    private_nh.param("RoomTypeMapper/ASUS_FOV", ASUS_FOV, ASUS_FOV);
+    private_nh.param("RoomTypeMapper/MIN_DIST", MIN_DIST, MIN_DIST);
+    private_nh.param("RoomTypeMapper/MAX_DIST", MAX_DIST, MAX_DIST);
+    private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
+    ASUS_FOV *= M_PI / 180.f;
+
+    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f", CELL_HIT_MISS_RATIO,CELL_MAX_PROB, CELL_MIN_PROB,
+              ROOM_DEFAULT_RESOLUTION, ASUS_FOV, MIN_DIST, MAX_DIST, ROOM_MAX_PROB);
+  }
   for(const auto& m : prob_maps){
     prob_maps_.push_back(RoomTypeMap(m,seen_map,origin,resolution, base_size));
   }

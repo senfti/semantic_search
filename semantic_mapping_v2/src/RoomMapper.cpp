@@ -40,7 +40,7 @@ double RoomMapper::getObjProbGivenRoom(int obj, int room){
   return prob_map[room][obj];
 }
 
-double RoomMapper::getObjProbGivenRoomPrior(int obj){
+double RoomMapper::getObjProbGivenRoomObjPrior(int obj){
   static std::vector<double> prob_sum;
   if(prob_sum.empty()){
     if(prob_map.empty())
@@ -59,6 +59,27 @@ double RoomMapper::getObjProbGivenRoomPrior(int obj){
     }
   }
   return prob_sum[obj];
+}
+
+double RoomMapper::getObjProbGivenRoomRoomPrior(int room){
+  static std::vector<double> prob_sum;
+  if(prob_sum.empty()){
+    if(prob_map.empty())
+      getObjProbGivenRoom(0,0);
+    int no = prob_map[0].size();
+    int nr = prob_map.size();
+    prob_sum.resize(nr,0.f);
+    for(int r=0; r<nr; r++){
+      for(int o=0; o<no; o++){
+        prob_sum[r] += prob_map[r][o];
+      }
+    }
+    for(int r=0; r<nr; r++){
+      prob_sum[r] /= nr;
+      //std::cout << "__________________ " << prob_sum[o]  << std::endl;
+    }
+  }
+  return prob_sum[room];
 }
 
 
@@ -113,8 +134,6 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
   private_nh_.param("Octomap/downsample_factor", downsample_factor_, downsample_factor_);
   private_nh_.param("Octomap/pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
   private_nh_.param("Octomap/pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
-  private_nh_.param("RoomMapper/ROOM_HIT_MISS_RATIO", ROOM_HIT_MISS_RATIO, ROOM_HIT_MISS_RATIO);
-  private_nh_.param("RoomMapper/OBJ_HIT_MISS_RATIO", OBJ_HIT_MISS_RATIO, OBJ_HIT_MISS_RATIO);
   private_nh_.param("RoomMapper/NUM_USED_DETECTION_SAMPLES", NUM_USED_DETECTION_SAMPLES, NUM_USED_DETECTION_SAMPLES);
 
   bool got_transform = false;
@@ -596,66 +615,66 @@ geometry_msgs::PoseArray RoomMapper::getParticlePoseMsg(){
   return msg;
 }
 
-
-std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_type_probs, std::vector<size_t>& order){
-  std::vector<float> obj_probs = getObjectProbs(order);
-  std::vector<float> room_probs = getRoomTypeProbs(order);
-  room_type_probs.resize(room_probs.size());
-  std::vector<double> Pro(room_probs.size(),0.0);
-  std::vector<double> Prr(room_probs.size(),0.0);
-  double sum=0.0;
-  double max = 0.f;
-  double N = room_probs.size();
-  double v = -std::log(N);
-  for(int r=0; r<room_probs.size(); r++){
-    for(int o=0; o<obj_probs.size(); o++){
-      Pro[r] += std::log(obj_probs[o]*getObjProbGivenRoom(o,r)/N/(getObjProbGivenRoomPrior(o)/N) + (1.0-obj_probs[o])*(1.0-getObjProbGivenRoom(o,r))/N/(1.0-getObjProbGivenRoomPrior(o)/N));
-    }
-    max = std::max(max, Pro[r]);
-  }
-  for(int r=0; r<room_probs.size(); r++){
-    Pro[r] = std::exp(Pro[r]-max);
-    sum += Pro[r];
-  }
-  for(int r=0; r<room_probs.size(); r++){
-    Pro[r] = Pro[r]/sum;
-  }
-  sum=0.0;
-  for(int r=0; r<room_probs.size(); r++){
-    Prr[r] = room_probs[r]*ROOM_HIT_MISS_RATIO+(1.0-room_probs[r]);
-    sum += Prr[r];
-  }
-  for(int r=0; r<room_probs.size(); r++){
-    Prr[r] /= sum;
-  }
-  sum=0.0;
-  for(int r=0; r<room_probs.size(); r++){
-    Pro[r] = Pro[r]*OBJ_HIT_MISS_RATIO+(1.0-Pro[r]);
-    sum += Pro[r];
-  }
-  for(int r=0; r<room_probs.size(); r++){
-    Pro[r] /= sum;
-  }
-  sum = 0.0;
-  for(int r=0; r<room_probs.size(); r++){
-    Prr[r] = Prr[r]*Pro[r];
-    sum += Prr[r];
-  }
-  for(int r=0; r<room_probs.size(); r++){
-    room_type_probs[r] = Prr[r] / sum;
-  }
-
-  std::vector<float> res(obj_probs.size());
-  for(int o=0; o<obj_probs.size(); o++){
-    double prob = 0.0;
-    double prob_inv = 0.0;
-    for(int r=0; r<room_probs.size(); r++){
-      prob += room_type_probs[r]*getObjProbGivenRoom(o,r);
-      prob_inv += room_type_probs[r]*(1.0-getObjProbGivenRoom(o,r));
-    }
-    prob = prob*obj_probs[o];
-    prob_inv = prob_inv*(1.0-obj_probs[o]);
-    res[o] = prob/(prob+prob_inv);
-  }
-  return res;
-}
+//
+//std::vector<float> RoomMapper::getObjectProbsComplete(std::vector<float>& room_type_probs, std::vector<size_t>& order){
+//  std::vector<float> obj_probs = getObjectProbs(order);
+//  std::vector<float> room_probs = getRoomTypeProbs(order);
+//  room_type_probs.resize(room_probs.size());
+//  std::vector<double> Pro(room_probs.size(),0.0);
+//  std::vector<double> Prr(room_probs.size(),0.0);
+//  double sum=0.0;
+//  double max = 0.f;
+//  double N = room_probs.size();
+//  double v = -std::log(N);
+//  for(int r=0; r<room_probs.size(); r++){
+//    for(int o=0; o<obj_probs.size(); o++){
+//      Pro[r] += std::log(obj_probs[o]*getObjProbGivenRoom(o,r)/N/(getObjProbGivenRoomPrior(o)/N) + (1.0-obj_probs[o])*(1.0-getObjProbGivenRoom(o,r))/N/(1.0-getObjProbGivenRoomPrior(o)/N));
+//    }
+//    max = std::max(max, Pro[r]);
+//  }
+//  for(int r=0; r<room_probs.size(); r++){
+//    Pro[r] = std::exp(Pro[r]-max);
+//    sum += Pro[r];
+//  }
+//  for(int r=0; r<room_probs.size(); r++){
+//    Pro[r] = Pro[r]/sum;
+//  }
+//  sum=0.0;
+//  for(int r=0; r<room_probs.size(); r++){
+//    Prr[r] = room_probs[r]*ROOM_HIT_MISS_RATIO+(1.0-room_probs[r]);
+//    sum += Prr[r];
+//  }
+//  for(int r=0; r<room_probs.size(); r++){
+//    Prr[r] /= sum;
+//  }
+//  sum=0.0;
+//  for(int r=0; r<room_probs.size(); r++){
+//    Pro[r] = Pro[r]*OBJ_HIT_MISS_RATIO+(1.0-Pro[r]);
+//    sum += Pro[r];
+//  }
+//  for(int r=0; r<room_probs.size(); r++){
+//    Pro[r] /= sum;
+//  }
+//  sum = 0.0;
+//  for(int r=0; r<room_probs.size(); r++){
+//    Prr[r] = Prr[r]*Pro[r];
+//    sum += Prr[r];
+//  }
+//  for(int r=0; r<room_probs.size(); r++){
+//    room_type_probs[r] = Prr[r] / sum;
+//  }
+//
+//  std::vector<float> res(obj_probs.size());
+//  for(int o=0; o<obj_probs.size(); o++){
+//    double prob = 0.0;
+//    double prob_inv = 0.0;
+//    for(int r=0; r<room_probs.size(); r++){
+//      prob += room_type_probs[r]*getObjProbGivenRoom(o,r);
+//      prob_inv += room_type_probs[r]*(1.0-getObjProbGivenRoom(o,r));
+//    }
+//    prob = prob*obj_probs[o];
+//    prob_inv = prob_inv*(1.0-obj_probs[o]);
+//    res[o] = prob/(prob+prob_inv);
+//  }
+//  return res;
+//}

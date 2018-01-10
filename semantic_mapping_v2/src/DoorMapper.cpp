@@ -5,6 +5,11 @@
 #include "semantic_mapping_v2/DoorMapper.h"
 #include <tf/transform_datatypes.h>
 
+double Door::MAX_SAME_DOOR_DIST = 1.0;
+double Door::MAX_SAME_DOOR_ANGLE = M_PI_2;
+double Door::MIN_THROUGH_DOOR_DIST = 0.1;
+int Door::MAX_CONFIDENCE = 10;
+
 Door::Door(int this_room, const tf::Transform& pose, int other_room, int id, int counterpart_id, int confidence)
   : id_(id), counterpart_id_(counterpart_id), pose_(pose), this_room_(this_room), other_room_(other_room), pose_array_(std::min(MAX_CONFIDENCE, confidence), pose)
 {

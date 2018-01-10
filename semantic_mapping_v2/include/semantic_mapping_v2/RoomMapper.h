@@ -17,7 +17,8 @@ class RoomMapper : public SlamGMapping{
   public:
     static double getObjProbGivenRoom(int obj, int room);
     static std::vector<std::vector<double>> prob_map;
-    static double getObjProbGivenRoomPrior(int obj);
+    static double getObjProbGivenRoomObjPrior(int obj);
+    static double getObjProbGivenRoomRoomPrior(int room);
 
   protected:
     int idx_ = -1;
@@ -38,8 +39,6 @@ class RoomMapper : public SlamGMapping{
     int downsample_factor_ = 4;
     double m_pointcloudMinZ = 0.25;
     double m_pointcloudMaxZ = 1.8;
-    double ROOM_HIT_MISS_RATIO = 1000.0;
-    double OBJ_HIT_MISS_RATIO = 100.0;
     int NUM_USED_DETECTION_SAMPLES = 2000;
 
     boost::thread* octomapping_thread_ = nullptr;
@@ -138,7 +137,7 @@ class RoomMapper : public SlamGMapping{
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
-    std::vector<float> getObjectProbsComplete(std::vector<float>& room_probs, std::vector<size_t>& order);
+    //std::vector<float> getObjectProbsComplete(std::vector<float>& room_probs, std::vector<size_t>& order);
 
     std::string getRoomName(int id) const { return room_type_mappers_[0]->getName(id); }
     std::vector<std::string> getRoomNames() const { return room_type_mappers_[0]->getNames(); }

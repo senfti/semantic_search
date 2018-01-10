@@ -36,11 +36,22 @@ with open(label_file) as f:
     content = f.readlines()
 f.close()
 content = [x.strip() for x in content]
+names = []
 reduced_place_obj_map = np.zeros((0,80), np.float64)
 for i, c in enumerate(content):
     if c[0] != '_':
         print c
+        names.append(c)
         reduced_place_obj_map = np.vstack((reduced_place_obj_map, place_obj_map[i]))
 
 print reduced_place_obj_map.shape
 np.savetxt('/home/thomas/obj_places_map.dat', reduced_place_obj_map, delimiter=' ')
+
+
+f = open('/home/thomas/obj_places_map.dat', 'r')
+lines = f.readlines()
+f.close()
+f = open('/home/thomas/obj_places_map_view.csv', 'w')
+for i, line in enumerate(lines):
+    f.write(names[i].replace(" ", "") + ' ' + line)
+f.close()

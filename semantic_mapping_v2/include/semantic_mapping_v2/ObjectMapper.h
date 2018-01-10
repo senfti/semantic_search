@@ -20,7 +20,6 @@ class OctoMapper;
 
 class ObjectMap{
   private:
-
     float resolution_;
     int base_size_;
     float max_height_;
@@ -31,7 +30,7 @@ class ObjectMap{
   public:
     ObjectMap(float resolution, float start_size, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
-    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap);
+    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, const std::vector<Door>& doors);
     ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room);
 
     ObjectMap operator*(const ObjectMap& rhs) const;
@@ -72,8 +71,8 @@ class ObjectMap{
 
     visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = 0.f) const;
 
-    float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
-    float getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const;
+    float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size, bool multiply_occ = true) const;
+    float getObjectProb(float prior, float expected_room_size) const;
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
@@ -101,19 +100,22 @@ class ObjectMapper{
     static std::vector<std::string> getObjNames();
     static std::string getObjName(int idx);
 
-    float OBJ_PRIOR_PROB = 0.01f;
-    float OBJ_MIN_PROB = 0.0001f;
-    float OBJ_MAX_PROB = 0.9f;
+    static float OBJ_PRIOR_PROB;
+    static float OBJ_MIN_PROB;
+    static float OBJ_MAX_PROB;
 
-    float OBJ_DEFAULT_RESOLUTION = 4.f;
-    float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
-    float ROOM_EXPECTED_SIZE = 32.f;
+    static float OBJ_DEFAULT_RESOLUTION;
+    static float OBJ_DEFUALT_MAX_HEIGHT;
+    static float ROOM_EXPECTED_SIZE;
 
-    float V_H = 0.3;
-    float V_M = 0.0002;
+    static float V_H;
+    static float V_M;
 
-    float STILL_THERE_PROB = 0.9f;
-    float GOT_THERE_PROB = 0.0005f;
+    static float STILL_THERE_PROB;
+    static float GOT_THERE_PROB;
+    static bool PARAMS_LOADED;
+
+    static float OBJ_FROM_ROOM_CONFIDENCE;
 
   private:
     std::vector<ObjectMap> maps_;
@@ -125,6 +127,8 @@ class ObjectMapper{
   public:
     ObjectMapper();
     ObjectMapper(const ObjectMapper& rhs);
+    ObjectMapper& operator=(const ObjectMapper& rhs);
+
     std::pair<cv::Point,cv::Size> addCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg, float min_z, float max_z);
     void applyObjAppearVanish();
 

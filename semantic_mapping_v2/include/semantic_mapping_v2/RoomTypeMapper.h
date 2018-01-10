@@ -64,15 +64,15 @@ class RoomTypeMap{
 
 class RoomTypeMapper{
   public:
-    float CELL_MIN_PROB = 0.0005;
-    float CELL_MAX_PROB = 0.75;
-    float ROOM_MAX_PROB = 0.9;
-    float ROOM_DEFAULT_RESOLUTION = 4.f;
-    float ASUS_FOV = 29.f;
-    float MIN_DIST = 1.f;
-    float MAX_DIST = 4.0f;
-    float CELL_HIT_MISS_RATIO = 5.0;
-    float ROOM_HIT_MISS_RATIO = 1.2;
+    static float CELL_MIN_PROB;
+    static float CELL_MAX_PROB;
+    static float ROOM_MAX_PROB;
+    static float ROOM_DEFAULT_RESOLUTION;
+    static float ASUS_FOV;
+    static float MIN_DIST;
+    static float MAX_DIST;
+    static float CELL_HIT_MISS_RATIO;
+    static bool PARAMS_LOADED;
 
     int NUM_CLASSES = 0;
     float ROOM_PRIOR_PROB = 1.f/82;
