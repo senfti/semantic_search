@@ -125,7 +125,7 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
     prob_maps_[z] = prob_maps_[z].mul(obj_from_room_new);
     tmp = tmp.mul(1.f-obj_from_room_new);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
-    //cv::bitwise_or(object_map.count_maps_[z], occ_map.count_maps_[z], count_maps_[z]);
+    cv::threshold(prob_maps_[z], prob_maps_[z], ObjectMapper::OBJ_MAX_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
   }
 }
 

@@ -729,10 +729,10 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       cv::minMaxLoc(single_view_prob_map[o], &min, &max, &min_loc, &max_loc);
       single_view_max_probs[o] = max;
       geometry_msgs::Point point;
-      point.x = complete_obj_map[0].getXWorld(min_loc.x);
-      point.y = complete_obj_map[0].getXWorld(min_loc.y);
+      point.x = obj_maps[i][0].getXWorld(max_loc.x);
+      point.y = obj_maps[i][0].getXWorld(max_loc.y);
       point.z = 0;
-      single_view_points.push_back(point);
+      single_view_points[o] = point;
     }
 
     semantic_mapping_v2::RoomMsg room;
