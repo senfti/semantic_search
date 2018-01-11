@@ -21,8 +21,8 @@ class ExecuteActionServer{
   public:
     enum class MoveBaseState {WAITING, GOAL_SENT, RUNNING, STOPPED, FINISHED};
     const int START_ROTATION_STEPS = 8;
-    const float MOVE_MAX_ROT_VEL = 5.0;
-    const float MOVE_MAX_TRANS_VEL = 0.5;
+    float MOVE_MAX_ROT_VEL = 5.0;
+    float MOVE_MAX_TRANS_VEL = 0.5;
 
   protected:
     ros::NodeHandle nh_;

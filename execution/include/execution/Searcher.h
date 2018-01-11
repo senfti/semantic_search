@@ -21,21 +21,20 @@
 
 class Searcher{
   public:
-    const float SEARCH_MAX_ROT_VEL = 1.0;
-    const float SEARCH_MAX_TRANS_VEL = 0.3;
-    const int VIEW_DIST = 1.0/0.05;
-    const int ROBOT_SIZE = 0.3/0.05;
+    float SEARCH_MAX_ROT_VEL = 1.0;
+    float SEARCH_MAX_TRANS_VEL = 0.3;
+    int ROBOT_SIZE = 0.35/0.05;
 
-    float OBJ_PRIOR_PROB = 0.0005f;
+    float OBJ_PRIOR_PROB = 0.003f;
     float OBJ_MIN_PROB = 0.00001f;
-    float OBJ_MAX_PROB = 0.7f;
+    float OBJ_MAX_PROB = 0.9f;
 
     float RESOLUTION = 10.f;
     float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
-    float ROOM_EXPECTED_SIZE = 32.f;
+    float ROOM_EXPECTED_SIZE = 24.f;
 
-    float V_H = 0.3;
-    float V_M = 0.0002;
+    float V_H = 0.08;
+    float V_M = 0.0003;
 
     float POINTCLOUD_MIN_Z = 0.0f;
     float POINTCLOUD_MAX_Z = 1.8f;
@@ -44,7 +43,7 @@ class Searcher{
 
     int VIEW_ANGLE_STEPS = 12;
     int SEEN_MAP_STEPS = 36;
-    int SAMPLE_COUNT_THRESH = 10000;
+    int SAMPLE_COUNT_THRESH = 5;
 
     float VIEW_MIN_DIST = 0.55f;
     float VIEW_MAX_DIST = 3.5f;
@@ -54,7 +53,7 @@ class Searcher{
     float MOVE_SPEED = 0.01;
     float VIEW_TIME = 0.2;
 
-    int BORDER_SEEN_THRESH = 3;
+    int BORDER_SEEN_THRESH = 1;
     float BORDER_SEEN_MAX_ANGLE = 15.f*M_PI/180.0;
     int SEEN_MAP_MAX_DIST = 2.5;
 

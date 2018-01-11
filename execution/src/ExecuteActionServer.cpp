@@ -7,6 +7,9 @@
 ExecuteActionServer::ExecuteActionServer()
       : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_), searcher_(&tf_listener_)
 {
+  ros::NodeHandle("~").param("MOVE_MAX_ROT_VEL", MOVE_MAX_ROT_VEL, MOVE_MAX_ROT_VEL);
+  ros::NodeHandle("~").param("MOVE_MAX_TRANS_VEL", MOVE_MAX_TRANS_VEL, MOVE_MAX_TRANS_VEL);
+
   goal_.action = -1;
   action_server_.registerGoalCallback(boost::bind(&ExecuteActionServer::goalCb, this));
   action_server_.registerPreemptCallback(boost::bind(&ExecuteActionServer::preemptCb, this));

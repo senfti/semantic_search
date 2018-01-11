@@ -13,6 +13,11 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
   door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
 
+  ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
+  ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);
+  ros::NodeHandle("~").param("VIEW_DIST", VIEW_DIST, VIEW_DIST);
+  ros::NodeHandle("~").param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
+
   cv::Mat_<uchar> mat(VIEW_DIST*4, VIEW_DIST*4, uchar(0));
   cv::circle(mat, cv::Point(2*VIEW_DIST, 2*VIEW_DIST), VIEW_DIST, cv::Scalar(255), 1);
   for(int x=0;x<mat.cols;x++){

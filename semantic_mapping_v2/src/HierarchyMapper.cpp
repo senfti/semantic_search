@@ -609,6 +609,17 @@ float HierarchyMapper::getSearchTime(const nav_msgs::OccupancyGrid &grid_map){
 
 bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res){
   ROS_INFO("SERVICE OBJ_MAP");
+  if(req.room_id >= int(room_mapper_.size()) || req.id >= 80){
+    ROS_WARN("Invalid Object Map Request: room_id: %d, obj_id: %d", req.room_id, req.id);
+    return false;
+  }
+  if(req.room_id < 0){
+    req.room_id = current_mapper_;
+    if(req.room_id < 0 || req.room_id >= room_mapper_.size()){
+      ROS_WARN("Currently no mapper active");
+      return false;
+    }
+  }
   ros::Time start = ros::Time::now();
 
   std::vector<OctoMapper> octomaps;
@@ -624,7 +635,6 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
     doors.push_back(room_mapper_[i]->getDoors());
     obj_maps.push_back(room_mapper_[i]->getObjMaps());
     room_type_maps.push_back(room_mapper_[i]->getRoomTypeMaps());
-    std::vector<size_t> order;
   }
   maps_lock.unlock();
 

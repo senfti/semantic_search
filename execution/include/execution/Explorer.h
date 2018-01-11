@@ -15,10 +15,10 @@
 
 class Explorer{
   public:
-    const float EXPLORE_MAX_ROT_VEL = 1.0;
-    const float EXPLORE_MAX_TRANS_VEL = 0.3;
-    const int VIEW_DIST = 0.5/0.05;
-    const int ROBOT_SIZE = 0.35/0.05;
+    float EXPLORE_MAX_ROT_VEL = 1.0;
+    float EXPLORE_MAX_TRANS_VEL = 0.3;
+    int VIEW_DIST = 0.5/0.05;
+    int ROBOT_SIZE = 0.35/0.05;
 
   private:
     ros::Subscriber map_sub_;

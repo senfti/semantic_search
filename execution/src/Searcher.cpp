@@ -12,16 +12,40 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   : tf_listener_(tf_listener), obj_map_service_client_(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
 {
   ros::NodeHandle private_nh("~");
-  private_nh.param("ObjectMapper/OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
-  private_nh.param("ObjectMapper/OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
-  private_nh.param("ObjectMapper/OBJ_MAX_PROB", OBJ_MAX_PROB, OBJ_MAX_PROB);
+  private_nh.param("SEARCH_MAX_ROT_VEL", SEARCH_MAX_ROT_VEL, SEARCH_MAX_ROT_VEL);
+  private_nh.param("SEARCH_MAX_TRANS_VEL", SEARCH_MAX_TRANS_VEL, SEARCH_MAX_TRANS_VEL);
+  private_nh.param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
+
+  private_nh.param("OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
+  private_nh.param("OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
+  private_nh.param("OBJ_MAX_PROB", OBJ_MAX_PROB, OBJ_MAX_PROB);
+
   private_nh.param("RESOLUTION", RESOLUTION, RESOLUTION);
-  private_nh.param("ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT", OBJ_DEFUALT_MAX_HEIGHT, OBJ_DEFUALT_MAX_HEIGHT);
-  private_nh.param("ObjectMapper/V_H", V_H, V_H);
-  private_nh.param("ObjectMapper/V_M", V_M, V_M);
-  private_nh.param("ObjectMapper/ROOM_EXPECTED_SIZE", ROOM_EXPECTED_SIZE, ROOM_EXPECTED_SIZE);
-  private_nh.param("Octomap/pointcloud_min_z", POINTCLOUD_MIN_Z,POINTCLOUD_MIN_Z);
-  private_nh.param("Octomap/pointcloud_max_z", POINTCLOUD_MAX_Z,POINTCLOUD_MAX_Z);
+  private_nh.param("OBJ_DEFUALT_MAX_HEIGHT", OBJ_DEFUALT_MAX_HEIGHT, OBJ_DEFUALT_MAX_HEIGHT);
+  private_nh.param("ROOM_EXPECTED_SIZE", ROOM_EXPECTED_SIZE, ROOM_EXPECTED_SIZE);
+
+  private_nh.param("V_H", V_H, V_H);
+  private_nh.param("V_M", V_M, V_M);
+  private_nh.param("POINTCLOUD_MIN_Z", POINTCLOUD_MIN_Z, POINTCLOUD_MIN_Z);
+  private_nh.param("POINTCLOUD_MIN_Z", POINTCLOUD_MIN_Z, POINTCLOUD_MIN_Z);
+
+  private_nh.param("OBJECT_FOUND_THRESH", OBJECT_FOUND_THRESH, OBJECT_FOUND_THRESH);
+
+  private_nh.param("VIEW_ANGLE_STEPS", VIEW_ANGLE_STEPS, VIEW_ANGLE_STEPS);
+  private_nh.param("SEEN_MAP_STEPS", SEEN_MAP_STEPS, SEEN_MAP_STEPS);
+  private_nh.param("SAMPLE_COUNT_THRESH", SAMPLE_COUNT_THRESH, SAMPLE_COUNT_THRESH);
+
+  private_nh.param("VIEW_MIN_DIST", VIEW_MIN_DIST, VIEW_MIN_DIST);
+  private_nh.param("VIEW_MAX_DIST", VIEW_MAX_DIST, VIEW_MAX_DIST);
+  private_nh.param("VIEW_ANGLE", VIEW_ANGLE, VIEW_ANGLE);
+
+  private_nh.param("TURN_SPEED", TURN_SPEED, TURN_SPEED);
+  private_nh.param("MOVE_SPEED", MOVE_SPEED, MOVE_SPEED);
+  private_nh.param("VIEW_TIME", VIEW_TIME, VIEW_TIME);
+
+  private_nh.param("BORDER_SEEN_THRESH", BORDER_SEEN_THRESH, BORDER_SEEN_THRESH);
+  private_nh.param("BORDER_SEEN_MAX_ANGLE", BORDER_SEEN_MAX_ANGLE, BORDER_SEEN_MAX_ANGLE);
+  private_nh.param("SEEN_MAP_MAX_DIST", SEEN_MAP_MAX_DIST, SEEN_MAP_MAX_DIST);
 
   while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
     ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
@@ -63,8 +87,8 @@ void Searcher::start(int searched_obj){
   have_curr_view_ = false;
   curr_view_changed_= true;
   got_map_ = false;
-  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
-  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
+//  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
+//  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
   octo_mapper_ = new OctoMapper(RESOLUTION);
 
   semantic_mapping_v2::ObjectMapSrvRequest req;
@@ -122,7 +146,7 @@ void Searcher::calcSeenKernels(){
         if(kernel(y,x)){
           cv::Point diff = cv::Point(x,y)-center;
           seen_kernel_points_[i].push_back(diff);
-          seen_kernel_points_value_[i].push_back(1.f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y) - 2.f)/4.f);
+          seen_kernel_points_value_[i].push_back(1.f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION*RESOLUTION) - 2.f)/4.f);
         }
       }
     }
@@ -208,11 +232,15 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
 
   cv::Mat dists, grad_x, grad_y, mag, dir;
-  cv::distanceTransform(accessible_map_, dists, cv::DIST_L1, 3, CV_32F);
-  cv::Sobel(dists, grad_x, CV_32F, 1, 0);
-  cv::Sobel(dists, grad_y, CV_32F, 0, 1);
+  cv::distanceTransform(255-accessible_map_, dists, cv::DIST_L1, 3, CV_32F);
+  cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
+  cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
   cv::cartToPolar(grad_x, grad_y, mag, border_dir_map_);
-  border_map_ = (dists == 1.f);
+
+  cv::Mat_<uchar> tmp, tmp2;
+  cv::dilate(accessible_map_, tmp, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(tmp, tmp2, cv::Mat_<uchar>::ones(3,3));
+  border_map_ = tmp2-tmp;
 
   got_map_ = true;
   std::cout << "Map processed" << std::endl;
@@ -273,13 +301,19 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
     std::cout << "OBJECT FOUND" << std::endl;
   }
 
+  try{
+    tf_listener_->lookupTransform("map", "base_link", msg->header.stamp, transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
   if(insertIntoSeenMaps(transform)){
     finished_ = true;
-    std::cout << "FINISHED" << std::endl;
+    std::cout << "FINISHED, ALL BORDER SEEN" << std::endl;
   }
   if(calcNextViewpoint(transform)){
     finished_ = true;
-    std::cout << "FINISHED" << std::endl;
+    std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
   }
 
   std::cout << "VISION CALLBACK in " << (ros::Time::now()-t).toSec() << std::endl;
@@ -472,11 +506,6 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
 //  showProbImage("prob_map", prob_map, 4);
 //  showProbImage("accessible_map_", accessible_map_, 2);
 //  showProbImage("border_dir", border_dir_map_, 2);
-  cv::Mat tmp;
-  cv::resize(border_map_, tmp, cv::Size(border_map_.cols*2, border_map_.rows*2), 0, 0, cv::INTER_NEAREST);
-  cv::flip(tmp, tmp, 0);
-  cv::imshow("border_map", tmp);
-  cv::waitKey(1);
 
   tf::Transform curr_view(tf::createQuaternionFromYaw(float(max_i)/VIEW_ANGLE_STEPS*M_PI*2.f),
                           tf::Vector3((max_loc.x-obj_map_->getOrigin().x)/RESOLUTION, (max_loc.y-obj_map_->getOrigin().y)/RESOLUTION, 0.0));
@@ -508,10 +537,11 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
 
   cv::Point pos = poseToPoint(curr_pose, obj_map_->getOrigin(), RESOLUTION);
   cv::Mat_<uchar> kernel = getViewKernel(angle, SEEN_MAP_MAX_DIST, RESOLUTION);
-  int x1=pos.x-kernel.cols, y1=pos.y-kernel.rows;
-  //cv::imshow("kernel", kernel);
+  int x1=pos.x-kernel.cols/2, y1=pos.y-kernel.rows/2;
   cv::Mat(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)) + kernel).copyTo(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)));
-  cv::Mat(seen_maps_[other_idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)) + kernel).copyTo(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)));
+  cv::Mat(seen_maps_[other_idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)) + kernel).copyTo(seen_maps_[other_idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)));
+  cv::threshold(seen_maps_[idx], seen_maps_[idx], 100, 100, cv::THRESH_TRUNC);
+  cv::threshold(seen_maps_[other_idx], seen_maps_[other_idx], 100, 100, cv::THRESH_TRUNC);
 
   border_map_.copyTo(not_fully_viewed_border_);
   bool finished = true;
@@ -526,8 +556,11 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
       }
     }
   }
+
   cv::Mat tmp;
-  cv::resize(not_fully_viewed_border_, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
+  cv::threshold(border_map_, tmp, 64, 64, cv::THRESH_TRUNC);
+  cv::bitwise_or(tmp, not_fully_viewed_border_, tmp);
+  cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);
   cv::waitKey(1);
