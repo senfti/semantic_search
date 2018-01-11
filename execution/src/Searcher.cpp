@@ -99,7 +99,7 @@ void Searcher::start(int searched_obj){
   if(running_)
     return;
 
-  int searched_obj_ = searched_obj;
+  searched_obj_ = searched_obj;
   running_ = true;
   finished_ = false;
   obj_found_ = false;
@@ -121,7 +121,7 @@ void Searcher::start(int searched_obj){
   prior_prob_map_ = new ObjectMap(res.maps[0]);
   obj_map_ = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
   obj_map_->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
-  prior_prob_map_->resample(*obj_map_, OBJ_PRIOR_PROB);
+  prior_prob_map_->resample(*obj_map_, 0.0);
   seen_maps_.resize(SEEN_MAP_STEPS);
   for(auto& map : seen_maps_)
     map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
@@ -509,23 +509,24 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   int max_i;
   cv::Point max_loc;
   for(int i=0; i<VIEW_ANGLE_STEPS; i++){
-    cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
+    //cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x)){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
-          sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
+          //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
             max = prob;
             max_loc = cv::Point(x,y);
             max_i = i;
           }
         }
-        if(border_map_(y,x))
-          sdf(y,x) = 1.f;
+//        if(border_map_(y,x))
+//          sdf(y,x) = 1.f;
       }
     }
-    showProbImage(std::to_string(i), sdf, 2);
+    //showProbImage(std::to_string(i), sdf, 2);
+    //showProbImage(std::to_string(i), sdf, 2);
   }
 
   if(max <= 0.0){

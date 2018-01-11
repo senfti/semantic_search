@@ -296,7 +296,7 @@ semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
   for(int z=0; z<msg.z_steps; z++){
     for(int y=0; y<msg.height; y++){
       for(int x=0; x<msg.width; x++){
-        msg.data[i] = getProb(x,y,z);
+        msg.data[i] = (getCount(x,y,z) > 0 ? getProb(x,y,z) : 0.f);
         i++;
       }
     }

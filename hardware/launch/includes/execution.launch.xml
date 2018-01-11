@@ -35,9 +35,9 @@
     <param name="VIEW_MAX_DIST" value="3.5" />
     <param name="VIEW_ANGLE" value="0.8727" />
 
-    <param name="TURN_SPEED" value="999999999999999.0" />
-    <param name="MOVE_SPEED" value="999999999999999.0" />
-    <param name="VIEW_TIME" value="1.0" />
+    <param name="TURN_SPEED" value="1.0" />
+    <param name="MOVE_SPEED" value="3.0" />
+    <param name="VIEW_TIME" value="2.0" />
 
     <param name="BORDER_SEEN_THRESH" value="5" />
     <param name="BORDER_SEEN_MAX_ANGLE" value="0.2618" />
