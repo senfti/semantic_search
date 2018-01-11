@@ -12,7 +12,7 @@
     <param name="SEARCH_MAX_TRANS_VEL" value="0.3" />
 
     <param name="OBJ_PRIOR_PROB" value="0.003" />
-    <param name="OBJ_MIN_PROB" value="0.00001" />
+    <param name="OBJ_MIN_PROB" value="0.000005" />
     <param name="OBJ_MAX_PROB" value="0.9" />
 
     <param name="RESOLUTION" value="10.0" />
@@ -20,10 +20,10 @@
     <param name="ROOM_EXPECTED_SIZE" value="24" />
 
     <param name="V_H" value="0.08" />
-    <param name="V_M" value="0.0003" />
+    <param name="V_M" value="0.00001" />
 
     <param name="POINTCLOUD_MIN_Z" value="0.0" />
-    <param name="POINTCLOUD_MAX_Z" value="1.8" />
+    <param name="POINTCLOUD_MAX_Z" value="1.6" />
 
     <param name="OBJECT_FOUND_THRESH" value="0.7" />
 
@@ -35,13 +35,23 @@
     <param name="VIEW_MAX_DIST" value="3.5" />
     <param name="VIEW_ANGLE" value="0.8727" />
 
-    <param name="TURN_SPEED" value="0.5" />
-    <param name="MOVE_SPEED" value="0.01" />
-    <param name="VIEW_TIME" value="0.2" />
+    <param name="TURN_SPEED" value="999999999999999.0" />
+    <param name="MOVE_SPEED" value="999999999999999.0" />
+    <param name="VIEW_TIME" value="1.0" />
 
     <param name="BORDER_SEEN_THRESH" value="5" />
     <param name="BORDER_SEEN_MAX_ANGLE" value="0.2618" />
     <param name="SEEN_MAP_MAX_DIST" value="2.5" />
+
+    <param name="Octomap/resolution" value="0.1" />    
+    <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    
+    <param name="Octomap/sensor_model/max_range" value="4.0" />                 <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/pointcloud_min_z" value="0.1" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/pointcloud_max_z" value="1.8" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/hit" value="0.7" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/miss" value="0.3" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/min" value="0.01" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/max" value="0.97" />                       <!-- maximum range to integrate (speedup!) -->    
 
   </node>
 </launch>

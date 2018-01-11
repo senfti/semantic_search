@@ -8,6 +8,24 @@
 #include <tf/transform_datatypes.h>
 
 
+void showProbImage(const std::string& name, const cv::Mat mat, float resize_factor){
+  cv::Mat tmp;
+  cv::resize(mat, tmp, cv::Size(mat.cols*resize_factor, mat.rows*resize_factor), 0, 0, cv::INTER_NEAREST);
+  double min, max;
+  cv::minMaxIdx(tmp, &min, &max);
+  //std::cout << "minmax " << min << " " << max << std::endl;
+  cv::flip(tmp, tmp, 0);
+
+  tmp.convertTo(tmp, CV_8U, 150.f);
+
+  cv::Mat o(tmp.rows, tmp.cols, CV_8UC1, cv::Scalar(255));
+  cv::merge(std::vector<cv::Mat>({tmp, o, o}), tmp);
+  cv::cvtColor(tmp, tmp, CV_HSV2BGR);
+  cv::imshow(name, tmp);
+  cv::waitKey(1);
+}
+
+
 Searcher::Searcher(tf::TransformListener *tf_listener)
   : tf_listener_(tf_listener), obj_map_service_client_(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
 {
@@ -57,6 +75,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
+  full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
 
   calcSeenKernels();
@@ -129,10 +148,10 @@ void Searcher::stop(){
 
 
 void Searcher::calcSeenKernels(){
-  seen_kernel_points_.resize(SEEN_MAP_STEPS);
-  seen_kernel_points_value_.resize(SEEN_MAP_STEPS);
-  for(int i=0;i<SEEN_MAP_STEPS; i++){
-    float angle = float(i)/SEEN_MAP_STEPS*M_PI*2;
+  seen_kernel_points_.resize(VIEW_ANGLE_STEPS);
+  seen_kernel_points_value_.resize(VIEW_ANGLE_STEPS);
+  for(int i=0;i<VIEW_ANGLE_STEPS; i++){
+    float angle = float(i)/VIEW_ANGLE_STEPS*M_PI*2;
     cv::Mat_<uchar> kernel(int(RESOLUTION*VIEW_MAX_DIST)*2+1, int(RESOLUTION*VIEW_MAX_DIST)*2+1, 0.f);
     cv::Point center(RESOLUTION*VIEW_MAX_DIST,RESOLUTION*VIEW_MAX_DIST);
     std::vector<cv::Point> points;
@@ -146,7 +165,7 @@ void Searcher::calcSeenKernels(){
         if(kernel(y,x)){
           cv::Point diff = cv::Point(x,y)-center;
           seen_kernel_points_[i].push_back(diff);
-          seen_kernel_points_value_[i].push_back(1.f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION*RESOLUTION) - 2.f)/4.f);
+          seen_kernel_points_value_[i].push_back(1.f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION) - 2.f)/4.f);
         }
       }
     }
@@ -157,7 +176,7 @@ void Searcher::calcSeenKernels(){
 void Searcher::resize(float x1, float x2, float y1, float y2){
   std::vector<int> border = obj_map_->expandUntilFitting(x1, x2, y1, y2, OBJ_PRIOR_PROB);
   if(!border.empty()){
-    prior_prob_map_->resize(border[2], border[3], border[0], border[1], OBJ_PRIOR_PROB);
+    prior_prob_map_->resize(border[2], border[3], border[0], border[1], 0.f);
     for(auto& m : seen_maps_){
       cv::copyMakeBorder(m, m, border[0], border[1], border[2], border[3], cv::BORDER_CONSTANT, 0.0);
     }
@@ -373,15 +392,23 @@ void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, con
 
 
 bool Searcher::objFound(){
-  float max_prob = 0.0;
+  ObjectMap multiplied = *obj_map_*ObjectMap(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
+                                                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
+  float max_prob = 0.f;
   for(int x=0; x<obj_map_->getWidth(); x++){
     for(int y=0; y<obj_map_->getHeight(); y++){
       for(int z=0; z<obj_map_->getZSteps(); z++){
-        geometry_msgs::Point p;
-        p.x = obj_map_->getXWorld(x);
-        p.y = obj_map_->getYWorld(y);
-        p.z = obj_map_->getZWorld(z);
-        max_prob = std::max(max_prob, obj_map_->getProb(x, y, z)*octo_mapper_->getOccupancy(p.x, p.y, p.z));
+        if(obj_map_->getCount(x,y,z) > 0){
+          float prob = 1.f;
+          for(int xk=std::max(0,x-1); xk<std::min(x+2, obj_map_->getWidth()); xk++){
+            for(int yk=std::max(0,y-1); yk<std::min(y+2, obj_map_->getHeight()); yk++){
+              for(int zk=std::max(0,z-1); zk<std::min(z+2, obj_map_->getZSteps()); zk++){
+                prob *= (1.f-multiplied.getProb(xk,yk,zk));
+              }
+            }
+          }
+          max_prob = std::max(max_prob, 1.f-prob);
+        }
       }
     }
   }
@@ -396,6 +423,8 @@ cv::Mat_<float> Searcher::getProbMap(cv::Point& origin){
   ObjectMap count_map(1.f,1.f,1.f,0.f);
   ObjectMap occ_map(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_, &count_map);
+
+  full_pub_.publish((*obj_map_*occ_map).getProbMsg());
 
   return obj_map_->get2D(occ_map, *prior_prob_map_, count_map, SAMPLE_COUNT_THRESH, origin);
 //  cv::Mat_<float> tmp = obj_map_->get2D(occ_map, *prior_prob_map_, count_map, 1000);
@@ -431,29 +460,12 @@ inline float angleDist(float angle1, float angle2){
 float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
   cv::Point diff = pos-curr_pos;
   float move_angle = std::atan2(float(diff.y),float(diff.x));
-  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))*TURN_SPEED + std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)*MOVE_SPEED + VIEW_TIME;
+  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/MOVE_SPEED + VIEW_TIME;
 }
 
 
 inline cv::Point poseToPoint(const tf::Transform& pose, cv::Point origin, float resolution){
   return cv::Point(pose.getOrigin().x()*resolution + origin.x, pose.getOrigin().y()*resolution + origin.y);
-}
-
-
-void showProbImage(const std::string& name, const cv::Mat mat, float resize_factor){
-  cv::Mat tmp;
-  cv::resize(mat, tmp, cv::Size(mat.cols*resize_factor, mat.rows*resize_factor));
-  double min, max;
-  cv::minMaxIdx(tmp, &min, &max);
-  std::cout << "minmax " << min << " " << max << std::endl;
-  cv::flip(tmp, tmp, 0);
-
-  tmp.convertTo(tmp, CV_8U, 150.f);
-
-  cv::Mat o(tmp.rows, tmp.cols, CV_8UC1, cv::Scalar(255));
-  cv::merge(std::vector<cv::Mat>({tmp, o, o}), tmp);
-  cv::cvtColor(tmp, tmp, CV_HSV2BGR);
-  cv::imshow(name, tmp);
 }
 
 
@@ -482,22 +494,38 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   cv::Point new_origin;
   cv::Mat_<float> prob_map = getProbMap(new_origin);
 
+  cv::Mat_<float> tmp;
+  prob_map.copyTo(tmp);
+  cv::pow(tmp, 0.25, tmp);
+//  for(int x=0; x<prob_map.cols; x++){
+//    for(int y=0; y<prob_map.rows; y++){
+//      if(border_map_(y,x))
+//        tmp(y,x) = 1.f;
+//    }
+//  }
+  showProbImage("probabilities", tmp, 2);
+
   double max = 0.0;
   int max_i;
   cv::Point max_loc;
   for(int i=0; i<VIEW_ANGLE_STEPS; i++){
+    cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x)){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
+          sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
             max = prob;
             max_loc = cv::Point(x,y);
             max_i = i;
           }
         }
+        if(border_map_(y,x))
+          sdf(y,x) = 1.f;
       }
     }
+    showProbImage(std::to_string(i), sdf, 2);
   }
 
   if(max <= 0.0){

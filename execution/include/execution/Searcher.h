@@ -64,6 +64,7 @@ class Searcher{
 
     ros::Publisher octomap_pub_;
     ros::Publisher obj_pub_;
+    ros::Publisher full_pub_;
     ros::Publisher next_pose_pub_;
 
     ros::ServiceClient obj_map_service_client_;

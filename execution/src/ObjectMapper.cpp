@@ -106,6 +106,7 @@ ObjectMap ObjectMap::operator*(const ObjectMap &rhs) const{
   ObjectMap res(resolution_, base_size_, getWidth(), getHeight(), origin_, max_height_, 0.f);
   for(int z=0; z<getZSteps(); z++){
     res.prob_maps_[z] = prob_maps_[z].mul(rhs.prob_maps_[z]);
+    count_maps_[z].copyTo(res.count_maps_[z]);
   }
   return res;
 }
@@ -172,6 +173,7 @@ std::vector<int> ObjectMap::expandUntilFitting(int x1, int x2, int y1, int y2, f
 
 
 void ObjectMap::resample(const ObjectMap &target, float prior){
+  float exponent = 1.f/((target.getResolution()/getResolution())*(target.getResolution()/getResolution())*(target.getResolution()/getResolution()));
   std::vector<cv::Mat_<float>> prob_tmp(target.getZSteps());
   std::vector<cv::Mat_<uchar>> count_tmp(target.getZSteps());
   for(int z=0; z<target.getZSteps(); z++){
@@ -181,7 +183,7 @@ void ObjectMap::resample(const ObjectMap &target, float prior){
     for(int x=0; x<target.getWidth(); x++){
       for(int y=0; y<target.getHeight(); y++){
         if(isWithin(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z))){
-          prob_tmp[z](y,x) = getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
+          prob_tmp[z](y,x) = 1.f-std::pow(1.f-getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z)), exponent);
           count_tmp[z](y,x) = (target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
         }
       }
