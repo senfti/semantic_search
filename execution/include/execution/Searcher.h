@@ -57,6 +57,8 @@ class Searcher{
     float BORDER_SEEN_MAX_ANGLE = 15.f*M_PI/180.0;
     int SEEN_MAP_MAX_DIST = 2.5;
 
+    int INTERESTING_BORDER_SEEN_REWARD = 0.01f;
+
   private:
     ros::Subscriber map_sub_;
     ros::Subscriber vision_sub_;
@@ -74,6 +76,7 @@ class Searcher{
     ObjectMap* prior_prob_map_ = nullptr;
     OctoMapper* octo_mapper_ = nullptr;
     std::vector<cv::Mat_<uchar>> seen_maps_;
+    std::vector<cv::Mat_<uchar>> previous_pose_maps_;
     cv::Mat_<uchar> accessible_map_;
     cv::Mat_<uchar> border_map_;
     cv::Mat_<float> border_dir_map_;
@@ -84,11 +87,10 @@ class Searcher{
     bool curr_view_changed_ = true;
     bool have_curr_view_ = false;
     bool got_map_ = false;
+    bool got_vision_ = false;
     bool finished_ = false;
     bool running_ = false;
     bool obj_found_ = false;
-
-    bool did_abort_ = false;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
     std::vector<std::vector<float>> seen_kernel_points_value_;
@@ -125,6 +127,9 @@ class Searcher{
     bool objFound();
 
     bool calcNextViewpoint(const tf::Transform& curr_pose);
+    void doCalculations();
+
+    bool did_abort_ = false;
 };
 
 

@@ -39,9 +39,10 @@
     <param name="MOVE_SPEED" value="3.0" />
     <param name="VIEW_TIME" value="2.0" />
 
-    <param name="BORDER_SEEN_THRESH" value="5" />
+    <param name="BORDER_SEEN_THRESH" value="1" />
     <param name="BORDER_SEEN_MAX_ANGLE" value="0.2618" />
     <param name="SEEN_MAP_MAX_DIST" value="2.5" />
+    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.01" />
 
     <param name="Octomap/resolution" value="0.1" />    
     <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    

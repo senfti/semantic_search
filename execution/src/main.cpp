@@ -3,19 +3,19 @@
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "execution");
-//  ExecuteActionServer server;
-//  server.run();
-  tf::TransformListener l;
-  ros::Rate r(0.5);
-  r.sleep();
-  Searcher s(&l);
-  s.start(58);
-  ros::Rate ra(2.0);
-  while(ros::ok()){
-    ros::spinOnce();
-    s.objFound();
-    ra.sleep();
-  }
+  ExecuteActionServer server;
+  server.run();
+//  tf::TransformListener l;
+//  ros::Rate r(0.5);
+//  r.sleep();
+//  Searcher s(&l);
+//  s.start(58);
+//  ros::Rate ra(2.0);
+//  while(ros::ok()){
+//    ros::spinOnce();
+//    s.objFound();
+//    ra.sleep();
+//  }
 
   return 0;
 }

@@ -64,6 +64,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("BORDER_SEEN_THRESH", BORDER_SEEN_THRESH, BORDER_SEEN_THRESH);
   private_nh.param("BORDER_SEEN_MAX_ANGLE", BORDER_SEEN_MAX_ANGLE, BORDER_SEEN_MAX_ANGLE);
   private_nh.param("SEEN_MAP_MAX_DIST", SEEN_MAP_MAX_DIST, SEEN_MAP_MAX_DIST);
+  private_nh.param("INTERESTING_BORDER_SEEN_REWARD", INTERESTING_BORDER_SEEN_REWARD, INTERESTING_BORDER_SEEN_REWARD);
 
   while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
     ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
@@ -106,8 +107,9 @@ void Searcher::start(int searched_obj){
   have_curr_view_ = false;
   curr_view_changed_= true;
   got_map_ = false;
-//  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
-//  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
+  got_vision_ = false;
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
   octo_mapper_ = new OctoMapper(RESOLUTION);
 
   semantic_mapping_v2::ObjectMapSrvRequest req;
@@ -123,8 +125,22 @@ void Searcher::start(int searched_obj){
   obj_map_->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
   prior_prob_map_->resample(*obj_map_, 0.0);
   seen_maps_.resize(SEEN_MAP_STEPS);
+  previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
   for(auto& map : seen_maps_)
     map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+  for(auto& map : previous_pose_maps_)
+    map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
+  transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
+  tf::poseTFToMsg(transform, curr_view_pose_);
+
   ROS_INFO("SEARCH STARTED");
 }
 
@@ -136,6 +152,7 @@ void Searcher::stop(){
   have_curr_view_ = false;
 
   seen_maps_.clear();
+  previous_pose_maps_.clear();
   accessible_map_ = cv::Mat_<uchar>();
   border_map_ = cv::Mat_<uchar>();
   border_dir_map_ = cv::Mat_<float>();
@@ -144,6 +161,10 @@ void Searcher::stop(){
   delete obj_map_;
   delete prior_prob_map_;
   delete octo_mapper_;
+
+  obj_map_ = nullptr;
+  prior_prob_map_ = nullptr;
+  octo_mapper_ = nullptr;
 }
 
 
@@ -180,6 +201,9 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
     for(auto& m : seen_maps_){
       cv::copyMakeBorder(m, m, border[0], border[1], border[2], border[3], cv::BORDER_CONSTANT, 0.0);
     }
+    for(auto& m : previous_pose_maps_){
+      cv::copyMakeBorder(m, m, border[0], border[1], border[2], border[3], cv::BORDER_CONSTANT, 0.0);
+    }
     cv::copyMakeBorder(accessible_map_, accessible_map_, border[0], border[1], border[2], border[3], cv::BORDER_CONSTANT, 0.0);
     cv::copyMakeBorder(border_map_, border_map_, border[0], border[1], border[2], border[3], cv::BORDER_CONSTANT, 0.0);
     cv::copyMakeBorder(border_dir_map_, border_dir_map_, border[0], border[1], border[2], border[3], cv::BORDER_CONSTANT, 0.0);
@@ -213,6 +237,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
 
+  std::cout << "lookie1" << std::endl;
   tf::StampedTransform transform;
   try{
     tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
@@ -290,7 +315,7 @@ cv::Point Searcher::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) c
 
 
 void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
-  if(!got_map_ || !running_)
+  if(!running_)
     return;
 
   ros::Time t = ros::Time::now();
@@ -315,11 +340,7 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   insertObject(*cloud, msg->objects);
   insertCloud(cloud, transform.getOrigin());
 
-  if(objFound()){
-    finished_ = true;
-    std::cout << "OBJECT FOUND" << std::endl;
-  }
-
+  std::cout << "lookie2" << std::endl;
   try{
     tf_listener_->lookupTransform("map", "base_link", msg->header.stamp, transform);
   }
@@ -330,12 +351,33 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
     finished_ = true;
     std::cout << "FINISHED, ALL BORDER SEEN" << std::endl;
   }
+
+  got_vision_ = true;
+  std::cout << "VISION CALLBACK in " << (ros::Time::now()-t).toSec() << std::endl;
+}
+
+
+void Searcher::doCalculations(){
+  if(!running_ || !got_map_ || !got_vision_)
+    return;
+
+  if(objFound()){
+    finished_ = true;
+    std::cout << "OBJECT FOUND" << std::endl;
+  }
+
+  std::cout << "lookie3" << std::endl;
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
   if(calcNextViewpoint(transform)){
     finished_ = true;
     std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
   }
-
-  std::cout << "VISION CALLBACK in " << (ros::Time::now()-t).toSec() << std::endl;
 }
 
 
@@ -472,21 +514,21 @@ inline cv::Point poseToPoint(const tf::Transform& pose, cv::Point origin, float 
 float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float> &prob_map, const cv::Point& curr_pos, float curr_angle){
   float angle = float(angle_step)/VIEW_ANGLE_STEPS*M_PI*2;
   float prob = 1.0;
-  bool interesting_border_seen = false;
+  float interesting_border_seen = 0.f;
   int idx = -1;
   for(const auto& p : seen_kernel_points_[angle_step]){
     idx++;
     if(!(pos+p).inside(cv::Rect(0,0,prob_map.cols,prob_map.rows)))
       continue;
     if(not_fully_viewed_border_(pos+p) > 0 && angleDist(angle, border_dir_map_(pos+p)) < BORDER_SEEN_MAX_ANGLE)
-      interesting_border_seen = true;
+      interesting_border_seen += seen_kernel_points_value_[angle_step][idx];
 
     prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
   }
-  if(!interesting_border_seen)
-    return 0.f;
+  if(interesting_border_seen <= 0.f)
+    return -1.f;
 
-  return (1.f-prob)/calcMoveTime(pos, angle, curr_pos, curr_angle);
+  return (1.f-prob + interesting_border_seen/0.01f)/calcMoveTime(pos, angle, curr_pos, curr_angle);
 }
 
 
@@ -505,15 +547,20 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
 //  }
   showProbImage("probabilities", tmp, 2);
 
-  double max = 0.0;
+  cv::Point curr_point = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
+  float curr_angle = tf::getYaw(curr_pose.getRotation());
+  int curr_step = int(curr_angle/(2*M_PI)*VIEW_ANGLE_STEPS+VIEW_ANGLE_STEPS)%VIEW_ANGLE_STEPS;
+
+  double max = -1.0;
   int max_i;
   cv::Point max_loc;
   for(int i=0; i<VIEW_ANGLE_STEPS; i++){
     //cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
-        if(accessible_map_(y,x)){
-          float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
+        if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
+                (std::abs(curr_point.x-x)>2 && std::abs(curr_point.y-y)>2 && std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)){
+          float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_point, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
             max = prob;
@@ -529,7 +576,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     //showProbImage(std::to_string(i), sdf, 2);
   }
 
-  if(max <= 0.0){
+  if(max < 0.0){
     return true;
   }
 //  showProbImage("prob_map", prob_map, 4);
@@ -585,6 +632,8 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
       }
     }
   }
+
+  previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](pos) = 255;
 
   cv::Mat tmp;
   cv::threshold(border_map_, tmp, 64, 64, cv::THRESH_TRUNC);

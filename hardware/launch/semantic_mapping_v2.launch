@@ -18,8 +18,9 @@
   </include> 
 
   <include file="$(find hardware)/launch/includes/vision.launch.xml" >
+  </include>
+<!--
+  <include file="$(find hardware)/launch/includes/execution.launch.xml" >
   </include> 
-
-  <node pkg="execution" type="execution" name="execution" launch-prefix="xterm -hold -e" /> 
-
+-->
 </launch>

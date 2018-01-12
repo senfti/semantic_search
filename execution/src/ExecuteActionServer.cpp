@@ -223,8 +223,99 @@ void ExecuteActionServer::doExplore(){
 
 
 void ExecuteActionServer::doSearch(){
+  if(!searcher_.running()){
+    searcher_.start(goal_.target);
+  }
+  searcher_.doCalculations();
+  if(searcher_.finished()){
+    ROS_INFO("Finished search");
+    if(move_base_state_ == MoveBaseState::WAITING) {
+      ;
+    }
+    else if(move_base_state_ == MoveBaseState::GOAL_SENT){
+      action_client_.cancelAllGoals();
+    }
+    else if(move_base_state_ == MoveBaseState::RUNNING){
+      action_client_.cancelAllGoals();
+    }
+    else if(move_base_state_ == MoveBaseState::STOPPED){
+      ;
+    }
+    else if(move_base_state_ == MoveBaseState::FINISHED){
+      ;
+    }
+    execution::ExecuteResult result;
+    result.result_number = (searcher_.objFound() ? 0 : 1);
+    action_server_.setSucceeded(result, "SUCCESS");
+    goal_.action = -1;
+    return;
+  }
 
-  goal_.action = -1;
+  if(move_base_state_ == MoveBaseState::WAITING) {
+    geometry_msgs::PoseStamped pose;
+    pose.pose = searcher_.getNextViewPose();
+    pose.header.frame_id = "map";
+    pose.header.stamp = ros::Time::now();
+    static unsigned seq = 0;
+    pose.header.seq = seq++;
+    frontier_pub_.publish(pose);
+    sendMoveBaseGoal(pose.pose);
+  }
+  else if(move_base_state_ == MoveBaseState::GOAL_SENT){
+    ;
+  }
+  else if(move_base_state_ == MoveBaseState::RUNNING){
+    if(searcher_.hasViewPoseChanged()){
+      geometry_msgs::PoseStamped pose;
+      pose.pose = searcher_.getNextViewPose();
+      pose.header.frame_id = "map";
+      pose.header.stamp = ros::Time::now();
+      static unsigned seq = 0;
+      pose.header.seq = seq++;
+      frontier_pub_.publish(pose);
+      sendMoveBaseGoal(pose.pose);
+    }
+  }
+  else if(move_base_state_ == MoveBaseState::STOPPED){
+    ;
+  }
+  else if(move_base_state_ == MoveBaseState::FINISHED){
+    if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+      ROS_INFO("POS %d reached", start_rotation_state_machine_.state_);
+      geometry_msgs::PoseStamped pose;
+      pose.pose = searcher_.getNextViewPose();
+      pose.header.frame_id = "map";
+      pose.header.stamp = ros::Time::now();
+      static unsigned seq = 0;
+      pose.header.seq = seq++;
+      frontier_pub_.publish(pose);
+      sendMoveBaseGoal(pose.pose);
+    }
+    else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
+      ;
+    }
+    else{
+      if(searcher_.did_abort_){
+        ROS_INFO("ABORTED completely");
+        execution::ExecuteResult result;
+        result.result_number = -2;
+        action_server_.setAborted(result, "ABORTED");
+        goal_.action = -1;
+      }
+      else{
+        ROS_INFO("ABORTED first time");
+        geometry_msgs::PoseStamped pose;
+        pose.pose = searcher_.getNextViewPose();
+        pose.header.frame_id = "map";
+        pose.header.stamp = ros::Time::now();
+        static unsigned seq = 0;
+        pose.header.seq = seq++;
+        frontier_pub_.publish(pose);
+        sendMoveBaseGoal(pose.pose);
+        searcher_.did_abort_ = true;
+      }
+    }
+  }
 }
 
 
@@ -280,10 +371,12 @@ void ExecuteActionServer::run(){
     if(goal_.action == 0){
       doMoveTo();
       explorer_.stop();
+      searcher_.stop();
       start_rotation_state_machine_.reset();
     }
     else if(goal_.action == 1){
       doExplore();
+      searcher_.stop();
       start_rotation_state_machine_.reset();
     }
     else if(goal_.action == 2){
@@ -294,10 +387,12 @@ void ExecuteActionServer::run(){
     else if(goal_.action == 3){
       doStartRotation();
       explorer_.stop();
+      searcher_.stop();
     }
     else{
       move_base_state_ = MoveBaseState::WAITING;
       explorer_.stop();
+      searcher_.stop();
       start_rotation_state_machine_.reset();
     }
     //ROS_INFO("MOVE_BASE_STATE: %d", int(move_base_state_));
