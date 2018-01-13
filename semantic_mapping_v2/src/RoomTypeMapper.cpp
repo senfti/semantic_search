@@ -378,6 +378,7 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMap
   points[3] = cv::Point2d(MIN_DIST*std::cos(pose.theta-ASUS_FOV)+pose.x, MIN_DIST*std::sin(pose.theta-ASUS_FOV)+pose.y) * prob_maps_[0].getResolution() + orig;
 
   resizeUntilFitting(points);
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   cv::Mat_<uchar> mask(prob_maps_[0].getHeight(), prob_maps_[0].getWidth(), uchar(0));
   cv::fillConvexPoly(mask, points, cv::Scalar(255));
   for(int x=0; x<mask.cols; x++){

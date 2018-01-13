@@ -183,7 +183,7 @@ void ObjectMap::resample(const ObjectMap &target, float prior){
     for(int x=0; x<target.getWidth(); x++){
       for(int y=0; y<target.getHeight(); y++){
         if(isWithin(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z))){
-          prob_tmp[z](y,x) = 1.f-std::pow(1.f-getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z)), exponent);
+          prob_tmp[z](y,x) = getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z)); //1.f-std::pow(1.f-getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z)), exponent);
           count_tmp[z](y,x) = (target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
         }
       }
@@ -321,9 +321,20 @@ float ObjectMap::getMaxObjectProb(const ObjectMap &occupancy_map) const{
 
 cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
-  for(int z=0; z<getZSteps(); z++){
-    map2D = map2D.mul(1.f-prob_maps_[z].mul(occ_map.prob_maps_[z]));
+  for(int z=0; z<getZSteps()/3; z++){
+    cv::Mat_<float> tmp_max = prob_maps_[3*z].mul(occ_map.prob_maps_[3*z]);
+    tmp_max = cv::max(tmp_max, prob_maps_[3*z+1].mul(occ_map.prob_maps_[3*z+1]));
+    tmp_max = cv::max(tmp_max, prob_maps_[3*z+2].mul(occ_map.prob_maps_[3*z+2]));
+    map2D = map2D.mul(1.f-tmp_max);
   }
+  if(getZSteps()%3 == 1)
+    map2D = map2D.mul(1.f-prob_maps_[getZSteps()-1].mul(occ_map.prob_maps_[getZSteps()-1]));
+  else if(getZSteps()%3 == 2){
+    cv::Mat_<float> tmp_max = prob_maps_[getZSteps()-1].mul(occ_map.prob_maps_[getZSteps()-1]);
+    tmp_max = cv::max(tmp_max, prob_maps_[getZSteps()-2].mul(occ_map.prob_maps_[getZSteps()-2]));
+    map2D = map2D.mul(1.f-tmp_max);
+  }
+
   return (1.f - map2D).mul(1.f-behind_door_mask);
 }
 

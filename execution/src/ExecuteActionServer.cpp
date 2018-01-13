@@ -226,7 +226,9 @@ void ExecuteActionServer::doSearch(){
   if(!searcher_.running()){
     searcher_.start(goal_.target);
   }
-  searcher_.doCalculations();
+  static int i = 0;
+  if(i%20 == 0)
+    searcher_.doCalculations();
   if(searcher_.finished()){
     ROS_INFO("Finished search");
     if(move_base_state_ == MoveBaseState::WAITING) {

@@ -360,6 +360,7 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
   min_z = std::max(min_z, 0.f);
   max_z = std::min(max_z, max_height_-0.001f);
 
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
   for(int i=0; i<cloud.size(); i++){
     if(cloud[i].z>=min_z && cloud[i].z<=max_z){
@@ -391,6 +392,7 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
 
 
 void ObjectMapper::applyObjAppearVanish(){
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   for(auto& m : maps_)
     m.applyObjAppearVanish(STILL_THERE_PROB, GOT_THERE_PROB);
 }
@@ -431,12 +433,12 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
 }
 
 std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order){
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   if(maps_.empty())
     return std::vector<float>();
 
   ros::Time t = ros::Time::now();
 
-  boost::lock_guard<boost::mutex> lock(maps_mutex_);
   cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
   for(int x=0; x<behind_door.cols; x++){
     for(int y=0; y<behind_door.rows; y++){

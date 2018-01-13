@@ -659,6 +659,7 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
   else
     res.maps.push_back(complete_obj_map[req.id].getObjMapMsg());
 
+  ROS_INFO("SERVICE OBJ_MAP IN %.4lf", (ros::Time::now()-start).toSec());
   return true;
 }
 

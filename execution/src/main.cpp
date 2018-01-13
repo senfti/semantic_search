@@ -14,6 +14,7 @@ int main(int argc, char** argv){
 //  while(ros::ok()){
 //    ros::spinOnce();
 //    s.objFound();
+//    s.doCalculations();
 //    ra.sleep();
 //  }
 
