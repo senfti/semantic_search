@@ -600,7 +600,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     //showProbImage(std::to_string(i), sdf, 2);
   }
 
-  if(max < 0.01){
+  if(max < 0.0){
     return true;
   }
 //  showProbImage("prob_map", prob_map, 4);
@@ -643,8 +643,8 @@ bool Searcher::calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_po
         float r = (QUICK_SEARCH_MIN_DIST + (rand()%20)/19.f*(QUICK_SEARCH_MAX_DIST-QUICK_SEARCH_MIN_DIST))*RESOLUTION;
         new_angle = (rand()%180)/180.f*2*M_PI;
         new_pos = target_pos - cv::Point(r*std::cos(new_angle), r*std::sin(new_angle));
-      }while(!accessible_map_(new_pos) && tries < 1000);
-      if(!accessible_map_(new_pos) && tries++ < 1000)
+      }while(!accessible_map_(new_pos) && tries++ < 1000);
+      if(!accessible_map_(new_pos) && tries < 1000)
         return true;
     }
     else{

@@ -1,6 +1,6 @@
  <launch>
   <node pkg="execution" type="execution" name="execution" output="screen" >
-    <param name="EXPLORE_MAX_ROT_VEL" value="1.0" />
+    <param name="EXPLORE_MAX_ROT_VEL" value="0.7" />
     <param name="EXPLORE_MAX_TRANS_VEL" value="0.3" />
     <param name="VIEW_DIST" value="10" />
     <param name="ROBOT_SIZE" value="7" />

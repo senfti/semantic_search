@@ -11,10 +11,10 @@
 
 class HierarchyMap{
   public:
-    const float UNEXPLORED_SEARCH_TIME_ESTIMATE = 1000.f;
-    const float UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE = 100.f;
-    const float UNEXPLORED_PROB_ESTIMATE = 0.5f;
-    const float UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE = 0.001f;
+    static float UNEXPLORED_SEARCH_TIME_ESTIMATE;
+    static float UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE;
+    static float UNEXPLORED_PROB_ESTIMATE;
+    static float UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE;
 
     std::vector<float> search_times_;
     std::vector<float> expected_search_times_;

@@ -140,7 +140,10 @@ class RoomMapper : public SlamGMapping{
     //std::vector<float> getObjectProbsComplete(std::vector<float>& room_probs, std::vector<size_t>& order);
 
     std::string getRoomName(int id) const { return room_type_mappers_[0]->getName(id); }
-    std::vector<std::string> getRoomNames() const { return room_type_mappers_[0]->getNames(); }
+    std::vector<std::string> getRoomNames() {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_[0]->getNames();
+    }
 
     OctoMapper getOctomap(){
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);

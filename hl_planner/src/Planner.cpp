@@ -12,6 +12,11 @@
 Planner::Planner()
   : execute_action_client_(nh_, "execute_action", false), hierarchy_service_client_(nh_.serviceClient<semantic_mapping_v2::HierarchySrv>("hierarchy_srv"))
 {
+  ros::NodeHandle("~").param("UNEXPLORED_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE);
+  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
+  ros::NodeHandle("~").param("UNEXPLORED_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_PROB_ESTIMATE);
+  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
+
   while(!execute_action_client_.waitForServer(ros::Duration(1.0))){
     ROS_WARN("EXECUTE ACTION SERVER NOT UP");
     ros::spinOnce();
@@ -28,7 +33,7 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
   goal.pose = action.pose_;
   goal.action = action.type_;
   goal.target = action.target_;
-  ROS_INFO("SEND GOAL %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
+  ROS_ERROR("SEND GOAL %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
   return execute_action_client_.sendGoalAndWait(goal);
 }
 
@@ -200,7 +205,8 @@ void Planner::run(int obj){
 void Planner::justPlan(int obj){
   std::cout << "Start just plan" << std::endl;
   state_ = State();
-  semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);if(hierarchy.rooms.empty())
+  semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+  if(hierarchy.rooms.empty())
     return;
 
   std::cout << "Got " << hierarchy.rooms.size() << " rooms" << std::endl;

@@ -73,6 +73,7 @@ HierarchyMapper::~HierarchyMapper(){
 
 
 void HierarchyMapper::addMapper(const Door& door){
+  ROS_INFO("Added MAPPER START");
   boost::unique_lock<boost::mutex> lock(mapper_mutex_);
   if(door.isValid()){
     tf::StampedTransform transform;
@@ -106,6 +107,7 @@ void HierarchyMapper::addMapper(const Door& door){
 
 
 void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
+  ROS_INFO("switch MAPPER START");
   int old_mapper = current_mapper_;
   current_mapper_ = -1;
   if(old_mapper >= 0 && old_mapper < room_mapper_.size()){
@@ -145,35 +147,43 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
 
 
 void HierarchyMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr& cloud){
+  ROS_INFO("cloud START");
   if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
     room_mapper_[current_mapper_]->cloudCb(cloud);
     room_changed_[current_mapper_] = true;
   }
+  ROS_INFO("ce");
 }
 
 
 void HierarchyMapper::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan){
+  ROS_INFO("ls");
   if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
     room_mapper_[current_mapper_]->laserCallback(scan);
     room_changed_[current_mapper_] = true;
   }
+  ROS_INFO("le");
 }
 
 
 void HierarchyMapper::doorPoseCb(const geometry_msgs::PoseArray::ConstPtr &msg){
+  ROS_INFO("ds");
   if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
     if(room_mapper_[current_mapper_]->doorCb(msg))
       door_found_pub_.publish(std_msgs::Int8());
     room_changed_[current_mapper_] = true;
   }
+  ROS_INFO("de");
 }
 
 
 void HierarchyMapper::visionCb(const vision::VisionMsgConstPtr &msg){
+  ROS_INFO("vs");
   if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
     room_mapper_[current_mapper_]->visionCb(msg);
     room_changed_[current_mapper_] = true;
   }
+  ROS_INFO("ve");
 }
 
 
@@ -192,6 +202,7 @@ void HierarchyMapper::transformPublishLoop(double transform_publish_period){
 
 
 void HierarchyMapper::downprojecAndPublish(){
+  ROS_INFO("pubs");
   ros::Time start = ros::Time::now();
   room_mapper_[current_mapper_]->downprojectMap();
   gmap_pub_.publish(room_mapper_[current_mapper_]->getGMap());

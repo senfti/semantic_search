@@ -5,6 +5,11 @@
 #include <hl_planner/HierarchyMap.h>
 #include <limits>
 
+float HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE = 1000.f;
+float HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE = 100.f;
+float HierarchyMap::UNEXPLORED_PROB_ESTIMATE = 0.5f;
+float HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE = 0.001f;
+
 // based on wikipedia pseudocode: https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm
 void floydWarshall(const std::vector<std::vector<float>>& edges, std::vector<std::vector<float>>& dist, std::vector<std::vector<std::vector<int>>>& path){
   int num_nodes = edges.size();

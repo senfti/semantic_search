@@ -61,9 +61,11 @@ int main(int argc, char** argv){
 
   Planner p;
   while(ros::ok()){
-    std::cout << "wait for enter" << std::endl;
-    std::cin.get();
-    p.justPlan(0);
+    std::cout << "Object Number: ";
+    int n=-1;
+    std::cin >> n;
+    if(n>0 && n<80)
+      p.run(n);
   }
 
   return 0;
