@@ -371,6 +371,7 @@ cv::Mat_<float> ObjectMap::get2D(ObjectMap occ_map, ObjectMap prior_map, ObjectM
         if(count_map.getProb(x,y,z) < count_thresh){
           float s = std::sqrt(float(count_map.getProb(x,y,z)/count_thresh));
           float val = prior_map.getProb(x,y,z)*(1.f-s) + getProb(x,y,z)*occ_map.getProb(x,y,z)*s;
+          val = 1.f-std::pow(1.f-val, 1.f/(2.5*2.5*2.5));
           map2D(y,x) = map2D(y,x) * (1.f-val);
         }
       }

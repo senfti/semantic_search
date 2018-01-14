@@ -224,7 +224,7 @@ void ExecuteActionServer::doExplore(){
 
 void ExecuteActionServer::doSearch(){
   if(!searcher_.running()){
-    searcher_.start(goal_.target);
+    searcher_.start(goal_.target, goal_.action == 3, goal_.pose);
   }
   static int i = 0;
   if(i%20 == 0)
@@ -381,12 +381,12 @@ void ExecuteActionServer::run(){
       searcher_.stop();
       start_rotation_state_machine_.reset();
     }
-    else if(goal_.action == 2){
+    else if(goal_.action == 2 || goal_.action == 3){
       doSearch();
       explorer_.stop();
       start_rotation_state_machine_.reset();
     }
-    else if(goal_.action == 3){
+    else if(goal_.action == 4){
       doStartRotation();
       explorer_.stop();
       searcher_.stop();

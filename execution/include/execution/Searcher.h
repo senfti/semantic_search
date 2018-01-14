@@ -57,7 +57,12 @@ class Searcher{
     float BORDER_SEEN_MAX_ANGLE = 15.f*M_PI/180.0;
     int SEEN_MAP_MAX_DIST = 2.5;
 
-    int INTERESTING_BORDER_SEEN_REWARD = 0.01f;
+    float INTERESTING_BORDER_SEEN_REWARD = 0.01f;
+
+    float QUICK_SEARCH_MIN_DIST = 0.8;
+    float QUICK_SEARCH_MAX_DIST = 2.0;
+    float QUICK_SEARCH_ANGLE_AREA = M_PI/45.f;
+    int QUICK_SEARCH_VIEWS = 5;
 
   private:
     ros::Subscriber map_sub_;
@@ -91,6 +96,10 @@ class Searcher{
     bool finished_ = false;
     bool running_ = false;
     bool obj_found_ = false;
+    bool is_quick_search_ = false;
+    int quick_search_step_ = 0;
+    bool quick_search_step_viewed_ = true;
+    geometry_msgs::Pose quick_search_target_;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
     std::vector<std::vector<float>> seen_kernel_points_value_;
@@ -116,7 +125,7 @@ class Searcher{
     bool running() const { return running_; }
     bool objectFound() const { return obj_found_; }
 
-    void start(int searched_obj);
+    void start(int searched_obj, bool quick_search, geometry_msgs::Pose& target_pose);
     void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
@@ -127,6 +136,8 @@ class Searcher{
     bool objFound();
 
     bool calcNextViewpoint(const tf::Transform& curr_pose);
+    bool calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_pose);
+
     void doCalculations();
 
     bool did_abort_ = false;
