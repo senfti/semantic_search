@@ -233,19 +233,21 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
   processed_scan_ = false;
 
   boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
-  if(!gsp_->getIndexes().empty()){
+  std::vector<unsigned int> indices = gsp_->getIndexes();
+  gsp_lock.unlock();
+  if(!indices.empty()){
     try{
       boost::lock_guard<boost::mutex> lock(maps_mutex_);
-      for(int i=0; i<gsp_->getIndexes().size(); i++){
-        if(i != gsp_->getIndexes()[i]){
+      for(int i=0; i<indices.size(); i++){
+        if(i != indices[i]){
           delete octo_maps_[i];
-          octo_maps_[i] = new OctoMapper(*octo_maps_[gsp_->getIndexes()[i]]);
+          octo_maps_[i] = new OctoMapper(*octo_maps_[indices[i]]);
           delete door_mappers_[i];
-          door_mappers_[i] = new DoorMapper(*door_mappers_[gsp_->getIndexes()[i]]);
+          door_mappers_[i] = new DoorMapper(*door_mappers_[indices[i]]);
           delete obj_mappers_[i];
-          obj_mappers_[i] = new ObjectMapper(*obj_mappers_[gsp_->getIndexes()[i]]);
+          obj_mappers_[i] = new ObjectMapper(*obj_mappers_[indices[i]]);
           delete room_type_mappers_[i];
-          room_type_mappers_[i] = new RoomTypeMapper(*room_type_mappers_[gsp_->getIndexes()[i]]);
+          room_type_mappers_[i] = new RoomTypeMapper(*room_type_mappers_[indices[i]]);
         }
       }
     }
@@ -256,9 +258,10 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
       r.sleep();
       ros::shutdown();
     }
+    gsp_lock.lock();
     gsp_->resetIndexes();
+    gsp_lock.unlock();
   }
-  gsp_lock.unlock();
 
   boost::lock_guard<boost::mutex> lock(latest_cloud_mutex_);
   latest_cloud_ = *cloud;
@@ -362,14 +365,34 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
     result = GMapping::OrientedPoint(0, 0, 0);
   }
   else if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading){
-    result = particle.pose;
+    try{
+      tf::StampedTransform t1, t2;
+      tf_->lookupTransform("base_link", "odom", ros::Time(particle.node->reading->getTime()), t1);
+      tf_->lookupTransform("odom", "base_link", ros::Time(time), t2);
+      tf::Transform diff = t1*t2;
+      result = GMapping::OrientedPoint(particle.pose.x+diff.getOrigin().x(), particle.pose.y+diff.getOrigin().y(), particle.pose.theta + tf::getYaw(diff.getRotation()));
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      result = particle.pose;
+    }
   }
   else{
     GMapping::OrientedPoint newer_pose = particle.pose;
     double newer_time = particle.node->reading->getTime();
     for(GMapping::GridSlamProcessor::TNode* n = particle.node->parent; n && n->reading; n = n->parent){
       if(time.toSec() > n->reading->getTime()){
-        result = GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
+        try{
+          tf::StampedTransform t1, t2;
+          tf_->lookupTransform("base_link", "odom", ros::Time(newer_time), t1);
+          tf_->lookupTransform("odom", "base_link", ros::Time(time), t2);
+          tf::Transform diff = t1*t2;
+          result = GMapping::OrientedPoint(newer_pose.x+diff.getOrigin().x(), newer_pose.y+diff.getOrigin().y(), newer_pose.theta + tf::getYaw(diff.getRotation()));
+        }
+        catch (tf::TransformException ex){
+          ROS_ERROR("%s",ex.what());
+          result = GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
+        }
         break;
       }
 
@@ -383,6 +406,38 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
         result);
 
   return result;
+
+
+
+//  boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
+//  GMapping::GridSlamProcessor::Particle particle = gsp_->getParticles()[particle_idx];
+//  gsp_lock.unlock();
+//  GMapping::OrientedPoint result;
+//  if(!particle.node){
+//    result = GMapping::OrientedPoint(0, 0, 0);
+//  }
+//  else if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading){
+//    result = particle.pose;
+//  }
+//  else{
+//    GMapping::OrientedPoint newer_pose = particle.pose;
+//    double newer_time = particle.node->reading->getTime();
+//    for(GMapping::GridSlamProcessor::TNode* n = particle.node->parent; n && n->reading; n = n->parent){
+//      if(time.toSec() > n->reading->getTime()){
+//        result = GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
+//        break;
+//      }
+//
+//      newer_pose = n->pose;
+//      newer_time = n->reading->getTime();
+//    }
+//  }
+//
+//  result = transformPointForward(
+//    GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x(), base_to_laser_transform_.getOrigin().y(), tf::getYaw(base_to_laser_transform_.getRotation())),
+//    result);
+//
+//  return result;
 }
 
 
