@@ -170,6 +170,8 @@ void Explorer::calcFrontier(){
   cv::Mat_<uchar> good_frontiers_mask;
   cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
 
+  cv::Mat_<uchar> good_accessible;
+  cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
   cv::Point best_pos = pos + cv::Point(transform.getBasis().getColumn(0).x() * ROBOT_SIZE, transform.getBasis().getColumn(0).y() * ROBOT_SIZE);
   std::set<std::pair<cv::Point,double>, CompareFrontier> frontiers;
   for(int x=0; x<last_map_.info.width; x++){
@@ -187,7 +189,7 @@ void Explorer::calcFrontier(){
     for(const auto& offset : circle_points_){
       cv::Point p = f.first+offset;
       if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && accessible(p)){
-        double dist = (p.x-best_pos.x)*(p.x-best_pos.x) + (p.y-best_pos.y)*(p.y-best_pos.y);
+        double dist = (p.x-best_pos.x)*(p.x-best_pos.x) + (p.y-best_pos.y)*(p.y-best_pos.y) + (good_accessible(p) ? 0.f : 1.f);
         view_points.insert(std::pair<cv::Point,double>(p, dist));
       }
     }

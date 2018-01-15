@@ -128,9 +128,8 @@ void SlamGMapping::init(){
   private_nh_.param("transform_publish_period", transform_publish_period_, 0.05);
 
   double tmp;
-  if(!private_nh_.getParam("gmapping/map_update_interval", tmp))
-    tmp = 5.0;
-  map_update_interval_.fromSec(tmp);
+  if(!private_nh_.getParam("gmapping/map_update_interval", map_update_interval_))
+    map_update_interval_ = 1.0;
 
   // Parameters used by GMapping itself
   maxUrange_ = 0.0;  maxRange_ = 0.0; // preliminary default, will be set in initMapper()
@@ -324,6 +323,8 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
 
   ROS_INFO("Initialization complete");
 
+  map_generation_thread_ = new boost::thread(boost::bind(&SlamGMapping::updateMap, this));
+
   return true;
 }
 
@@ -376,8 +377,6 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
   if ((laser_count_ % throttle_scans_) != 0)
     return;
 
-  static ros::Time last_map_update(0,0);
-
   // We can't initialize the mapper until we've got the first scan
   if(!got_first_scan_) {
     if(!initMapper(*scan))
@@ -406,104 +405,114 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
     map_to_odom_mutex_.unlock();
 
-    if(!got_map_ || (scan->header.stamp - last_map_update) > map_update_interval_) {
-      updateMap(*scan);
-      last_map_update = scan->header.stamp;
-      ROS_DEBUG("Updated the map");
-    }
+    latest_scan_ = *scan;
   }
   else
     ROS_DEBUG("cannot process scan");
 }
 
-void SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan) {
-  ROS_DEBUG("Update map");
-  ros::Time t = ros::Time::now();
-  boost::mutex::scoped_lock map_lock (map_mutex_);
-  GMapping::ScanMatcher matcher;
-  matcher.setenlargeStep(2.0);
-
-  matcher.setLaserParameters(scan.ranges.size(), &(laser_angles_[0]), gsp_laser_->getPose());
-
-  matcher.setlaserMaxRange(maxRange_);
-  matcher.setusableRange(maxUrange_);
-  matcher.setgenerateMap(true);
-
-  boost::unique_lock<boost::mutex> lock(gsp_mutex_);
-  GMapping::GridSlamProcessor::Particle best = gsp_->getParticles()[gsp_->getBestParticleIndex()];
-  lock.unlock();
-
-  if(!got_map_) {
-    map_.map.info.resolution = delta_;
-    map_.map.info.origin.position.x = 0.0;
-    map_.map.info.origin.position.y = 0.0;
-    map_.map.info.origin.position.z = 0.0;
-    map_.map.info.origin.orientation.x = 0.0;
-    map_.map.info.origin.orientation.y = 0.0;
-    map_.map.info.origin.orientation.z = 0.0;
-    map_.map.info.origin.orientation.w = 1.0;
-  }
-
-  GMapping::Point center;
-  center.x=(xmin_ + xmax_) / 2.0;
-  center.y=(ymin_ + ymax_) / 2.0;
-
-  GMapping::ScanMatcherMap smap(center, xmin_, ymin_, xmax_, ymax_, delta_);
-
-  ROS_DEBUG("Trajectory tree:");
-  for(GMapping::GridSlamProcessor::TNode* n = best.node; n; n = n->parent){
-    ROS_DEBUG("  %.3f %.3f %.3f", n->pose.x, n->pose.y, n->pose.theta);
-    if(!n->reading){
-      ROS_DEBUG("Reading is NULL");
-      continue;
-    }
-    matcher.invalidateActiveArea();
-    matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
-    matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
-  }
-
-  // the map may have expanded, so resize ros message as well
-  if(map_.map.info.width != (unsigned int) smap.getMapSizeX() || map_.map.info.height != (unsigned int) smap.getMapSizeY()) {
-
-    // NOTE: The results of ScanMatcherMap::getSize() are different from the parameters given to the constructor
-    //       so we must obtain the bounding box in a different way
-    GMapping::Point wmin = smap.map2world(GMapping::IntPoint(0, 0));
-    GMapping::Point wmax = smap.map2world(GMapping::IntPoint(smap.getMapSizeX(), smap.getMapSizeY()));
-    xmin_ = wmin.x; ymin_ = wmin.y;
-    xmax_ = wmax.x; ymax_ = wmax.y;
-
-    ROS_INFO("map size is now %dx%d pixels (%f,%f)-(%f, %f)", smap.getMapSizeX(), smap.getMapSizeY(), xmin_, ymin_, xmax_, ymax_);
-
-    map_.map.info.width = smap.getMapSizeX();
-    map_.map.info.height = smap.getMapSizeY();
-    map_.map.info.origin.position.x = xmin_;
-    map_.map.info.origin.position.y = ymin_;
-    map_.map.data.resize(map_.map.info.width * map_.map.info.height);
-
-    ROS_INFO("map origin: (%f, %f)", map_.map.info.origin.position.x, map_.map.info.origin.position.y);
-  }
-
-  for(int x=0; x < smap.getMapSizeX(); x++) {
-    for(int y=0; y < smap.getMapSizeY(); y++) {
-      GMapping::IntPoint p(x, y);
-      double occ=smap.cell(p);
-      assert(occ <= 1.0);
-      if(occ < 0)
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = -1;
-      else if(occ > occ_thresh_) {
-        //map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = (int)round(occ*100.0);
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 100;
+void SlamGMapping::updateMap() {
+  ros::Rate rate(1.0/map_update_interval_);
+  while(ros::ok()){
+    if(!latest_scan_.ranges.empty()){
+      boost::unique_lock<boost::mutex> map_lock(map_mutex_);
+      nav_msgs::OccupancyGrid map = map_.map;
+      if(!got_map_){
+        map.info.resolution = delta_;
+        map.info.origin.position.x = 0.0;
+        map.info.origin.position.y = 0.0;
+        map.info.origin.position.z = 0.0;
+        map.info.origin.orientation.x = 0.0;
+        map.info.origin.orientation.y = 0.0;
+        map.info.origin.orientation.z = 0.0;
+        map.info.origin.orientation.w = 1.0;
       }
-      else
-        map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = 0;
-    }
-  }
-  got_map_ = true;
+      map_lock.unlock();
 
-  //make sure to set the header information on the map
-  map_.map.header.stamp = ros::Time::now();
-  map_.map.header.frame_id = tf_->resolve( map_frame_ );
-  ROS_INFO("GMap updated in %.3lf s", (ros::Time::now()-t).toSec());
+      ROS_DEBUG("Update map");
+      ros::Time t = ros::Time::now();
+      GMapping::ScanMatcher matcher;
+      matcher.setenlargeStep(2.0);
+
+      matcher.setLaserParameters(latest_scan_.ranges.size(), &(laser_angles_[0]), gsp_laser_->getPose());
+
+      matcher.setlaserMaxRange(maxRange_);
+      matcher.setusableRange(maxUrange_);
+      matcher.setgenerateMap(true);
+
+      boost::unique_lock<boost::mutex> lock(gsp_mutex_);
+      GMapping::GridSlamProcessor* tmp_gsp = gsp_->clone();
+      GMapping::GridSlamProcessor::Particle best = tmp_gsp->getParticles()[tmp_gsp->getBestParticleIndex()];
+      lock.unlock();
+
+      GMapping::Point center;
+      center.x = (xmin_ + xmax_) / 2.0;
+      center.y = (ymin_ + ymax_) / 2.0;
+
+      GMapping::ScanMatcherMap smap(center, xmin_, ymin_, xmax_, ymax_, delta_);
+
+      ROS_DEBUG("Trajectory tree:");
+      for(GMapping::GridSlamProcessor::TNode *n = best.node; n; n = n->parent){
+        ROS_DEBUG("  %.3f %.3f %.3f", n->pose.x, n->pose.y, n->pose.theta);
+        if(!n->reading){
+          ROS_DEBUG("Reading is NULL");
+          continue;
+        }
+        matcher.invalidateActiveArea();
+        matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
+        matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
+      }
+
+      // the map may have expanded, so resize ros message as well
+      if(map.info.width != (unsigned int)smap.getMapSizeX() || map.info.height != (unsigned int)smap.getMapSizeY()){
+
+        // NOTE: The results of ScanMatcherMap::getSize() are different from the parameters given to the constructor
+        //       so we must obtain the bounding box in a different way
+        GMapping::Point wmin = smap.map2world(GMapping::IntPoint(0, 0));
+        GMapping::Point wmax = smap.map2world(GMapping::IntPoint(smap.getMapSizeX(), smap.getMapSizeY()));
+        xmin_ = wmin.x;
+        ymin_ = wmin.y;
+        xmax_ = wmax.x;
+        ymax_ = wmax.y;
+
+        ROS_INFO("map size is now %dx%d pixels (%f,%f)-(%f, %f)", smap.getMapSizeX(), smap.getMapSizeY(), xmin_, ymin_, xmax_, ymax_);
+
+        map.info.width = smap.getMapSizeX();
+        map.info.height = smap.getMapSizeY();
+        map.info.origin.position.x = xmin_;
+        map.info.origin.position.y = ymin_;
+        map.data.resize(map.info.width * map.info.height);
+
+        ROS_INFO("map origin: (%f, %f)", map.info.origin.position.x, map.info.origin.position.y);
+      }
+
+      for(int x = 0; x < smap.getMapSizeX(); x++){
+        for(int y = 0; y < smap.getMapSizeY(); y++){
+          GMapping::IntPoint p(x, y);
+          double occ = smap.cell(p);
+          assert(occ <= 1.0);
+          if(occ < 0)
+            map.data[MAP_IDX(map.info.width, x, y)] = -1;
+          else if(occ > occ_thresh_){
+            //map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = (int)round(occ*100.0);
+            map.data[MAP_IDX(map.info.width, x, y)] = 100;
+          } else
+            map.data[MAP_IDX(map.info.width, x, y)] = 0;
+        }
+      }
+      got_map_ = true;
+
+      //make sure to set the header information on the map
+      map_lock.lock();
+      map_.map = map;
+      map_.map.header.stamp = ros::Time::now();
+      map_.map.header.frame_id = tf_->resolve(map_frame_);
+      map_lock.unlock();
+      delete tmp_gsp;
+      ROS_INFO("GMap updated in %.3lf s", (ros::Time::now() - t).toSec());
+    }
+    rate.sleep();
+  }
 }
 
 

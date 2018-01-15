@@ -92,10 +92,13 @@ class SlamGMapping
     bool got_map_;
     nav_msgs::GetMap::Response map_;
 
-    ros::Duration map_update_interval_;
+    double map_update_interval_;
     tf::Transform map_to_odom_;
     boost::mutex map_to_odom_mutex_;
     boost::mutex map_mutex_;
+
+    boost::thread* map_generation_thread_ = nullptr;
+    sensor_msgs::LaserScan latest_scan_;
 
     int laser_count_;
     int throttle_scans_;
@@ -105,7 +108,7 @@ class SlamGMapping
     std::string map_frame_;
     std::string odom_frame_;
 
-    void updateMap(const sensor_msgs::LaserScan& scan);
+    void updateMap();
     bool getOdomPose(GMapping::OrientedPoint& gmap_pose, const ros::Time& t);
     bool initMapper(const sensor_msgs::LaserScan& scan);
     bool addScan(const sensor_msgs::LaserScan& scan, GMapping::OrientedPoint& gmap_pose);

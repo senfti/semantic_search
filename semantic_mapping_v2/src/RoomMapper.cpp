@@ -216,11 +216,11 @@ void RoomMapper::doOctomapping(){
 //      voxel_grid_filter.setInputCloud(pc_ground);
 //      voxel_grid_filter.filter(*pc_ground);
 
+      boost::unique_lock<boost::mutex> maps_lock(maps_mutex_);
       for(int i = 0; i < octo_maps_.size(); i++){
-        boost::unique_lock<boost::mutex> lock(maps_mutex_);
         octo_maps_[i]->insertCloud(*pc, *pc_ground, getParticlePose3D(i, stamp));
-        lock.unlock();
       }
+      lock.unlock();
       ROS_INFO("Octomaps update in %.3lf, downsample: %d", ros::Time::now().toSec() - t.toSec(), downsample_factor_);
     }
     rate.sleep();

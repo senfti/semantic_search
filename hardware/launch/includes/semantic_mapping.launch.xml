@@ -6,7 +6,7 @@
   <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" >
     <param name="gmapping/base_frame" value="$(arg base_frame)"/>
     <param name="gmapping/odom_frame" value="$(arg odom_frame)"/>
-    <param name="gmapping/map_update_interval" value="3.0"/>
+    <param name="gmapping/map_update_interval" value="1.0"/>
     <param name="gmapping/maxUrange" value="3.5"/>
     <param name="gmapping/maxRange" value="4.5"/>
     <param name="gmapping/sigma" value="0.05"/>

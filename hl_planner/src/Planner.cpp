@@ -34,6 +34,7 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
   goal.action = action.type_;
   goal.target = action.target_;
   ROS_ERROR("SEND GOAL %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
+  std::cin.get();
   return execute_action_client_.sendGoalAndWait(goal);
 }
 
