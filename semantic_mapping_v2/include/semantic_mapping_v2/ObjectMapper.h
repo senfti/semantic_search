@@ -15,7 +15,7 @@
 #include <semantic_mapping_v2/DoorMapper.h>
 #include <boost/thread.hpp>
 #include <boost/thread/lock_guard.hpp>
-
+#include <assert.h>
 class OctoMapper;
 
 class ObjectMap{
@@ -80,6 +80,7 @@ class ObjectMap{
 
 
 inline void ObjectMap::insertProb(int x, int y, int z, float prob, float prior, float V_H, float V_M, float min, float max){
+  assert(z>=0 && z<prob_maps_.size() && x>=0 && x<prob_maps_[0].cols && y>=0 && y<prob_maps_[0].rows);
   float p = prob_maps_[z](y,x);
   float update = (prob*V_H + (1.f-prob)*V_M);
   float tmp = update / prior * p;
@@ -90,6 +91,7 @@ inline void ObjectMap::insertProb(int x, int y, int z, float prob, float prior, 
 
 
 inline void ObjectMap::insertMax(int x, int y, int z, float prob){
+  assert(z>=0 && z<prob_maps_.size() && x>=0 && x<prob_maps_[0].cols && y>=0 && y<prob_maps_[0].rows);
   prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
   count_maps_[z](y,x) = count_maps_[z](y,x) | uchar(1);
 }

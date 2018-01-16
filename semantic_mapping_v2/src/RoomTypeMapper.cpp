@@ -399,7 +399,7 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
 }
 
 std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order){
-  if(prob_maps_.empty())
+  if(prob_maps_.empty() || map.data.size() == 0)
     return std::vector<float>();
 
   ros::Time t = ros::Time::now();

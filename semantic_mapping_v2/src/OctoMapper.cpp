@@ -534,6 +534,9 @@ Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) {
 
 
 nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) {
+  if(map.data.empty())
+    return nav_msgs::OccupancyGrid();
+
   nav_msgs::OccupancyGrid downprojected_map = map;
   cv::Mat_<uchar> tmp_map(map.info.height, map.info.width, uchar(0));
   geometry_msgs::Quaternion orig_quat = downprojected_map.info.origin.orientation;
@@ -591,6 +594,7 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
   for(int x=0; x<tmp_map.cols; x++){
     for(int y=0; y<tmp_map.rows; y++){
       if(tmp_map(y,x)){
+        assert(y * downprojected_map.info.width + x < downprojected_map.data.size());
         downprojected_map.data[y * downprojected_map.info.width + x] = 100;
       }
     }

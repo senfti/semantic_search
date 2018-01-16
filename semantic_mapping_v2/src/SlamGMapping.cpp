@@ -5,7 +5,6 @@
 
 #include "semantic_mapping_v2/SlamGMapping.h"
 
-
 // Modified init for resume
 void MyGridSlamProcessor::init(unsigned int size, double xmin, double ymin, double xmax, double ymax, double delta,
                                GMapping::OrientedPoint initialPose, const GMapping::ScanMatcherMap& initial_map)
@@ -67,6 +66,88 @@ void MyGridSlamProcessor::onScanmatchUpdate(){
 //      }
 //    }
 //  }
+}
+
+
+void MyGridSlamProcessor::consistencyCheck(){
+# ifdef MAP_CONSISTENCY_CHECK
+  std::cerr << __PRETTY_FUNCTION__ << ": performing preclone_fit_test" << std::endl;
+  typedef std::map<GMapping::autoptr< GMapping::Array2D<GMapping::PointAccumulator> >::reference* const, int> PointerMap;
+  PointerMap pmap;
+  for (ParticleVector::const_iterator it=m_particles.begin(); it!=m_particles.end(); it++){
+    const GMapping::ScanMatcherMap& m1(it->map);
+    const GMapping::HierarchicalArray2D<GMapping::PointAccumulator>& h1(m1.storage());
+    for (int x=0; x<h1.getXSize(); x++){
+      for (int y=0; y<h1.getYSize(); y++){
+        const GMapping::autoptr< GMapping::Array2D<GMapping::PointAccumulator> >& a1(h1.m_cells[x][y]);
+        if (a1.m_reference){
+          PointerMap::iterator f=pmap.find(a1.m_reference);
+          if (f==pmap.end())
+            pmap.insert(std::make_pair(a1.m_reference, 1));
+          else
+            f->second++;
+        }
+      }
+    }
+  }
+  std::cerr << __PRETTY_FUNCTION__ <<  ": Number of allocated chunks" << pmap.size() << std::endl;
+  for(PointerMap::const_iterator it=pmap.begin(); it!=pmap.end(); it++)
+    assert(it->first->shares==(unsigned int)it->second);
+
+  std::cerr << __PRETTY_FUNCTION__ <<  ": SUCCESS, the error is somewhere else" << std::endl;
+# endif
+}
+
+
+void MyGridSlamProcessor::consistencyCheck(GMapping::GridSlamProcessor* cloned){
+//# ifdef MAP_CONSISTENCY_CHECK
+//  std::cerr << __PRETTY_FUNCTION__ << ": performing preclone_fit_test" << std::endl;
+//  typedef std::map<GMapping::autoptr< GMapping::Array2D<GMapping::PointAccumulator> >::reference* const, int> PointerMap;
+//  PointerMap pmap;
+//  for (ParticleVector::const_iterator it=m_particles.begin(); it!=m_particles.end(); it++){
+//    const GMapping::ScanMatcherMap& m1(it->map);
+//    const GMapping::HierarchicalArray2D<GMapping::PointAccumulator>& h1(m1.storage());
+//    for (int x=0; x<h1.getXSize(); x++){
+//      for (int y=0; y<h1.getYSize(); y++){
+//        const GMapping::autoptr< GMapping::Array2D<GMapping::PointAccumulator> >& a1(h1.m_cells[x][y]);
+//        if (a1.m_reference){
+//          PointerMap::iterator f=pmap.find(a1.m_reference);
+//          if (f==pmap.end())
+//            pmap.insert(std::make_pair(a1.m_reference, 1));
+//          else
+//            f->second++;
+//        }
+//      }
+//    }
+//  }
+//  std::cerr << __PRETTY_FUNCTION__ <<  ": Number of allocated chunks" << pmap.size() << std::endl;
+//  for(PointerMap::const_iterator it=pmap.begin(); it!=pmap.end(); it++)
+//    assert(it->first->shares==(unsigned int)it->second);
+//
+//  std::cerr << __PRETTY_FUNCTION__ <<  ": SUCCESS, the error is somewhere else" << std::endl;
+//# endif
+
+# ifdef MAP_CONSISTENCY_CHECK
+  std::cerr << __PRETTY_FUNCTION__ <<  ": trajectories end" << std::endl;
+  std::cerr << __PRETTY_FUNCTION__ << ": performing afterclone_fit_test" << std::endl;
+  ParticleVector::const_iterator jt=cloned->getParticles().begin();
+  for (ParticleVector::const_iterator it=m_particles.begin(); it!=m_particles.end(); it++){
+    const GMapping::ScanMatcherMap& m1(it->map);
+    const GMapping::ScanMatcherMap& m2(jt->map);
+    const GMapping::HierarchicalArray2D<GMapping::PointAccumulator>& h1(m1.storage());
+    const GMapping::HierarchicalArray2D<GMapping::PointAccumulator>& h2(m2.storage());
+    jt++;
+    for (int x=0; x<h1.getXSize(); x++){
+      for (int y=0; y<h1.getYSize(); y++){
+        const GMapping::autoptr< GMapping::Array2D<GMapping::PointAccumulator> >& a1(h1.m_cells[x][y]);
+        const GMapping::autoptr< GMapping::Array2D<GMapping::PointAccumulator> >& a2(h2.m_cells[x][y]);
+        assert(a1.m_reference==a2.m_reference);
+        assert((!a1.m_reference) || !(a1.m_reference->shares%2));
+      }
+    }
+  }
+  std::cerr << __PRETTY_FUNCTION__ <<  ": SUCCESS, the error is somewhere else" << std::endl;
+# endif
 }
 
 
@@ -194,6 +275,15 @@ void SlamGMapping::init(){
     tf_delay_ = transform_publish_period_;
 
   private_nh_.param("gmapping/settle_time", settle_time_, settle_time_);
+
+  map_.map.info.resolution = delta_;
+  map_.map.info.origin.position.x = 0.0;
+  map_.map.info.origin.position.y = 0.0;
+  map_.map.info.origin.position.z = 0.0;
+  map_.map.info.origin.orientation.x = 0.0;
+  map_.map.info.origin.orientation.y = 0.0;
+  map_.map.info.origin.orientation.z = 0.0;
+  map_.map.info.origin.orientation.w = 1.0;
 }
 
 SlamGMapping::~SlamGMapping(){
@@ -301,6 +391,7 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
 
   GMapping::SensorMap smap;
   smap.insert(make_pair(gsp_laser_->getName(), gsp_laser_));
+  boost::unique_lock<boost::mutex> lock(gsp_mutex_);
   gsp_->setSensorMap(smap);
 
   gsp_odom_ = new GMapping::OdometrySensor(odom_frame_);
@@ -317,6 +408,7 @@ bool SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan){
   gsp_->setlasamplerange(lasamplerange_);
   gsp_->setlasamplestep(lasamplestep_);
   gsp_->setminimumScore(minimum_score_);
+  lock.unlock();
 
   // Call the sampling function once to set the seed.
   GMapping::sampleGaussian(1,seed_);
@@ -414,10 +506,10 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
 void SlamGMapping::updateMap() {
   ros::Rate rate(1.0/map_update_interval_);
   while(ros::ok()){
-    if(!latest_scan_.ranges.empty()){
-      boost::unique_lock<boost::mutex> map_lock(map_mutex_);
+    if(!latest_scan_.ranges.empty() && got_first_scan_){
       nav_msgs::OccupancyGrid map = map_.map;
       if(!got_map_){
+        boost::unique_lock<boost::mutex> map_lock(map_mutex_);
         map.info.resolution = delta_;
         map.info.origin.position.x = 0.0;
         map.info.origin.position.y = 0.0;
@@ -426,8 +518,8 @@ void SlamGMapping::updateMap() {
         map.info.origin.orientation.y = 0.0;
         map.info.origin.orientation.z = 0.0;
         map.info.origin.orientation.w = 1.0;
+        map_lock.unlock();
       }
-      map_lock.unlock();
 
       ROS_DEBUG("Update map");
       ros::Time t = ros::Time::now();
@@ -441,9 +533,7 @@ void SlamGMapping::updateMap() {
       matcher.setgenerateMap(true);
 
       boost::unique_lock<boost::mutex> lock(gsp_mutex_);
-      GMapping::GridSlamProcessor* tmp_gsp = gsp_->clone();
-      GMapping::GridSlamProcessor::Particle best = tmp_gsp->getParticles()[tmp_gsp->getBestParticleIndex()];
-      lock.unlock();
+      GMapping::GridSlamProcessor::Particle best = gsp_->getParticles()[gsp_->getBestParticleIndex()];
 
       GMapping::Point center;
       center.x = (xmin_ + xmax_) / 2.0;
@@ -451,16 +541,25 @@ void SlamGMapping::updateMap() {
 
       GMapping::ScanMatcherMap smap(center, xmin_, ymin_, xmax_, ymax_, delta_);
 
-      ROS_DEBUG("Trajectory tree:");
+      std::vector<GMapping::OrientedPoint> poses;
+      std::vector<double*> readings;
       for(GMapping::GridSlamProcessor::TNode *n = best.node; n; n = n->parent){
         ROS_DEBUG("  %.3f %.3f %.3f", n->pose.x, n->pose.y, n->pose.theta);
         if(!n->reading){
           ROS_DEBUG("Reading is NULL");
           continue;
         }
+        poses.push_back(n->pose);
+        readings.push_back(new double[matcher.laserBeams()]);
+        std::memcpy(readings.back(), &((*n->reading)[0]), matcher.laserBeams()*sizeof(double));
+      }
+      lock.unlock();
+      ROS_DEBUG("Trajectory tree:");
+      for(int i=0; i<poses.size(); i++){
         matcher.invalidateActiveArea();
-        matcher.computeActiveArea(smap, n->pose, &((*n->reading)[0]));
-        matcher.registerScan(smap, n->pose, &((*n->reading)[0]));
+        matcher.computeActiveArea(smap, poses[i], readings[i]);
+        matcher.registerScan(smap, poses[i], readings[i]);
+        delete[] readings[i];
       }
 
       // the map may have expanded, so resize ros message as well
@@ -503,12 +602,11 @@ void SlamGMapping::updateMap() {
       got_map_ = true;
 
       //make sure to set the header information on the map
-      map_lock.lock();
+      boost::unique_lock<boost::mutex> map_lock(map_mutex_);
       map_.map = map;
       map_.map.header.stamp = ros::Time::now();
       map_.map.header.frame_id = tf_->resolve(map_frame_);
       map_lock.unlock();
-      delete tmp_gsp;
       ROS_INFO("GMap updated in %.3lf s", (ros::Time::now() - t).toSec());
     }
     rate.sleep();

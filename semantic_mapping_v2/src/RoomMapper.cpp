@@ -220,7 +220,8 @@ void RoomMapper::doOctomapping(){
       for(int i = 0; i < octo_maps_.size(); i++){
         octo_maps_[i]->insertCloud(*pc, *pc_ground, getParticlePose3D(i, stamp));
       }
-      lock.unlock();
+      maps_lock.unlock();
+
       ROS_INFO("Octomaps update in %.3lf, downsample: %d", ros::Time::now().toSec() - t.toSec(), downsample_factor_);
     }
     rate.sleep();
@@ -265,6 +266,7 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
 
   boost::lock_guard<boost::mutex> lock(latest_cloud_mutex_);
   latest_cloud_ = *cloud;
+
 
 //  if(obstacle_map_.header.stamp != getGMap().header.stamp){
 //    downprojectMap();
@@ -588,10 +590,10 @@ visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) {
 
 visualization_msgs::MarkerArray RoomMapper::getRoomProbMsg(int id) {
   visualization_msgs::MarkerArray res = room_type_mappers_[getBestParticleIdx()]->getProbMsg(id);
-  if(res.markers.empty())
+  nav_msgs::OccupancyGrid map = getMap();
+  if(res.markers.empty() || map.data.empty())
     return visualization_msgs::MarkerArray();
 
-  nav_msgs::OccupancyGrid map = getMap();
   cv::Mat_<uchar> mask(map.info.height, map.info.width, uchar(0));
   for(int x=0; x<mask.cols; x++){
     for(int y=0; y<mask.rows; y++){

@@ -90,6 +90,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
     for(int y=0; y<behind_door.rows; y++){
       for(const auto& door : doors){
         if(door.isBehindDoor(getXWorld(x), getYWorld(y))){
+          assert(x>=0 && x<behind_door.cols && y>=0 && y<behind_door.rows);
           behind_door(y,x) = 255;
           break;
         }

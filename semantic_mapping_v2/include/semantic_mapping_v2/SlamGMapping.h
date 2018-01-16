@@ -44,6 +44,9 @@ class MyGridSlamProcessor : public GMapping::GridSlamProcessor{
     virtual void onOdometryUpdate();
     virtual void onResampleUpdate();
     virtual void onScanmatchUpdate();
+
+    void consistencyCheck();
+    void consistencyCheck(GMapping::GridSlamProcessor* cloned);
 };
 
 
