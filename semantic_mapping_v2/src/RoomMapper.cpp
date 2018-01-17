@@ -327,8 +327,24 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
 
 
 void RoomMapper::downprojectMap(){
+  boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
   boost::mutex::scoped_lock lock(obstacle_map_mutex_);
   obstacle_map_ = octo_maps_[getBestParticleIdx()]->addDownprojected(getGMap());
+  if(obstacle_map_.data.empty())
+    return;
+
+  for(int x=0; x<obstacle_map_.info.width; x++){
+    for(int y=0; y<obstacle_map_.info.height; y++){
+      float pos_x = obstacle_map_.info.origin.position.x + x*obstacle_map_.info.resolution;
+      float pos_y = obstacle_map_.info.origin.position.y + y*obstacle_map_.info.resolution;
+      for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
+        if(door.isBehindDoor(pos_x,pos_y) && !door.isInBehindDoorRect(pos_x, pos_y)){
+          obstacle_map_.data[y * obstacle_map_.info.width + x] = -1;
+          break;
+        }
+      }
+    }
+  }
 }
 
 
@@ -398,7 +414,7 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
           tf::StampedTransform t1, t2;
           tf_->lookupTransform("odom", "base_link", ros::Time(newer_time), t1);
           tf_->lookupTransform("odom", "base_link", ros::Time(time), t2);
-          tf::Transform diff = t2.inverse()*t1;
+          tf::Transform diff = t1.inverse()*t2;
           result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
                                                                  base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),
                                                                  tf::getYaw(base_to_laser_transform_.getRotation()) + tf::getYaw(diff.getRotation())), newer_pose);
@@ -534,6 +550,7 @@ void RoomMapper::setDoorRoom(int id, int other_room, int counterpart_id){
 
 
 visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) {
+  boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
   visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(id);
   if(res.markers.empty())
     return visualization_msgs::MarkerArray();
@@ -564,6 +581,7 @@ visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) {
 }
 
 visualization_msgs::MarkerArray RoomMapper::getRoomProbMsg(int id) {
+  boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
   visualization_msgs::MarkerArray res = room_type_mappers_[getBestParticleIdx()]->getProbMsg(id);
   nav_msgs::OccupancyGrid map = getMap();
   if(res.markers.empty() || map.data.empty())

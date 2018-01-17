@@ -34,6 +34,7 @@ class ExecuteActionServer{
     MoveBaseState move_base_state_ = MoveBaseState::WAITING;
     move_base_msgs::MoveBaseGoal move_base_goal_;
 
+    bool move_to_first_reached_ = false;
     StartRotationStateMachine start_rotation_state_machine_;
     Explorer explorer_;
     Searcher searcher_;

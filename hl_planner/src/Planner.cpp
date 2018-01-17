@@ -175,8 +175,8 @@ void Planner::run(int obj){
     if(hierarchy.rooms.empty())
       return;
 
-    if(hierarchy.rooms[0].obj_probs.empty()){
-      sendGoal(Action(Action::EXPLORE, 0));
+    if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
+      sendGoal(Action(Action::EXPLORE, hierarchy.curr_room));
       continue;
     }
 

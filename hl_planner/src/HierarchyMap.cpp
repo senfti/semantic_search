@@ -3,6 +3,7 @@
 //
 
 #include <hl_planner/HierarchyMap.h>
+#include <tf/transform_datatypes.h>
 #include <limits>
 
 float HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE = 1000.f;
@@ -133,16 +134,20 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
           travel_path_[r1][r2].push_back(link.room2);
           curr_room = link.room2;
           geometry_msgs::Pose waypoint = link.door1_pose;
-          waypoint.position.x += 0.5*std::cos(2*std::acos(link.door1_pose.orientation.w));
-          waypoint.position.y += 0.5*std::sin(2*std::acos(link.door1_pose.orientation.w));
+//          tf::Transform tmp;
+//          tf::poseMsgToTF(waypoint, tmp);
+//          waypoint.position.x += 0.5*tmp.getBasis().getColumn(0).x();
+//          waypoint.position.y += 0.5*tmp.getBasis().getColumn(0).y();
           travel_waypoints_[r1][r2].push_back(waypoint);
         }
         else{
           travel_path_[r1][r2].push_back(link.room1);
           curr_room = link.room1;
           geometry_msgs::Pose waypoint = link.door2_pose;
-          waypoint.position.x += 0.5*std::cos(2*std::acos(link.door2_pose.orientation.w));
-          waypoint.position.y += 0.5*std::sin(2*std::acos(link.door2_pose.orientation.w));
+//          tf::Transform tmp;
+//          tf::poseMsgToTF(waypoint, tmp);
+//          waypoint.position.x += 0.5*tmp.getBasis().getColumn(0).x();
+//          waypoint.position.y += 0.5*tmp.getBasis().getColumn(0).y();
           travel_waypoints_[r1][r2].push_back(waypoint);
         }
       }

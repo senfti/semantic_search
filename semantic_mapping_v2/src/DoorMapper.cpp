@@ -16,11 +16,15 @@ Door::Door(int this_room, const tf::Transform& pose, int other_room, int id, int
 }
 
 
+bool Door::isInBehindDoorRect(float x, float y) const{
+  tf::Vector3 pos = pose_.inverse()*tf::Vector3(x,y,0.f);
+  return (pos.x() > 0.0 && pos.x() < 1.0 && pos.y() > -0.5 && pos.y() < 0.5);
+
+}
+
 bool Door::isBehindDoor(float x, float y) const{
   tf::Vector3 pos = pose_.inverse()*tf::Vector3(x,y,0.f);
-  if((std::abs(pos.y())-0.7) / pos.x() < 0.8 && pos.x() > 0.1)
-    return true;
-  return false;
+  return ((std::abs(pos.y())-0.7) / pos.x() < 0.8 && pos.x() > 0.1);
 }
 
 double Door::getIsDoorConfidence(const tf::Transform &pose) const{

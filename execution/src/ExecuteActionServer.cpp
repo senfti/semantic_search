@@ -53,6 +53,7 @@ void ExecuteActionServer::activeCb(){
 void ExecuteActionServer::goalCb(){
   action_client_.cancelAllGoals();
   goal_ = *(action_server_.acceptNewGoal());
+  move_to_first_reached_ = false;
   ROS_INFO("NEW GOAL: %d, %d, %.3lf, %.3lf, %.3lf, %.3lf", goal_.action, goal_.target, goal_.pose.position.x, goal_.pose.position.y, goal_.pose.orientation.z, goal_.pose.orientation.w);
 }
 
@@ -91,9 +92,15 @@ void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgCo
 
 void ExecuteActionServer::doMoveTo(){
   if(move_base_state_ == MoveBaseState::WAITING) {
-    std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
-    std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
-    sendMoveBaseGoal(goal_.pose);
+    if(!move_to_first_reached_){
+      std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
+      std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
+      tf::Transform tmp;
+      tf::poseMsgToTF(goal_.pose, tmp);
+      tmp.setOrigin(tmp.getOrigin()-tf::Vector3(0.5*tmp.getBasis().getColumn(0).x(), 0.5*tmp.getBasis().getColumn(0).y(),0.0));
+      tf::poseTFToMsg(tmp, goal_.pose);
+      sendMoveBaseGoal(goal_.pose);
+    }
   }
   else if(move_base_state_ == MoveBaseState::GOAL_SENT){
     ;
@@ -106,22 +113,36 @@ void ExecuteActionServer::doMoveTo(){
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      execution::ExecuteResult result;
-      result.result_number = 0;
-      action_server_.setSucceeded(result, "SUCCESS");
+      if(!move_to_first_reached_){
+        move_to_first_reached_ = true;
+        tf::Transform tmp;
+        tf::poseMsgToTF(goal_.pose, tmp);
+        tmp.setOrigin(tmp.getOrigin()+tf::Vector3(tmp.getBasis().getColumn(0).x(), tmp.getBasis().getColumn(0).y(),0.0));
+        tf::poseTFToMsg(tmp, goal_.pose);
+        sendMoveBaseGoal(goal_.pose);
+      }
+      else{
+        execution::ExecuteResult result;
+        result.result_number = 0;
+        action_server_.setSucceeded(result, "SUCCESS");
+        goal_.action = -1;
+        move_base_state_ = MoveBaseState::WAITING;
+      }
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       execution::ExecuteResult result;
       result.result_number = -1;
       action_server_.setPreempted(result, "PREEMPTED");
+      goal_.action = -1;
+      move_base_state_ = MoveBaseState::WAITING;
     }
     else{
       execution::ExecuteResult result;
       result.result_number = -2;
       action_server_.setAborted(result, "ABORTED");
+      goal_.action = -1;
+      move_base_state_ = MoveBaseState::WAITING;
     }
-    goal_.action = -1;
-    move_base_state_ = MoveBaseState::WAITING;
   }
 }
 

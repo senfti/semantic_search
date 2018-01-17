@@ -535,7 +535,7 @@ Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) {
 
 nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) {
   if(map.data.empty())
-    return nav_msgs::OccupancyGrid();
+    return map;
 
   nav_msgs::OccupancyGrid downprojected_map = map;
   cv::Mat_<uchar> tmp_map(map.info.height, map.info.width, uchar(0));

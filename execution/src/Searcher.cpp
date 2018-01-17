@@ -278,8 +278,8 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
     i++;
   }
 
-  resize(msg->info.origin.position.x, msg->info.width*msg->info.resolution+msg->info.origin.position.x,
-         msg->info.origin.position.y, msg->info.height*msg->info.resolution+msg->info.origin.position.y);
+  resize(msg->info.origin.position.x-0.2, msg->info.width*msg->info.resolution+msg->info.origin.position.x+0.4,
+         msg->info.origin.position.y-0.2, msg->info.height*msg->info.resolution+msg->info.origin.position.y+0.4);
 
   double factor = obj_map_->getResolution()*msg->info.resolution;
   cv::resize(accessible_mat, accessible_mat, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor), 0, 0, cv::INTER_NEAREST);
@@ -686,7 +686,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::Point pos = poseToPoint(curr_pose, obj_map_->getOrigin(), RESOLUTION);
   cv::Mat_<uchar> kernel = getViewKernel(angle, SEEN_MAP_MAX_DIST, RESOLUTION);
   int x1=pos.x-kernel.cols/2, y1=pos.y-kernel.rows/2;
-  kernel = kernel(cv::Rect(cv::Point(std::max(-x1,0),std::max(-y1,0)), cv::Point(std::min(x1+kernel.cols,seen_maps_[0].cols),std::min(y1+kernel.rows,seen_maps_[0].rows))));
+  kernel = kernel(cv::Rect(cv::Point(std::max(-x1,0),std::max(-y1,0)), cv::Point(std::min(kernel.cols,seen_maps_[0].cols-x1),std::min(kernel.rows,seen_maps_[0].rows-y1))));
   x1 = std::max(x1,0);
   y1 = std::max(y1,0);
   cv::Mat(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)) + kernel).copyTo(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)));
