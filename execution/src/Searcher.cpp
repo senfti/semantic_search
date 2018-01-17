@@ -686,8 +686,12 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::Point pos = poseToPoint(curr_pose, obj_map_->getOrigin(), RESOLUTION);
   cv::Mat_<uchar> kernel = getViewKernel(angle, SEEN_MAP_MAX_DIST, RESOLUTION);
   int x1=pos.x-kernel.cols/2, y1=pos.y-kernel.rows/2;
+  kernel = kernel(cv::Rect(cv::Point(std::max(-x1,0),std::max(-y1,0)), cv::Point(std::min(x1+kernel.cols,seen_maps_[0].cols),std::min(y1+kernel.rows,seen_maps_[0].rows))));
+  x1 = std::max(x1,0);
+  y1 = std::max(y1,0);
   cv::Mat(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)) + kernel).copyTo(seen_maps_[idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)));
   cv::Mat(seen_maps_[other_idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)) + kernel).copyTo(seen_maps_[other_idx](cv::Rect(x1,y1,kernel.cols,kernel.rows)));
+
   cv::threshold(seen_maps_[idx], seen_maps_[idx], 100, 100, cv::THRESH_TRUNC);
   cv::threshold(seen_maps_[other_idx], seen_maps_[other_idx], 100, 100, cv::THRESH_TRUNC);
 
@@ -714,6 +718,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);
   cv::waitKey(1);
+  std::cout << "In seen map inserted" << std::endl;
 
   return finished;
 }

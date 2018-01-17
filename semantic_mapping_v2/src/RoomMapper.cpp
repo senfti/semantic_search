@@ -361,22 +361,32 @@ nav_msgs::OccupancyGrid RoomMapper::getDoorBlockedMap(){
 GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Time time){
   boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
   GMapping::GridSlamProcessor::Particle particle = gsp_->getParticles()[particle_idx];
-  gsp_lock.unlock();
   GMapping::OrientedPoint result;
   if(!particle.node){
     result = GMapping::OrientedPoint(0, 0, 0);
   }
   else if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading){
+    tf::StampedTransform t1, t2;
     try{
-      tf::StampedTransform t1, t2;
-      tf_->lookupTransform("base_link", "odom", ros::Time(particle.node->reading->getTime()), t1);
-      tf_->lookupTransform("odom", "base_link", ros::Time(time), t2);
-      tf::Transform diff = t1*t2;
-      result = GMapping::OrientedPoint(particle.pose.x+diff.getOrigin().x(), particle.pose.y+diff.getOrigin().y(), particle.pose.theta + tf::getYaw(diff.getRotation()));
+      tf_->lookupTransform("odom", "base_link", ros::Time(particle.node->reading->getTime()), t1);
+      try{
+        tf_->lookupTransform("odom", "base_link", time, t2);
+        tf::Transform diff = t1.inverse()*t2;
+        result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
+                                                               base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),
+                                                               tf::getYaw(base_to_laser_transform_.getRotation()) + tf::getYaw(diff.getRotation())), particle.node->pose);
+      }
+      catch (tf::TransformException ex){
+        tf_->lookupTransform("odom", "base_link", ros::Time(0), t2);
+        tf::Transform diff = t1.inverse()*t2;
+        result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
+                                                               base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),
+                                                               tf::getYaw(base_to_laser_transform_.getRotation()) + tf::getYaw(diff.getRotation())), particle.node->pose);
+      }
     }
     catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-      result = particle.pose;
+      result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x(), base_to_laser_transform_.getOrigin().y(), tf::getYaw(base_to_laser_transform_.getRotation())),
+                                     particle.pose);
     }
   }
   else{
@@ -386,68 +396,33 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
       if(time.toSec() > n->reading->getTime()){
         try{
           tf::StampedTransform t1, t2;
-          tf_->lookupTransform("base_link", "odom", ros::Time(newer_time), t1);
+          tf_->lookupTransform("odom", "base_link", ros::Time(newer_time), t1);
           tf_->lookupTransform("odom", "base_link", ros::Time(time), t2);
-          tf::Transform diff = t1*t2;
-          result = GMapping::OrientedPoint(newer_pose.x+diff.getOrigin().x(), newer_pose.y+diff.getOrigin().y(), newer_pose.theta + tf::getYaw(diff.getRotation()));
+          tf::Transform diff = t2.inverse()*t1;
+          result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
+                                                                 base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),
+                                                                 tf::getYaw(base_to_laser_transform_.getRotation()) + tf::getYaw(diff.getRotation())), newer_pose);
         }
         catch (tf::TransformException ex){
           ROS_ERROR("%s",ex.what());
-          result = GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
+          result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x(), base_to_laser_transform_.getOrigin().y(), tf::getYaw(base_to_laser_transform_.getRotation())),
+                                         GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec()));
         }
         break;
       }
-
       newer_pose = n->pose;
       newer_time = n->reading->getTime();
     }
   }
-
-  result = transformPointForward(
-        GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x(), base_to_laser_transform_.getOrigin().y(), tf::getYaw(base_to_laser_transform_.getRotation())),
-        result);
+  gsp_lock.unlock();
 
   return result;
-
-
-
-//  boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
-//  GMapping::GridSlamProcessor::Particle particle = gsp_->getParticles()[particle_idx];
-//  gsp_lock.unlock();
-//  GMapping::OrientedPoint result;
-//  if(!particle.node){
-//    result = GMapping::OrientedPoint(0, 0, 0);
-//  }
-//  else if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading){
-//    result = particle.pose;
-//  }
-//  else{
-//    GMapping::OrientedPoint newer_pose = particle.pose;
-//    double newer_time = particle.node->reading->getTime();
-//    for(GMapping::GridSlamProcessor::TNode* n = particle.node->parent; n && n->reading; n = n->parent){
-//      if(time.toSec() > n->reading->getTime()){
-//        result = GMapping::interpolate(n->pose, n->reading->getTime(), newer_pose, newer_time, time.toSec());
-//        break;
-//      }
-//
-//      newer_pose = n->pose;
-//      newer_time = n->reading->getTime();
-//    }
-//  }
-//
-//  result = transformPointForward(
-//    GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x(), base_to_laser_transform_.getOrigin().y(), tf::getYaw(base_to_laser_transform_.getRotation())),
-//    result);
-//
-//  return result;
 }
 
 
 tf::Transform RoomMapper::getParticlePose3D(int particle_idx, ros::Time time){
   GMapping::OrientedPoint point = getParticlePose2D(particle_idx, time);
-  tf::Transform pose(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, -base_to_laser_transform_.getOrigin().z()));
-
-  return pose;
+  return tf::Transform(tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), point.theta), tf::Vector3(point.x, point.y, 0.0));
 }
 
 
@@ -665,10 +640,7 @@ geometry_msgs::PoseArray RoomMapper::getParticlePoseMsg(){
   msg.header.stamp = ros::Time::now();
   msg.poses.resize(particles_);
   for(int i=0; i<particles_; i++){
-    boost::unique_lock<boost::mutex> gsp_lock(gsp_mutex_);
-    tf::Transform pose(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), gsp_->getParticles()[i].pose.theta), tf::Vector3(gsp_->getParticles()[i].pose.x, gsp_->getParticles()[i].pose.y, 0.0));
-    gsp_lock.unlock();
-    tf::poseTFToMsg(pose, msg.poses[i]);
+    tf::poseTFToMsg(getParticlePose3D(i, msg.header.stamp), msg.poses[i]);
   }
 
   return msg;

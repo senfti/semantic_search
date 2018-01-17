@@ -115,7 +115,7 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
     room_changed_[old_mapper] = true;
   }
 
-  tf::Transform door_tf;
+  tf::Transform door_tf(tf::Quaternion(0.0,0.0,0.0,1.0), tf::Vector3(0.0,0.0,0.0));
   if(mapper_idx >= 0 && mapper_idx < room_mapper_.size()){
     if(door.isValid()){
       tf::StampedTransform transform;

@@ -247,7 +247,7 @@ void ExecuteActionServer::doSearch(){
       ;
     }
     execution::ExecuteResult result;
-    result.result_number = (searcher_.objFound() ? 0 : 1);
+    result.result_number = (searcher_.objFound() ? 100 : 0);
     action_server_.setSucceeded(result, "SUCCESS");
     goal_.action = -1;
     return;

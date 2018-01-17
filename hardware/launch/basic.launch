@@ -27,7 +27,7 @@
 
   <node name="set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver z_scaling 1.05" />
   <node name="set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver data_skip 6" />
-  <node name="door_asus_set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver z_scaling 1.03" />
+<!--  <node name="door_asus_set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver z_scaling 1.005" /> -->
   <node name="door_asus_set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver data_skip 6" />
 
   <node name="laser_scanner_node" pkg="hokuyo_node" type="hokuyo_node" required="true">

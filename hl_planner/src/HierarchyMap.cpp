@@ -132,12 +132,18 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
         if(link.room1 == curr_room){
           travel_path_[r1][r2].push_back(link.room2);
           curr_room = link.room2;
-          travel_waypoints_[r1][r2].push_back(link.door1_pose);
+          geometry_msgs::Pose waypoint = link.door1_pose;
+          waypoint.position.x += 0.5*std::cos(2*std::acos(link.door1_pose.orientation.w));
+          waypoint.position.y += 0.5*std::sin(2*std::acos(link.door1_pose.orientation.w));
+          travel_waypoints_[r1][r2].push_back(waypoint);
         }
         else{
           travel_path_[r1][r2].push_back(link.room1);
           curr_room = link.room1;
-          travel_waypoints_[r1][r2].push_back(link.door2_pose);
+          geometry_msgs::Pose waypoint = link.door2_pose;
+          waypoint.position.x += 0.5*std::cos(2*std::acos(link.door2_pose.orientation.w));
+          waypoint.position.y += 0.5*std::sin(2*std::acos(link.door2_pose.orientation.w));
+          travel_waypoints_[r1][r2].push_back(waypoint);
         }
       }
       search_speeds_[r1][r2] = search_prob_[r2]/(search_times_[r2] + travel_times_[r1][r2]);

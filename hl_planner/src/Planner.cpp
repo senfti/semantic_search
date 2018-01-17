@@ -35,7 +35,11 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
   goal.target = action.target_;
   ROS_ERROR("SEND GOAL %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
   std::cin.get();
-  return execute_action_client_.sendGoalAndWait(goal);
+  execute_action_client_.sendGoal(goal);
+  while(!execute_action_client_.waitForResult(ros::Duration(1.0)))
+    ros::spinOnce();
+  std::cout << "GOAL EXECUTED, state = " << execute_action_client_.getState().toString() << std::endl;
+  return execute_action_client_.getState();
 }
 
 
@@ -171,6 +175,11 @@ void Planner::run(int obj){
     if(hierarchy.rooms.empty())
       return;
 
+    if(hierarchy.rooms[0].obj_probs.empty()){
+      sendGoal(Action(Action::EXPLORE, 0));
+      continue;
+    }
+
     HierarchyMap graph_map(hierarchy, obj);
     state_.updateState(graph_map, hierarchy.curr_room);
 
@@ -193,7 +202,7 @@ void Planner::run(int obj){
       if(result->result_number == 0){
         state_.changeState(plan.actions_.front());
       }
-      else if(result->result_number == 1){
+      else if(result->result_number == 100){
         std::cout << "OBJECT FOUND" << std::endl;
         return;
       }
