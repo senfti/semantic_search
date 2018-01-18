@@ -64,7 +64,7 @@ void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std:
 }
 
 // based on Bresenham on German Wikipedia
-bool lineFree(const cv::Point& start, const cv::Point& end, const cv::Mat_<uchar> free_mat){
+bool lineFree(const cv::Point& start, const cv::Point& end, const cv::Mat_<uchar> occupied_mat){
   int x0=start.x;
   int y0=start.y;
   int dx =  abs(end.x-x0), sx = x0<end.x ? 1 : -1;
@@ -72,7 +72,7 @@ bool lineFree(const cv::Point& start, const cv::Point& end, const cv::Mat_<uchar
   int err = dx+dy, e2; /* error value e_xy */
 
   while(1){
-    if(!free_mat(y0,x0))
+    if(occupied_mat(y0,x0))
       return false;
     if (x0==end.x && y0==end.y)
       break;
@@ -170,6 +170,10 @@ void Explorer::calcFrontier(){
   cv::Mat_<uchar> good_frontiers_mask;
   cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
 
+  cv::imshow("explore_accessible", accessible);
+  cv::imshow("good_frontiers", good_frontiers_mask);
+  cv::waitKey(1);
+
   cv::Mat_<uchar> good_accessible;
   cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
   cv::Point best_pos = pos + cv::Point(transform.getBasis().getColumn(0).x() * ROBOT_SIZE, transform.getBasis().getColumn(0).y() * ROBOT_SIZE);
@@ -194,7 +198,7 @@ void Explorer::calcFrontier(){
       }
     }
     for(const auto& v : view_points){
-      if(lineFree(f.first, v.first, free)){
+      if(lineFree(f.first, v.first, occupied)){
         double angle = std::atan2(f.first.y-v.first.y, f.first.x-v.first.x);
         tf::Transform tf_t(tf::Quaternion(tf::Vector3(0.0,0.0,1.0),angle),
                            tf::Vector3(v.first.x*last_map_.info.resolution+last_map_.info.origin.position.x,

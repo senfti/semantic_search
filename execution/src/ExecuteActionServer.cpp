@@ -95,10 +95,10 @@ void ExecuteActionServer::doMoveTo(){
     if(!move_to_first_reached_){
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
-      tf::Transform tmp;
-      tf::poseMsgToTF(goal_.pose, tmp);
-      tmp.setOrigin(tmp.getOrigin()-tf::Vector3(0.5*tmp.getBasis().getColumn(0).x(), 0.5*tmp.getBasis().getColumn(0).y(),0.0));
-      tf::poseTFToMsg(tmp, goal_.pose);
+//      tf::Transform tmp;
+//      tf::poseMsgToTF(goal_.pose, tmp);
+//      tmp.setOrigin(tmp.getOrigin()-tf::Vector3(0.5*tmp.getBasis().getColumn(0).x(), 0.5*tmp.getBasis().getColumn(0).y(),0.0));
+//      tf::poseTFToMsg(tmp, goal_.pose);
       sendMoveBaseGoal(goal_.pose);
     }
   }
@@ -113,21 +113,22 @@ void ExecuteActionServer::doMoveTo(){
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      if(!move_to_first_reached_){
-        move_to_first_reached_ = true;
-        tf::Transform tmp;
-        tf::poseMsgToTF(goal_.pose, tmp);
-        tmp.setOrigin(tmp.getOrigin()+tf::Vector3(tmp.getBasis().getColumn(0).x(), tmp.getBasis().getColumn(0).y(),0.0));
-        tf::poseTFToMsg(tmp, goal_.pose);
-        sendMoveBaseGoal(goal_.pose);
-      }
-      else{
+//      if(!move_to_first_reached_){
+//        move_to_first_reached_ = true;
+//        tf::Transform tmp;
+//        tf::poseMsgToTF(goal_.pose, tmp);
+//        tmp.setOrigin(tmp.getOrigin()+tf::Vector3(tmp.getBasis().getColumn(0).x(), tmp.getBasis().getColumn(0).y(),0.0));
+//        tf::poseTFToMsg(tmp, goal_.pose);
+//        sendMoveBaseGoal(goal_.pose);
+//      }
+//      else{
         execution::ExecuteResult result;
         result.result_number = 0;
         action_server_.setSucceeded(result, "SUCCESS");
         goal_.action = -1;
         move_base_state_ = MoveBaseState::WAITING;
-      }
+        move_to_first_reached_ = false;
+      //}
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       execution::ExecuteResult result;

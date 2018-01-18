@@ -339,7 +339,7 @@ void RoomMapper::downprojectMap(){
       float pos_y = obstacle_map_.info.origin.position.y + y*obstacle_map_.info.resolution;
       for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
         if(door.isBehindDoor(pos_x,pos_y) && !door.isInBehindDoorRect(pos_x, pos_y)){
-          obstacle_map_.data[y * obstacle_map_.info.width + x] = -1;
+          obstacle_map_.data[y * obstacle_map_.info.width + x] = 100;
           break;
         }
       }

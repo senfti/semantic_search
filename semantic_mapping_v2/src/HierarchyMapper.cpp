@@ -795,19 +795,18 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
           link.room1 = i;
           link.room2 = door.getOtherRoom();
           res.rooms[i].links.push_back(link_count);
+          tf::poseTFToMsg(door.getPose(), link.door1_pose);
         }
         else{
           link.room1 = door.getOtherRoom();
           link.room2 = i;
           res.rooms[door.getOtherRoom()].links.push_back(link_count);
           res.rooms[i].links.push_back(link_count);
-        }
-        tf::poseTFToMsg(door.getPose(), link.door1_pose);
-        if(door.getOtherRoom() >= 0){
+          tf::poseTFToMsg(door.getPose(), link.door2_pose);
           std::vector<Door> other_doors = doors[door.getOtherRoom()];
           for(const auto& door2 : other_doors){
             if(door2.getId() == door.getCounterpartId()){
-              tf::poseTFToMsg(door2.getPose(), link.door2_pose);
+              tf::poseTFToMsg(door2.getPose(), link.door1_pose);
               break;
             }
           }

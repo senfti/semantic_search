@@ -176,7 +176,7 @@ void Planner::run(int obj){
       return;
 
     if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
-      sendGoal(Action(Action::EXPLORE, hierarchy.curr_room));
+      sendGoal(Action(Action::ROTATE, hierarchy.curr_room));
       continue;
     }
 

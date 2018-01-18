@@ -40,7 +40,7 @@
     <param name="VIEW_TIME" value="0.5" />
 
     <param name="BORDER_SEEN_THRESH" value="1" />
-    <param name="BORDER_SEEN_MAX_ANGLE" value="0.2618" />
+    <param name="BORDER_SEEN_MAX_ANGLE" value="0.44" />
     <param name="SEEN_MAP_MAX_DIST" value="2.5" />
     <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.01" />
 

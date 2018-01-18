@@ -286,11 +286,24 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   accessible_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
   accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
 
-  cv::Mat dists, grad_x, grad_y, mag, dir;
-  cv::distanceTransform(255-accessible_map_, dists, cv::DIST_L1, 3, CV_32F);
-  cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
-  cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
-  cv::cartToPolar(grad_x, grad_y, mag, border_dir_map_);
+  cv::Mat dists, nearest;
+  cv::distanceTransform(255-accessible_map_, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
+  std::vector<cv::Vec2i> label_to_index;
+  label_to_index.push_back(-1);
+  for (int row = 0; row < accessible_map_.rows; ++row){
+    for(int col = 0; col < accessible_map_.cols; ++col){
+      if(accessible_map_.at<uchar>(row, col) == 255)                     //inverted because of 255-accessible_map_ above
+        label_to_index.push_back(cv::Vec2i(row, col));
+    }
+  }
+
+  border_dir_map_ = cv::Mat_<float>::zeros(accessible_map_.rows, accessible_map_.cols);
+  for (int row = 0; row < accessible_map_.rows; ++row){
+    for(int col = 0; col < accessible_map_.cols; ++col){
+      cv::Vec2i idxs = label_to_index[nearest.at<int>(row,col)];
+      border_dir_map_(row,col) = std::atan2(float(idxs[0]-row), float(idxs[1]-col));
+    }
+  }
 
   cv::Mat_<uchar> tmp, tmp2;
   cv::dilate(accessible_map_, tmp, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
