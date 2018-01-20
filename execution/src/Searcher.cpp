@@ -301,7 +301,10 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   for (int row = 0; row < accessible_map_.rows; ++row){
     for(int col = 0; col < accessible_map_.cols; ++col){
       cv::Vec2i idxs = label_to_index[nearest.at<int>(row,col)];
-      border_dir_map_(row,col) = std::atan2(float(idxs[0]-row), float(idxs[1]-col));
+      border_dir_map_(row,col) = std::atan2(float(row-idxs[0]), float(col-idxs[1]));
+      float dir = border_dir_map_(row,col);
+      if(border_dir_map_(row,col) < 0)
+        border_dir_map_(row,col) += 2*M_PI;
     }
   }
 
@@ -311,7 +314,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   border_map_ = tmp2-tmp;
 
   got_map_ = true;
-  std::cout << "Map processed" << std::endl;
+  //std::cout << "Map processed" << std::endl;
 }
 
 
@@ -478,9 +481,9 @@ bool Searcher::objFound(){
       for(int z=0; z<obj_map_->getZSteps(); z++){
         if(obj_map_->getCount(x,y,z) > 0){
           float prob = 1.f;
-          for(int xk=std::max(0,x-2); xk<std::min(x+3, obj_map_->getWidth()); xk++){
-            for(int yk=std::max(0,y-2); yk<std::min(y+3, obj_map_->getHeight()); yk++){
-              for(int zk=std::max(0,z-2); zk<std::min(z+3, obj_map_->getZSteps()); zk++){
+          for(int xk=std::max(0,x-1); xk<std::min(x+2, obj_map_->getWidth()); xk++){
+            for(int yk=std::max(0,y-1); yk<std::min(y+2, obj_map_->getHeight()); yk++){
+              for(int zk=std::max(0,z-1); zk<std::min(z+2, obj_map_->getZSteps()); zk++){
                 prob *= (1.f-multiplied.getProb(xk,yk,zk));
               }
             }
@@ -513,14 +516,14 @@ cv::Mat_<float> Searcher::getProbMap(cv::Point& origin){
 
 
 cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resolution) const{
-  cv::Mat_<float> kernel(int(resolution*max_dist)*2+1, int(resolution*max_dist)*2+1, 0.f);
+  cv::Mat_<uchar> kernel(int(resolution*max_dist)*2+1, int(resolution*max_dist)*2+1, uchar(0));
   cv::Point center(resolution*max_dist,resolution*max_dist);
   std::vector<cv::Point> points;
   points.push_back(cv::Point(std::cos(angle-VIEW_ANGLE/2.f)*VIEW_MIN_DIST*resolution, std::sin(angle-VIEW_ANGLE/2.f)*VIEW_MIN_DIST*resolution)+center);
   points.push_back(cv::Point(std::cos(angle-VIEW_ANGLE/2.f)*max_dist*resolution, std::sin(angle-VIEW_ANGLE/2.f)*max_dist*resolution)+center);
   points.push_back(cv::Point(std::cos(angle+VIEW_ANGLE/2.f)*max_dist*resolution, std::sin(angle+VIEW_ANGLE/2.f)*max_dist*resolution)+center);
   points.push_back(cv::Point(std::cos(angle+VIEW_ANGLE/2.f)*VIEW_MIN_DIST*resolution, std::sin(angle+VIEW_ANGLE/2.f)*VIEW_MIN_DIST*resolution)+center);
-  cv::fillConvexPoly(kernel, points, cv::Scalar(1.f));
+  cv::fillConvexPoly(kernel, points, cv::Scalar(255));
 
   return kernel;
 }
@@ -688,6 +691,9 @@ bool Searcher::calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_po
 
 
 bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
+  if(!got_map_)
+    return false;
+
   double angle = tf::getYaw(curr_pose.getRotation());
   while(angle < 0)
     angle += 2*M_PI;
@@ -724,9 +730,12 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
 
   previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](pos) = 255;
 
+  cv::imshow("kernel", kernel);
   cv::Mat tmp;
   cv::threshold(border_map_, tmp, 64, 64, cv::THRESH_TRUNC);
   cv::bitwise_or(tmp, not_fully_viewed_border_, tmp);
+  cv::threshold(kernel, kernel, 32, 32, cv::THRESH_TRUNC);
+  cv::bitwise_or(not_fully_viewed_border_(cv::Rect(x1,y1,kernel.cols,kernel.rows)), kernel, tmp(cv::Rect(x1,y1,kernel.cols,kernel.rows)));
   cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);

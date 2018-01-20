@@ -42,6 +42,7 @@ class ExecuteActionServer{
     ros::Subscriber map_switch_sub_;
 
     ros::Publisher frontier_pub_;
+    ros::Publisher vel_pub_;
 
     void sendMoveBaseGoal(const geometry_msgs::Pose& pose);
     void doMoveTo();

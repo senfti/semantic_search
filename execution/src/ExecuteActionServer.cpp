@@ -23,6 +23,7 @@ ExecuteActionServer::ExecuteActionServer()
   }
   map_switch_sub_ = nh_.subscribe("map_switch", 1, &ExecuteActionServer::mapSwitchCb, this);
   frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
+  vel_pub_ = ros::NodeHandle().advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
   ROS_INFO("INITIALIZATION FINISHED");
 }
 
@@ -95,10 +96,10 @@ void ExecuteActionServer::doMoveTo(){
     if(!move_to_first_reached_){
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
-//      tf::Transform tmp;
-//      tf::poseMsgToTF(goal_.pose, tmp);
-//      tmp.setOrigin(tmp.getOrigin()-tf::Vector3(0.5*tmp.getBasis().getColumn(0).x(), 0.5*tmp.getBasis().getColumn(0).y(),0.0));
-//      tf::poseTFToMsg(tmp, goal_.pose);
+      tf::Transform tmp;
+      tf::poseMsgToTF(goal_.pose, tmp);
+      tmp.setOrigin(tmp.getOrigin()-tf::Vector3(0.5*tmp.getBasis().getColumn(0).x(), 0.5*tmp.getBasis().getColumn(0).y(),0.0));
+      tf::poseTFToMsg(tmp, goal_.pose);
       sendMoveBaseGoal(goal_.pose);
     }
   }
@@ -113,22 +114,22 @@ void ExecuteActionServer::doMoveTo(){
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-//      if(!move_to_first_reached_){
-//        move_to_first_reached_ = true;
-//        tf::Transform tmp;
-//        tf::poseMsgToTF(goal_.pose, tmp);
-//        tmp.setOrigin(tmp.getOrigin()+tf::Vector3(tmp.getBasis().getColumn(0).x(), tmp.getBasis().getColumn(0).y(),0.0));
-//        tf::poseTFToMsg(tmp, goal_.pose);
-//        sendMoveBaseGoal(goal_.pose);
-//      }
-//      else{
+      if(!move_to_first_reached_){
+        move_to_first_reached_ = true;
+        tf::Transform tmp;
+        tf::poseMsgToTF(goal_.pose, tmp);
+        tmp.setOrigin(tmp.getOrigin()+tf::Vector3(tmp.getBasis().getColumn(0).x(), tmp.getBasis().getColumn(0).y(),0.0));
+        tf::poseTFToMsg(tmp, goal_.pose);
+        sendMoveBaseGoal(goal_.pose);
+      }
+      else{
         execution::ExecuteResult result;
         result.result_number = 0;
         action_server_.setSucceeded(result, "SUCCESS");
         goal_.action = -1;
         move_base_state_ = MoveBaseState::WAITING;
         move_to_first_reached_ = false;
-      //}
+      }
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       execution::ExecuteResult result;
@@ -344,47 +345,41 @@ void ExecuteActionServer::doSearch(){
 
 
 void ExecuteActionServer::doStartRotation(){
-  if(move_base_state_ == MoveBaseState::WAITING) {
-    geometry_msgs::Pose pose;
-    if(start_rotation_state_machine_.next(pose))
-      sendMoveBaseGoal(pose);
-    else{
-      if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-        execution::ExecuteResult result;
-        result.result_number = 0;
-        action_server_.setSucceeded(result, "SUCCESS");
-        goal_.action = -1;
-      }
-    }
+  static tf::StampedTransform old_transform;
+  static bool started = false;
+  static float angle = 0.f;
+  static ros::Time start_time;
+  if(!started){
+    start_time = ros::Time::now();
+    tf_listener_.lookupTransform("map", "base_link", ros::Time(0), old_transform);
+    started = true;
+    angle = 0.f;
   }
-  else if(move_base_state_ == MoveBaseState::GOAL_SENT){
-    ;
+
+  tf::StampedTransform transform;
+  tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
+  tf::Transform diff = transform.inverse()*old_transform;
+  angle += tf::getYaw(diff.getRotation());
+  if(angle > 2*M_PI || angle < -2*M_PI){
+    started = false;
+    execution::ExecuteResult result;
+    result.result_number = 0;
+    action_server_.setSucceeded(result, "SUCCESS");
+    goal_.action = -1;
   }
-  else if(move_base_state_ == MoveBaseState::RUNNING){
-    ;
+  old_transform = transform;
+  if(ros::Time::now()-start_time > ros::Duration(10.0)){
+    started = false;
+    execution::ExecuteResult result;
+    result.result_number = -11;
+    action_server_.setAborted(result, "ABORTED");
+    goal_.action = -1;
   }
-  else if(move_base_state_ == MoveBaseState::STOPPED){
-    start_rotation_state_machine_.reset();
-    move_base_state_ = MoveBaseState::WAITING;
-  }
-  else if(move_base_state_ == MoveBaseState::FINISHED){
-    if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      ROS_INFO("POS %d reached", start_rotation_state_machine_.state_);
-    }
-    else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
-      execution::ExecuteResult result;
-      result.result_number = -1;
-      action_server_.setPreempted(result, "PREEMPTED");
-      goal_.action = -1;
-    }
-    else{
-      execution::ExecuteResult result;
-      result.result_number = -2;
-      action_server_.setAborted(result, "ABORTED");
-      goal_.action = -1;
-    }
-    move_base_state_ = MoveBaseState::WAITING;
-  }
+  geometry_msgs::Twist cmd_vel;
+  cmd_vel.linear.x = 0.0;
+  cmd_vel.linear.y = 0.0;
+  cmd_vel.angular.z = 1.0;
+  vel_pub_.publish(cmd_vel);
 }
 
 

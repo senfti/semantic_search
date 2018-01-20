@@ -48,9 +48,10 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("ROOM_ESTIMATED_VOLUME", ROOM_ESTIMATED_VOLUME, ROOM_ESTIMATED_VOLUME);
   ros::NodeHandle("~").param("CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA", CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA);
   ros::NodeHandle("~").param("SINGLE_VIEW_OBJ_KERNEL_SIZE", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
-  ros::NodeHandle("~").param("TRAVEL_DIST_LIN_FACTOR", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
-  ros::NodeHandle("~").param("TRAVEL_DIST_QUAD_FACTOR", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
-  ros::NodeHandle("~").param("SEARCH_TIME_PER_GRID_CELL", SINGLE_VIEW_OBJ_KERNEL_SIZE, SINGLE_VIEW_OBJ_KERNEL_SIZE);
+  ros::NodeHandle("~").param("TRAVEL_DIST_LIN_FACTOR", TRAVEL_DIST_LIN_FACTOR, TRAVEL_DIST_LIN_FACTOR);
+  ros::NodeHandle("~").param("TRAVEL_DIST_QUAD_FACTOR", TRAVEL_DIST_QUAD_FACTOR, TRAVEL_DIST_QUAD_FACTOR);
+  ros::NodeHandle("~").param("TRAVEL_TURN_FACTOR", TRAVEL_TURN_FACTOR, TRAVEL_TURN_FACTOR);
+  ros::NodeHandle("~").param("SEARCH_TIME_PER_GRID_CELL", SEARCH_TIME_PER_GRID_CELL, SEARCH_TIME_PER_GRID_CELL);
 
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
@@ -574,21 +575,51 @@ std::vector<float> HierarchyMapper::getCompleteObjProbs(const std::vector<Object
 }
 
 
-std::vector<float> HierarchyMapper::getTravelTimes(const std::vector<Door> &doors){
-  std::vector<float> travel_times;
-  for(int i=0; i<doors.size(); i++){
-    for(int j=i+1; j<doors.size(); j++){
-      double dist_2 = (doors[i].getPose().getOrigin()-doors[j].getPose().getOrigin()).length2();
-      travel_times.push_back(std::sqrt(dist_2)*TRAVEL_DIST_LIN_FACTOR + dist_2*TRAVEL_DIST_QUAD_FACTOR);
-    }
-  }
-  return travel_times;
+inline float angleDist(float angle1, float angle2){
+  float angle = angle1-angle2;
+  if(angle > M_PI)
+    return std::abs(angle-2*M_PI);
+  if(angle <= -M_PI)
+    return std::abs(angle+2*M_PI);
+  return std::abs(angle);
+}
+
+float HierarchyMapper::getTravelTime(const geometry_msgs::Pose &door1, const geometry_msgs::Pose &door2){
+  tf::Transform d1, d2;
+  tf::poseMsgToTF(door1, d1);
+  tf::poseMsgToTF(door2, d2);
+  tf::Transform diff = d1.inverse()*d2;
+  float move_angle = tf::getYaw(diff.getRotation());
+  return (angleDist(tf::getYaw(d1.getRotation()),move_angle)+angleDist(move_angle,tf::getYaw(d2.getRotation())))*TRAVEL_TURN_FACTOR +
+    diff.getOrigin().length()*TRAVEL_DIST_LIN_FACTOR + diff.getOrigin().length2()*TRAVEL_DIST_QUAD_FACTOR;
+
 }
 
 
-float HierarchyMapper::getTravelTime(const geometry_msgs::Pose &door1, const geometry_msgs::Pose &door2){
-  double dist_2 = std::pow(door1.position.x-door2.position.x,2) + std::pow(door1.position.y-door2.position.y,2) + std::pow(door1.position.z-door2.position.z,2);
-  return std::sqrt(dist_2)*TRAVEL_DIST_LIN_FACTOR + dist_2*TRAVEL_DIST_QUAD_FACTOR;
+std::vector<float> HierarchyMapper::getToLinkTravelTime(int room, const std::vector<Door>& doors, const nav_msgs::OccupancyGrid& grid_map){
+  float x_center = 0.f, y_center = 0.f;
+  int num = 0;
+  for(int x=0; x<grid_map.info.width; x++){
+    for(int y=0; y<grid_map.info.height; y++){
+      if(grid_map.data[y * grid_map.info.width + x] == 0){
+        x_center += x;
+        y_center += y;
+        num++;
+      }
+    }
+  }
+  x_center /= num;
+  y_center /= num;
+
+  std::vector<float> times;
+  for(const auto& door : doors){
+    float move_angle = std::atan2(door.getPose().getOrigin().y()-y_center, door.getPose().getOrigin().x()-x_center);
+    float dist2 = (door.getPose().getOrigin().x()-x_center)*(door.getPose().getOrigin().x()-x_center) + (door.getPose().getOrigin().y()-y_center)*(door.getPose().getOrigin().y()-y_center);
+    times.push_back((M_PI_2+angleDist(move_angle,tf::getYaw(door.getPose().getRotation())))*TRAVEL_TURN_FACTOR +
+           std::sqrt(dist2)*TRAVEL_DIST_LIN_FACTOR + dist2*TRAVEL_DIST_QUAD_FACTOR);
+  }
+
+  return times;
 }
 
 
@@ -778,7 +809,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     room.obj_probs_2 = base_obj_probs[i];
     room.single_view_obj_probs = single_view_max_probs;
     room.single_view_points = single_view_points;
-    room.to_link_travel_times.resize(doors[i].size(), 20.f);
+    room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
     room.single_view_search_time = (room.to_link_travel_times.empty() ? 10.f : std::accumulate(room.to_link_travel_times.begin(), room.to_link_travel_times.end(), 0.f) / room.to_link_travel_times.size());
     room.search_time = getSearchTime(grid_maps[i]);
     last_room_msgs[i] = room;
