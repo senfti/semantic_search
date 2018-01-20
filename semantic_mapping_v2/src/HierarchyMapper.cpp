@@ -569,7 +569,7 @@ std::vector<float> HierarchyMapper::getCompleteObjProbs(const std::vector<Object
     for(int r = 0; r < room_type_probs.size(); r++){
       unseen_prob_estimate += room_type_probs[r] * getObjProbGivenRoomPerCell(o, r, OBJ_FILL_FRACTION);
     }
-    complete_obj_probs[o] = complete_obj_map[o].getObjectProb(occ_map, unseen_prob_estimate, ObjectMapper::ROOM_EXPECTED_SIZE, false);
+    complete_obj_probs[o] = std::min(complete_obj_map[o].getObjectProb(occ_map, unseen_prob_estimate, ObjectMapper::ROOM_EXPECTED_SIZE, false), 0.999f);
   }
   return complete_obj_probs;
 }
@@ -589,6 +589,9 @@ float HierarchyMapper::getTravelTime(const geometry_msgs::Pose &door1, const geo
   tf::poseMsgToTF(door1, d1);
   tf::poseMsgToTF(door2, d2);
   tf::Transform diff = d1.inverse()*d2;
+  if(diff.getOrigin().length2() == 0)
+    return 0;
+
   float move_angle = tf::getYaw(diff.getRotation());
   return (angleDist(tf::getYaw(d1.getRotation()),move_angle)+angleDist(move_angle,tf::getYaw(d2.getRotation())))*TRAVEL_TURN_FACTOR +
     diff.getOrigin().length()*TRAVEL_DIST_LIN_FACTOR + diff.getOrigin().length2()*TRAVEL_DIST_QUAD_FACTOR;
@@ -602,8 +605,8 @@ std::vector<float> HierarchyMapper::getToLinkTravelTime(int room, const std::vec
   for(int x=0; x<grid_map.info.width; x++){
     for(int y=0; y<grid_map.info.height; y++){
       if(grid_map.data[y * grid_map.info.width + x] == 0){
-        x_center += x;
-        y_center += y;
+        x_center += x*grid_map.info.resolution + grid_map.info.origin.position.x;
+        y_center += y*grid_map.info.resolution + grid_map.info.origin.position.y;
         num++;
       }
     }
@@ -645,8 +648,8 @@ float HierarchyMapper::getSearchTime(const nav_msgs::OccupancyGrid &grid_map){
         fully_explored = false;
     }
   }
-  if(!fully_explored)
-    num_cells = std::max(num_cells, 320) + 160;
+//  if(!fully_explored)
+//    num_cells = std::max(num_cells, 320) + 160;
 
   return num_cells*SEARCH_TIME_PER_GRID_CELL;
 }
@@ -791,7 +794,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       double min, max;
       cv::Point min_loc, max_loc;
       cv::minMaxLoc(single_view_prob_map[o], &min, &max, &min_loc, &max_loc);
-      single_view_max_probs[o] = max;
+      single_view_max_probs[o] = std::min(max, complete_obj_probs[o]*0.99);
       geometry_msgs::Point point;
       point.x = obj_maps[i][0].getXWorld(max_loc.x);
       point.y = obj_maps[i][0].getXWorld(max_loc.y);
@@ -811,7 +814,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     room.single_view_points = single_view_points;
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
     room.single_view_search_time = (room.to_link_travel_times.empty() ? 10.f : std::accumulate(room.to_link_travel_times.begin(), room.to_link_travel_times.end(), 0.f) / room.to_link_travel_times.size());
-    room.search_time = getSearchTime(grid_maps[i]);
+    room.search_time = getSearchTime(grid_maps[i]) + room.single_view_search_time;
     last_room_msgs[i] = room;
     res.rooms.push_back(room);
   }

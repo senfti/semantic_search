@@ -35,6 +35,10 @@ class HierarchyMap{
     float getQuickSearchTime(int curr_idx, int idx) const { return quick_search_times_[idx] + travel_times_[curr_idx][idx]; }
 
     float getSearchSpeed(int curr_idx, int idx) const { return search_speeds_[curr_idx][idx]; }
+
+    friend std::ostream& operator<<(std::ostream& os, const HierarchyMap& map);
 };
+
+std::ostream& operator<<(std::ostream& os, const HierarchyMap& map);
 
 #endif //HL_PLANNER_HIERARCHYMAP_H

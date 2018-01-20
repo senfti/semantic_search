@@ -155,3 +155,23 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
     }
   }
 }
+
+
+std::ostream& operator<<(std::ostream& os, const HierarchyMap& map){
+  for(int i=0; i<map.search_times_.size(); i++){
+    os << i << ":" << std::endl;
+    os << "times: quick: " << map.quick_search_times_[i] << ",   expected: " << map.expected_search_times_[i] << ",   full: " << map.search_times_[i] << std::endl;
+    os << "probs: quick: " << map.quick_search_prob_[i] << ",   full: " << map.search_prob_[i] << std::endl;
+    os << "travel: ";
+    for(int j=0; j<map.travel_times_[i].size(); j++){
+      os << j << ": ";
+      for(int k=0; k<map.travel_path_[i][j].size(); k++)
+        os << map.travel_path_[i][j][k] << " ";
+      os << ", " << map.travel_times_[i][j] << "; ";
+    }
+    os << std::endl << (map.not_explored_[i] ? "not explored" : "explored") << std::endl << std::endl;
+  }
+  os << std::endl;
+
+  return os;
+}

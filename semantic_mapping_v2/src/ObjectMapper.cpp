@@ -276,7 +276,9 @@ float ObjectMap::getObjectProb(float prior, float expected_room_size) const{
 cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps(); z++){
-    map2D = map2D.mul(1.f-prob_maps_[z].mul(occ_map.prob_maps_[z]));
+    cv::Mat_<float> tmp(prob_maps_[z].rows, prob_maps_[z].cols, 0.f);
+    prob_maps_[z].copyTo(tmp, count_maps_[z]);
+    map2D = map2D.mul(1.f-tmp.mul(occ_map.prob_maps_[z]));
   }
   return (1.f - map2D).mul(1.f-behind_door_mask);
 }

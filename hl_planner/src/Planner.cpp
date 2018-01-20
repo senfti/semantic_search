@@ -156,10 +156,10 @@ Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
 
   float cutoff_time = greedy_plan.expected_search_time_;
   SearchPlan best_plan = plan(graph, SearchPlan(state), cutoff_time, 5, 0);
-  std::cout << "best_plan: " << best_plan.getPlanString() << std::endl;
-
   if(best_plan.expected_search_time_ > greedy_plan.expected_search_time_)
     best_plan = greedy_plan;
+  std::cout << "best_plan: " << best_plan.getPlanString() << std::endl;
+
 
   std::cout << "Complete best plan in " << (ros::Time::now()-start).toSec() << ": " << best_plan.getPlanString() << std::endl;
 
@@ -181,6 +181,7 @@ void Planner::run(int obj){
     }
 
     HierarchyMap graph_map(hierarchy, obj);
+    std::cout << graph_map;
     state_.updateState(graph_map, hierarchy.curr_room);
 
     Plan plan = generatePlan(graph_map, state_);

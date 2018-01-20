@@ -72,7 +72,7 @@
     <param name="ObjectMapper/V_H" value="0.08" />   
     <param name="ObjectMapper/V_M" value="0.0003" />  
     <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
-    <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="20.0" />
+    <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="0.0" />
     <param name="ObjectMapper/STILL_THERE_PROB" value="0.9" />
     <param name="ObjectMapper/GOT_THERE_PROB" value="0.00005" />
     <param name="ObjectMapper/NUM_USED_DETECTION_SAMPLES" value="4000" />
@@ -84,13 +84,13 @@
     <param name="ROOM_CELL_OBJ_KERNEL_SIZE" value="4.0" />
     <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="4.0" />
     <param name="OBJ_FILL_FRACTION" value="0.001" />
-    <param name="ROOM_ESTIMATED_VOLUME" value="20.0" />
+    <param name="ROOM_ESTIMATED_VOLUME" value="0.0" />
     <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="2.0" />
     <param name="SINGLE_VIEW_OBJ_KERNEL_SIZE" value="2.0" />
     <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />
-    <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.5" />
+    <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.0" />
     <param name="TRAVEL_TURN_FACTOR" value="10.0" />
-    <param name="SEARCH_TIME_PER_GRID_CELL" value="0.05" />
+    <param name="SEARCH_TIME_PER_GRID_CELL" value="0.2" />
     <param name="ROOM_MAX_PROB" value="0.8" />
   </node>
 </launch>

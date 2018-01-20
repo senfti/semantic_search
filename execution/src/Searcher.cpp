@@ -715,22 +715,18 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::threshold(seen_maps_[other_idx], seen_maps_[other_idx], 100, 100, cv::THRESH_TRUNC);
 
   border_map_.copyTo(not_fully_viewed_border_);
-  bool finished = true;
   for(int x=0; x<border_dir_map_.cols; x++){
     for(int y=0; y<border_dir_map_.rows; y++){
       if(border_map_(y,x) > 0){
         int border_idx = border_dir_map_(y,x)/(2*M_PI)*SEEN_MAP_STEPS;
         if(seen_maps_[border_idx](y,x)+seen_maps_[(border_idx+1)%SEEN_MAP_STEPS](y,x)+seen_maps_[(border_idx+SEEN_MAP_STEPS-1)%SEEN_MAP_STEPS](y,x) >= BORDER_SEEN_THRESH)
           not_fully_viewed_border_(y,x) = 0;
-        else
-          finished = false;
       }
     }
   }
 
   previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](pos) = 255;
 
-  cv::imshow("kernel", kernel);
   cv::Mat tmp;
   cv::threshold(border_map_, tmp, 64, 64, cv::THRESH_TRUNC);
   cv::bitwise_or(tmp, not_fully_viewed_border_, tmp);
@@ -742,5 +738,9 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::waitKey(1);
   std::cout << "In seen map inserted" << std::endl;
 
-  return finished;
+  cv::Mat finished;
+  cv::blur(not_fully_viewed_border_, finished, cv::Size(3,3));
+  double min_v, max_v;
+  cv::minMaxLoc(finished, &min_v, &max_v);
+  return (max_v > 255*1.5/9);
 }
