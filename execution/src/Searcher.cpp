@@ -373,7 +373,7 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
-  if(insertIntoSeenMaps(transform)){
+  if(insertIntoSeenMaps(transform) && !is_quick_search_){
     finished_ = true;
     std::cout << "FINISHED, ALL BORDER SEEN" << std::endl;
   }
@@ -669,7 +669,6 @@ bool Searcher::calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_po
       do{
         float r = (QUICK_SEARCH_MIN_DIST + (rand()%20)/19.f*(QUICK_SEARCH_MAX_DIST-QUICK_SEARCH_MIN_DIST))*RESOLUTION;
         new_angle = target_angle - QUICK_SEARCH_ANGLE_AREA + (rand()%180)/180.f*(2*QUICK_SEARCH_ANGLE_AREA);
-        std::cout << r << " " << new_angle << std::endl;
         new_pos = target_pos - cv::Point(r*std::cos(new_angle), r*std::sin(new_angle));
       }while(!accessible_map_(new_pos) && tries++ < 1000);
       if(!accessible_map_(new_pos) && tries < 1000)
@@ -738,9 +737,11 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::waitKey(1);
   std::cout << "In seen map inserted" << std::endl;
 
-  cv::Mat finished;
-  cv::blur(not_fully_viewed_border_, finished, cv::Size(3,3));
+  cv::Mat_<uchar> finished;
+  cv::threshold(not_fully_viewed_border_, finished, 1, 1, cv::THRESH_TRUNC);
+  cv::filter2D(finished, finished, CV_8UC1, cv::Mat_<uchar>(3,3,uchar(0)));
   double min_v, max_v;
   cv::minMaxLoc(finished, &min_v, &max_v);
-  return (max_v > 255*1.5/9);
+
+  return (max_v > 1);
 }

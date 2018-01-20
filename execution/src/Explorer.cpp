@@ -175,49 +175,82 @@ void Explorer::calcFrontier(){
   cv::waitKey(1);
 
   cv::Mat_<uchar> good_accessible;
-  cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
-  cv::Point best_pos = pos + cv::Point(transform.getBasis().getColumn(0).x() * ROBOT_SIZE, transform.getBasis().getColumn(0).y() * ROBOT_SIZE);
-  std::set<std::pair<cv::Point,double>, CompareFrontier> frontiers;
+  cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
+  cv::Point best_pos(-1,-1);
+  double best_dist = 999999999999999.9;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
       if(good_frontiers_mask(y,x)){
-        double dist = (x-best_pos.x)*(x-best_pos.x) + (y-best_pos.y)*(y-best_pos.y);
-        frontiers.insert(std::pair<cv::Point,double>(cv::Point(x,y), dist));
+        double dist = std::sqrt((x-pos.x)*(x-pos.x) + (y-pos.y)*(y-pos.y));
+        dist = dist + (good_accessible(y,x) ? 0.0 : 40.0) + (dist < ROBOT_SIZE ? 40.0 : 0.0);
+        if(dist < best_dist){
+          best_dist = dist;
+          best_pos = cv::Point(x,y);
+        }
       }
     }
+  }
+
+  if(best_pos.x < 0){
+    finished_ = true;
+    std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
+    return;
   }
 
   geometry_msgs::Pose old_frontier = curr_frontier_;
-  for(const auto& f : frontiers){
-    std::set<std::pair<cv::Point,double>, CompareFrontier> view_points;
-    for(const auto& offset : circle_points_){
-      cv::Point p = f.first+offset;
-      if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && accessible(p)){
-        double dist = (p.x-best_pos.x)*(p.x-best_pos.x) + (p.y-best_pos.y)*(p.y-best_pos.y) + (good_accessible(p) ? 0.f : 1.f);
-        view_points.insert(std::pair<cv::Point,double>(p, dist));
-      }
-    }
-    for(const auto& v : view_points){
-      if(lineFree(f.first, v.first, occupied)){
-        double angle = std::atan2(f.first.y-v.first.y, f.first.x-v.first.x);
-        tf::Transform tf_t(tf::Quaternion(tf::Vector3(0.0,0.0,1.0),angle),
-                           tf::Vector3(v.first.x*last_map_.info.resolution+last_map_.info.origin.position.x,
-                                       v.first.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
-        tf::Transform diff_t = transform.inverse()*tf_t;
-        if(diff_t.getOrigin().length() < 0.1 && tf::getYaw(diff_t.getRotation()) < 0.05)
-          continue;
-
-        tf::poseTFToMsg(tf_t, curr_frontier_);
-        if(old_frontier.position.x != curr_frontier_.position.x || old_frontier.position.y != curr_frontier_.position.y || old_frontier.orientation.w != curr_frontier_.orientation.w){
-          frontier_changed_ = true;
-        }
-        std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
-        return;
-      }
-    }
+  tf::Transform tf_t(tf::createQuaternionFromYaw(std::atan2(best_pos.y-pos.y, best_pos.x-pos.x)),
+                           tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
+                                       best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
+  tf::poseTFToMsg(tf_t, curr_frontier_);
+  if(old_frontier.position.x != curr_frontier_.position.x || old_frontier.position.y != curr_frontier_.position.y || old_frontier.orientation.w != curr_frontier_.orientation.w){
+    frontier_changed_ = true;
   }
-  std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
-  finished_ = true;
+  std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
+
+//  cv::Mat_<uchar> good_accessible;
+//  cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
+//  cv::Point best_pos = pos + cv::Point(transform.getBasis().getColumn(0).x() * ROBOT_SIZE, transform.getBasis().getColumn(0).y() * ROBOT_SIZE);
+//  std::set<std::pair<cv::Point,double>, CompareFrontier> frontiers;
+//  for(int x=0; x<last_map_.info.width; x++){
+//    for(int y=0; y<last_map_.info.height; y++){
+//      if(good_frontiers_mask(y,x)){
+//        double dist = (x-best_pos.x)*(x-best_pos.x) + (y-best_pos.y)*(y-best_pos.y);
+//        frontiers.insert(std::pair<cv::Point,double>(cv::Point(x,y), dist));
+//      }
+//    }
+//  }
+
+//  geometry_msgs::Pose old_frontier = curr_frontier_;
+//  for(const auto& f : frontiers){
+//    std::set<std::pair<cv::Point,double>, CompareFrontier> view_points;
+//    for(const auto& offset : circle_points_){
+//      cv::Point p = f.first+offset;
+//      if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && accessible(p)){
+//        double dist = (p.x-best_pos.x)*(p.x-best_pos.x) + (p.y-best_pos.y)*(p.y-best_pos.y) + (good_accessible(p) ? 0.f : 1.f);
+//        view_points.insert(std::pair<cv::Point,double>(p, dist));
+//      }
+//    }
+//    for(const auto& v : view_points){
+//      if(lineFree(f.first, v.first, occupied)){
+//        double angle = std::atan2(f.first.y-v.first.y, f.first.x-v.first.x);
+//        tf::Transform tf_t(tf::Quaternion(tf::Vector3(0.0,0.0,1.0),angle),
+//                           tf::Vector3(v.first.x*last_map_.info.resolution+last_map_.info.origin.position.x,
+//                                       v.first.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
+//        tf::Transform diff_t = transform.inverse()*tf_t;
+//        if(diff_t.getOrigin().length() < 0.1 && tf::getYaw(diff_t.getRotation()) < 0.05)
+//          continue;
+//
+//        tf::poseTFToMsg(tf_t, curr_frontier_);
+//        if(old_frontier.position.x != curr_frontier_.position.x || old_frontier.position.y != curr_frontier_.position.y || old_frontier.orientation.w != curr_frontier_.orientation.w){
+//          frontier_changed_ = true;
+//        }
+//        std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
+//        return;
+//      }
+//    }
+//  }
+//  std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
+//  finished_ = true;
 }
 
 

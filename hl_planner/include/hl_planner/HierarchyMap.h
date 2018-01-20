@@ -19,6 +19,7 @@ class HierarchyMap{
     std::vector<float> search_times_;
     std::vector<float> expected_search_times_;
     std::vector<float> quick_search_times_;
+    std::vector<geometry_msgs::Pose> quick_search_poses_;
     std::vector<std::vector<float>> travel_times_;
     std::vector<std::vector<float>> search_speeds_;
     std::vector<std::vector<std::vector<int>>> travel_path_;

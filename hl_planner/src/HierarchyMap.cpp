@@ -61,10 +61,13 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
   search_prob_.resize(response.rooms.size());
   quick_search_prob_.resize(response.rooms.size());
   not_explored_.resize(response.rooms.size(), false);
+  quick_search_poses_.resize(response.rooms.size());
 
   for(int i=0; i<response.rooms.size(); i++){
     search_times_[i] = response.rooms[i].search_time;
     quick_search_times_[i] = response.rooms[i].single_view_search_time;
+    quick_search_poses_[i].position = response.rooms[i].single_view_points[obj];
+    quick_search_poses_[i].orientation.w = 1.0;
     search_prob_[i] = response.rooms[i].obj_probs[obj];
     quick_search_prob_[i] = response.rooms[i].single_view_obj_probs[obj];
     float K = (1.f-(1.f-search_prob_[i])/(1.f-quick_search_prob_[i]))/(search_times_[i]-quick_search_times_[i]);
@@ -76,7 +79,9 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
     if(response.links[i].room2 < 0){
       search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE);
       quick_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
-      expected_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE/2.f);
+      quick_search_poses_.push_back(geometry_msgs::Pose());
+      quick_search_poses_.back().orientation.w = 1.0;
+      expected_search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE/2.f);
       search_prob_.push_back(UNEXPLORED_PROB_ESTIMATE);
       quick_search_prob_.push_back(UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
       not_explored_.push_back(true);
@@ -169,7 +174,8 @@ std::ostream& operator<<(std::ostream& os, const HierarchyMap& map){
         os << map.travel_path_[i][j][k] << " ";
       os << ", " << map.travel_times_[i][j] << "; ";
     }
-    os << std::endl << (map.not_explored_[i] ? "not explored" : "explored") << std::endl << std::endl;
+    os << std::endl << "quick pos: " << map.quick_search_poses_[i].position.x << " " << map.quick_search_poses_[i].position.y << std::endl;
+    os << (map.not_explored_[i] ? "not explored" : "explored") << std::endl << std::endl;
   }
   os << std::endl;
 

@@ -207,7 +207,6 @@ void ExecuteActionServer::doExplore(){
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      ROS_INFO("POS %d reached", start_rotation_state_machine_.state_);
       geometry_msgs::PoseStamped pose;
       pose.pose = explorer_.getNextFrontier();
       pose.header.frame_id = "map";
@@ -306,7 +305,6 @@ void ExecuteActionServer::doSearch(){
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      ROS_INFO("POS %d reached", start_rotation_state_machine_.state_);
       geometry_msgs::PoseStamped pose;
       pose.pose = searcher_.getNextViewPose();
       pose.header.frame_id = "map";

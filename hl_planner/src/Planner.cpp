@@ -141,7 +141,7 @@ Plan Planner::generateFullPlan(const SearchPlan &search_plan, State state, const
       plan.actions_.push_back(Action(Action::EXPLORE, state.current_room_, geometry_msgs::Pose()));
       state.changeState(*plan.actions_.rbegin());
     }
-    plan.actions_.push_back(Action(action.type_ == SearchAction::SEARCH ? Action::SEARCH : Action::QUICK_SEARCH, state.current_room_, geometry_msgs::Pose()));
+    plan.actions_.push_back(Action(action.type_ == SearchAction::SEARCH ? Action::SEARCH : Action::QUICK_SEARCH, state.current_room_, graph.quick_search_poses_[state.current_room_]));
     state.changeState(*plan.actions_.rbegin());
   }
   std::cout << plan.getPlanString() << std::endl;
