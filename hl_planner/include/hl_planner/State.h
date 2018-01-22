@@ -48,24 +48,24 @@ class State{
 
     void changeState(const Action& action){
       if(action.type_ == Action::SEARCH){
-        searchable_.remove(action.target_);
-        quick_searchable_.remove(action.target_);
-        not_explored_.remove(action.target_);
-        current_room_ = action.target_;
+        searchable_.remove(action.target_room_);
+        quick_searchable_.remove(action.target_room_);
+        not_explored_.remove(action.target_room_);
+        current_room_ = action.target_room_;
       }
       else if(action.type_ == Action::QUICK_SEARCH){
-        quick_searchable_.remove(action.target_);
-        quick_searched_.push_back(action.target_);
-        not_explored_.remove(action.target_);
-        current_room_ = action.target_;
+        quick_searchable_.remove(action.target_room_);
+        quick_searched_.push_back(action.target_room_);
+        not_explored_.remove(action.target_room_);
+        current_room_ = action.target_room_;
       }
       else if(action.type_ == Action::EXPLORE){
-        not_explored_.remove(action.target_);
-        quick_searchable_.push_back(action.target_);
-        current_room_ = action.target_;
+        not_explored_.remove(action.target_room_);
+        quick_searchable_.push_back(action.target_room_);
+        current_room_ = action.target_room_;
       }
       else if(action.type_ == Action::MOVE_TO){
-        current_room_ = action.target_;
+        current_room_ = action.target_room_;
       }
     }
 

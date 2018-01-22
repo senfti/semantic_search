@@ -282,7 +282,7 @@ std::pair<geometry_msgs::Pose, float> ObjectMap::getObjMax(const ObjectMap& occu
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
         if(count_maps_[z](y,x) > uchar(0)){
-          float prob = getProb(x,y,z);
+          float prob = getProb(x,y,z)*occupancy_map.getProb(x,y,z);
           if(prob > max_prob){
             max_prob = prob;
             max_pose.position.x = getXWorld(x);

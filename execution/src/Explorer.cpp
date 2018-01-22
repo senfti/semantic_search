@@ -11,12 +11,15 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
 {
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
   door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
+  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);
   ros::NodeHandle("~").param("VIEW_DIST", VIEW_DIST, VIEW_DIST);
   ros::NodeHandle("~").param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
+  ros::NodeHandle("~").param("OBJECT_FOUND_THRESH", OBJECT_FOUND_THRESH, OBJECT_FOUND_THRESH);
 
   cv::Mat_<uchar> mat(VIEW_DIST*4, VIEW_DIST*4, uchar(0));
   cv::circle(mat, cv::Point(2*VIEW_DIST, 2*VIEW_DIST), VIEW_DIST, cv::Scalar(255), 1);
@@ -34,9 +37,11 @@ geometry_msgs::Pose Explorer::getNextFrontier(){
   return curr_frontier_;
 }
 
-void Explorer::start(){
+void Explorer::start(int searched_obj){
   running_ = true;
   door_found_stopped_ = false;
+  searched_obj_ = searched_obj;
+  obj_found_stopped_ = false;
   finished_ = false;
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(EXPLORE_MAX_ROT_VEL)).c_str());
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(EXPLORE_MAX_TRANS_VEL)).c_str());
@@ -49,6 +54,7 @@ void Explorer::stop(){
     ROS_INFO("EXPLORATION STOPPED");
   running_ = false;
   door_found_stopped_ = false;
+  obj_found_stopped_ = false;
   finished_ = false;
 }
 
@@ -94,6 +100,21 @@ void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
 void Explorer::doorFoundCb(const std_msgs::Int8& msg){
   door_found_stopped_ = true;
   finished_ = true;
+}
+
+
+void Explorer::objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg){
+  if(msg->poses.empty())
+    return;
+  std::cout << "Max Obj Prob: " << msg->probs[searched_obj_] << " / " << OBJECT_FOUND_THRESH << std::endl;
+  if(msg->probs[searched_obj_] > OBJECT_FOUND_THRESH){
+    found_pose_.header.stamp = ros::Time::now();
+    found_pose_.header.frame_id = "map";
+    found_pose_.pose = msg->poses[searched_obj_];
+    obj_found_pub_.publish(found_pose_);
+    obj_found_stopped_ = true;
+    finished_ = true;
+  }
 }
 
 

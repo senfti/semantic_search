@@ -32,8 +32,9 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
   execution::ExecuteGoal goal;
   goal.pose = action.pose_;
   goal.action = action.type_;
-  goal.target = action.target_;
-  ROS_ERROR("SEND GOAL %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
+  goal.target_obj = action.target_obj_;
+  goal.target_room = action.target_room_;
+  ROS_ERROR("SEND GOAL %d %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target_obj, goal.target_room, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
   std::cin.get();
   execute_action_client_.sendGoal(goal);
   while(!execute_action_client_.waitForResult(ros::Duration(1.0)))
@@ -134,14 +135,15 @@ Plan Planner::generateFullPlan(const SearchPlan &search_plan, State state, const
     std::vector<int> room_path = graph.travel_path_[state.current_room_][action.target_];
     std::vector<geometry_msgs::Pose> waypoints = graph.travel_waypoints_[state.current_room_][action.target_];
     for(int i=1; i<room_path.size(); i++){
-      plan.actions_.push_back(Action(Action::MOVE_TO, room_path[i], waypoints[i]));
+      plan.actions_.push_back(Action(Action::MOVE_TO, graph.searched_obj_, room_path[i], waypoints[i]));
       state.changeState(*plan.actions_.rbegin());
     }
     if(std::find(state.not_explored_.begin(), state.not_explored_.end(), state.current_room_) != state.not_explored_.end()){
-      plan.actions_.push_back(Action(Action::EXPLORE, state.current_room_, geometry_msgs::Pose()));
+      plan.actions_.push_back(Action(Action::EXPLORE, graph.searched_obj_, state.current_room_, geometry_msgs::Pose()));
       state.changeState(*plan.actions_.rbegin());
     }
-    plan.actions_.push_back(Action(action.type_ == SearchAction::SEARCH ? Action::SEARCH : Action::QUICK_SEARCH, graph.searched_obj_, graph.quick_search_poses_[state.current_room_]));
+    plan.actions_.push_back(Action(action.type_ == SearchAction::SEARCH ? Action::SEARCH : Action::QUICK_SEARCH, graph.searched_obj_,
+                                   state.current_room_, graph.quick_search_poses_[state.current_room_]));
     state.changeState(*plan.actions_.rbegin());
   }
   std::cout << plan.getPlanString() << std::endl;
@@ -176,7 +178,7 @@ void Planner::run(int obj){
       return;
 
     if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
-      sendGoal(Action(Action::ROTATE, hierarchy.curr_room));
+      sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
       continue;
     }
 

@@ -83,7 +83,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
   full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
-  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1, true);
+  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
   calcSeenKernels();
 }

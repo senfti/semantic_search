@@ -5,6 +5,7 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/message_filter.h"
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf/transform_datatypes.h>
 
 ros::Publisher filtered_pub;
 float min_angle = -1.95, max_angle = 1.95, min_z=0.1, max_z=1.0, max_range=4.0;
@@ -15,10 +16,12 @@ bool got_cloud = false;
 tf2_ros::TransformListener* tf2_listener;
 tf2_ros::Buffer* tf2_buffer;
 
+ros::Time scan_time;
 sensor_msgs::LaserScan filtered;
 
 void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
   filtered = *msg;
+  scan_time = msg->header.stamp;
   int min_cutoff = std::max(0, int(std::ceil((min_angle-msg->angle_min)/msg->angle_increment)));
   int max_cutoff = std::min(int(msg->ranges.size()), int(std::floor((max_angle-msg->angle_min)/msg->angle_increment))+1);
   int num_ranges = max_cutoff-min_cutoff;
@@ -52,14 +55,30 @@ void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg){
 
   sensor_msgs::PointCloud2 cloud;
   tf2_buffer->transform(*msg, cloud, "base_laser_link", ros::Duration(0.2));
+  geometry_msgs::TransformStamped scan_trans;
+  geometry_msgs::TransformStamped cloud_trans;
+  try{
+    scan_trans = tf2_buffer->lookupTransform("base_laser_link", "odom", scan_time, ros::Duration(0.2));
+    cloud_trans = tf2_buffer->lookupTransform("base_laser_link", "odom", msg->header.stamp, ros::Duration(0.2));
+  }
+  catch(tf2::TransformException &ex) {
+    ROS_WARN("Could NOT transform %s", ex.what());
+    return;
+  }
+  tf::Transform scan_tf, cloud_tf;
+  tf::transformMsgToTF(scan_trans.transform, scan_tf);
+  tf::transformMsgToTF(cloud_trans.transform, cloud_tf);
+  tf::Transform diff = scan_tf.inverse()*cloud_tf;
+  double angle = tf::getYaw(diff.getRotation());
 
   for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x"), iter_y(cloud, "y"), iter_z(cloud, "z"); iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z){
     if (std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z) || *iter_z > max_z || *iter_z < min_z){
       continue;
     }
-    int i = (atan2(*iter_y, *iter_x)-true_angle_min)/true_increment;
+    int i = (atan2(*iter_y, *iter_x)-true_angle_min-angle)/true_increment;
+    std::cout << angle << std::endl;
     if(i>=0 && i<cloud_ranges.size()){
-      cloud_ranges[i] = std::min(cloud_ranges[i], float(hypot(*iter_x, *iter_y)));
+      cloud_ranges[i] = std::min(cloud_ranges[i], float(hypot(*iter_x, *iter_y))+0.05f);
     }
   }
   for(int i=0; i<cloud_ranges.size(); i++){
@@ -89,6 +108,10 @@ int main(int argc, char** argv){
   ros::Subscriber cloud_sub = nh.subscribe("/camera/depth_registered/points", 1, cloudCb);
   filtered_pub = nh.advertise<sensor_msgs::LaserScan>("scan_costmap", 50);
 
+  while(!tf2_buffer->canTransform("base_laser_link", "camera_rgb_optical_frame", ros::Time(0), ros::Duration(1.0)))
+    std::cout << "WAIT FOR TRANSFORM" << std::endl;
+  while(!tf2_buffer->canTransform("base_laser_link", "camera_rgb_optical_frame", ros::Time(0), ros::Duration(1.0)))
+    std::cout << "WAIT FOR TRANSFORM" << std::endl;
   while(!tf2_buffer->canTransform("base_laser_link", "camera_rgb_optical_frame", ros::Time(0), ros::Duration(1.0)))
     std::cout << "WAIT FOR TRANSFORM" << std::endl;
 

@@ -28,6 +28,7 @@ add_message_files(
   HierarchyLinkMsg.msg
   RoomMsg.msg
   RoomSwitchMsg.msg
+  ObjFoundMsg.msg
 )
 add_service_files(
   DIRECTORY srv

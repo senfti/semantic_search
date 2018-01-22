@@ -68,7 +68,7 @@ class Plan{
       std::vector<std::string> type_strings = {"M", "E", "S", "Q"};
       std::string s;
       for(const auto& a : actions_)
-        s = s + type_strings[a.type_] + std::to_string(a.target_) + " ";
+        s = s + type_strings[a.type_] + std::to_string(a.target_room_) + " ";
       return s;
     }
 };

@@ -57,7 +57,7 @@ void ExecuteActionServer::goalCb(){
   action_client_.cancelAllGoals();
   goal_ = *(action_server_.acceptNewGoal());
   move_to_first_reached_ = false;
-  ROS_INFO("NEW GOAL: %d, %d, %.3lf, %.3lf, %.3lf, %.3lf", goal_.action, goal_.target, goal_.pose.position.x, goal_.pose.position.y, goal_.pose.orientation.z, goal_.pose.orientation.w);
+  ROS_INFO("NEW GOAL: %d, %d, %d, %.3lf, %.3lf, %.3lf, %.3lf", goal_.action, goal_.target_room, goal_.target_obj, goal_.pose.position.x, goal_.pose.position.y, goal_.pose.orientation.z, goal_.pose.orientation.w);
 }
 
 
@@ -73,7 +73,7 @@ void ExecuteActionServer::preemptCb(){
 
 
 void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr &msg){
-  if(goal_.action == 0 && msg->new_room == goal_.target){
+  if(goal_.action == 0 && msg->new_room == goal_.target_room){
     tf::Transform transform;
     tf::Transform pose;
     tf::poseMsgToTF(msg->transform, transform);
@@ -85,7 +85,7 @@ void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgCo
   else{
     action_client_.cancelAllGoals();
     execution::ExecuteResult result;
-    result.result_number = -3 - (goal_.action != 0 ? 1 : 0) - (msg->new_room != goal_.target ? 2 : 0);
+    result.result_number = -3 - (goal_.action != 0 ? 1 : 0) - (msg->new_room != goal_.target_room ? 2 : 0);
     action_server_.setAborted(result, "ABORTED");
     goal_.action = -1;
     move_base_state_ = MoveBaseState::STOPPED;
@@ -153,7 +153,7 @@ void ExecuteActionServer::doMoveTo(){
 
 void ExecuteActionServer::doExplore(){
   if(!explorer_.running()){
-    explorer_.start();
+    explorer_.start(goal_.target_obj);
   }
   if(explorer_.finished()){
     ROS_INFO("Finished exploration");
@@ -173,7 +173,7 @@ void ExecuteActionServer::doExplore(){
       ;
     }
     execution::ExecuteResult result;
-    result.result_number = (explorer_.doorFoundStopped() ? 1 : 0);
+    result.result_number = (explorer_.objFoundStopped() ? 100 : (explorer_.doorFoundStopped() ? 1 : 0));
     action_server_.setSucceeded(result, "SUCCESS");
     goal_.action = -1;
     return;
@@ -248,7 +248,7 @@ void ExecuteActionServer::doExplore(){
 
 void ExecuteActionServer::doSearch(){
   if(!searcher_.running()){
-    searcher_.start(goal_.target, goal_.action == 3, goal_.pose);
+    searcher_.start(goal_.target_obj, goal_.action == 3, goal_.pose);
   }
   static int i = 0;
   if(i%20 == 0)

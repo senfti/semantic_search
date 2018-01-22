@@ -6,6 +6,7 @@
 #include <tf/transform_datatypes.h>
 #include <semantic_mapping_v2/RoomSwitchMsg.h>
 #include <std_msgs/Int8.h>
+#include <semantic_mapping_v2/ObjFoundMsg.h>
 
 HierarchyMapper::HierarchyMapper()
   : service_spinner_(1, &service_queue_)
@@ -27,6 +28,7 @@ HierarchyMapper::HierarchyMapper()
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
   door_found_pub_ = nh_.advertise<std_msgs::Int8>("door_found", 1);
+  obj_found_pub_ = nh_.advertise<semantic_mapping_v2::ObjFoundMsg>("obj_found", 1);
 
   ros::NodeHandle service_nh;
   service_nh.setCallbackQueue(&service_queue_);
@@ -241,6 +243,16 @@ void HierarchyMapper::downprojecAndPublish(){
 
   static int counter=0;
   if((counter%debug_publish_interval_) == debug_publish_interval_-1){
+    semantic_mapping_v2::ObjFoundMsg obj_found_msg;
+    std::vector<std::pair<geometry_msgs::Pose, float>> tmp = room_mapper_[current_mapper_]->getObjectMax();
+    obj_found_msg.poses.resize(tmp.size());
+    obj_found_msg.probs.resize(tmp.size());
+    for(int i=0; i<tmp.size(); i++){
+      obj_found_msg.poses[i] = tmp[i].first;
+      obj_found_msg.probs[i] = tmp[i].second;
+    }
+    obj_found_pub_.publish(obj_found_msg);
+
     if(base_obj_prob_pub_.empty()){
       base_obj_prob_pub_.resize(80);
       for(int i=0; i<80; i++){

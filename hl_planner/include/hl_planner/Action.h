@@ -22,13 +22,16 @@ class Action{
     enum Type{ MOVE_TO, EXPLORE, SEARCH, QUICK_SEARCH, ROTATE };
 
     Type type_;
-    int target_;
+    int target_obj_;
+    int target_room_;
     geometry_msgs::Pose pose_;
 
-    Action(Type type, int target, const geometry_msgs::Pose& pose = geometry_msgs::Pose()) : type_(type), target_(target), pose_(pose) {}
+    Action(Type type, int target_obj, int target_room, const geometry_msgs::Pose& pose = geometry_msgs::Pose())
+      : type_(type), target_obj_(target_obj), target_room_(target_room), pose_(pose) {}
 
     bool operator==(const Action& rhs){
-      return type_ == rhs.type_ && target_ == rhs.target_ && pose_.position.x == rhs.pose_.position.x && pose_.position.y == rhs.pose_.position.y && pose_.orientation.w == pose_.orientation.w;
+      return type_ == rhs.type_ && target_obj_ == rhs.target_obj_ && target_room_ == rhs.target_room_
+             && pose_.position.x == rhs.pose_.position.x && pose_.position.y == rhs.pose_.position.y && pose_.orientation.w == pose_.orientation.w;
     }
 };
 
