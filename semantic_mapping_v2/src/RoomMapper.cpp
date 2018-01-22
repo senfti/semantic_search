@@ -330,21 +330,21 @@ void RoomMapper::downprojectMap(){
   boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
   boost::mutex::scoped_lock lock(obstacle_map_mutex_);
   obstacle_map_ = octo_maps_[getBestParticleIdx()]->addDownprojected(getGMap());
-  if(obstacle_map_.data.empty())
-    return;
-
-  for(int x=0; x<obstacle_map_.info.width; x++){
-    for(int y=0; y<obstacle_map_.info.height; y++){
-      float pos_x = obstacle_map_.info.origin.position.x + x*obstacle_map_.info.resolution;
-      float pos_y = obstacle_map_.info.origin.position.y + y*obstacle_map_.info.resolution;
-      for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
-        if(door.isBehindDoor(pos_x,pos_y) && !door.isInBehindDoorRect(pos_x, pos_y)){
-          obstacle_map_.data[y * obstacle_map_.info.width + x] = 100;
-          break;
-        }
-      }
-    }
-  }
+//  if(obstacle_map_.data.empty())
+//    return;
+//
+//  for(int x=0; x<obstacle_map_.info.width; x++){
+//    for(int y=0; y<obstacle_map_.info.height; y++){
+//      float pos_x = obstacle_map_.info.origin.position.x + x*obstacle_map_.info.resolution;
+//      float pos_y = obstacle_map_.info.origin.position.y + y*obstacle_map_.info.resolution;
+//      for(const auto& door : door_mappers_[getBestParticleIdx()]->getDoors()){
+//        if(door.isBehindDoor(pos_x,pos_y) && !door.isInBehindDoorRect(pos_x, pos_y)){
+//          obstacle_map_.data[y * obstacle_map_.info.width + x] = 100;
+//          break;
+//        }
+//      }
+//    }
+//  }
 }
 
 

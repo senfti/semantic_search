@@ -15,17 +15,17 @@
     <param name="OBJ_MIN_PROB" value="0.000005" />
     <param name="OBJ_MAX_PROB" value="0.9" />
 
-    <param name="RESOLUTION" value="10.0" />
+    <param name="RESOLUTION" value="5.0" />
     <param name="OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />
     <param name="ROOM_EXPECTED_SIZE" value="24" />
 
     <param name="V_H" value="0.08" />
-    <param name="V_M" value="0.00001" />
+    <param name="V_M" value="0.0003" />
 
-    <param name="POINTCLOUD_MIN_Z" value="0.0" />
+    <param name="POINTCLOUD_MIN_Z" value="0.1" />
     <param name="POINTCLOUD_MAX_Z" value="1.6" />
 
-    <param name="OBJECT_FOUND_THRESH" value="0.8" />
+    <param name="OBJECT_FOUND_THRESH" value="0.5" />
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
     <param name="SEEN_MAP_STEPS" value="36" />

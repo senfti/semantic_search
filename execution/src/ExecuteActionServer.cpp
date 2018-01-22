@@ -3,6 +3,7 @@
 //
 
 #include "execution/ExecuteActionServer.h"
+#include <std_msgs/Int8.h>
 
 ExecuteActionServer::ExecuteActionServer()
       : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_), searcher_(&tf_listener_)
@@ -23,7 +24,8 @@ ExecuteActionServer::ExecuteActionServer()
   }
   map_switch_sub_ = nh_.subscribe("map_switch", 1, &ExecuteActionServer::mapSwitchCb, this);
   frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
-  vel_pub_ = ros::NodeHandle().advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
+  vel_pub_ = nh_.advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
+  curr_action_pub_ = nh_.advertise<std_msgs::Int8>("current_action", 1);
   ROS_INFO("INITIALIZATION FINISHED");
 }
 
@@ -413,6 +415,9 @@ void ExecuteActionServer::run(){
       start_rotation_state_machine_.reset();
     }
     //ROS_INFO("MOVE_BASE_STATE: %d", int(move_base_state_));
+    std_msgs::Int8 action_nr;
+    action_nr.data = goal_.action;
+    curr_action_pub_.publish(action_nr);
     rate.sleep();
   }
 }

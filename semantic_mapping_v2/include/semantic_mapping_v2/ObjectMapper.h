@@ -16,6 +16,8 @@
 #include <boost/thread.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <assert.h>
+
+
 class OctoMapper;
 
 class ObjectMap{
@@ -73,6 +75,7 @@ class ObjectMap{
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size, bool multiply_occ = true) const;
     float getObjectProb(float prior, float expected_room_size) const;
+    std::pair<geometry_msgs::Pose, float> getObjMax(const ObjectMap& occupancy_map);
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
@@ -140,6 +143,7 @@ class ObjectMapper{
     }
 
     std::vector<float> getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order);
+    std::vector<std::pair<geometry_msgs::Pose, float>> getObjMax(OctoMapper& octo_mapper, const std::vector<Door>& doors);
     float getResolution() const { return maps_[0].getResolution(); }
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg(int obj_id) {

@@ -83,6 +83,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
   full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
+  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1, true);
 
   calcSeenKernels();
 }
@@ -395,7 +396,7 @@ void Searcher::doCalculations(){
 
   if(objFound()){
     finished_ = true;
-    std::cout << "OBJECT FOUND" << std::endl;
+    std::cout << "OBJECT FOUND: " << found_pose_.pose.position.x << " " << found_pose_.pose.position.y << " " << found_pose_.pose.position.z << std::endl;
   }
 
   tf::StampedTransform transform;
@@ -473,30 +474,45 @@ void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, con
 
 
 bool Searcher::objFound(){
-  ObjectMap multiplied = *obj_map_*ObjectMap(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
-                                                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
+//  ObjectMap multiplied = *obj_map_*ObjectMap(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
+//                                                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
   float max_prob = 0.f;
+  geometry_msgs::PoseStamped found_pose;
   for(int x=0; x<obj_map_->getWidth(); x++){
     for(int y=0; y<obj_map_->getHeight(); y++){
       for(int z=0; z<obj_map_->getZSteps(); z++){
         if(obj_map_->getCount(x,y,z) > 0){
-          float prob = 1.f;
-          for(int xk=std::max(0,x-1); xk<std::min(x+2, obj_map_->getWidth()); xk++){
-            for(int yk=std::max(0,y-1); yk<std::min(y+2, obj_map_->getHeight()); yk++){
-              for(int zk=std::max(0,z-1); zk<std::min(z+2, obj_map_->getZSteps()); zk++){
-                prob *= (1.f-multiplied.getProb(xk,yk,zk));
-              }
-            }
+          float prob = obj_map_->getProb(x,y,z)*octo_mapper_->getOccupancy(obj_map_->getXWorld(x), obj_map_->getYWorld(y), obj_map_->getZWorld(z));
+//          for(int xk=std::max(0,x-1); xk<std::min(x+2, obj_map_->getWidth()); xk++){
+//            for(int yk=std::max(0,y-1); yk<std::min(y+2, obj_map_->getHeight()); yk++){
+//              for(int zk=std::max(0,z-1); zk<std::min(z+2, obj_map_->getZSteps()); zk++){
+//                prob *= (1.f-multiplied.getProb(xk,yk,zk));
+//              }
+//            }
+//          }
+          if(prob > max_prob){
+            max_prob = prob;
+            found_pose.pose.position.x = x;
+            found_pose.pose.position.y = y;
+            found_pose.pose.position.z = z;
           }
-          max_prob = std::max(max_prob, 1.f-prob);
         }
       }
     }
   }
   std::cout << "Max Obj Prob: " << max_prob << std::endl;
   octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
-  if(max_prob > OBJECT_FOUND_THRESH)
+  if(max_prob > OBJECT_FOUND_THRESH){
+    found_pose_.header.stamp = ros::Time::now();
+    found_pose_.header.frame_id = "map";
+    found_pose_.pose.position.x = obj_map_->getXWorld(found_pose.pose.position.x);
+    found_pose_.pose.position.y = obj_map_->getYWorld(found_pose.pose.position.y);
+    found_pose_.pose.position.z = obj_map_->getZWorld(found_pose.pose.position.z);
+    found_pose_.pose.orientation.x = found_pose_.pose.orientation.y = found_pose_.pose.orientation.z = 0.0;
+    found_pose_.pose.orientation.w = 1.0;
+    obj_found_pub_.publish(found_pose_);
     obj_found_ = true;
+  }
   return obj_found_;
 }
 

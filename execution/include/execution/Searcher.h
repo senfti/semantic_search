@@ -101,6 +101,7 @@ class Searcher{
     int quick_search_step_ = 0;
     bool quick_search_step_viewed_ = true;
     geometry_msgs::Pose quick_search_target_;
+    geometry_msgs::PoseStamped found_pose_;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
     std::vector<std::vector<float>> seen_kernel_points_value_;

@@ -14,6 +14,9 @@
 #include <semantic_mapping_v2/ObjectProbSrv.h>
 #include <semantic_mapping_v2/RoomTypeMapSrv.h>
 #include <semantic_mapping_v2/RoomTypeProbSrv.h>
+#include <semantic_mapping_v2/ObjFoundSrv.h>
+
+#include <std_msgs/Int8.h>
 
 class HierarchyMapper{
   protected:
@@ -21,11 +24,13 @@ class HierarchyMapper{
     boost::mutex mapper_mutex_;
     int current_mapper_ = -1;
     ros::Time last_map_switch_time_;
+    int curr_action_ = -1;
 
     ros::Subscriber laser_sub_;
     ros::Subscriber cloud_sub_;
     ros::Subscriber door_pose_sub_;
     ros::Subscriber vision_sub_;
+    ros::Subscriber curr_action_sub_;
 
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
@@ -52,6 +57,7 @@ class HierarchyMapper{
     ros::ServiceServer obj_prob_srv_;
     ros::ServiceServer room_type_prob_srv_;
     ros::ServiceServer hierarchy_srv_;
+    ros::ServiceServer obj_found_srv_;
     std::vector<semantic_mapping_v2::RoomMsg> last_room_msgs_;
     std::vector<bool> room_changed_;
 
@@ -89,6 +95,7 @@ class HierarchyMapper{
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     void doorPoseCb(const geometry_msgs::PoseArray::ConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
+    void currActionCb(const std_msgs::Int8ConstPtr& msg);
 
     bool gmapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
     bool mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
@@ -99,6 +106,7 @@ class HierarchyMapper{
     bool objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res);
     bool objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& req, semantic_mapping_v2::ObjectProbSrv::Response& res);
     bool hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res);
+    bool objFoundSrvCb(semantic_mapping_v2::ObjFoundSrv::Request& req, semantic_mapping_v2::ObjFoundSrv::Response& res);
 
     //void publish();
     void downprojecAndPublish();

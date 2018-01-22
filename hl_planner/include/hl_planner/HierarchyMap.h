@@ -16,6 +16,8 @@ class HierarchyMap{
     static float UNEXPLORED_PROB_ESTIMATE;
     static float UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE;
 
+    int searched_obj_ = -1;
+
     std::vector<float> search_times_;
     std::vector<float> expected_search_times_;
     std::vector<float> quick_search_times_;

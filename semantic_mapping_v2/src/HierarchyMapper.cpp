@@ -16,6 +16,7 @@ HierarchyMapper::HierarchyMapper()
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &HierarchyMapper::cloudCb, this);
   door_pose_sub_ = nh_.subscribe("door_poses", 1, &HierarchyMapper::doorPoseCb, this);
   vision_sub_ = nh_.subscribe("vision_result", 1, &HierarchyMapper::visionCb, this);
+  curr_action_sub_ = nh_.subscribe("current_action", 1, &HierarchyMapper::currActionCb, this);
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
@@ -38,6 +39,7 @@ HierarchyMapper::HierarchyMapper()
   obj_prob_srv_ = service_nh.advertiseService("obj_prob_srv", &HierarchyMapper::objProbSrvCb, this);
   room_type_prob_srv_ = service_nh.advertiseService("room_type_prob_srv", &HierarchyMapper::roomTypeProbSrvCb, this);
   hierarchy_srv_ = service_nh.advertiseService("hierarchy_srv", &HierarchyMapper::hierarchySrvCb, this);
+  obj_found_srv_ = service_nh.advertiseService("obj_found_srv", &HierarchyMapper::objFoundSrvCb, this);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   ros::NodeHandle("~").param("publish_period", publish_period_, 0.5);
@@ -188,6 +190,11 @@ void HierarchyMapper::visionCb(const vision::VisionMsgConstPtr &msg){
 }
 
 
+void HierarchyMapper::currActionCb(const std_msgs::Int8ConstPtr& msg){
+  curr_action_ = msg->data;
+}
+
+
 void HierarchyMapper::transformPublishLoop(double transform_publish_period){
   if(transform_publish_period == 0)
     return;
@@ -211,13 +218,22 @@ void HierarchyMapper::downprojecAndPublish(){
     gmap_pub_.publish(map);
   }
   map = room_mapper_[current_mapper_]->getMap();
-  if(map.data.size() > 0){
-    map_pub_.publish(map);
-    map_info_pub_.publish(map.info);
+  nav_msgs::OccupancyGrid map_blocked = room_mapper_[current_mapper_]->getDoorBlockedMap();
+  if(curr_action_ == 1 || curr_action_ == 2 || curr_action_ == 3){
+    if(map_blocked.data.size() > 0){
+      map_pub_.publish(map_blocked);
+      map_info_pub_.publish(map_blocked.info);
+      map_door_blocked_pub_.publish(map_blocked);
+    }
   }
-  map = room_mapper_[current_mapper_]->getDoorBlockedMap();
-  if(map.data.size() > 0){
-    map_door_blocked_pub_.publish(map);
+  else{
+    if(map.data.size() > 0){
+      map_pub_.publish(map);
+      map_info_pub_.publish(map.info);
+    }
+    if(map_blocked.data.size() > 0){
+      map_door_blocked_pub_.publish(map_blocked);
+    }
   }
   marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
@@ -796,8 +812,8 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       cv::minMaxLoc(single_view_prob_map[o], &min, &max, &min_loc, &max_loc);
       single_view_max_probs[o] = std::min(max, complete_obj_probs[o]*0.99);
       geometry_msgs::Point point;
-      point.x = obj_maps[i][0].getXWorld(max_loc.x);
-      point.y = obj_maps[i][0].getXWorld(max_loc.y);
+      point.x = complete_obj_map[0].getXWorld(max_loc.x);
+      point.y = complete_obj_map[0].getYWorld(max_loc.y);
       point.z = 0;
       single_view_points[o] = point;
     }
@@ -873,5 +889,22 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
   return true;
 }
 
+
+bool HierarchyMapper::objFoundSrvCb(semantic_mapping_v2::ObjFoundSrv::Request& req, semantic_mapping_v2::ObjFoundSrv::Response& res){
+  ROS_INFO("SERVICE OBJ_PROB");
+  boost::lock_guard<boost::mutex> maps_lock(mapper_mutex_);
+  if(current_mapper_ < 0 || current_mapper_ >= room_mapper_.size())
+    return false;
+
+  std::vector<std::pair<geometry_msgs::Pose, float>> tmp = room_mapper_[current_mapper_]->getObjectMax();
+  res.max_pose.resize(tmp.size());
+  res.max_prob.resize(tmp.size());
+  for(int i=0; i<tmp.size(); i++){
+    res.max_pose[i] = tmp[i].first;
+    res.max_prob[i] = tmp[i].second;
+  }
+
+  return true;
+}
 
 

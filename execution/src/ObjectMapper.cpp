@@ -322,16 +322,26 @@ float ObjectMap::getMaxObjectProb(const ObjectMap &occupancy_map) const{
 cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps()/3; z++){
-    cv::Mat_<float> tmp_max = prob_maps_[3*z].mul(occ_map.prob_maps_[3*z]);
-    tmp_max = cv::max(tmp_max, prob_maps_[3*z+1].mul(occ_map.prob_maps_[3*z+1]));
-    tmp_max = cv::max(tmp_max, prob_maps_[3*z+2].mul(occ_map.prob_maps_[3*z+2]));
+    cv::Mat_<float> tmp(prob_maps_[0].rows, prob_maps_[0].cols, 0.f);
+    prob_maps_[3*z].copyTo(tmp, count_maps_[3*z]);
+    cv::Mat_<float> tmp_max = tmp.mul(occ_map.prob_maps_[3*z]);
+    prob_maps_[3*z+1].copyTo(tmp, count_maps_[3*z+1]);
+    tmp_max = cv::max(tmp_max, tmp.mul(occ_map.prob_maps_[3*z+1]));
+    prob_maps_[3*z+2].copyTo(tmp, count_maps_[3*z+2]);
+    tmp_max = cv::max(tmp_max, tmp.mul(occ_map.prob_maps_[3*z+2]));
     map2D = map2D.mul(1.f-tmp_max);
   }
-  if(getZSteps()%3 == 1)
-    map2D = map2D.mul(1.f-prob_maps_[getZSteps()-1].mul(occ_map.prob_maps_[getZSteps()-1]));
+  if(getZSteps()%3 == 1){
+    cv::Mat_<float> tmp(prob_maps_[getZSteps() - 1].rows, prob_maps_[getZSteps() - 1].cols, 0.f);
+    prob_maps_[getZSteps() - 1].copyTo(tmp, count_maps_[getZSteps() - 1]);
+    map2D = map2D.mul(1.f - tmp.mul(occ_map.prob_maps_[getZSteps() - 1]));
+  }
   else if(getZSteps()%3 == 2){
-    cv::Mat_<float> tmp_max = prob_maps_[getZSteps()-1].mul(occ_map.prob_maps_[getZSteps()-1]);
-    tmp_max = cv::max(tmp_max, prob_maps_[getZSteps()-2].mul(occ_map.prob_maps_[getZSteps()-2]));
+    cv::Mat_<float> tmp(prob_maps_[getZSteps() - 1].rows, prob_maps_[getZSteps() - 1].cols, 0.f);
+    prob_maps_[getZSteps() - 1].copyTo(tmp, count_maps_[getZSteps() - 1]);
+    cv::Mat_<float> tmp_max = tmp.mul(occ_map.prob_maps_[getZSteps()-1]);
+    prob_maps_[getZSteps() - 2].copyTo(tmp, count_maps_[getZSteps() - 2]);
+    tmp_max = cv::max(tmp_max, tmp.mul(occ_map.prob_maps_[getZSteps()-2]));
     map2D = map2D.mul(1.f-tmp_max);
   }
 

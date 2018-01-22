@@ -133,6 +133,10 @@ class RoomMapper : public SlamGMapping{
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return obj_mappers_[getBestParticleIdx()]->getObjectProbs(*octo_maps_[getBestParticleIdx()], door_mappers_[getBestParticleIdx()]->getDoors(), order);
     }
+    std::vector<std::pair<geometry_msgs::Pose,float>> getObjectMax() {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return obj_mappers_[getBestParticleIdx()]->getObjMax(*octo_maps_[getBestParticleIdx()], door_mappers_[getBestParticleIdx()]->getDoors());
+    }
     std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) {
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);

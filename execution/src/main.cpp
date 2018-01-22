@@ -9,7 +9,11 @@ int main(int argc, char** argv){
 //  ros::Rate r(0.5);
 //  r.sleep();
 //  Searcher s(&l);
-//  s.start(58);
+//  geometry_msgs::Pose p;
+//  std::cout << "Obj nr: ";
+//  int sdf;
+//  std::cin >> sdf;
+//  s.start(sdf, false, p);
 //  ros::Rate ra(2.0);
 //  while(ros::ok()){
 //    ros::spinOnce();

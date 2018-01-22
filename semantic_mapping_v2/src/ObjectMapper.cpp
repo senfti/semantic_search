@@ -273,6 +273,31 @@ float ObjectMap::getObjectProb(float prior, float expected_room_size) const{
 }
 
 
+std::pair<geometry_msgs::Pose, float> ObjectMap::getObjMax(const ObjectMap& occupancy_map){
+  float max_prob = 0.0;
+  geometry_msgs::Pose max_pose;
+  max_pose.orientation.x = max_pose.orientation.y = max_pose.orientation.z = 0.0;
+  max_pose.orientation.w = 1.0;
+  for(int x=0; x<getWidth(); x++){
+    for(int y=0; y<getHeight(); y++){
+      for(int z=0; z<getZSteps(); z++){
+        if(count_maps_[z](y,x) > uchar(0)){
+          float prob = getProb(x,y,z);
+          if(prob > max_prob){
+            max_prob = prob;
+            max_pose.position.x = getXWorld(x);
+            max_pose.position.y = getYWorld(y);
+            max_pose.position.z = getZWorld(z);
+          }
+        }
+      }
+    }
+  }
+
+  return std::pair<geometry_msgs::Pose, float>(max_pose, max_prob);
+}
+
+
 cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps(); z++){
@@ -481,6 +506,53 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
   order = ordered(probs);
   return probs;
 }
+
+
+std::vector<std::pair<geometry_msgs::Pose, float>> ObjectMapper::getObjMax(OctoMapper& octo_mapper, const std::vector<Door>& doors){
+  std::vector<std::pair<geometry_msgs::Pose, float>> res;
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+  if(maps_.empty())
+    return res;
+
+  ros::Time t = ros::Time::now();
+
+  cv::Mat_<uchar> behind_door(maps_[0].getHeight(), maps_[0].getWidth(), uchar(0));
+  for(int x=0; x<behind_door.cols; x++){
+    for(int y=0; y<behind_door.rows; y++){
+      for(const auto& door : doors){
+        if(door.isBehindDoor(maps_[0].getXWorld(x), maps_[0].getYWorld(y))){
+          behind_door(y,x) = 255;
+          break;
+        }
+      }
+    }
+  }
+
+  ObjectMap occ_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
+  float scale_2 = 1.f/(maps_[0].getResolution()*2);
+  for(int x=0; x<occ_map.getWidth(); x++){
+    for(int y=0; y<occ_map.getHeight(); y++){
+      if(behind_door(y,x) == 0){
+        for(int z=0; z<occ_map.getZSteps(); z++){
+          geometry_msgs::Point p;
+          p.x = maps_[0].getXWorld(x);
+          p.y = maps_[0].getYWorld(y);
+          p.z = maps_[0].getZWorld(z);
+          float occ = octo_mapper.getOccupancy(p.x - scale_2, p.y - scale_2, p.z - scale_2, p.x + scale_2, p.y + scale_2, p.z + scale_2);
+          if(occ >= 0.f)
+            occ_map.insertMax(x,y,z,occ);
+        }
+      }
+    }
+  }
+
+  for(int i=0; i<maps_.size(); i++){
+    res.push_back(maps_[i].getObjMax(occ_map));
+  }
+  std::cout << "Object Max Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
+
+  return res;
+};
 
 
 std::vector<semantic_mapping_v2::ObjectMapMsg> ObjectMapper::getAllObjMapMsgs() {

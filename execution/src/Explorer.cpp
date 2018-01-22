@@ -169,20 +169,25 @@ void Explorer::calcFrontier(){
 
   cv::Mat_<uchar> good_frontiers_mask;
   cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
+  std::vector<cv::Mat_<uchar>> good_accessibles(5);
+  cv::erode(accessible, good_accessibles[0], cv::Mat_<uchar>::ones(3,3));
+  for(int i=1; i<good_accessibles.size(); i++){
+    cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
+  }
 
   cv::imshow("explore_accessible", accessible);
   cv::imshow("good_frontiers", good_frontiers_mask);
   cv::waitKey(1);
 
-  cv::Mat_<uchar> good_accessible;
-  cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 5);
   cv::Point best_pos(-1,-1);
   double best_dist = 999999999999999.9;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
       if(good_frontiers_mask(y,x)){
         double dist = std::sqrt((x-pos.x)*(x-pos.x) + (y-pos.y)*(y-pos.y));
-        dist = dist + (good_accessible(y,x) ? 0.0 : 40.0) + (dist < ROBOT_SIZE ? 40.0 : 0.0);
+        dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
+        for(const auto& m : good_accessibles)
+          dist += (m(y,x) ? 0.0 : 10.0);
         if(dist < best_dist){
           best_dist = dist;
           best_pos = cv::Point(x,y);
@@ -195,6 +200,33 @@ void Explorer::calcFrontier(){
     finished_ = true;
     std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
     return;
+  }
+
+  if((pos-best_pos).ddot(pos-best_pos) < ROBOT_SIZE*ROBOT_SIZE){
+    bool pos_found = false;
+    for(const auto& offset : circle_points_){
+      cv::Point p = best_pos+offset;
+      if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && good_accessibles[3](p)){
+        best_pos = p;
+        pos_found = true;
+        break;
+      }
+    }
+    if(!pos_found){
+      for(const auto &offset : circle_points_){
+        cv::Point p = best_pos + offset;
+        if(p.x >= 0 && p.y >= 0 && p.x < accessible.cols && p.y < accessible.rows && accessible(p)){
+          best_pos = p;
+          pos_found = true;
+          break;
+        }
+      }
+    }
+    if(!pos_found){
+      finished_ = true;
+      std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
+      return;
+    }
   }
 
   geometry_msgs::Pose old_frontier = curr_frontier_;

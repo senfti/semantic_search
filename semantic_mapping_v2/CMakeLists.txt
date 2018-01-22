@@ -33,6 +33,7 @@ add_service_files(
   DIRECTORY srv
   FILES
   ObjectMapSrv.srv
+  ObjFoundSrv.srv
   RoomTypeMapSrv.srv
   HierarchySrv.srv
   ObjectProbSrv.srv

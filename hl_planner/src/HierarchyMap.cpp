@@ -55,6 +55,7 @@ void floydWarshall(const std::vector<std::vector<float>>& edges, std::vector<std
 
 HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res, int obj){
   semantic_mapping_v2::HierarchySrvResponse response = res;
+  searched_obj_ = obj;
   search_times_.resize(response.rooms.size());
   quick_search_times_.resize(response.rooms.size());
   expected_search_times_.resize(response.rooms.size());
@@ -70,7 +71,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
     quick_search_poses_[i].orientation.w = 1.0;
     search_prob_[i] = response.rooms[i].obj_probs[obj];
     quick_search_prob_[i] = response.rooms[i].single_view_obj_probs[obj];
-    float K = (1.f-(1.f-search_prob_[i])/(1.f-quick_search_prob_[i]))/(search_times_[i]-quick_search_times_[i]);
+    float K = (search_prob_[i]-quick_search_prob_[i])/(search_times_[i]-quick_search_times_[i]);
     expected_search_times_[i] = quick_search_times_[i]*quick_search_prob_[i]+K*(search_times_[i]*search_times_[i]-quick_search_times_[i]*quick_search_times_[i])/2.f;
   }
 
@@ -81,7 +82,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
       quick_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
       quick_search_poses_.push_back(geometry_msgs::Pose());
       quick_search_poses_.back().orientation.w = 1.0;
-      expected_search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE/2.f);
+      expected_search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE/1.9f);
       search_prob_.push_back(UNEXPLORED_PROB_ESTIMATE);
       quick_search_prob_.push_back(UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
       not_explored_.push_back(true);
