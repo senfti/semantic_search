@@ -87,6 +87,7 @@ class ObjectMap{
     cv::Point getOrigin() const { return origin_; }
 
     visualization_msgs::MarkerArray getProbMsg(int id=0) const;
+    visualization_msgs::MarkerArray getProbMsg(float scale) const;
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
     float getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const;

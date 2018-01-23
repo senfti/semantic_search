@@ -107,6 +107,7 @@ class OctoMapper {
     int getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
 
     visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time &rostime);
+    visualization_msgs::MarkerArray getCountMsg(const ros::Time &rostime, float scale);
 
   protected:
     inline static void updateMinKey(const octomap::OcTreeKey& in, octomap::OcTreeKey& min) {

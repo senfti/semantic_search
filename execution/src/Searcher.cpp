@@ -84,6 +84,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
   obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+  count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1);
 
   calcSeenKernels();
 }
@@ -502,6 +503,7 @@ bool Searcher::objFound(){
   }
   std::cout << "Max Obj Prob: " << max_prob << std::endl;
   octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
+  count_pub_.publish(octo_mapper_->getCountMsg(ros::Time::now(), 0.1f));
   if(max_prob > OBJECT_FOUND_THRESH){
     found_pose_.header.stamp = ros::Time::now();
     found_pose_.header.frame_id = "map";
@@ -547,10 +549,10 @@ cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resol
 
 inline float angleDist(float angle1, float angle2){
   float angle = angle1-angle2;
-  if(angle > M_PI)
-    return std::abs(angle-2*M_PI);
-  if(angle <= -M_PI)
-    return std::abs(angle+2*M_PI);
+  while(angle > M_PI)
+    angle-=2*M_PI;
+  while(angle <= -M_PI)
+    angle+=2*M_PI;
   return std::abs(angle);
 }
 
@@ -579,12 +581,13 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
     if(not_fully_viewed_border_(pos+p) > 0 && angleDist(angle, border_dir_map_(pos+p)) < BORDER_SEEN_MAX_ANGLE)
       interesting_border_seen += seen_kernel_points_value_[angle_step][idx];
 
-    prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
+    if(angleDist(border_dir_map_(pos+p), std::atan2(float((pos+p-curr_pos).y),float((pos+p-curr_pos).x))) < BORDER_SEEN_MAX_ANGLE)
+      prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
   }
-  if(interesting_border_seen <= 0.f)
+  if(interesting_border_seen <= 1.f)
     return -1.f;
 
-  return (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle);
+  return (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle)*100.f;
 }
 
 
@@ -615,7 +618,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
-                (std::abs(curr_point.x-x)>2 && std::abs(curr_point.y-y)>2 && std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)){
+                (std::abs(curr_point.x-x)>1 && std::abs(curr_point.y-y)>1 && std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_point, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
@@ -624,8 +627,8 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
             max_i = i;
           }
         }
-//        if(border_map_(y,x))
-//          sdf(y,x) = 1.f;
+        //if(border_map_(y,x))
+        //  sdf(y,x) = 1.f;
       }
     }
     //showProbImage(std::to_string(i), sdf, 2);
@@ -635,9 +638,6 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   if(max < 0.0){
     return true;
   }
-//  showProbImage("prob_map", prob_map, 4);
-//  showProbImage("accessible_map_", accessible_map_, 2);
-//  showProbImage("border_dir", border_dir_map_, 2);
 
   tf::Transform curr_view(tf::createQuaternionFromYaw(float(max_i)/VIEW_ANGLE_STEPS*M_PI*2.f),
                           tf::Vector3((max_loc.x-obj_map_->getOrigin().x)/RESOLUTION, (max_loc.y-obj_map_->getOrigin().y)/RESOLUTION, 0.0));

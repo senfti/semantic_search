@@ -324,11 +324,11 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
   }
 
   // mark free cells only if not seen occupied in this cloud
-  for(KeySet::iterator it = free_cells2.begin(), end=free_cells2.end(); it!= end; ++it){
-    if (occupied_cells2.find(*it) == occupied_cells2.end()){
-      count_octree_->updateNode(*it, true);
-    }
-  }
+//  for(KeySet::iterator it = free_cells2.begin(), end=free_cells2.end(); it!= end; ++it){
+//    if (occupied_cells2.find(*it) == occupied_cells2.end()){
+//      count_octree_->updateNode(*it, true);
+//    }
+//  }
 
   // now mark all occupied cells:
   for (KeySet::iterator it = occupied_cells2.begin(), end=occupied_cells2.end(); it!= end; it++) {
@@ -464,6 +464,86 @@ visualization_msgs::MarkerArray OctoMapper::getOccupiedCellMsg(const ros::Time &
   // finish MarkerArray:
   for (unsigned i= 0; i < occupiedNodesVis.markers.size(); ++i){
     double size = m_octree->getNodeSize(i);
+
+    occupiedNodesVis.markers[i].header.frame_id = m_worldFrameId;
+    occupiedNodesVis.markers[i].header.stamp = rostime;
+    occupiedNodesVis.markers[i].ns = "map";
+    occupiedNodesVis.markers[i].id = i;
+    occupiedNodesVis.markers[i].type = visualization_msgs::Marker::CUBE_LIST;
+    occupiedNodesVis.markers[i].scale.x = size;
+    occupiedNodesVis.markers[i].scale.y = size;
+    occupiedNodesVis.markers[i].scale.z = size;
+    occupiedNodesVis.markers[i].pose.orientation.x = occupiedNodesVis.markers[i].pose.orientation.y = occupiedNodesVis.markers[i].pose.orientation.z = 0.0;
+    occupiedNodesVis.markers[i].pose.orientation.w = 1.0;
+    if (!m_useColoredMap)
+      occupiedNodesVis.markers[i].color = m_color;
+
+
+    if (occupiedNodesVis.markers[i].points.size() > 0)
+      occupiedNodesVis.markers[i].action = visualization_msgs::Marker::ADD;
+    else
+      occupiedNodesVis.markers[i].action = visualization_msgs::Marker::DELETE;
+  }
+  return occupiedNodesVis;
+}
+
+
+std_msgs::ColorRGBA getCountColor(double count){
+  int v = count*10;
+  std_msgs::ColorRGBA c;
+  c.a = 1.0;
+  switch(v){
+    case 0:   c.r = 0.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 1:   c.r = 0.2;  c.g = 0.0;  c.b = 0.0;  break;
+    case 2:   c.r = 0.5;  c.g = 0.0;  c.b = 0.0;  break;
+    case 3:   c.r = 0.8;  c.g = 0.0;  c.b = 0.0;  break;
+    case 4:   c.r = 1.0;  c.g = 0.0;  c.b = 0.0;  break;
+    case 5:   c.r = 1.0;  c.g = 1.0;  c.b = 0.0;  break;
+    case 6:   c.r = 0.0;  c.g = 1.0;  c.b = 0.0;  break;
+    case 7:   c.r = 0.0;  c.g = 1.0;  c.b = 1.0;  break;
+    case 8:   c.r = 0.0;  c.g = 0.0;  c.b = 1.0;  break;
+    case 9:   c.r = 1.0;  c.g = 0.0;  c.b = 1.0;  break;
+    default:  c.r = 1.0;  c.g = 0.7;  c.b = 1.0;  break;
+  }
+  return c;
+}
+
+visualization_msgs::MarkerArray OctoMapper::getCountMsg(const ros::Time &rostime, float scale){
+  visualization_msgs::MarkerArray occupiedNodesVis;
+  occupiedNodesVis.markers.resize(m_treeDepth+1);
+
+  // now, traverse all leafs in the tree:
+  for (OcTreeT::iterator it = count_octree_->begin(m_maxTreeDepth), end = count_octree_->end(); it != end; ++it){
+    if(it->getLogOdds()*scale > 0.2){
+      double z = it.getZ();
+      if(z > m_occupancyMinZ && z < m_occupancyMaxZ){
+        double x = it.getX();
+        double y = it.getY();
+
+        unsigned idx = it.getDepth();
+        assert(idx < occupiedNodesVis.markers.size());
+
+        geometry_msgs::Point cubeCenter;
+        cubeCenter.x = x;
+        cubeCenter.y = y;
+        cubeCenter.z = z;
+
+        occupiedNodesVis.markers[idx].points.push_back(cubeCenter);
+        if (m_useHeightMap){
+          double minX, minY, minZ, maxX, maxY, maxZ;
+          count_octree_->getMetricMin(minX, minY, minZ);
+          count_octree_->getMetricMax(maxX, maxY, maxZ);
+
+          double h = (1.0 - std::min(std::max((cubeCenter.z-minZ)/ (maxZ - minZ), 0.0), 1.0)) *m_colorFactor;
+          occupiedNodesVis.markers[idx].colors.push_back(getCountColor(it->getLogOdds()*scale)); //heightMapColor(h));
+        }
+      }
+    }
+  }
+
+  // finish MarkerArray:
+  for (unsigned i= 0; i < occupiedNodesVis.markers.size(); ++i){
+    double size = count_octree_->getNodeSize(i);
 
     occupiedNodesVis.markers[i].header.frame_id = m_worldFrameId;
     occupiedNodesVis.markers[i].header.stamp = rostime;

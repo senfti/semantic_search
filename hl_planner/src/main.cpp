@@ -27,6 +27,14 @@ semantic_mapping_v2::HierarchyLinkMsg getLink(int r1, int r2, std::vector<float>
   return link;
 }
 
+const std::vector<std::string> obj_names = { "person","bicycle","car","motorbike","aeroplane","bus","train","truck","boat","traffic light","fire hydrant",
+                                             "stop sign","park meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe",
+                                             "backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard","sport ball","kite","baseball bat",
+                                             "glove","skateboard","surf board","racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple",
+                                             "sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","sofa","pot plant","bed","table",
+                                             "toilet","monitor","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator",
+                                             "book","clock","vase","scissor","teddy bear","hair dryer","toothbrush"};
+
 int main(int argc, char** argv){
   ros::init(argc, argv, "hl_planner");
   //Planner planner;
@@ -61,11 +69,17 @@ int main(int argc, char** argv){
 
   Planner p;
   while(ros::ok()){
-    std::cout << "Object Number: ";
+    std::cout << "-1:explore all | ";
+    for(int i=0; i<obj_names.size(); i++){
+      std::cout << i << ":" << obj_names[i] << " | ";
+    }
+    std::cout << std::endl << "Object Number: ";
     int n=-1;
     std::cin >> n;
-    if(n>0 && n<80)
+    if(n>=0 && n<80)
       p.run(n);
+    if(n==-1)
+      p.exploreAll();
   }
 
   return 0;

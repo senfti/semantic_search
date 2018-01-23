@@ -30,11 +30,13 @@ class SearchPlan{
         float time = graph.getExpectedSearchTime(curr_room, action.target_);
         if(std::find(quick_searched.begin(), quick_searched.end(), action.target_) != quick_searched.end()){
           prob = (prob-graph.quick_search_prob_[action.target_]) / (1.f-graph.quick_search_prob_[action.target_]);
-          time = graph.travel_times_[curr_room][action.target_] + prob/(graph.search_times_[action.target_]-graph.quick_search_times_[action.target_])*
-            (graph.search_times_[action.target_]*graph.search_times_[action.target_] - graph.quick_search_times_[action.target_]*graph.quick_search_times_[action.target_]) / 2.f;
+          time = graph.travel_times_[curr_room][action.target_] +
+            prob/(graph.search_times_[action.target_]-graph.quick_search_times_[action.target_])
+              *(graph.search_times_[action.target_]*graph.search_times_[action.target_] - graph.quick_search_times_[action.target_]*graph.quick_search_times_[action.target_]) / 2.f
+            + (1.f-prob)*graph.search_times_[action.target_];
         }
 
-        expected_search_time_ += (1.f-found_prob_)*(time*prob + (1.f-prob)*graph.getFullSearchTime(curr_room, action.target_));
+        expected_search_time_ += (1.f-found_prob_)*time;
         full_search_time_ += graph.getFullSearchTime(curr_room, action.target_);
         found_prob_ = 1.f-(1.f-found_prob_)*(1.f-prob);
 

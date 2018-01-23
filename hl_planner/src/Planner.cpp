@@ -229,3 +229,42 @@ void Planner::justPlan(int obj){
 
   Plan plan = generatePlan(graph_map, state_);
 }
+
+
+void Planner::exploreAll(){
+  state_ = State();
+  while(ros::ok()){
+    semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+    if(hierarchy.rooms.empty())
+      return;
+
+    if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
+      sendGoal(Action(Action::ROTATE, -1, hierarchy.curr_room));
+      continue;
+    }
+
+    HierarchyMap graph_map(hierarchy, 0);
+    std::cout << graph_map;
+    state_.updateState(graph_map, hierarchy.curr_room);
+    if(state_.not_explored_.empty())
+      return;
+    Action a(Action::MOVE_TO,0,0);
+    if(hierarchy.curr_room != state_.not_explored_.back()){
+      std::vector<int> room_path = graph_map.travel_path_[state_.current_room_][state_.not_explored_.back()];
+      std::vector<geometry_msgs::Pose> waypoints = graph_map.travel_waypoints_[state_.current_room_][state_.not_explored_.back()];
+      a = Action(Action::MOVE_TO, -1, room_path[1], waypoints[1]);
+    }
+    else
+      a = Action(Action::EXPLORE, -1, state_.not_explored_.back(), geometry_msgs::Pose());
+    actionlib::SimpleClientGoalState execution_state = sendGoal(a);
+    if(execution_state != actionlib::SimpleClientGoalState::SUCCEEDED){
+      std::cout << "EXECUTION FAILED, TRYING FURTHER" << std::endl;
+    }
+    else{
+      auto result = execute_action_client_.getResult();
+      if(result->result_number == 0){
+        state_.changeState(a);
+      }
+    }
+  }
+}

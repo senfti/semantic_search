@@ -71,8 +71,10 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
     quick_search_poses_[i].orientation.w = 1.0;
     search_prob_[i] = response.rooms[i].obj_probs[obj];
     quick_search_prob_[i] = response.rooms[i].single_view_obj_probs[obj];
-    float K = (search_prob_[i]-quick_search_prob_[i])/(search_times_[i]-quick_search_times_[i]);
-    expected_search_times_[i] = quick_search_times_[i]*quick_search_prob_[i]+K*(search_times_[i]*search_times_[i]-quick_search_times_[i]*quick_search_times_[i])/2.f;
+    expected_search_times_[i] = quick_search_times_[i]*quick_search_prob_[i]
+                                + (search_prob_[i]-quick_search_prob_[i])/(search_times_[i]-quick_search_times_[i])
+                                  * (search_times_[i]*search_times_[i]-quick_search_times_[i]*quick_search_times_[i])/2.f
+                                + (1.f-search_prob_[i])*search_times_[i];
   }
 
   int room_idx = search_times_.size();
@@ -82,9 +84,12 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
       quick_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
       quick_search_poses_.push_back(geometry_msgs::Pose());
       quick_search_poses_.back().orientation.w = 1.0;
-      expected_search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE/1.9f);
       search_prob_.push_back(UNEXPLORED_PROB_ESTIMATE);
       quick_search_prob_.push_back(UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
+      expected_search_times_[room_idx] = quick_search_times_[room_idx]*quick_search_prob_[room_idx]
+                                  + (search_prob_[room_idx]-quick_search_prob_[room_idx])/(search_times_[room_idx]-quick_search_times_[room_idx])
+                                    * (search_times_[room_idx]*search_times_[room_idx]-quick_search_times_[room_idx]*quick_search_times_[room_idx])/2.f
+                                  + (1.f-search_prob_[room_idx])*search_times_[room_idx];
       not_explored_.push_back(true);
       semantic_mapping_v2::RoomMsg unknown_room;
       unknown_room.links.push_back(i);

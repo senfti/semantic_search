@@ -36,6 +36,7 @@ class Planner{
     //bool exploreRoom(semantic_mapping_v2::HierarchyLinkMsg link);
     void run(int obj);
     void justPlan(int obj);
+    void exploreAll();
 
     actionlib::SimpleClientGoalState sendGoal(const Action& action);
 };

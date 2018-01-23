@@ -104,7 +104,7 @@ void Explorer::doorFoundCb(const std_msgs::Int8& msg){
 
 
 void Explorer::objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg){
-  if(msg->poses.empty())
+  if(searched_obj_ >= int(msg->poses.size()) || searched_obj_ < 0)
     return;
   std::cout << "Max Obj Prob: " << msg->probs[searched_obj_] << " / " << OBJECT_FOUND_THRESH << std::endl;
   if(msg->probs[searched_obj_] > OBJECT_FOUND_THRESH){
