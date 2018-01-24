@@ -10,6 +10,7 @@ ExecuteActionServer::ExecuteActionServer()
 {
   ros::NodeHandle("~").param("MOVE_MAX_ROT_VEL", MOVE_MAX_ROT_VEL, MOVE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("MOVE_MAX_TRANS_VEL", MOVE_MAX_TRANS_VEL, MOVE_MAX_TRANS_VEL);
+  ros::NodeHandle("~").param("SEARCHER_CALCULATION_SKIPS", SEARCHER_CALCULATION_SKIPS, SEARCHER_CALCULATION_SKIPS);
 
   goal_.action = -1;
   action_server_.registerGoalCallback(boost::bind(&ExecuteActionServer::goalCb, this));
@@ -251,8 +252,9 @@ void ExecuteActionServer::doSearch(){
     searcher_.start(goal_.target_obj, goal_.action == 3, goal_.pose);
   }
   static int i = 0;
-  if(i%20 == 0)
+  if(i%SEARCHER_CALCULATION_SKIPS == 0)
     searcher_.doCalculations();
+  i++;
   if(searcher_.finished()){
     ROS_INFO("Finished search");
     if(move_base_state_ == MoveBaseState::WAITING) {
@@ -384,7 +386,7 @@ void ExecuteActionServer::doStartRotation(){
 
 
 void ExecuteActionServer::run(){
-  ros::Rate rate(10.0);
+  ros::Rate rate(5.0);
   while(ros::ok()){
     ros::spinOnce();
     if(goal_.action == 0){

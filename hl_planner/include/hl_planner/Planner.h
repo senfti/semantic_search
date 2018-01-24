@@ -23,6 +23,7 @@ class Planner{
     ros::ServiceClient hierarchy_service_client_;
 
     State state_;
+    std::vector<int> explored_rooms_;
 
     semantic_mapping_v2::HierarchySrvResponse getHierarchy(int max_tries);
 

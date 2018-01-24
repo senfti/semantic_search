@@ -4,6 +4,7 @@
 
 #include <ros/ros.h>
 #include <hl_planner/Planner.h>
+#include <tf/LinearMath/Transform.h>
 
 semantic_mapping_v2::RoomMsg getRoom(int id, float single_view_obj_probs, float obj_probs, float single_view_search_time, float search_time, std::vector<short> links, float to_link_travel_time){
   semantic_mapping_v2::RoomMsg room;
@@ -34,7 +35,7 @@ const std::vector<std::string> obj_names = { "person","bicycle","car","motorbike
                                              "sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","sofa","pot plant","bed","table",
                                              "toilet","monitor","laptop","mouse","remote","keyboard","cell phone","microwave","oven","toaster","sink","refrigerator",
                                              "book","clock","vase","scissor","teddy bear","hair dryer","toothbrush"};
-
+#include <tf/transform_datatypes.h>
 int main(int argc, char** argv){
   ros::init(argc, argv, "hl_planner");
   //Planner planner;

@@ -29,6 +29,12 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
         circle_points_.push_back(cv::Point(x-2*VIEW_DIST,y-2*VIEW_DIST));
     }
   }
+  for(int x=-2;x<=2;x++){
+    for(int y=-2; y<=2; y++){
+      if(x==-2 || x==2 || y==-2 || y==2)
+        near_circle_points_.push_back(cv::Point(x,y));
+    }
+  }
 }
 
 geometry_msgs::Pose Explorer::getNextFrontier(){
@@ -196,22 +202,25 @@ void Explorer::calcFrontier(){
     cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
   }
 
-  cv::imshow("explore_accessible", accessible);
-  cv::imshow("good_frontiers", good_frontiers_mask);
-  cv::waitKey(1);
+//  cv::imshow("explore_accessible", accessible);
+//  cv::imshow("good_frontiers", good_frontiers_mask);
+//  cv::waitKey(1);
 
   cv::Point best_pos(-1,-1);
   double best_dist = 999999999999999.9;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
       if(good_frontiers_mask(y,x)){
-        double dist = std::sqrt((x-pos.x)*(x-pos.x) + (y-pos.y)*(y-pos.y));
-        dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
-        for(const auto& m : good_accessibles)
-          dist += (m(y,x) ? 0.0 : 10.0);
-        if(dist < best_dist){
-          best_dist = dist;
-          best_pos = cv::Point(x,y);
+        for(const auto& cp : near_circle_points_){
+          cv::Point p = cv::Point(x,y)+cp;
+          double dist = std::sqrt((p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y));
+          dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
+          for(const auto& m : good_accessibles)
+            dist += (m(p) ? 0.0 : 10.0);
+          if(dist < best_dist){
+            best_dist = dist;
+            best_pos = cv::Point(p);
+          }
         }
       }
     }

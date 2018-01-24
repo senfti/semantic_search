@@ -61,7 +61,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
   expected_search_times_.resize(response.rooms.size());
   search_prob_.resize(response.rooms.size());
   quick_search_prob_.resize(response.rooms.size());
-  not_explored_.resize(response.rooms.size(), false);
+  not_visited_.resize(response.rooms.size(), false);
   quick_search_poses_.resize(response.rooms.size());
 
   for(int i=0; i<response.rooms.size(); i++){
@@ -90,7 +90,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
                                   + (search_prob_[room_idx]-quick_search_prob_[room_idx])/(search_times_[room_idx]-quick_search_times_[room_idx])
                                     * (search_times_[room_idx]*search_times_[room_idx]-quick_search_times_[room_idx]*quick_search_times_[room_idx])/2.f
                                   + (1.f-search_prob_[room_idx])*search_times_[room_idx];
-      not_explored_.push_back(true);
+      not_visited_.push_back(true);
       semantic_mapping_v2::RoomMsg unknown_room;
       unknown_room.links.push_back(i);
       unknown_room.to_link_travel_times.push_back(0.f);
@@ -98,9 +98,6 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
       response.links[i].room2 = room_idx++;
     }
   }
-
-  if(room_idx == 1)
-    not_explored_[0] = true;
 
   std::vector<std::vector<float>> edges;
   edges.resize(response.links.size());
@@ -181,7 +178,7 @@ std::ostream& operator<<(std::ostream& os, const HierarchyMap& map){
       os << ", " << map.travel_times_[i][j] << "; ";
     }
     os << std::endl << "quick pos: " << map.quick_search_poses_[i].position.x << " " << map.quick_search_poses_[i].position.y << std::endl;
-    os << (map.not_explored_[i] ? "not explored" : "explored") << std::endl << std::endl;
+    os << (map.not_visited_[i] ? "not visited" : "visited") << std::endl << std::endl;
   }
   os << std::endl;
 

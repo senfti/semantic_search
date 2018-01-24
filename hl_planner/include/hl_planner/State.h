@@ -33,14 +33,8 @@ class State{
       current_room_ = current_room;
       if(graph.search_prob_.size() > num_rooms_){
         for(int i=num_rooms_; i<graph.search_prob_.size(); i++){
-          if(graph.not_explored_[i]){
-            searchable_.push_back(i);
-            not_explored_.push_back(i);
-          }
-          else{
-            searchable_.push_back(i);
-            quick_searchable_.push_back(i);
-          }
+          searchable_.push_back(i);
+          not_explored_.push_back(i);
         }
       }
       num_rooms_ = graph.search_prob_.size();
@@ -84,6 +78,18 @@ class State{
       }
     }
 
+    void resetState(){
+      searchable_.clear();
+      quick_searchable_.clear();
+      quick_searched_.clear();
+      for(int i=0; i<num_rooms_; i++){
+        searchable_.push_back(i);
+        if(std::find(not_explored_.begin(), not_explored_.end(), i) == not_explored_.end()){
+          quick_searchable_.push_back(i);
+        }
+      }
+    }
+
     std::deque<SearchAction> getPossibleSearchActions() const {
       std::deque<SearchAction> actions;
       for(const auto& s : searchable_)
@@ -100,6 +106,8 @@ class State{
       }
       return actions;
     }
+
+
 };
 
 #endif //HL_PLANNER_STATE_H

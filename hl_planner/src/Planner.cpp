@@ -170,8 +170,7 @@ Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
 
 
 void Planner::run(int obj){
-  state_ = State();
-  Plan last_plan;
+  state_.resetState();
   while(ros::ok()){
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
     if(hierarchy.rooms.empty())
@@ -192,25 +191,27 @@ void Planner::run(int obj){
 
     actionlib::SimpleClientGoalState execution_state = sendGoal(plan.actions_.front());
     if(execution_state != actionlib::SimpleClientGoalState::SUCCEEDED){
-      if(plan.actions_.front() == last_plan.actions_.front()){
-        std::cout << "STUCK, SEARCH ABORTED" << std::endl;
+      ROS_ERROR("EXECUTION FAILED!");
+      std::cout << "Stop trying [y]: ";
+      std::string s;
+      std::cin >> s;
+      if(!s.empty() && s[0] == 'y'){
+        ROS_ERROR("QUIT SEARCH");
         return;
-      }
-      else{
-        std::cout << "EXECUTION FAILED, TRYING FURTHER" << std::endl;
       }
     }
     else{
       auto result = execute_action_client_.getResult();
       if(result->result_number == 0){
         state_.changeState(plan.actions_.front());
+        if(plan.actions_.front().type_ == Action::EXPLORE)
+          explored_rooms_.push_back(plan.actions_.front().target_room_);
       }
       else if(result->result_number == 100){
         std::cout << "OBJECT FOUND" << std::endl;
         return;
       }
     }
-    last_plan = plan;
   }
 }
 

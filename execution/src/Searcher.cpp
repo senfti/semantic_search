@@ -22,6 +22,7 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::merge(std::vector<cv::Mat>({tmp, o, o}), tmp);
   cv::cvtColor(tmp, tmp, CV_HSV2BGR);
   cv::imshow(name, tmp);
+  cv::moveWindow(name, 1600,0);
   cv::waitKey(1);
 }
 
@@ -287,6 +288,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::resize(accessible_mat, accessible_mat, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor), 0, 0, cv::INTER_NEAREST);
   accessible_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
   accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
+  cv::erode(accessible_map_, good_accessible_map_, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
 
   cv::Mat dists, nearest;
   cv::distanceTransform(255-accessible_map_, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
@@ -560,7 +562,8 @@ inline float angleDist(float angle1, float angle2){
 float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
   cv::Point diff = pos-curr_pos;
   float move_angle = std::atan2(float(diff.y),float(diff.x));
-  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/MOVE_SPEED + VIEW_TIME;
+  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/MOVE_SPEED +
+    VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
 }
 
 
@@ -584,7 +587,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
     if(angleDist(border_dir_map_(pos+p), std::atan2(float((pos+p-curr_pos).y),float((pos+p-curr_pos).x))) < BORDER_SEEN_MAX_ANGLE)
       prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
   }
-  if(interesting_border_seen <= 1.f)
+  if(interesting_border_seen < 0.1f)
     return -1.f;
 
   return (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle)*100.f;
@@ -736,10 +739,13 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
         int border_idx = border_dir_map_(y,x)/(2*M_PI)*SEEN_MAP_STEPS;
         if(seen_maps_[border_idx](y,x)+seen_maps_[(border_idx+1)%SEEN_MAP_STEPS](y,x)+seen_maps_[(border_idx+SEEN_MAP_STEPS-1)%SEEN_MAP_STEPS](y,x) >= BORDER_SEEN_THRESH)
           not_fully_viewed_border_(y,x) = 0;
+        else
+          not_fully_viewed_border_(y,x) = 1;
       }
     }
   }
-
+  cv::filter2D(not_fully_viewed_border_, not_fully_viewed_border_, CV_8UC1, cv::Mat_<uchar>(3,3,uchar(1)));
+  cv::threshold(not_fully_viewed_border_, not_fully_viewed_border_, 1.5, 255.0, cv::THRESH_BINARY);
   previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](pos) = 255;
 
   cv::Mat tmp;
@@ -750,14 +756,9 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);
+  cv::moveWindow("not_fully_viewed_border_", 1600,300);
   cv::waitKey(1);
   std::cout << "In seen map inserted" << std::endl;
 
-  cv::Mat_<uchar> finished;
-  cv::threshold(not_fully_viewed_border_, finished, 1, 1, cv::THRESH_TRUNC);
-  cv::filter2D(finished, finished, CV_8UC1, cv::Mat_<uchar>(3,3,uchar(0)));
-  double min_v, max_v;
-  cv::minMaxLoc(finished, &min_v, &max_v);
-
-  return (max_v > 1);
+  return (countNonZero(not_fully_viewed_border_) > 0);
 }

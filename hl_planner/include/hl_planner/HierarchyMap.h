@@ -26,7 +26,7 @@ class HierarchyMap{
     std::vector<std::vector<float>> search_speeds_;
     std::vector<std::vector<std::vector<int>>> travel_path_;
     std::vector<std::vector<std::vector<geometry_msgs::Pose>>> travel_waypoints_;
-    std::vector<bool> not_explored_;
+    std::vector<bool> not_visited_;
 
     std::vector<float> search_prob_;
     std::vector<float> quick_search_prob_;

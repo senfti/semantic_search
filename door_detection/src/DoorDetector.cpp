@@ -70,12 +70,12 @@ DoorDetector::DoorDetector()
   LASER_DOORFRAME_WIDTH *= OCC_RES;
   LASER_DOORFRAME_DEPTH *= OCC_RES;
 
-  cloud_sub_ = nh_.subscribe("/door_asus/camera/depth_registered/points", 1, &DoorDetector::cloudCb, this);
+  cloud_sub_ = nh_.subscribe("/door_asus/camera/depth/points", 1, &DoorDetector::cloudCb, this);
   laser_sub_ = nh_.subscribe("/scan_filtered", 1, &DoorDetector::laserCb, this);
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("door_poses", 5);
 
-  tf_listener_.waitForTransform("base_link", "door_asus/camera_rgb_optical_frame", ros::Time::now(), ros::Duration(2.0));
-  tf_listener_.lookupTransform("base_link", "door_asus/camera_rgb_optical_frame", ros::Time::now(), camera_to_base_transform_);
+  tf_listener_.waitForTransform("base_link", "door_asus/camera_depth_optical_frame", ros::Time::now(), ros::Duration(2.0));
+  tf_listener_.lookupTransform("base_link", "door_asus/camera_depth_optical_frame", ros::Time::now(), camera_to_base_transform_);
   tf_listener_.waitForTransform("base_link", "base_laser_link", ros::Time::now(), ros::Duration(2.0));
   tf_listener_.lookupTransform("base_link", "base_laser_link", ros::Time::now(), laser_to_base_transform_);
 }

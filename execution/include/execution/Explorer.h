@@ -45,6 +45,7 @@ class Explorer{
     ros::Publisher obj_found_pub_;
 
     std::vector<cv::Point> circle_points_;
+    std::vector<cv::Point> near_circle_points_;
 
   public:
     Explorer(tf::TransformListener* tf_listener);

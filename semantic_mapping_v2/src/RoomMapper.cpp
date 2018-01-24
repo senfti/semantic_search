@@ -483,7 +483,7 @@ tf::Transform RoomMapper::activate(const GMapping::OrientedPoint& robot, const D
   Door door2 = door_mappers_[0]->getDoor(door.getCounterpartId());
   tf::Transform transform;
   if(door2.isValid()){
-    transform = tf::Transform(tf::Quaternion(tf::Vector3(0.0,0.0,1.0), M_PI), tf::Vector3(0.0,0.0,0.0))*door.getPose().inverse()*door2.getPose();
+    transform = door2.getPose().inverse()*door.getPose()*tf::Transform(tf::createQuaternionFromYaw(M_PI), tf::Vector3(0.0,0.0,0.0));
     GMapping::OrientedPoint door1_pose = door.getPose2D();
     GMapping::OrientedPoint door2_pose = door2.getPose2D();
     GMapping::OrientedPoint pose = transformPointBackward(robot, door1_pose);
