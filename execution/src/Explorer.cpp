@@ -216,7 +216,7 @@ void Explorer::calcFrontier(){
           double dist = std::sqrt((p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y));
           dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
           for(const auto& m : good_accessibles)
-            dist += (m(p) ? 0.0 : 10.0);
+            dist += (m(p) ? 0.0 : 20.0);
           if(dist < best_dist){
             best_dist = dist;
             best_pos = cv::Point(p);
@@ -232,7 +232,8 @@ void Explorer::calcFrontier(){
     return;
   }
 
-  if((pos-best_pos).ddot(pos-best_pos) < ROBOT_SIZE*ROBOT_SIZE){
+  bool inside = false;
+  if((pos-best_pos).ddot(pos-best_pos) < ROBOT_SIZE*ROBOT_SIZE*1.2){
     bool pos_found = false;
     for(const auto& offset : circle_points_){
       cv::Point p = best_pos+offset;
@@ -257,10 +258,11 @@ void Explorer::calcFrontier(){
       std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
       return;
     }
+    inside = true;
   }
 
   geometry_msgs::Pose old_frontier = curr_frontier_;
-  tf::Transform tf_t(tf::createQuaternionFromYaw(std::atan2(best_pos.y-pos.y, best_pos.x-pos.x)),
+  tf::Transform tf_t(tf::createQuaternionFromYaw(std::atan2(best_pos.y-pos.y, best_pos.x-pos.x)+(inside ? M_PI : 0.0)),
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
   tf::poseTFToMsg(tf_t, curr_frontier_);
