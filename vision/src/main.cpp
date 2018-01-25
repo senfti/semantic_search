@@ -140,7 +140,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   }
 
   std::lock_guard<std::mutex> lock(img_mutex_);
-  if(useImage(cv_ptr->image))
+  if(useImage(cv_ptr->image, msg->header.stamp));
     cv_ptr->image.copyTo(curr_img_);
 }
 
@@ -170,7 +170,7 @@ inline double makeBetweenPi(double angle){
 }
 
 
-bool VisionApp::useImage(const cv::Mat& img){
+bool VisionApp::useImage(const cv::Mat& img, ros::Time stamp){
   if(!depth_img_ || !point_cloud_){
     std::cout << "No depth image" << std::endl;
     return false;
@@ -178,14 +178,15 @@ bool VisionApp::useImage(const cv::Mat& img){
 
   tf::StampedTransform transform;
   try{
-    tf_listener_.lookupTransform("base_link", "odom", ros::Time(0), transform);
+    tf_listener_.waitForTransform("base_link", "odom", stamp, ros::Duration(0.2));
+    tf_listener_.lookupTransform("base_link", "odom", stamp, transform);
   }
   catch (tf::TransformException& ex){
     ROS_ERROR("%s", ex.what());
     return false;
   }
 
-  if(last_transform_.frame_id_.empty() || (last_used_transform_.stamp_ - transform.stamp_).toSec() > MAX_DISCARD_TIME){
+  if(last_transform_.frame_id_.empty()){
     last_transform_ = transform;
     last_used_transform_ = transform;
     return true;
@@ -195,11 +196,11 @@ bool VisionApp::useImage(const cv::Mat& img){
   angle = makeBetweenPi(angle);
   double dist = (transform.getOrigin() - last_used_transform_.getOrigin()).length();
   double ang_vel = tf::getYaw(transform.getRotation()) - tf::getYaw(last_transform_.getRotation());
-  ang_vel = makeBetweenPi(ang_vel);
+  ang_vel = std::abs(makeBetweenPi(ang_vel));
   ang_vel /= (transform.stamp_ - last_transform_.stamp_).toSec();
   last_transform_ = transform;
 
-  if(std::abs(angle) < MIN_ANGLE_DIFF && dist < MIN_DIST_DIFF){
+  if(std::abs(angle) < MIN_ANGLE_DIFF && dist < MIN_DIST_DIFF && (last_used_transform_.stamp_ - transform.stamp_).toSec() < MAX_DISCARD_TIME){
     last_transform_ = transform;
     std::cout << "NOTHING CHANGED" << std::endl;
     return false;

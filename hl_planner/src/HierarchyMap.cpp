@@ -79,7 +79,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
 
   int room_idx = search_times_.size();
   for(int i=0; i<response.links.size(); i++){
-    if(response.links[i].room2 < 0){
+    if(response.links[i].room2 < 0 || response.links[i].room2 >= room_idx){
       search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE);
       quick_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
       quick_search_poses_.push_back(geometry_msgs::Pose());

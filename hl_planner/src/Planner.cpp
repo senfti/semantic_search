@@ -35,7 +35,7 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
   goal.target_obj = action.target_obj_;
   goal.target_room = action.target_room_;
   ROS_ERROR("SEND GOAL %d %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target_obj, goal.target_room, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
-  std::cin.get();
+  //std::cin.get();
   execute_action_client_.sendGoal(goal);
   while(!execute_action_client_.waitForResult(ros::Duration(1.0)))
     ros::spinOnce();
@@ -184,6 +184,7 @@ void Planner::run(int obj){
     HierarchyMap graph_map(hierarchy, obj);
     std::cout << graph_map;
     state_.updateState(graph_map, hierarchy.curr_room);
+    std::cout << state_;
 
     Plan plan = generatePlan(graph_map, state_);
     if(plan.finished())
@@ -227,6 +228,7 @@ void Planner::justPlan(int obj){
 
   HierarchyMap graph_map(hierarchy, obj);
   state_.updateState(graph_map, hierarchy.curr_room);
+  std::cout << state_;
 
   Plan plan = generatePlan(graph_map, state_);
 }
@@ -247,8 +249,11 @@ void Planner::exploreAll(){
     HierarchyMap graph_map(hierarchy, 0);
     std::cout << graph_map;
     state_.updateState(graph_map, hierarchy.curr_room);
+    std::cout << state_;
+
     if(state_.not_explored_.empty())
       return;
+
     Action a(Action::MOVE_TO,0,0);
     if(hierarchy.curr_room != state_.not_explored_.back()){
       std::vector<int> room_path = graph_map.travel_path_[state_.current_room_][state_.not_explored_.back()];

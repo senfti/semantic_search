@@ -84,7 +84,7 @@ class VisionApp{
     void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
     void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg);
 
-    bool useImage(const cv::Mat& img);
+    bool useImage(const cv::Mat& img, ros::Time stamp);
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const;
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);

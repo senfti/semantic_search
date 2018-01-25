@@ -107,7 +107,22 @@ class State{
       return actions;
     }
 
-
+    friend std::ostream& operator<<(std::ostream& os, const State& state){
+      os << "State: Current Room=" << state.current_room_ << ", Num Rooms=" << state.num_rooms_ << std::endl;
+      os << "Not Searched: ";
+      for(const auto& s : state.searchable_)
+        os << s << " ";
+      os << std::endl << "Quick searchable: ";
+      for(const auto& s : state.quick_searchable_)
+        os << s << " ";
+      os << std::endl << "Quick searched: ";
+      for(const auto& s : state.quick_searched_)
+        os << s << " ";
+      os << std::endl << "Not Explored: ";
+      for(const auto& s : state.not_explored_)
+        os << s << " ";
+      os << std::endl << std::endl;
+    }
 };
 
 #endif //HL_PLANNER_STATE_H

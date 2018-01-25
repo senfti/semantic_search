@@ -232,6 +232,13 @@ void ExecuteActionServer::doExplore(){
       }
       else{
         ROS_INFO("ABORTED first time");
+        geometry_msgs::Twist cmd_vel;
+        cmd_vel.linear.x = -0.1;
+        cmd_vel.linear.y = 0.0;
+        cmd_vel.angular.z = 0.0;
+        vel_pub_.publish(cmd_vel);
+        ros::Rate r(0.5);
+        r.sleep();
         geometry_msgs::PoseStamped pose;
         pose.pose = explorer_.getNextFrontier();
         pose.header.frame_id = "map";
@@ -331,6 +338,13 @@ void ExecuteActionServer::doSearch(){
       }
       else{
         ROS_INFO("ABORTED first time");
+        geometry_msgs::Twist cmd_vel;
+        cmd_vel.linear.x = -0.1;
+        cmd_vel.linear.y = 0.0;
+        cmd_vel.angular.z = 0.0;
+        vel_pub_.publish(cmd_vel);
+        ros::Rate r(0.5);
+        r.sleep();
         geometry_msgs::PoseStamped pose;
         pose.pose = searcher_.getNextViewPose();
         pose.header.frame_id = "map";
