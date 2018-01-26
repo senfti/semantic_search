@@ -29,6 +29,11 @@ HierarchyMapper::HierarchyMapper()
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
   door_found_pub_ = nh_.advertise<std_msgs::Int8>("door_found", 1);
   obj_found_pub_ = nh_.advertise<semantic_mapping_v2::ObjFoundMsg>("obj_found", 1);
+  obj_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("obj_prob_map_view", 1);
+  room_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("room_prob_map_view", 1);
+  base_obj_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("base_obj_prob_map_view", 1);
+  base_room_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("base_room_prob_map_view", 1);
+  sdf_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("sdf", 1);
 
   ros::NodeHandle service_nh;
   service_nh.setCallbackQueue(&service_queue_);
@@ -56,6 +61,7 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("TRAVEL_DIST_QUAD_FACTOR", TRAVEL_DIST_QUAD_FACTOR, TRAVEL_DIST_QUAD_FACTOR);
   ros::NodeHandle("~").param("TRAVEL_TURN_FACTOR", TRAVEL_TURN_FACTOR, TRAVEL_TURN_FACTOR);
   ros::NodeHandle("~").param("SEARCH_TIME_PER_GRID_CELL", SEARCH_TIME_PER_GRID_CELL, SEARCH_TIME_PER_GRID_CELL);
+  ros::NodeHandle("~").param("PUBLISH_DEBUG_IMAGES", PUBLISH_DEBUG_IMAGES,PUBLISH_DEBUG_IMAGES);
 
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
@@ -814,8 +820,106 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
       }
     }
 
-    std::vector<cv::Mat_<float>> single_view_prob_map = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, occ_map, complete_obj_map[0].getOrigin(),
+    ObjectMap dummy_occ_map(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
+                            obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), 1.f, 1);
+    std::vector<cv::Mat_<float>> single_view_prob_map = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
                                                                              complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), SINGLE_VIEW_OBJ_KERNEL_SIZE);
+
+    if(PUBLISH_DEBUG_IMAGES && i==current_mapper_){
+      std::vector<cv::Mat_<float>> debug_maps = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
+                                                                               complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 1);
+      prob_map_view::ProbMapMsg msg;
+      msg.names = ObjectMapper::getObjNames();
+      msg.img_are_log = 0;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = debug_maps[j].rows;
+        msg.images[j].cols = debug_maps[j].cols;
+        msg.images[j].type = debug_maps[j].type();
+        msg.images[j].data.assign(debug_maps[j].datastart, debug_maps[j].dataend);
+      }
+      obj_prob_map_view_pub_.publish(msg);
+
+      debug_maps = get2dAreaObjProbMaps(obj_maps[i], behind_door_mask, occ_map, obj_maps[i][0].getOrigin(),
+                                        obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(), 0);
+      msg.img_are_log = 0;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = debug_maps[j].rows;
+        msg.images[j].cols = debug_maps[j].cols;
+        msg.images[j].type = debug_maps[j].type();
+        msg.images[j].data.assign(debug_maps[j].datastart, debug_maps[j].dataend);
+      }
+      base_obj_prob_map_view_pub_.publish(msg);
+
+      msg.img_are_log = 0;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = obj_prob_2d_area[j].rows;
+        msg.images[j].cols = obj_prob_2d_area[j].cols;
+        msg.images[j].type = obj_prob_2d_area[j].type();
+        msg.images[j].data.assign(obj_prob_2d_area[j].datastart,obj_prob_2d_area[j].dataend);
+      }
+      sdf_prob_map_view_pub_.publish(msg);
+
+      msg.names = room_mapper_[current_mapper_]->getRoomNames();
+      msg.img_are_log = 0;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = complete_room_type_map[j].rows;
+        msg.images[j].cols = complete_room_type_map[j].cols;
+        msg.images[j].type = complete_room_type_map[j].type();
+        msg.images[j].data.assign(complete_room_type_map[j].datastart, complete_room_type_map[j].dataend);
+      }
+      room_prob_map_view_pub_.publish(msg);
+
+      msg.img_are_log = 0;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = room_type_maps[i][j].getMap().rows;
+        msg.images[j].cols = room_type_maps[i][j].getMap().cols;
+        msg.images[j].type = room_type_maps[i][j].getMap().type();
+        msg.images[j].data.assign(room_type_maps[i][j].getMap().datastart,room_type_maps[i][j].getMap().dataend);
+      }
+      base_room_prob_map_view_pub_.publish(msg);
+
+      msg.img_are_log = 1;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = obj_based_room_type_map[j].rows;
+        msg.images[j].cols = obj_based_room_type_map[j].cols;
+        msg.images[j].type = obj_based_room_type_map[j].type();
+        msg.images[j].data.assign(obj_based_room_type_map[j].datastart,obj_based_room_type_map[j].dataend);
+      }
+      sdf_prob_map_view_pub_.publish(msg);
+
+      debug_maps = get2dAreaObjProbMaps(std::vector<ObjectMap>({occ_map}), behind_door_mask, dummy_occ_map, obj_maps[i][0].getOrigin(),
+                                        obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(), 0);
+      msg.names = std::vector<std::string>({"occ"});
+      msg.img_are_log = 2;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = debug_maps[0].rows;
+        msg.images[j].cols = debug_maps[0].cols;
+        msg.images[j].type = debug_maps[0].type();
+        msg.images[j].data.assign(debug_maps[0].datastart,debug_maps[0].dataend);
+      }
+      sdf_prob_map_view_pub_.publish(msg);
+
+      debug_maps = get2dAreaObjProbMaps(std::vector<ObjectMap>({dummy_occ_map}), behind_door_mask, dummy_occ_map, obj_maps[i][0].getOrigin(),
+                                        obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(), 0);
+      msg.names = std::vector<std::string>({"occ"});
+      msg.img_are_log = 3;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = debug_maps[0].rows;
+        msg.images[j].cols = debug_maps[0].cols;
+        msg.images[j].type = debug_maps[0].type();
+        msg.images[j].data.assign(debug_maps[0].datastart,debug_maps[0].dataend);
+      }
+      sdf_prob_map_view_pub_.publish(msg);
+    }
+
     std::vector<float> single_view_max_probs(single_view_prob_map.size());
     std::vector<geometry_msgs::Point> single_view_points(single_view_prob_map.size());
     for(int o=0;o<single_view_max_probs.size();o++){

@@ -76,7 +76,7 @@
     <param name="ObjectMapper/STILL_THERE_PROB" value="0.9" />
     <param name="ObjectMapper/GOT_THERE_PROB" value="0.00005" />
     <param name="ObjectMapper/NUM_USED_DETECTION_SAMPLES" value="4000" />
-    <param name="ObjectMapper/OBJ_FROM_ROOM_CONFIDENCE" value="0.8" />
+    <param name="ObjectMapper/OBJ_FROM_ROOM_CONFIDENCE" value="2.0" />
 
     <param name="transform_publish_period" value="0.05" />   
     <param name="publish_period" value="0.5" />
@@ -92,5 +92,6 @@
     <param name="TRAVEL_TURN_FACTOR" value="10.0" />
     <param name="SEARCH_TIME_PER_GRID_CELL" value="0.05" />
     <param name="ROOM_MAX_PROB" value="0.8" />
+    <param name="PUBLISH_DEBUG_IMAGES" value="1" />
   </node>
 </launch>

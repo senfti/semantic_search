@@ -13,7 +13,7 @@
 
 ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( 800,600 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 480,320 ), wxDefaultSize );
 	
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxHORIZONTAL );
@@ -33,7 +33,7 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 	bSizer3->Add( bSizer2, 0, wxEXPAND, 5 );
 	
 	image_panel_ = new ImagePanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	image_panel_->SetMinSize( wxSize( 1200,800 ) );
+	image_panel_->SetMinSize( wxSize( 640,640 ) );
 	
 	bSizer3->Add( image_panel_, 1, wxEXPAND | wxALL, 5 );
 	

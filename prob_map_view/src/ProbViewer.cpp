@@ -34,7 +34,7 @@ void ProbViewer::onMouseMove( wxMouseEvent& event ){
   int x = event.GetX(), y = event.GetY();
   if(event.GetX() < curr_img_.cols && event.GetY() < curr_img_.rows){
     current_prob_text_->SetLabel(wxString::Format("%.5f", curr_img_(y,x)));
-    curr_log_text_->SetLabel(wxString::Format("%.5f", pToL(curr_img_(y,x))));
+    curr_log_text_->SetLabel(wxString::Format("%.5f", std::log(curr_img_(y,x))));
   }
 }
 
@@ -60,11 +60,11 @@ void ProbViewer::setCurrent(){
     max_text_->SetLabel(wxString::Format("%.5lf", max));
 
     cv::flip(curr_img_, curr_img_, 0);
-    int scale_factor = std::min(1200 / curr_img_.cols, 800 / curr_img_.rows);
+    int scale_factor = 4;//std::min(1200 / curr_img_.cols, 800 / curr_img_.rows);
     cv::resize(curr_img_, curr_img_, cv::Size(curr_img_.cols*scale_factor, curr_img_.rows*scale_factor), 0, 0, cv::INTER_NEAREST);
 
     cv::Mat out;
-    if(rescale_checkbox_->IsChecked() || log_checkbox_->IsChecked()){
+    if(rescale_checkbox_->IsChecked()){
       if(min == max)
         out = cv::Mat_<double>::ones(curr_img_.rows, curr_img_.cols);
       else

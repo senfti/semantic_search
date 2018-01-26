@@ -15,6 +15,7 @@
 #include <semantic_mapping_v2/RoomTypeMapSrv.h>
 #include <semantic_mapping_v2/RoomTypeProbSrv.h>
 #include <semantic_mapping_v2/ObjFoundSrv.h>
+#include <prob_map_view/ProbMapMsg.h>
 
 #include <std_msgs/Int8.h>
 
@@ -41,6 +42,11 @@ class HierarchyMapper{
     ros::Publisher door_pose_pub_;
     ros::Publisher door_found_pub_;
     ros::Publisher obj_found_pub_;
+    ros::Publisher obj_prob_map_view_pub_;
+    ros::Publisher room_prob_map_view_pub_;
+    ros::Publisher base_obj_prob_map_view_pub_;
+    ros::Publisher base_room_prob_map_view_pub_;
+    ros::Publisher sdf_prob_map_view_pub_;
     std::vector<ros::Publisher> obj_prob_pub_;
     std::vector<ros::Publisher> room_prob_pub_;
     ros::Publisher particle_pose_pub_;
@@ -84,6 +90,7 @@ class HierarchyMapper{
     float TRAVEL_DIST_QUAD_FACTOR = 0.5f;
     float TRAVEL_TURN_FACTOR = 10.f;
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
+    int PUBLISH_DEBUG_IMAGES = 1;
 
   public:
     HierarchyMapper();

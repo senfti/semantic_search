@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   vision
   message_generation
   octomap_msgs
+  prob_map_view
   ${PACKAGE_DEPENDENCIES}
 )
 find_package(Boost REQUIRED signals)

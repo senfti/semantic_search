@@ -14,7 +14,10 @@ inline T pToL(T p) {
 template<>
 inline cv::Mat_<double> pToL(cv::Mat_<double> p){
   cv::Mat_<double> res;
-  cv::log(p / (1-p), res);
+  p.copyTo(res);
+  for (double &v : cv::Mat_<double>(res)) {
+    v = std::log(v); v = (v > -12.0 ? (12.0+v)/12.0 : 0.0);
+  }
   return res;
 }
 

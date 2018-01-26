@@ -17,11 +17,15 @@ class ProbViewApp : public wxApp{
     ros::NodeHandle* node_handle_ = nullptr;
     ros::Subscriber place_sub_;
     ros::Subscriber obj_sub_;
-    ros::Subscriber obj_loc_sub_;
+    ros::Subscriber base_obj_sub_;
+    ros::Subscriber base_room_sub_;
+    ros::Subscriber sdf_sub_;
 
     ProbViewer* place_viewer_ = nullptr;
     ProbViewer* obj_viewer_ = nullptr;
-    ProbViewer* obj_loc_viewer_ = nullptr;
+    ProbViewer* base_obj_viewer_ = nullptr;
+    ProbViewer* base_room_viewer_ = nullptr;
+    std::vector<ProbViewer*> sdf_viewer_;
 
     wxTimer* input_timer_ = nullptr;
 
@@ -35,7 +39,9 @@ class ProbViewApp : public wxApp{
 
     void placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
-    void objLocProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+    void baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+    void baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+    void sdfProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
 };
 
 #endif //PROB_VIEW_MAIN_H

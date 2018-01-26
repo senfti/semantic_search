@@ -64,7 +64,7 @@ ObjectMap::ObjectMap(float resolution, float start_size, float max_height, float
 }
 
 
-ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value)
+ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value, uchar initial_count)
       : resolution_(resolution), base_size_(base_size), max_height_(max_height), origin_(origin)
 {
   prob_maps_.resize(getZSteps());
@@ -72,7 +72,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
     map = cv::Mat_<float>(height, width, initial_value);
   count_maps_.resize(getZSteps());
   for(auto& map : count_maps_)
-    map = cv::Mat_<uchar>(height, width, uchar(0));
+    map = cv::Mat_<uchar>(height, width, initial_count);
 }
 
 ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, const std::vector<Door>& doors)

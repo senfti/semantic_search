@@ -31,7 +31,7 @@ class ObjectMap{
 
   public:
     ObjectMap(float resolution, float start_size, float max_height, float initial_value);
-    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
+    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value, uchar initial_count = 0);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, const std::vector<Door>& doors);
     ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room);
 
