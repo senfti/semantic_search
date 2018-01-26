@@ -82,10 +82,10 @@
     <param name="publish_period" value="0.5" />
     <param name="debug_publish_interval" value="10" />
     <param name="ROOM_CELL_OBJ_KERNEL_SIZE" value="4.0" />
-    <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="4.0" />
+    <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="100.0" />
     <param name="OBJ_FILL_FRACTION" value="0.001" />
     <param name="ROOM_ESTIMATED_VOLUME" value="0.0" />
-    <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="2.0" />
+    <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="0.5" />
     <param name="SINGLE_VIEW_OBJ_KERNEL_SIZE" value="2.0" />
     <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />
     <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.0" />

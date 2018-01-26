@@ -47,6 +47,7 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
 semantic_mapping_v2::HierarchySrvResponse Planner::getHierarchy(int max_tries){
   for(int i=0; i<max_tries; i++){
     semantic_mapping_v2::HierarchySrvRequest req;
+    req.debug_room = -1;
     semantic_mapping_v2::HierarchySrvResponse res;
     if(hierarchy_service_client_.call(req, res)){
       return res;

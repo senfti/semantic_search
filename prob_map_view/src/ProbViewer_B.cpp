@@ -33,7 +33,7 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 	bSizer3->Add( bSizer2, 0, wxEXPAND, 5 );
 	
 	image_panel_ = new ImagePanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	image_panel_->SetMinSize( wxSize( 640,640 ) );
+	image_panel_->SetMinSize( wxSize( 320,320 ) );
 	
 	bSizer3->Add( image_panel_, 1, wxEXPAND | wxALL, 5 );
 	

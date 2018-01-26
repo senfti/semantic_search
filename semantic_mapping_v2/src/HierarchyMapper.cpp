@@ -509,7 +509,7 @@ std::vector<cv::Mat_<float>> HierarchyMapper::getObjBasedRoomTypeMap(const std::
     for(int o=0; o<obj_prob_2d_area.size(); o++){
       float or_prob = RoomMapper::getObjProbGivenRoom(o,r);
       float o_prob = RoomMapper::getObjProbGivenRoomObjPrior(o);
-      float N = room_type_map.size();
+      float N = num_room_types;
       cv::Mat_<float> tmp;
       cv::log(obj_prob_2d_area[o]*or_prob/N/(o_prob/N) + (1.f-obj_prob_2d_area[o])*(1.f-or_prob)/N/(1.f-o_prob/N), tmp);
       room_type_map[r] += tmp;
@@ -574,23 +574,33 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::imshow(name, tmp);
 }
 
-std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map, const cv::Point& new_orig){
-  std::vector<ObjectMap> complete_obj_map;
-  for(int o=0; o<obj_map.size(); o++){
-    cv::Mat_<float> obj_from_room_map = cv::Mat_<float>(complete_room_type_map[o].rows, complete_room_type_map[o].cols, 0.f);
+std::vector<cv::Mat_<float>> HierarchyMapper::getRoomBasedObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map,
+                                                                 const cv::Point& new_orig, const cv::Size& new_size, int num_obj_types)
+{
+  std::vector<cv::Mat_<float> > obj_from_room_maps;
+  for(int o=0; o<num_obj_types; o++){
+    obj_from_room_maps.push_back(cv::Mat_<float>(complete_room_type_map[o].rows, complete_room_type_map[o].cols, 0.f));
     cv::Mat_<float> inv = cv::Mat_<float>(complete_room_type_map[o].rows, complete_room_type_map[o].cols, 0.f);
     for(int r = 0; r < complete_room_type_map.size(); r++){
       float or_prob = RoomMapper::getObjProbGivenRoom(o,r);
       float o_prob = RoomMapper::getObjProbGivenRoomObjPrior(o);
-      obj_from_room_map += complete_room_type_map[r] * or_prob / o_prob;
+      obj_from_room_maps.back() += complete_room_type_map[r] * or_prob / o_prob;
       inv += complete_room_type_map[r] * (1.0 - or_prob) / (1.0-o_prob);
     }
-    cv::divide(obj_from_room_map, obj_from_room_map + inv, obj_from_room_map);
+    cv::divide(obj_from_room_maps.back(), obj_from_room_maps.back() + inv, obj_from_room_maps.back());
     int k_size = int(CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA*3)*2+1;
-    cv::GaussianBlur(obj_from_room_map, obj_from_room_map, cv::Size(k_size,k_size), CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, cv::BORDER_REPLICATE);
-    obj_from_room_map = obj_from_room_map(cv::Rect(new_orig.x, new_orig.y, obj_map[0].getWidth(), obj_map[0].getHeight()));
+    cv::GaussianBlur(obj_from_room_maps.back(), obj_from_room_maps.back(), cv::Size(k_size,k_size), CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA, cv::BORDER_REPLICATE);
+    obj_from_room_maps.back() = obj_from_room_maps.back()(cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
+  }
 
-    complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, obj_from_room_map));
+  return obj_from_room_maps;
+}
+
+std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::Mat_<float>>& room_base_obj_maps, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map)
+{
+  std::vector<ObjectMap> complete_obj_map;
+  for(int o=0; o<obj_map.size(); o++){
+    complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, room_base_obj_maps[o]));
   }
   return complete_obj_map;
 }
@@ -735,7 +745,9 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
   std::vector<float> complete_room_type_probs = getRoomTypeProbs(complete_room_type_map, room_type_maps[req.room_id][0].getSeenMap(), room_type_maps[req.room_id][0].getOrigin(),
                                                                  grid_maps[req.room_id], doors[req.room_id], room_type_maps[req.room_id][0].getResolution(), room_type_maps[req.room_id][0].getBaseSize());
 
-  std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(complete_room_type_map, obj_maps[req.room_id], occ_map, room_type_maps[req.room_id][0].getOrigin() - obj_maps[req.room_id][0].getOrigin());
+  std::vector<cv::Mat_<float>> room_base_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[req.room_id][0].getOrigin() - obj_maps[req.room_id][0].getOrigin(),
+                                                                      cv::Size(obj_maps[req.room_id][0].getWidth(), obj_maps[req.room_id][0].getHeight()), obj_maps[req.room_id].size());
+  std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_base_obj_map, obj_maps[req.room_id], occ_map);
 
   if(req.id < 0){
     for(int i=0; i<complete_obj_map.size(); i++){
@@ -806,7 +818,9 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<float> complete_room_type_probs = getRoomTypeProbs(complete_room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
                                                                    grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
 
-    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(complete_room_type_map, obj_maps[i], occ_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin());
+    std::vector<cv::Mat_<float>> room_based_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin(),
+                                                                        cv::Size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight()), obj_maps[i].size());
+    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps[i], occ_map);
     std::vector<float> complete_obj_probs = getCompleteObjProbs(complete_obj_map, complete_room_type_probs, occ_map);
 
 
@@ -825,7 +839,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<cv::Mat_<float>> single_view_prob_map = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
                                                                              complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), SINGLE_VIEW_OBJ_KERNEL_SIZE);
 
-    if(PUBLISH_DEBUG_IMAGES && i==current_mapper_){
+    if(PUBLISH_DEBUG_IMAGES && req.debug_room == i){
       std::vector<cv::Mat_<float>> debug_maps = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
                                                                                complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 1);
       prob_map_view::ProbMapMsg msg;
@@ -859,6 +873,16 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
         msg.images[j].cols = obj_prob_2d_area[j].cols;
         msg.images[j].type = obj_prob_2d_area[j].type();
         msg.images[j].data.assign(obj_prob_2d_area[j].datastart,obj_prob_2d_area[j].dataend);
+      }
+      sdf_prob_map_view_pub_.publish(msg);
+
+      msg.img_are_log = 4;
+      msg.images.resize(msg.names.size());
+      for(int j=0; j<msg.images.size(); j++){
+        msg.images[j].rows = room_based_obj_map[j].rows;
+        msg.images[j].cols = room_based_obj_map[j].cols;
+        msg.images[j].type = room_based_obj_map[j].type();
+        msg.images[j].data.assign(room_based_obj_map[j].datastart,room_based_obj_map[j].dataend);
       }
       sdf_prob_map_view_pub_.publish(msg);
 

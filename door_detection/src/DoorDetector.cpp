@@ -280,10 +280,10 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   cv::line(tmp, pointToPixel(pcl::PointXYZ(0,-1,0)), pointToPixel(pcl::PointXYZ(0,1,0)), cv::Scalar(100,100,100));
 #endif
 
-  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
-  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
-  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
-  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
+  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
 
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(occupancy, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);

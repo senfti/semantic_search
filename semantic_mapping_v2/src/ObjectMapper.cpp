@@ -119,12 +119,12 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
 
 ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room){
   *this = object_map;
-  cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
+  //cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
   for(int z=0; z<getZSteps(); z++){
     prob_maps_[z] = prob_maps_[z].mul(occ_map.prob_maps_[z]);
     cv::Mat_<float> tmp = 1.f - prob_maps_[z];
-    prob_maps_[z] = prob_maps_[z].mul(obj_from_room_new);
-    tmp = tmp.mul(1.f-obj_from_room_new);
+    prob_maps_[z] = prob_maps_[z].mul(obj_from_room);
+    tmp = tmp.mul(1.f-obj_from_room);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
     cv::threshold(prob_maps_[z], prob_maps_[z], ObjectMapper::OBJ_MAX_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
   }

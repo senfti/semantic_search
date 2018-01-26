@@ -1,3 +1,4 @@
+int16 debug_room
 ---
 RoomMsg[] rooms
 int16 curr_room
