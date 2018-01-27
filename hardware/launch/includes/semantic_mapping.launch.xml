@@ -7,7 +7,7 @@
     <param name="gmapping/base_frame" value="$(arg base_frame)"/>
     <param name="gmapping/odom_frame" value="$(arg odom_frame)"/>
     <param name="gmapping/map_update_interval" value="3.0"/>
-    <param name="gmapping/maxUrange" value="3.5"/>
+    <param name="gmapping/maxUrange" value="3.8"/>
     <param name="gmapping/maxRange" value="4.5"/>
     <param name="gmapping/sigma" value="0.05"/>
     <param name="gmapping/kernelSize" value="1"/>

@@ -100,7 +100,7 @@ void VisionApp::nnThreadRun(){
   ros::Rate rate(100);
   while(ros::ok() && run_){
     std::unique_lock<std::mutex> lock(img_mutex_);
-    if(curr_img_.rows > 0){
+    if(curr_img_.rows > 0 && point_cloud_){
       cv::Mat img;
       curr_img_.copyTo(img);
       curr_img_ = cv::Mat();
