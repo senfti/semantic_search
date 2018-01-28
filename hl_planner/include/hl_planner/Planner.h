@@ -18,9 +18,9 @@ class Planner{
     int HIERARCHY_MAX_TRIES = 5;
 
   private:
-    ros::NodeHandle nh_;
-    actionlib::SimpleActionClient<execution::ExecuteAction> execute_action_client_;
-    ros::ServiceClient hierarchy_service_client_;
+//    ros::NodeHandle nh_;
+//    actionlib::SimpleActionClient<execution::ExecuteAction> execute_action_client_;
+//    ros::ServiceClient hierarchy_service_client_;
 
     State state_;
     std::vector<int> explored_rooms_;

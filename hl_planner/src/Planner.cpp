@@ -10,21 +10,21 @@
 #include <hl_planner/State.h>
 
 Planner::Planner()
-  : execute_action_client_(nh_, "execute_action", false), hierarchy_service_client_(nh_.serviceClient<semantic_mapping_v2::HierarchySrv>("hierarchy_srv"))
+//: execute_action_client_(nh_, "execute_action", false), hierarchy_service_client_(nh_.serviceClient<semantic_mapping_v2::HierarchySrv>("hierarchy_srv"))
 {
-  ros::NodeHandle("~").param("UNEXPLORED_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE);
-  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
-  ros::NodeHandle("~").param("UNEXPLORED_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_PROB_ESTIMATE);
-  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
-
-  while(!execute_action_client_.waitForServer(ros::Duration(1.0))){
-    ROS_WARN("EXECUTE ACTION SERVER NOT UP");
-    ros::spinOnce();
-  }
-  while(!hierarchy_service_client_.waitForExistence(ros::Duration(1.0))){
-    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
-    ros::spinOnce();
-  }
+//  ros::NodeHandle("~").param("UNEXPLORED_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE);
+//  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
+//  ros::NodeHandle("~").param("UNEXPLORED_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_PROB_ESTIMATE);
+//  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
+//
+//  while(!execute_action_client_.waitForServer(ros::Duration(1.0))){
+//    ROS_WARN("EXECUTE ACTION SERVER NOT UP");
+//    ros::spinOnce();
+//  }
+//  while(!hierarchy_service_client_.waitForExistence(ros::Duration(1.0))){
+//    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
+//    ros::spinOnce();
+//  }
 }
 
 
@@ -36,11 +36,11 @@ actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
   goal.target_room = action.target_room_;
   ROS_ERROR("SEND GOAL %d %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target_obj, goal.target_room, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
   //std::cin.get();
-  execute_action_client_.sendGoal(goal);
-  while(!execute_action_client_.waitForResult(ros::Duration(1.0)))
-    ros::spinOnce();
-  std::cout << "GOAL EXECUTED, state = " << execute_action_client_.getState().toString() << std::endl;
-  return execute_action_client_.getState();
+//  execute_action_client_.sendGoal(goal);
+//  while(!execute_action_client_.waitForResult(ros::Duration(1.0)))
+//    ros::spinOnce();
+//  std::cout << "GOAL EXECUTED, state = " << execute_action_client_.getState().toString() << std::endl;
+//  return execute_action_client_.getState();
 }
 
 
@@ -49,9 +49,9 @@ semantic_mapping_v2::HierarchySrvResponse Planner::getHierarchy(int max_tries){
     semantic_mapping_v2::HierarchySrvRequest req;
     req.debug_room = -1;
     semantic_mapping_v2::HierarchySrvResponse res;
-    if(hierarchy_service_client_.call(req, res)){
-      return res;
-    }
+//    if(hierarchy_service_client_.call(req, res)){
+//      return res;
+//    }
     ROS_WARN("%d. TRY SEMANTIC MAP CALL FAILED", i);
   }
   ROS_ERROR("SEMANTIC MAP CALL FAILED, ABORTING");
@@ -153,7 +153,7 @@ Plan Planner::generateFullPlan(const SearchPlan &search_plan, State state, const
 
 
 Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
-  ros::Time start = ros::Time::now();
+  //ros::Time start = ros::Time::now();
   SearchPlan greedy_plan = greedyPlan(graph, state);
   std::cout << "greedy: " << greedy_plan.getPlanString() << std::endl;
 
@@ -164,7 +164,7 @@ Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
   std::cout << "best_plan: " << best_plan.getPlanString() << std::endl;
 
 
-  std::cout << "Complete best plan in " << (ros::Time::now()-start).toSec() << ": " << best_plan.getPlanString() << std::endl;
+  //std::cout << "Complete best plan in " << (ros::Time::now()-start).toSec() << ": " << best_plan.getPlanString() << std::endl;
 
   return generateFullPlan(best_plan, state, graph);
 }
@@ -203,16 +203,16 @@ void Planner::run(int obj){
       }
     }
     else{
-      auto result = execute_action_client_.getResult();
-      if(result->result_number == 0){
-        state_.changeState(plan.actions_.front());
-        if(plan.actions_.front().type_ == Action::EXPLORE)
-          explored_rooms_.push_back(plan.actions_.front().target_room_);
-      }
-      else if(result->result_number == 100){
-        std::cout << "OBJECT FOUND" << std::endl;
-        return;
-      }
+//      auto result = execute_action_client_.getResult();
+//      if(result->result_number == 0){
+//        state_.changeState(plan.actions_.front());
+//        if(plan.actions_.front().type_ == Action::EXPLORE)
+//          explored_rooms_.push_back(plan.actions_.front().target_room_);
+//      }
+//      else if(result->result_number == 100){
+//        std::cout << "OBJECT FOUND" << std::endl;
+//        return;
+//      }
     }
   }
 }
@@ -268,10 +268,10 @@ void Planner::exploreAll(){
       std::cout << "EXECUTION FAILED, TRYING FURTHER" << std::endl;
     }
     else{
-      auto result = execute_action_client_.getResult();
-      if(result->result_number == 0){
-        state_.changeState(a);
-      }
+//      auto result = execute_action_client_.getResult();
+//      if(result->result_number == 0){
+//        state_.changeState(a);
+//      }
     }
   }
 }

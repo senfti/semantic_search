@@ -32,6 +32,7 @@ class HierarchyMap{
     std::vector<float> quick_search_prob_;
 
     HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res, int obj);
+    float calcExpectedSearchTime(float quick_search_time, float search_time, float quick_search_prob, float search_prob);
 
     float getFullSearchTime(int curr_idx, int idx) const { return search_times_[idx] + travel_times_[curr_idx][idx]; }
     float getExpectedSearchTime(int curr_idx, int idx) const { return expected_search_times_[idx] + travel_times_[curr_idx][idx]; }
