@@ -1,0 +1,21 @@
+\chapter{Concept}
+
+\section{Overview}
+
+At the beginning the basic hardware setup was decided to be based on a Turtlebot 2 with an rigidly mounted additional RGBD-camera. This reduces the complexity of the problem as only movement of the whole robot in two dimensional space is possible with this setup. Assuming not too cluttered environments this setup should be sufficient for most search tasks.
+
+Using visual information for object detection was an obvious choice. As the usage of commonsense knowledge was the main intention behind this work a general out of the box solution was preferred over a specialized handcrafted solution. Computer vision challenges for object detection and other computer vision tasks resulted in various available solutions for these problems to choose from. As object detection systems using color images as input and bounding boxes of detected objects as output were the only systems with a sufficient number of detectable object classes and reasonable accuracy while not being too resource-demanding for the used hardware such a system was chosen. This left the problem of getting from the bounding boxes in the image to a three dimensional representation needed for the search. The depth information of the RGBD-camera was used to project the detections into 3D space and an approach similar to occupancy grid mapping was used to merge the detections of different images into a three dimensional object probability map.
+
+To make the search more intelligent the concept of rooms was implemented. Like humans  
+
+In the early phase we had to make some fundamental decisions regarding the hardware and the basic concept. 
+Firstly a Turtlebot was chosen as the basic robot setup. To improve the navigation capabilities we replaced the Microsoft Kinect of the standard Turtlebot setup with a far more accurate laser scanner. Visual object detection was the obvious choice, therefore a camera was mounted. We choose an ASUS XTion RGBD-camera because the additional depth information could be used for 3D mapping and obstacle detection. \newline
+Another fundamental decision was to heavily use the fact that indoor environments can be segmented into rooms. This makes the use of a hybrid map to represent the environment very appealing. Every room is a node in a topological map and contains, beside other information, a metric map. The doorways between the rooms are the edges in the topological map. This representation is also used in the planning process, which is split into a high-level planning and a low-level planning. The high-level planning is used to select the next room based on the topological map and the low-level planning has then only to consider the current room. \newline
+As the focus was on the usage of commonsense knowledge the use of a universal object detection instead of a specialized one was intended. This led to the decision to use a convolutional nerual  network for object detection. As the accuracy of those CNNs is still not so great and the number of possible objects in a room is quiet high object tracking is most likely infeasible. Therefore the use of an approach similar to occupancy grid mapping to generate a probability distribution for objects of a specific class was decided. \newline
+The use of commonsense knowledge regarding the correlation between room type and object probability can boost the search efficiency. As a room might have different part, e.g. a kitchenette in a living room, a grid representing the probability distribution of a cell being of a certain room is generated and used to improve the probability distribution of object occurances.
+
+Fig blabla shows the resulting structure or the hybrid map.  
+
+\subsection{Hardware}
+
+The robot used in this work is a modified version of the Turtlebot 2. 

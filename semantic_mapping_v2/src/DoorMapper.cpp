@@ -30,7 +30,7 @@ bool Door::isBehindDoor(float x, float y) const{
 double Door::getIsDoorConfidence(const tf::Transform &pose) const{
   double dist = (pose_.getOrigin()-pose.getOrigin()).length();
   double angle = pose_.getRotation().angleShortestPath(pose.getRotation());
-  return (MAX_SAME_DOOR_DIST-dist)/MAX_SAME_DOOR_DIST * (MAX_SAME_DOOR_ANGLE-angle/MAX_SAME_DOOR_ANGLE);
+  return (MAX_SAME_DOOR_DIST-dist)/MAX_SAME_DOOR_DIST * std::max(MAX_SAME_DOOR_ANGLE-angle/MAX_SAME_DOOR_ANGLE, 0.001);
 }
 
 bool Door::didDriveThrough(const tf::Transform &robot_pose) const{

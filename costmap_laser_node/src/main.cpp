@@ -6,6 +6,8 @@
 #include "tf2_ros/message_filter.h"
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <tf/transform_datatypes.h>
+#include <geometry_msgs/PoseArray.h>
+#include <std_msgs/Int8.h>
 
 ros::Publisher filtered_pub;
 float min_angle = -1.95, max_angle = 1.95, min_z=0.1, max_z=1.0, max_range=4.0;
@@ -18,6 +20,16 @@ tf2_ros::Buffer* tf2_buffer;
 
 ros::Time scan_time;
 sensor_msgs::LaserScan filtered;
+geometry_msgs::PoseArray door_poses;
+std_msgs::Int8 action;
+
+void doorCb(const geometry_msgs::PoseArrayConstPtr& msg){
+  door_poses = *msg;
+}
+
+void actionCb(const std_msgs::Int8ConstPtr& msg){
+  action = *msg;
+}
 
 void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
   filtered = *msg;
@@ -57,17 +69,21 @@ void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg){
   tf2_buffer->transform(*msg, cloud, "base_laser_link", ros::Duration(0.2));
   geometry_msgs::TransformStamped scan_trans;
   geometry_msgs::TransformStamped cloud_trans;
+  geometry_msgs::TransformStamped door_trans;
   try{
     scan_trans = tf2_buffer->lookupTransform("base_laser_link", "odom", scan_time, ros::Duration(0.2));
     cloud_trans = tf2_buffer->lookupTransform("base_laser_link", "odom", msg->header.stamp, ros::Duration(0.2));
+    door_trans = tf2_buffer->lookupTransform("base_laser_link", "map", scan_time, ros::Duration(0.2));
   }
   catch(tf2::TransformException &ex) {
     ROS_WARN("Could NOT transform %s", ex.what());
     return;
   }
-  tf::Transform scan_tf, cloud_tf;
+  tf::Transform scan_tf, cloud_tf, door_tf;
   tf::transformMsgToTF(scan_trans.transform, scan_tf);
   tf::transformMsgToTF(cloud_trans.transform, cloud_tf);
+  tf::transformMsgToTF(door_trans.transform, door_tf);
+
   tf::Transform diff = scan_tf.inverse()*cloud_tf;
   double angle = tf::getYaw(diff.getRotation());
 
@@ -76,13 +92,20 @@ void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg){
       continue;
     }
     int i = (atan2(*iter_y, *iter_x)-true_angle_min-angle)/true_increment;
-    std::cout << angle << std::endl;
     if(i>=0 && i<cloud_ranges.size()){
       cloud_ranges[i] = std::min(cloud_ranges[i], float(hypot(*iter_x, *iter_y))+0.05f);
     }
   }
   for(int i=0; i<cloud_ranges.size(); i++){
     filtered.ranges[i] = std::min(filtered.ranges[i], cloud_ranges[i]);
+  }
+  if(action.data != 0){
+    for(int i=0; i<door_poses.poses.size(); i++){
+      tf::Vector3 pos = door_tf*tf::Vector3(door_poses.poses[i].position.x, door_poses.poses[i].position.y, door_poses.poses[i].position.z);
+      int idx = (atan2(pos.y(), pos.x())-true_angle_min-angle)/true_increment;
+      float dist = std::sqrt(pos.x()*pos.x()+pos.y()*pos.y());
+      filtered.ranges[idx] = std::min(filtered.ranges[idx], dist+0.2f);
+    }
   }
   filtered_pub.publish(filtered);
 }
@@ -106,6 +129,8 @@ int main(int argc, char** argv){
   std::cout << "max_range " << max_range << std::endl;
   ros::Subscriber scan_sub = nh.subscribe("/scan", 2, scanCb);
   ros::Subscriber cloud_sub = nh.subscribe("/camera/depth_registered/points", 1, cloudCb);
+  ros::Subscriber door_pose_sub_ = nh.subscribe("/mapper_door_poses", 1, doorCb);
+  ros::Subscriber action_sub_ = nh.subscribe("current_action", 1, &actionCb);
   filtered_pub = nh.advertise<sensor_msgs::LaserScan>("scan_costmap", 50);
 
   while(!tf2_buffer->canTransform("base_laser_link", "camera_rgb_optical_frame", ros::Time(0), ros::Duration(1.0)))

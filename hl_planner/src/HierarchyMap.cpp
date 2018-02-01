@@ -65,6 +65,8 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
   not_visited_.resize(response.rooms.size(), false);
   quick_search_poses_.resize(response.rooms.size());
 
+  std::cout << res.curr_room << " " << res.rooms.size() << " " << res.links.size() << std::endl;
+
   for(int i=0; i<response.rooms.size(); i++){
     search_times_[i] = response.rooms[i].search_time;
     quick_search_times_[i] = response.rooms[i].single_view_search_time;
@@ -173,13 +175,13 @@ float func(float Tq, float Tf, float Pf, float b){
   return Tqb*Pf/(Tqb*Pf-Tfb*Pf+Tfb);
 }
 
-float fitBeta(float quick_search_time, float search_time, float quick_search_prob, float search_prob){
+double fitBeta(float quick_search_time, float search_time, float quick_search_prob, float search_prob){
   double v1;
   double v2;
   double b1 = 0.000001;
   double b2 = 0.1;
   v1 = func(quick_search_time, search_time, search_prob, b1) - quick_search_prob;
-  while(true){
+  while(b2 < 999999.9){
     v2 = func(quick_search_time, search_time, search_prob, b2) - quick_search_prob;
     if(v1 * v2 <= 0.f)
       break;
@@ -189,7 +191,10 @@ float fitBeta(float quick_search_time, float search_time, float quick_search_pro
   }
   if(v2 == 0.0)
     return b2;
+  if(b2 >= 999999.9)
+    return -1.0;
   double v_tmp;
+  int count = 0;
   do{
     double tmp = b1 - (b2 - b1) / (v2 - v1) * v1;
     v_tmp = func(quick_search_time, search_time, search_prob, tmp) - quick_search_prob;
@@ -201,16 +206,21 @@ float fitBeta(float quick_search_time, float search_time, float quick_search_pro
       b1 = tmp;
       v1 = v_tmp;
     }
-  } while(std::abs(v_tmp) > 0.0000001f && std::abs(b1 - b2) > 0.0000000000001f);
+  } while(std::abs(v_tmp) > 0.0000001f && std::abs(b1 - b2) > 0.0000000000001f && count < 100000);
+  if(count >= 100000)
+    return -1.0;
   return (std::abs(v2)/(std::abs(v2)+std::abs(v1)))*b1 + (std::abs(v1)/(std::abs(v1)+std::abs(v2)))*b2;
 }
 
 
 float HierarchyMap::calcExpectedSearchTime(float quick_search_time, float search_time, float quick_search_prob, float search_prob){
   double beta = fitBeta(quick_search_time, search_time, quick_search_prob, search_prob);
+  double expected_search_time = 0.0;
+  if(beta < 0.0){
+    return search_prob*search_time/2 + (1-search_prob)*search_time;
+  }
   double alpha_pow_beta = (1.0-search_prob)/search_prob*std::pow(search_time,beta);
 
-  double expected_search_time = 0.0;
   double step = 0.01;
   for(double t=step/2; t<search_time; t+=step){
     double gamma = beta*std::pow((t), beta-1.0)/alpha_pow_beta/std::pow(1.0+std::pow(t,beta)/alpha_pow_beta, 2);

@@ -147,6 +147,21 @@ Plan Planner::generateFullPlan(const SearchPlan &search_plan, State state, const
                                    state.current_room_, graph.quick_search_poses_[state.current_room_]));
     state.changeState(*plan.actions_.rbegin());
   }
+  if(plan.actions_.front().type_ == Action::MOVE_TO && graph.not_visited_[plan.actions_.front().target_room_]){
+    int first_unvisited = 0;
+    for(first_unvisited=0; first_unvisited<graph.not_visited_.size(); first_unvisited++)
+      if(graph.not_visited_[first_unvisited])
+        break;
+    if(first_unvisited<graph.not_visited_.size() && first_unvisited != plan.actions_.front().target_room_){
+      std::cout << "swapped " << plan.actions_.front().target_room_ << " with " << first_unvisited << std::endl;
+      for(auto& a : plan.actions_){
+        if(a.target_room_ == first_unvisited)
+          a.target_room_ = plan.actions_.front().target_room_;
+        else if(a.target_room_ == plan.actions_.front().target_room_)
+          a.target_room_ = first_unvisited;
+      }
+    }
+  }
   std::cout << plan.getPlanString() << std::endl;
   return plan;
 }

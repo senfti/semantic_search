@@ -1,5 +1,5 @@
  <launch>
-  <node pkg="vision" type="vision" name="vision" launch-prefix="xterm -hold -e">
+  <node pkg="vision" type="vision" name="vision">
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel"/>
     <param name="vision/PLACE_MEAN_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat"/>

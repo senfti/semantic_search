@@ -1,0 +1,37 @@
+\chapter{Problem Formulation}
+
+This thesis describes an autonomous robot executing an active object search task. Active object search is the problem of finding an object in an large scale, unknown, $3$D indoor environment $\psi$. (TODO: verweis auf active obj search phd) 
+
+In this thesis an object is defined as $O := (x,y,z,o)$, where $x$, $y$ and $z$ are the position of the object. $o$ is the object class or object type with $o \in C_{O}$ and $C_{O}$ being the set of detectable object classes. 
+
+Additionally to the search space $\psi$ the probability distribution of an object of the target object class in the search space $P_{\psi}(o)$ is important for the search strategy. 
+
+A search task is searching for an object of a given target object class $o \in C_{O}$ in the current indoor environment given the prior knowledge of $\psi$ and $P_{\psi}(o)$ until it is found or another termination criteria (e.g. the whole environment was searched) is met. This is different to other research in this area, where object instances were searched. In this thesis the prior knowledge about $\psi$ and $P_{\psi}(o)$ is zero or incomplete. \newline
+The robot can execute two dimensional motion actions to goal positions $g := (x,y,\theta)$ in the search space $\psi$ and is running sensing actions periodically, where $S $ is the set of all acquired sensor information. The system should execute the search task on the path $p := (g_1, g_2, ..., g_{end})$ which minimizes the total cost. The main cost function used in this thesis is the expected search time $E(t) = \int_{T_{0}}^{\infty} t \cdot f_{o}(t) dt$ with $f_{o}(t)$ being the probability density function of finding the object $o$ over time $t$ and $T_{0}$ being the search start time.
+
+The probability density function $f_{o}(t)$ is based on the path $p$ and the probability distribution $P_{\psi}(o)$. $P_{\psi}(o)$ is estimated based on the 
+
+%The robot is equipped with commonsense knowledge about indoor environments. The most important concept the %robot is aware of is a room. The concept of rooms leads to a high-level representation of indoor environment as %a topological map with rooms as nodes and doorways as edges defined as $H := (R,D)$. \newline
+%R is a set of rooms and defined with $R := \{r_{1}, r_{2}, ..., r_{K}\}$ with K being the number of rooms. %Further holds $E = r_{1} \cup r_{2} \cup ... \cup r_{K}$ and $r_{k} \cap r_{l} = \emptyset$ $\forall k \in K, l %\in K, k \neq l$. \newline
+%D is a set of doorways and every doorway is connecting two rooms and is described with $d := (r_{1},r_{2})$, %where $r_{1}$ and $r_{2}$ specify the connected rooms.
+
+%Rooms can be assigned to one or a small number of categories and the correlation between room category and %object probability is high. Therefore a reasonable approach is to split the problem into a high-level part, %operating on the topological map, and a low-level part, the search within a room.
+
+%\section{High-level search}
+
+%For the high-level search a room is defined as $r_k := (P(o),p_o(t),T_M)$. Where $P(o)$ is the probability of %an object of class $o$ being in the room, $p_o(t)$ is the probability distribution of ending the search at time %$t$ and $T_M := \bigcup\limits_{i=1}^{L} \bigcup\limits_{j=1}^{L} T_{M_{ij}}$ is the matrix of movement times %between 
+
+%As the prior knowledge is incomplete the robot needs additional information. Commonsense knowledge like the concept of a room and room-type object correlations are provided to the robot to enable more intelligent and therefore more efficient search strategies.
+
+%The robot can execute two dimensional movement actions to a goal pose $g := (x,y,\theta)$ in the search space $\phi$ and execute sensing actions at a nearly real-time rate.
+
+%The application of commonsense knowledge enables a more intelligent and efficient search planning. One important %concept is the concept a room.  
+%Indoor environment $\psi$ is a bounded three dimensional space which can be represented as a graph with rooms as %nodes and doorways as edges defined as $H := (R,D)$. 
+
+%R is a set of rooms and defined with $R := \{r_{1}, r_{2}, ..., r_{K}\}$ with K being the number of rooms. %Further holds $E = r_{1} \cup r_{2} \cup ... \cup r_{K}$ and $r_{k} \cap r_{l} = \emptyset$ $\forall k \in K, l %\in K, k \neq l$. \newline
+%D is a set of doorways and every doorway is connecting two rooms and is described with $d := %(r_{1},r_{2},P_{1},P_{2})$. Where $r_{1}$ and $r_{2}$ specify the connected rooms and $P_{1}$ and $P_{2}$ are %the poses of the doorway in the corresponding room coordinate frames with $P := (x,y,\theta)$.
+
+%To execute a search task efficiently a more detailed representation of the indoor environment is needed. The %robot has to be able to generate accessible view poses and also has to be able to find the optimal accessible %view pose. \newline
+%Therefore a room $r_{k}$ is described with $r_{k} := (map3D_{k}, mapO_{k})$. $map3D_{k}$ is a three dimensional %occupancy grid map of the room enabling navigation. $mapO_{k}$ is a set of three dimensional grid maps $mapO_{k} %:= \{mapO_{k}^1,...,mapO_{k}^{C_{O}}\}$, where $mapO_{k}^o$ specifies for every grid cell the probability of an %object of class $o$ being in this cell. 
+
+%The main cost function used in this thesis is the expected search time defined as $E(t) = \int_{T_{0}}^{\infty} %t \cdot p(t) dt$ with $p(t)$ being the probability density function of finding the object over time and $T_{0}$ %being the search start time.

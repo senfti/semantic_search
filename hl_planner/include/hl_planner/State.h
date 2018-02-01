@@ -122,6 +122,8 @@ class State{
       for(const auto& s : state.not_explored_)
         os << s << " ";
       os << std::endl << std::endl;
+
+      return os;
     }
 };
 
