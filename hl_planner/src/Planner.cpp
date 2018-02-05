@@ -223,6 +223,8 @@ void Planner::run(int obj){
         state_.changeState(plan.actions_.front());
         if(plan.actions_.front().type_ == Action::EXPLORE)
           explored_rooms_.push_back(plan.actions_.front().target_room_);
+        if(plan.actions_.front().type_ == Action::MOVE_TO && graph_map.not_visited_[plan.actions_.front().target_room_])
+          sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
       }
       else if(result->result_number == 100){
         std::cout << "OBJECT FOUND" << std::endl;
@@ -285,6 +287,8 @@ void Planner::exploreAll(){
     else{
       auto result = execute_action_client_.getResult();
       if(result->result_number == 0){
+        if(a.type_ == Action::MOVE_TO && graph_map.not_visited_[a.target_room_])
+          sendGoal(Action(Action::ROTATE, -1, hierarchy.curr_room));
         state_.changeState(a);
       }
     }
