@@ -214,7 +214,53 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id, float thresh) cons
           min = std::min(min, getProb(x,y,z));
           max = std::max(max, getProb(x,y,z));
           if(getProb(x,y,z) >= thresh){
-            cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::sqrt(getProb(x,y,z))*150, 255, 255));
+            cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::max(std::log10(getProb(x,y,z)) + 4.f, 0.f)*150/4.f, 255, 255));
+            cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
+            std_msgs::ColorRGBA c;
+            c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
+            markers.markers[0].colors.push_back(c);
+            geometry_msgs::Point p;
+            p.x = getXWorld(x);  p.y = getYWorld(y);  p.z = getZWorld(z);
+            markers.markers[0].points.push_back(p);
+          }
+        }
+      }
+    }
+  }
+  //std::cout << "id: " << id << " MIN: " << min << " MAX: " << max << std::endl;
+
+  return markers;
+}
+
+
+visualization_msgs::MarkerArray ObjectMap::getProbMsg(OctoMapper& occ, int id, float thresh) const{
+  static int seq=0;
+  visualization_msgs::Marker def;
+
+  def.header.frame_id = "map";
+  def.header.stamp = ros::Time::now();
+  def.ns = "objects";
+  def.id = id;
+  def.type = visualization_msgs::Marker::CUBE_LIST;
+  def.scale.x = 1/(2*resolution_);
+  def.scale.y = def.scale.x;
+  def.scale.z = def.scale.x;
+  def.action = visualization_msgs::Marker::ADD;
+  def.pose.orientation.x = def.pose.orientation.y = def.pose.orientation.z = 0.0;
+  def.pose.orientation.w = 1.0;
+
+  visualization_msgs::MarkerArray markers;
+  markers.markers.resize(1);
+  markers.markers[0] = def;
+  float min=1.f, max=0.f;
+  for(int x=0; x<getWidth(); x++){
+    for(int y=0; y<getHeight(); y++){
+      for(int z=0; z<getZSteps(); z++){
+        if(count_maps_[z](y,x) > uchar(0)){
+          min = std::min(min, getProb(x,y,z));
+          max = std::max(max, getProb(x,y,z));
+          if(getProb(x,y,z) >= thresh){
+            cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::max(std::log10(getProb(x,y,z)*occ.getOccupancy(getXWorld(x), getYWorld(y), getZWorld(z))) + 4.f, 0.f)*150/4.f, 255, 255));
             cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
             std_msgs::ColorRGBA c;
             c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;

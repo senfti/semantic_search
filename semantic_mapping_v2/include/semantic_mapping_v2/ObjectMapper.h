@@ -72,6 +72,7 @@ class ObjectMap{
     cv::Point getOrigin() const { return origin_; }
 
     visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = 0.f) const;
+    visualization_msgs::MarkerArray getProbMsg(OctoMapper& occ, int id=0, float thresh = 0.f) const;
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size, bool multiply_occ = true) const;
     float getObjectProb(float prior, float expected_room_size) const;
@@ -140,6 +141,10 @@ class ObjectMapper{
     visualization_msgs::MarkerArray getProbMsg(int id) {
       boost::lock_guard<boost::mutex> lock(maps_mutex_);
       return (id < maps_.size() ? maps_[id].getProbMsg(id) : visualization_msgs::MarkerArray());
+    }
+    visualization_msgs::MarkerArray getProbMsg(OctoMapper& occ, int id) {
+      boost::lock_guard<boost::mutex> lock(maps_mutex_);
+      return (id < maps_.size() ? maps_[id].getProbMsg(occ, id) : visualization_msgs::MarkerArray());
     }
 
     std::vector<float> getObjectProbs(OctoMapper& octo_mapper, const std::vector<Door>& doors, std::vector<size_t>& order);

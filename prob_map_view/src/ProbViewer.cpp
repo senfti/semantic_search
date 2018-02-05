@@ -38,8 +38,9 @@ void ProbViewer::onMouseMove( wxMouseEvent& event ){
   }
 }
 
-void ProbViewer::updateImages(const std::vector<cv::Mat_<double>>& prob_images){
+void ProbViewer::updateImages(const std::vector<cv::Mat_<double>>& prob_images, const cv::Mat_<uchar>& occ){
   prob_images_ = prob_images;
+  occ_image_ = occ;
   setCurrent();
 }
 
@@ -74,8 +75,10 @@ void ProbViewer::setCurrent(){
     else
       curr_img_.convertTo(out, CV_8U, 150.f);
 
-    cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255));
-    cv::merge(std::vector<cv::Mat>({out, tmp, tmp}), out);
+    cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255)), tmp2;
+    cv::flip(occ_image_, tmp2, 0);
+    cv::resize(tmp2, tmp2, cv::Size(out.rows, out.cols), 0, 0, cv::INTER_NEAREST);
+    cv::merge(std::vector<cv::Mat>({out, tmp, tmp2}), out);
     cv::cvtColor(out, out, CV_HSV2RGB);
 
     image_panel_->setImage(out);

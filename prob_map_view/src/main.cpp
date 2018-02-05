@@ -44,8 +44,10 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
+  cv::Mat_<uchar> occ;
+  cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
 
-  place_viewer_->updateImages(imgs);
+  place_viewer_->updateImages(imgs, occ);
 }
 
 void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
@@ -58,8 +60,10 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
+  cv::Mat_<uchar> occ;
+  cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
 
-  obj_viewer_->updateImages(imgs);
+  obj_viewer_->updateImages(imgs, occ);
 }
 
 void ProbViewApp::baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
@@ -73,8 +77,10 @@ void ProbViewApp::baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
+  cv::Mat_<uchar> occ;
+  cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
 
-  base_obj_viewer_->updateImages(imgs);
+  base_obj_viewer_->updateImages(imgs, occ);
 }
 
 void ProbViewApp::baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
@@ -88,8 +94,10 @@ void ProbViewApp::baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
+  cv::Mat_<uchar> occ;
+  cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
 
-  base_room_viewer_->updateImages(imgs);
+  base_room_viewer_->updateImages(imgs, occ);
 }
 
 void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
@@ -105,7 +113,9 @@ void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
+  cv::Mat_<uchar> occ;
+  cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
 
-  sdf_viewer_[idx]->updateImages(imgs);
+  sdf_viewer_[idx]->updateImages(imgs, occ);
 }
 

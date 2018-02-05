@@ -551,7 +551,7 @@ void RoomMapper::setDoorRoom(int id, int other_room, int counterpart_id){
 
 visualization_msgs::MarkerArray RoomMapper::getObjectProbMsg(int id) {
   boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
-  visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(id);
+  visualization_msgs::MarkerArray res = obj_mappers_[getBestParticleIdx()]->getProbMsg(*octo_maps_[getBestParticleIdx()], id);
   if(res.markers.empty())
     return visualization_msgs::MarkerArray();
 

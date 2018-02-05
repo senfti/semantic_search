@@ -8,10 +8,11 @@
   </include>
 
   <node pkg="costmap_laser_node" type="costmap_laser_node" name="costmap_laser_node" args="-1.95 1.95 0.1 1.0 4.0" /> 
-<!--
+
   <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
     <arg name="scan_topic" value="scan_filtered" />
   </include>
+<!--
   <include file="$(find hardware)/launch/includes/door_detection.launch.xml" >
   </include> 
 
