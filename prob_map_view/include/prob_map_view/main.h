@@ -42,6 +42,10 @@ class ProbViewApp : public wxApp{
     void baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void sdfProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+
+    void saveAll();
 };
+
+extern ProbViewApp* prob_view_app;
 
 #endif //PROB_VIEW_MAIN_H

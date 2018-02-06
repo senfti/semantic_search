@@ -21,6 +21,7 @@ class ImagePanel;
 #include <wx/sizer.h>
 #include <wx/panel.h>
 #include <wx/stattext.h>
+#include <wx/button.h>
 #include <wx/frame.h>
 
 ///////////////////////////////////////////////////////////////////////////
@@ -45,10 +46,14 @@ class ProbViewer_B : public wxFrame
 		wxStaticText* current_prob_text_;
 		wxStaticText* m_staticText8;
 		wxStaticText* curr_log_text_;
+		wxButton* save_button_;
+		wxButton* exit_button_;
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void onCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onMouseMove( wxMouseEvent& event ) { event.Skip(); }
+		virtual void saveAll( wxCommandEvent& event ) { event.Skip(); }
+		virtual void exit( wxCommandEvent& event ) { event.Skip(); }
 		
 	
 	public:

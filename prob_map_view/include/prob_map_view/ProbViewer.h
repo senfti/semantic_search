@@ -9,6 +9,7 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <wx/choice.h>
+#include <ros/ros.h>
 
 class ProbViewer : public ProbViewer_B{
   protected:
@@ -25,9 +26,15 @@ class ProbViewer : public ProbViewer_B{
     virtual void onChoice( wxCommandEvent& event );
     virtual void onCheck( wxCommandEvent& event );
     virtual void onMouseMove( wxMouseEvent& event );
+    virtual void saveAll( wxCommandEvent& event );
+    virtual void exit( wxCommandEvent& event ){
+      ros::shutdown();
+    }
 
     void updateImages(const std::vector<cv::Mat_<double>>& prob_images, const cv::Mat_<uchar>& occ);
     void setCurrent();
+
+    void save(const std::string& folder);
 };
 
 #endif //SEMANTIC_MAPPING_PROBVIEWER_H

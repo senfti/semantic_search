@@ -31,7 +31,23 @@ int ProbViewApp::OnExit(){
 }
 
 void ProbViewApp::input(wxTimerEvent &event){
-  ros::spinOnce();
+  if(ros::ok())
+    ros::spinOnce();
+  else{
+    if(place_viewer_ != nullptr)
+      place_viewer_->Close();
+    if(obj_viewer_ != nullptr)
+      obj_viewer_->Close();
+    if(base_obj_viewer_ != nullptr)
+      base_obj_viewer_->Close();
+    if(base_room_viewer_ != nullptr)
+      base_room_viewer_->Close();
+    for(auto & v : sdf_viewer_){
+      if(v != nullptr)
+        v->Close();
+    }
+    wxExit();
+  }
 }
 
 void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
@@ -119,3 +135,19 @@ void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   sdf_viewer_[idx]->updateImages(imgs, occ);
 }
 
+void ProbViewApp::saveAll(){
+  std::string folder = "/tmp/" + std::to_string(ros::Time::now().sec) + std::to_string(ros::Time::now().nsec);
+  wxMkdir(folder);
+  if(place_viewer_ != nullptr)
+    place_viewer_->save(folder);
+  if(obj_viewer_ != nullptr)
+    obj_viewer_->save(folder);
+  if(base_obj_viewer_ != nullptr)
+    base_obj_viewer_->save(folder);
+  if(base_room_viewer_ != nullptr)
+    base_room_viewer_->save(folder);
+  for(auto & v : sdf_viewer_){
+    if(v != nullptr)
+      v->save(folder);
+  }
+}

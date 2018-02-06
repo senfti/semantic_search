@@ -43,6 +43,9 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxVERTICAL );
 	
+	wxBoxSizer* bSizer6;
+	bSizer6 = new wxBoxSizer( wxVERTICAL );
+	
 	wxGridSizer* gSizer1;
 	gSizer1 = new wxGridSizer( 0, 2, 0, 0 );
 	
@@ -80,7 +83,16 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 	gSizer1->Add( curr_log_text_, 0, wxALL, 5 );
 	
 	
-	bSizer5->Add( gSizer1, 0, wxEXPAND, 5 );
+	bSizer6->Add( gSizer1, 0, wxEXPAND, 5 );
+	
+	save_button_ = new wxButton( this, wxID_ANY, wxT("Save All"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer6->Add( save_button_, 0, wxALL, 5 );
+	
+	exit_button_ = new wxButton( this, wxID_ANY, wxT("Exit"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer6->Add( exit_button_, 0, wxALL, 5 );
+	
+	
+	bSizer5->Add( bSizer6, 1, wxEXPAND, 5 );
 	
 	
 	bSizer1->Add( bSizer5, 0, wxEXPAND, 5 );
@@ -96,6 +108,8 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 	log_checkbox_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	rescale_checkbox_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	image_panel_->Connect( wxEVT_MOTION, wxMouseEventHandler( ProbViewer_B::onMouseMove ), NULL, this );
+	save_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ProbViewer_B::saveAll ), NULL, this );
+	exit_button_->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ProbViewer_B::exit ), NULL, this );
 }
 
 ProbViewer_B::~ProbViewer_B()
@@ -104,5 +118,7 @@ ProbViewer_B::~ProbViewer_B()
 	log_checkbox_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	rescale_checkbox_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	image_panel_->Disconnect( wxEVT_MOTION, wxMouseEventHandler( ProbViewer_B::onMouseMove ), NULL, this );
+	save_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ProbViewer_B::saveAll ), NULL, this );
+	exit_button_->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ProbViewer_B::exit ), NULL, this );
 	
 }

@@ -18,6 +18,7 @@ ImagePanel::~ImagePanel(){
 }
 
 void ImagePanel::setImage(const cv::Mat& image){
+  SetMinClientSize(wxSize(image.cols, image.rows));
   unsigned char *data = new unsigned char[image.total() * image.channels()];
   memcpy(data, image.data, image.total() * image.channels() * sizeof(unsigned char));
   bitmap_ = wxBitmap(wxImage(image.cols, image.rows, data));

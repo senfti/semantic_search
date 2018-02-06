@@ -7,6 +7,8 @@
 #include <wx/dcbuffer.h>
 #include "prob_map_view/ImagePanel.h"
 
+#include "prob_map_view/main.h"
+
 ProbViewer::ProbViewer(const wxString& win_name, const std::vector<std::string>& prob_names, bool img_are_log)
   : ProbViewer_B(nullptr, wxID_ANY, win_name), prob_images_(prob_names.size()), prob_names_(prob_names), img_are_log_(img_are_log)
 {
@@ -61,7 +63,7 @@ void ProbViewer::setCurrent(){
     max_text_->SetLabel(wxString::Format("%.5lf", max));
 
     cv::flip(curr_img_, curr_img_, 0);
-    int scale_factor = 4;//std::min(1200 / curr_img_.cols, 800 / curr_img_.rows);
+    int scale_factor = 8;//std::min(1200 / curr_img_.cols, 800 / curr_img_.rows);
     cv::resize(curr_img_, curr_img_, cv::Size(curr_img_.cols*scale_factor, curr_img_.rows*scale_factor), 0, 0, cv::INTER_NEAREST);
 
     cv::Mat out;
@@ -77,10 +79,61 @@ void ProbViewer::setCurrent(){
 
     cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255)), tmp2;
     cv::flip(occ_image_, tmp2, 0);
-    cv::resize(tmp2, tmp2, cv::Size(out.rows, out.cols), 0, 0, cv::INTER_NEAREST);
+    cv::resize(tmp2, tmp2, cv::Size(out.cols, out.rows), 0, 0, cv::INTER_NEAREST);
+    std::cout << (out.type()&255) << " " << (tmp.type()&255) << " " << (tmp2.type()&255) << std::endl;
+    std::cout << (out.depth()&255) << " " << (tmp.depth()&255) << " " << (tmp2.depth()&255) << std::endl;
+    std::cout << (out.size().width) << " " << (out.size().height) << (tmp2.size().width) << " " << " " << (tmp2.size().height) << std::endl;
     cv::merge(std::vector<cv::Mat>({out, tmp, tmp2}), out);
     cv::cvtColor(out, out, CV_HSV2RGB);
 
     image_panel_->setImage(out);
+    Fit();
+    Refresh();
   }
+}
+
+void ProbViewer::saveAll( wxCommandEvent& event ){
+  prob_view_app->saveAll();
+}
+
+void ProbViewer::save(const std::string& folder){
+  int i=0;
+  for(auto &img : prob_images_){
+    if(img.cols > 0){
+      if(img_are_log_ && !log_checkbox_->IsChecked())
+        img = lToP(img);
+      else if(!img_are_log_ && log_checkbox_->IsChecked())
+        img = pToL(img);
+
+      double min, max;
+      cv::minMaxIdx(img, &min, &max);
+      min_text_->SetLabel(wxString::Format("%.5lf", min));
+      max_text_->SetLabel(wxString::Format("%.5lf", max));
+
+      cv::flip(img, img, 0);
+      int scale_factor = 8;
+      cv::resize(img, img, cv::Size(img.cols*scale_factor, img.rows*scale_factor), 0, 0, cv::INTER_NEAREST);
+
+      cv::Mat out;
+      if(rescale_checkbox_->IsChecked()){
+        if(min == max)
+          out = cv::Mat_<double>::ones(img.rows, img.cols);
+        else
+          out = ((img - min) / (max - min));
+        out.convertTo(out, CV_8U, 150.f);
+      }
+      else
+        img.convertTo(out, CV_8U, 150.f);
+
+      cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255)), tmp2;
+      cv::flip(occ_image_, tmp2, 0);
+      cv::resize(tmp2, tmp2, cv::Size(out.rows, out.cols), 0, 0, cv::INTER_NEAREST);
+      cv::merge(std::vector<cv::Mat>({out, tmp, tmp2}), out);
+      cv::cvtColor(out, out, CV_HSV2BGR);
+
+      cv::imwrite(folder + "/" + std::string(GetTitle()) + prob_names_[i] + ".png", out);
+      i++;
+    }
+  }
+
 }

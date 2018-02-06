@@ -538,7 +538,7 @@ void RoomMapper::deactivate(){
   door_mappers_.resize(1);
   obj_mappers_.resize(1);
   room_type_mappers_.resize(1);
-  obj_mappers_[0]->applyObjAppearVanish();
+  //obj_mappers_[0]->applyObjAppearVanish();
 }
 
 
