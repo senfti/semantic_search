@@ -127,6 +127,8 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
     tmp = tmp.mul(1.f-obj_from_room);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
     cv::threshold(prob_maps_[z], prob_maps_[z], ObjectMapper::OBJ_MAX_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
+    cv::threshold(1-prob_maps_[z], prob_maps_[z], 1-ObjectMapper::OBJ_MIN_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
+    prob_maps_[z] = 1-prob_maps_[z];
   }
 }
 

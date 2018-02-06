@@ -136,6 +136,7 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
 
   boost::lock_guard<boost::mutex> lock(doors_mutex_);
   doors_.push_back(Door(this_room_, pose, -1, new_id, -1, 1));
+  std::cout << "NEW DOOR INSERTED" << std::endl;
   return true;
 }
 

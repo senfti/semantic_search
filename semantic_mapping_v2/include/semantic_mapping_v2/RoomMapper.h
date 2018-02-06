@@ -20,6 +20,11 @@ class RoomMapper : public SlamGMapping{
     static double getObjProbGivenRoomObjPrior(int obj);
     static double getObjProbGivenRoomRoomPrior(int room);
 
+    static double getObjProbGivenRoomPerCell(int obj, int room);
+    static std::vector<std::vector<double>> prob_map_per_2d_cell;
+    static double getObjProbGivenRoomObjPriorPerCell(int obj);
+    static double getObjProbGivenRoomRoomPriorPerCell(int room);
+
   protected:
     int idx_ = -1;
 

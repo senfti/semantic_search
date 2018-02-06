@@ -124,7 +124,7 @@ class HierarchyMapper{
     void run();
 
 
-    cv::Mat_<float> getBehindDoorMask(const std::vector<Door>& doors, int width, int height);
+    cv::Mat_<float> getBehindDoorMask(const std::vector<Door>& doors, const ObjectMap& obj_map);
     std::vector<cv::Mat_<float>> get2dAreaObjProbMaps(const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float> behind_door_mask, const ObjectMap& occ_map,
                                                       const cv::Point& room_origin, int room_width, int room_height, float kernel_size);
     std::vector<cv::Mat_<float>> getObjBasedRoomTypeMap(const std::vector<cv::Mat_<float>>& obj_prob_2d_area, int num_room_types);

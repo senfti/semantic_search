@@ -10,6 +10,7 @@
 #include <pcl/filters/voxel_grid.h>
 
 std::vector<std::vector<double>> RoomMapper::prob_map;
+std::vector<std::vector<double>> RoomMapper::prob_map_per_2d_cell;
 
 double RoomMapper::getObjProbGivenRoom(int obj, int room){
   if(prob_map.empty()){
@@ -72,6 +73,65 @@ double RoomMapper::getObjProbGivenRoomRoomPrior(int room){
     for(int r=0; r<nr; r++){
       for(int o=0; o<no; o++){
         prob_sum[r] += prob_map[r][o];
+      }
+    }
+    for(int r=0; r<nr; r++){
+      prob_sum[r] /= nr;
+      //std::cout << "__________________ " << prob_sum[o]  << std::endl;
+    }
+  }
+  return prob_sum[room];
+}
+
+double RoomMapper::getObjProbGivenRoomPerCell(int obj, int room){
+  if(prob_map_per_2d_cell.empty()){
+    if(prob_map.empty())
+      getObjProbGivenRoom(0,0);
+    int no = prob_map[0].size();
+    int nr = prob_map.size();
+    prob_map_per_2d_cell.resize(nr);
+    for(int r=0; r<nr; r++){
+      prob_map_per_2d_cell[r].resize(no);
+      for(int o=0; o<no; o++){
+        prob_map_per_2d_cell[r][o] = 1.f-std::pow(1.0-prob_map[r][o], 0.002);
+      }
+    }
+  }
+  return prob_map_per_2d_cell[room][obj];
+}
+
+double RoomMapper::getObjProbGivenRoomObjPriorPerCell(int obj){
+  static std::vector<double> prob_sum;
+  if(prob_sum.empty()){
+    if(prob_map_per_2d_cell.empty())
+      getObjProbGivenRoomPerCell(0,0);
+    int no = prob_map_per_2d_cell[0].size();
+    int nr = prob_map_per_2d_cell.size();
+    prob_sum.resize(no,0.f);
+    for(int o=0; o<no; o++){
+      for(int r=0; r<nr; r++){
+        prob_sum[o] += prob_map_per_2d_cell[r][o];
+      }
+    }
+    for(int o=0; o<no; o++){
+      prob_sum[o] /= nr;
+      //std::cout << "__________________ " << prob_sum[o]  << std::endl;
+    }
+  }
+  return prob_sum[obj];
+}
+
+double RoomMapper::getObjProbGivenRoomRoomPriorPerCell(int room){
+  static std::vector<double> prob_sum;
+  if(prob_sum.empty()){
+    if(prob_map_per_2d_cell.empty())
+      getObjProbGivenRoomPerCell(0,0);
+    int no = prob_map_per_2d_cell[0].size();
+    int nr = prob_map_per_2d_cell.size();
+    prob_sum.resize(nr,0.f);
+    for(int r=0; r<nr; r++){
+      for(int o=0; o<no; o++){
+        prob_sum[r] += prob_map_per_2d_cell[r][o];
       }
     }
     for(int r=0; r<nr; r++){
