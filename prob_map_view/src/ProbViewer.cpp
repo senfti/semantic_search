@@ -55,7 +55,7 @@ void ProbViewer::setCurrent(){
     if(img_are_log_ && !log_checkbox_->IsChecked())
       curr_img_ = lToP(curr_img_);
     else if(!img_are_log_ && log_checkbox_->IsChecked())
-      curr_img_ = pToL(curr_img_);
+      curr_img_ = pToL(curr_img_, (prob_names_.size() == 80 ? -4.0 : -3.0));
 
     double min, max;
     cv::minMaxIdx(curr_img_, &min, &max);
@@ -80,9 +80,6 @@ void ProbViewer::setCurrent(){
     cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255)), tmp2;
     cv::flip(occ_image_, tmp2, 0);
     cv::resize(tmp2, tmp2, cv::Size(out.cols, out.rows), 0, 0, cv::INTER_NEAREST);
-    std::cout << (out.type()&255) << " " << (tmp.type()&255) << " " << (tmp2.type()&255) << std::endl;
-    std::cout << (out.depth()&255) << " " << (tmp.depth()&255) << " " << (tmp2.depth()&255) << std::endl;
-    std::cout << (out.size().width) << " " << (out.size().height) << (tmp2.size().width) << " " << " " << (tmp2.size().height) << std::endl;
     cv::merge(std::vector<cv::Mat>({out, tmp, tmp2}), out);
     cv::cvtColor(out, out, CV_HSV2RGB);
 
@@ -98,17 +95,17 @@ void ProbViewer::saveAll( wxCommandEvent& event ){
 
 void ProbViewer::save(const std::string& folder){
   int i=0;
-  for(auto &img : prob_images_){
+  for(auto &image : prob_images_){
+    cv::Mat_<double> img;
+    image.copyTo(img);
     if(img.cols > 0){
       if(img_are_log_ && !log_checkbox_->IsChecked())
         img = lToP(img);
       else if(!img_are_log_ && log_checkbox_->IsChecked())
-        img = pToL(img);
+        img = pToL(img, (prob_names_.size() == 80 ? -4.0 : -3.0));
 
       double min, max;
       cv::minMaxIdx(img, &min, &max);
-      min_text_->SetLabel(wxString::Format("%.5lf", min));
-      max_text_->SetLabel(wxString::Format("%.5lf", max));
 
       cv::flip(img, img, 0);
       int scale_factor = 8;
@@ -127,11 +124,11 @@ void ProbViewer::save(const std::string& folder){
 
       cv::Mat tmp(out.rows, out.cols, CV_8UC1, cv::Scalar(255)), tmp2;
       cv::flip(occ_image_, tmp2, 0);
-      cv::resize(tmp2, tmp2, cv::Size(out.rows, out.cols), 0, 0, cv::INTER_NEAREST);
+      cv::resize(tmp2, tmp2, cv::Size(out.cols, out.rows), 0, 0, cv::INTER_NEAREST);
       cv::merge(std::vector<cv::Mat>({out, tmp, tmp2}), out);
       cv::cvtColor(out, out, CV_HSV2BGR);
 
-      cv::imwrite(folder + "/" + std::string(GetTitle()) + prob_names_[i] + ".png", out);
+      cv::imwrite(folder + "/" + std::string(GetTitle()) + "_" + prob_names_[i] + ".png", out);
       i++;
     }
   }

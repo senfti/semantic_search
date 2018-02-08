@@ -11,12 +11,12 @@ template<typename T>
 inline T pToL(T p) {
   return std::log(p / (1-p));
 }
-template<>
-inline cv::Mat_<double> pToL(cv::Mat_<double> p){
+
+inline cv::Mat_<double> pToL(cv::Mat_<double> p, double min_log){
   cv::Mat_<double> res;
   p.copyTo(res);
   for (double &v : cv::Mat_<double>(res)) {
-    v = std::log10(v); v = (v > -3.0 ? (3.0+v)/3.0 : 0.0);
+    v = std::log10(v); v = (v > min_log ? (-min_log+v)/(-min_log) : 0.0);
   }
   return res;
 }

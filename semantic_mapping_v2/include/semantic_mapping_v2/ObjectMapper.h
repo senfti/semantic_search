@@ -74,12 +74,13 @@ class ObjectMap{
     visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = 0.f) const;
     visualization_msgs::MarkerArray getProbMsg(OctoMapper& occ, int id=0, float thresh = 0.f) const;
 
-    float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size, bool multiply_occ = true) const;
+    float getObjectProb(const ObjectMap& occupancy_map, float prior, int unseen_estimate, bool multiply_occ = true) const;
     float getObjectProb(float prior, float expected_room_size) const;
     std::pair<geometry_msgs::Pose, float> getObjMax(const ObjectMap& occupancy_map);
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
+    cv::Mat_<uchar> getCount2D() const;
 };
 
 
@@ -90,14 +91,14 @@ inline void ObjectMap::insertProb(int x, int y, int z, float prob, float prior, 
   float tmp = update / prior * p;
   float tmp2 = (1.f-update) / (1.f-prior) * (1.f-p);
   prob_maps_[z](y,x) = std::min(max, std::max(min, tmp/(tmp+tmp2)));
-  count_maps_[z](y,x) = count_maps_[z](y,x) | uchar(1);
+  count_maps_[z](y,x) = std::min(count_maps_[z](y,x)+1, 100);
 }
 
 
 inline void ObjectMap::insertMax(int x, int y, int z, float prob){
   assert(z>=0 && z<prob_maps_.size() && x>=0 && x<prob_maps_[0].cols && y>=0 && y<prob_maps_[0].rows);
   prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
-  count_maps_[z](y,x) = count_maps_[z](y,x) | uchar(1);
+  count_maps_[z](y,x) = std::min(count_maps_[z](y,x)+1, 100);
 }
 
 

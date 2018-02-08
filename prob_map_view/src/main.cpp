@@ -119,7 +119,7 @@ void ProbViewApp::baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
 void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   int idx = msg->img_are_log;
   if(sdf_viewer_.size() <= idx)
-    sdf_viewer_.resize(idx+1);
+    sdf_viewer_.resize(idx+1, nullptr);
   if(sdf_viewer_[idx] == nullptr){
     sdf_viewer_[idx] = new ProbViewer("sdf"+wxString(std::to_string(idx)), msg->names, 0);
     sdf_viewer_[idx]->Show(true);

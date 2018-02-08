@@ -5,6 +5,7 @@
 #include <execution/Explorer.h>
 #include <deque>
 #include <set>
+#include <std_msgs/Int8.h>
 
 Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)

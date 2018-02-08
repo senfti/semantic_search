@@ -48,7 +48,7 @@
     <param name="Octomap/sensor_model/hit" value="0.62" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/sensor_model/miss" value="0.4" />                       <!-- maximum range to integrate (speedup!) -->    
     <param name="Octomap/occupancy_thresh" value="0.5" />
-    <param name="Octomap/downproject_occ_thresh" value="0.7" />
+    <param name="Octomap/downproject_occ_thresh" value="0.6" />
     <param name="Octomap/downproject_dilate_iters" value="2" />
     <param name="Octomap/downproject_erode_iters" value="4" />
     <param name="Octomap/downsample_factor" value="4" />                       <!-- maximum range to integrate (speedup!) --> 
@@ -64,13 +64,13 @@
 
     <param name="RoomMapper/OBJ_PLACE_MAP_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/obj_places_map.dat" />
     
-    <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.003" />  
+    <param name="ObjectMapper/OBJ_PRIOR_PROB" value="0.001" />  
     <param name="ObjectMapper/OBJ_MIN_PROB" value="0.00001" />  
     <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
     <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="4.0" />  
     <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
-    <param name="ObjectMapper/V_H" value="0.08" />   
-    <param name="ObjectMapper/V_M" value="0.0003" />  
+    <param name="ObjectMapper/V_H" value="0.02" />   
+    <param name="ObjectMapper/V_M" value="0.00002" />  
     <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
     <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="0.0" />
     <param name="ObjectMapper/STILL_THERE_PROB" value="0.9" />
@@ -83,8 +83,9 @@
     <param name="debug_publish_interval" value="10" />
     <param name="ROOM_CELL_OBJ_KERNEL_SIZE" value="3.0" />
     <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="30.0" />
-    <param name="OBJ_FILL_FRACTION" value="0.001" />
-    <param name="ROOM_ESTIMATED_VOLUME" value="0.0" />
+    <param name="OBJ_FILL_FRACTION" value="0.01" />
+    <param name="ROOM_ESTIMATED_OCCUPIED_AREA" value="8.0" />
+    <param name="ROOM_MIN_UNEXPLORED_AREA" value="1.0" />
     <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="0.5" />
     <param name="SINGLE_VIEW_OBJ_KERNEL_SIZE" value="2.0" />
     <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />

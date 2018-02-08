@@ -27,6 +27,7 @@ ExecuteActionServer::ExecuteActionServer()
   frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
   curr_action_pub_ = nh_.advertise<std_msgs::Int8>("current_action", 1);
+  room_explored_pub_ = ros::NodeHandle().advertise<std_msgs::Int8>("room_explored", 1);
   ROS_INFO("INITIALIZATION FINISHED");
 }
 
@@ -175,6 +176,11 @@ void ExecuteActionServer::doExplore(){
     }
     execution::ExecuteResult result;
     result.result_number = (explorer_.objFoundStopped() ? 100 : (explorer_.doorFoundStopped() ? 1 : 0));
+    if(result.result_number == 0){
+      std_msgs::Int8 tmp;
+      tmp.data = goal_.target_room;
+      room_explored_pub_.publish(tmp);
+    }
     action_server_.setSucceeded(result, "SUCCESS");
     goal_.action = -1;
     return;

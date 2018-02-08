@@ -281,8 +281,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(OctoMapper& occ, int id, f
 }
 
 
-float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size, bool multiply_occ) const{
-  expected_room_size*=resolution_*resolution_*resolution_;
+float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, int unseen_estimate, bool multiply_occ) const{
   double prob = 1.0;
   int num = 0;
   for(int x=0; x<getWidth(); x++){
@@ -295,7 +294,7 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, floa
       }
     }
   }
-  prob *= (std::pow(1.f-prior, std::max(expected_room_size-num, 0.f)));
+  prob *= (std::pow(1.f-prior, unseen_estimate));
 
   return (1.0-prob);
 }
@@ -354,6 +353,19 @@ cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const 
     map2D = map2D.mul(1.f-tmp.mul(occ_map.prob_maps_[z]));
   }
   return (1.f - map2D).mul(1.f-behind_door_mask);
+}
+
+
+cv::Mat_<uchar> ObjectMap::getCount2D() const{
+  cv::Mat_<uchar> map2D(count_maps_[0].rows, count_maps_[0].cols, uchar(0));
+  for(int y=0; y<getHeight(); y++){
+    for(int x=0; x<getWidth(); x++){
+      for(int z=0; z<getZSteps(); z++){
+        map2D(y,x) = map2D(y,x) | count_maps_[z](y,x);
+      }
+    }
+  }
+  return map2D;
 }
 
 
@@ -438,6 +450,7 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
 
   boost::lock_guard<boost::mutex> lock(maps_mutex_);
   std::vector<ObjectMap> tmp(maps_.size(), ObjectMap(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, -1.f));
+  ObjectMap count_map(maps_[0].getResolution(), maps_[0].getBaseSize(), maps_[0].getWidth(), maps_[0].getHeight(), maps_[0].getOrigin(), max_height_, 0.f);
   for(int i=0; i<cloud.size(); i++){
     if(cloud[i].z>=min_z && cloud[i].z<=max_z){
       int x = maps_[0].getXPixel(cloud[i].x);
@@ -449,6 +462,7 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
           tmp[m].insertMax(x,y,z,msg.probs[b*msg.num_objects+m]);
         }
       }
+      count_map.insertMax(x,y,z,0.f);
     }
   }
 
@@ -456,8 +470,11 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
     for(int y=0; y<tmp[0].getHeight(); y++){
       for(int z=0; z<tmp[0].getZSteps(); z++){
         if(tmp[0].getProb(x,y,z) >= 0.f){
+          float c = std::min(count_map.getCount(x,y,z)/5.f, 1.f);
+          float vh = c*V_H + (1-c)*OBJ_PRIOR_PROB;
+          float vm = c*V_M + (1-c)*OBJ_PRIOR_PROB;
           for(int m=0; m<tmp.size(); m++){
-            maps_[m].insertProb(x,y,z,tmp[m].getProb(x,y,z), OBJ_PRIOR_PROB, V_H, V_M, OBJ_MIN_PROB, OBJ_MAX_PROB);
+            maps_[m].insertProb(x,y,z,tmp[m].getProb(x,y,z), OBJ_PRIOR_PROB, vh, vm, OBJ_MIN_PROB, OBJ_MAX_PROB);
           }
         }
       }
@@ -547,7 +564,7 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
 
   std::vector<float> probs(maps_.size());
   for(int i=0; i<maps_.size(); i++){
-    probs[i] = maps_[i].getObjectProb(occ_map, OBJ_PRIOR_PROB, ROOM_EXPECTED_SIZE);
+    probs[i] = maps_[i].getObjectProb(occ_map, OBJ_PRIOR_PROB, 0);
   }
   std::cout << "Object Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
 

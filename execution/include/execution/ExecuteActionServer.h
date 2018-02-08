@@ -45,6 +45,7 @@ class ExecuteActionServer{
     ros::Publisher frontier_pub_;
     ros::Publisher vel_pub_;
     ros::Publisher curr_action_pub_;
+    ros::Publisher room_explored_pub_;
 
     void sendMoveBaseGoal(const geometry_msgs::Pose& pose);
     void doMoveTo();
