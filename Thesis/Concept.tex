@@ -140,4 +140,4 @@ The doorway detections are transformed into the map coordinate frame using the p
 
 \subsection{Topological Mapping}
 
-The so far discussed mapping parts cover the mapping of the rooms. To generate 
+The so far discussed mapping parts cover the mapping of a room in a metric representation. Large metric maps are difficult to keep consistent and have negative impact on the performance. As rooms are separated by walls and only connected through narrow, easy to detect doorways splitting the map into submaps covering single rooms is simple. When the robot passes a doorway the currently used metric map is switched to the map of entered room. If no map exists for the entered room a new set of maps is created for this room. 

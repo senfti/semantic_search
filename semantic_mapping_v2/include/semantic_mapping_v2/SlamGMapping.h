@@ -100,7 +100,6 @@ class SlamGMapping
     boost::mutex map_to_odom_mutex_;
     boost::mutex map_mutex_;
 
-    boost::thread* map_generation_thread_ = nullptr;
     sensor_msgs::LaserScan latest_scan_;
 
     int laser_count_;
