@@ -100,10 +100,10 @@ Mode=LaTeX
 
 [item:Concept.tex]
 archive=true
-column=134
+column=79
 encoding=UTF-8
 highlight=LaTeX
-line=105
+line=142
 mode=LaTeX
 open=true
 order=3
@@ -219,10 +219,10 @@ open=false
 order=-1
 
 [view-settings,view=0,item:Concept.tex]
-CursorColumn=134
-CursorLine=105
+CursorColumn=79
+CursorLine=142
 JumpList=
-ViMarks=.,105,134,[,105,134,],105,134
+ViMarks=.,142,78,[,142,62,],142,78
 
 [view-settings,view=0,item:Conclusion.tex]
 CursorColumn=19

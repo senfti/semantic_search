@@ -24,6 +24,7 @@ ExecuteActionServer::ExecuteActionServer()
     break;
   }
   map_switch_sub_ = nh_.subscribe("map_switch", 1, &ExecuteActionServer::mapSwitchCb, this);
+  door_pose_sub_ = nh_.subscribe("mapper_door_poses", 1, &ExecuteActionServer::doorPoseCb, this);
   frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
   curr_action_pub_ = nh_.advertise<std_msgs::Int8>("current_action", 1);
@@ -74,15 +75,30 @@ void ExecuteActionServer::preemptCb(){
 }
 
 
+tf::Transform offsetPose(tf::Transform pose, double dist){
+  pose.setOrigin(pose.getOrigin()+dist*tf::Vector3(pose.getBasis().getColumn(0).x(), pose.getBasis().getColumn(0).y(),0.0));
+  return pose;
+}
+
+
+geometry_msgs::Pose offsetPose(const geometry_msgs::Pose& pose, double dist){
+  tf::Transform tf_pose;
+  tf::poseMsgToTF(pose, tf_pose);
+  geometry_msgs::Pose result;
+  tf::poseTFToMsg(offsetPose(tf_pose, dist), result);
+  return result;
+}
+
+
 void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr &msg){
   if(goal_.action == 0 && msg->new_room == goal_.target_room){
     tf::Transform transform;
     tf::Transform pose;
     tf::poseMsgToTF(msg->transform, transform);
     tf::poseMsgToTF(goal_.pose, pose);
-    geometry_msgs::Pose new_pose;
-    tf::poseTFToMsg(pose*transform, new_pose);
-    sendMoveBaseGoal(new_pose);
+    tf::poseTFToMsg(pose*transform, goal_.pose);
+    move_offset_dist_ = -0.5;
+    sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
   }
   else{
     action_client_.cancelAllGoals();
@@ -95,16 +111,49 @@ void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgCo
 }
 
 
+void ExecuteActionServer::doorPoseCb(const geometry_msgs::PoseArrayConstPtr& msg){
+  static ros::Time last_calculation(0.0);
+  if(goal_.action == 0){
+    ros::Time t = ros::Time::now();
+    if(t-last_calculation < ros::Duration(3.0))
+      return;
+
+    tf::Transform curr_pose;
+    tf::poseMsgToTF(goal_.pose, curr_pose);
+    double best_confidence = 0.0;
+    tf::Transform best_door;
+    for(int i=0; i<msg->poses.size(); i++){
+      tf::Transform pose;
+      tf::poseMsgToTF(msg->poses[i], pose);
+      tf::Transform diff = pose.inverseTimes(curr_pose);
+      double confidence = (1.0-diff.getOrigin().length()) * std::max(M_PI_2-std::abs(tf::getYaw(diff.getRotation()))/M_PI_2, 0.001);
+      if(confidence > best_confidence){
+        best_door = pose;
+        best_confidence = confidence;
+      }
+    }
+    if(best_confidence == 0)
+      return;
+
+    last_calculation = t;
+    tf::Transform diff = best_door.inverseTimes(curr_pose);
+    if(diff.getOrigin().length() > 0.05 || std::abs(tf::getYaw(diff.getRotation())) > 0.05){
+      tf::poseTFToMsg(best_door, goal_.pose);
+      sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
+    }
+  }
+  else
+    last_calculation = ros::Time(0.0);
+}
+
+
 void ExecuteActionServer::doMoveTo(){
   if(move_base_state_ == MoveBaseState::WAITING) {
     if(!move_to_first_reached_){
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
-      tf::Transform tmp;
-      tf::poseMsgToTF(goal_.pose, tmp);
-      tmp.setOrigin(tmp.getOrigin()-tf::Vector3(0.5*tmp.getBasis().getColumn(0).x(), 0.5*tmp.getBasis().getColumn(0).y(),0.0));
-      tf::poseTFToMsg(tmp, goal_.pose);
-      sendMoveBaseGoal(goal_.pose);
+      move_offset_dist_ = -0.5;
+      sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
     }
   }
   else if(move_base_state_ == MoveBaseState::GOAL_SENT){
@@ -120,11 +169,8 @@ void ExecuteActionServer::doMoveTo(){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
       if(!move_to_first_reached_){
         move_to_first_reached_ = true;
-        tf::Transform tmp;
-        tf::poseMsgToTF(goal_.pose, tmp);
-        tmp.setOrigin(tmp.getOrigin()+tf::Vector3(tmp.getBasis().getColumn(0).x(), tmp.getBasis().getColumn(0).y(),0.0));
-        tf::poseTFToMsg(tmp, goal_.pose);
-        sendMoveBaseGoal(goal_.pose);
+        move_offset_dist_ = 0.5;
+        sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
       }
       else{
         execution::ExecuteResult result;

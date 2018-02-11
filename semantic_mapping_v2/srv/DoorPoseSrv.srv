@@ -1,0 +1,4 @@
+geometry_msgs/Pose old_pose
+---
+geometry_msgs/Pose pose
+int8 pose_changed

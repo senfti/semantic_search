@@ -56,7 +56,7 @@ class DoorDetector{
     geometry_msgs::Point pixelToPoint(const cv::Point2f& p) const;
     geometry_msgs::Pose rectToPose(const cv::RotatedRect& rect) const;
     bool isInRotatedRect(const pcl::PointXYZ& p, const cv::RotatedRect& rect) const;
-    cv::RotatedRect isContourDoor(const std::vector<cv::Point>& contour) const;
+    cv::RotatedRect isContourDoor(const std::vector<cv::Point>& contour, const pcl::PointCloud<pcl::PointXYZ>& laser_cloud) const;
 
   public:
     DoorDetector();

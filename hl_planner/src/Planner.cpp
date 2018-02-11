@@ -188,6 +188,7 @@ Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
 void Planner::run(int obj){
   state_.resetState();
   while(ros::ok()){
+    ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
     if(hierarchy.rooms.empty())
       return;

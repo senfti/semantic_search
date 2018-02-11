@@ -50,6 +50,9 @@ void Explorer::start(int searched_obj){
   searched_obj_ = searched_obj;
   obj_found_stopped_ = false;
   finished_ = false;
+  curr_frontier_.position.x = -99999999999.9;
+  curr_frontier_.orientation.z = 0.0;
+  curr_frontier_.orientation.w = 1.0;
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(EXPLORE_MAX_ROT_VEL)).c_str());
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(EXPLORE_MAX_TRANS_VEL)).c_str());
   calcFrontier();
@@ -131,7 +134,12 @@ struct CompareFrontier{
 };
 
 void Explorer::calcFrontier(){
+  static ros::Time last_calculation(0.0);
   ros::Time t = ros::Time::now();
+  if(t-last_calculation < ros::Duration(0.5))
+    return;
+  last_calculation = t;
+
   cv::Mat_<uchar> unknown(last_map_.info.height, last_map_.info.width, uchar(0));
   cv::Mat_<uchar> free(last_map_.info.height, last_map_.info.width, uchar(0));
   cv::Mat_<uchar> occupied(last_map_.info.height, last_map_.info.width, uchar(0));
@@ -262,60 +270,17 @@ void Explorer::calcFrontier(){
     inside = true;
   }
 
-  geometry_msgs::Pose old_frontier = curr_frontier_;
+  tf::Transform old_frontier;
+  tf::poseMsgToTF(curr_frontier_, old_frontier);
   tf::Transform tf_t(tf::createQuaternionFromYaw(std::atan2(best_pos.y-pos.y, best_pos.x-pos.x)+(inside ? M_PI : 0.0)),
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
-  tf::poseTFToMsg(tf_t, curr_frontier_);
-  if(old_frontier.position.x != curr_frontier_.position.x || old_frontier.position.y != curr_frontier_.position.y || old_frontier.orientation.w != curr_frontier_.orientation.w){
+  tf::Transform diff = old_frontier.inverseTimes(tf_t);
+  if(diff.getOrigin().length() > 0.1 || std::abs(tf::getYaw(diff.getRotation())) > 0.2){
     frontier_changed_ = true;
+    tf::poseTFToMsg(tf_t, curr_frontier_);
   }
   std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
-
-//  cv::Mat_<uchar> good_accessible;
-//  cv::erode(accessible, good_accessible, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
-//  cv::Point best_pos = pos + cv::Point(transform.getBasis().getColumn(0).x() * ROBOT_SIZE, transform.getBasis().getColumn(0).y() * ROBOT_SIZE);
-//  std::set<std::pair<cv::Point,double>, CompareFrontier> frontiers;
-//  for(int x=0; x<last_map_.info.width; x++){
-//    for(int y=0; y<last_map_.info.height; y++){
-//      if(good_frontiers_mask(y,x)){
-//        double dist = (x-best_pos.x)*(x-best_pos.x) + (y-best_pos.y)*(y-best_pos.y);
-//        frontiers.insert(std::pair<cv::Point,double>(cv::Point(x,y), dist));
-//      }
-//    }
-//  }
-
-//  geometry_msgs::Pose old_frontier = curr_frontier_;
-//  for(const auto& f : frontiers){
-//    std::set<std::pair<cv::Point,double>, CompareFrontier> view_points;
-//    for(const auto& offset : circle_points_){
-//      cv::Point p = f.first+offset;
-//      if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && accessible(p)){
-//        double dist = (p.x-best_pos.x)*(p.x-best_pos.x) + (p.y-best_pos.y)*(p.y-best_pos.y) + (good_accessible(p) ? 0.f : 1.f);
-//        view_points.insert(std::pair<cv::Point,double>(p, dist));
-//      }
-//    }
-//    for(const auto& v : view_points){
-//      if(lineFree(f.first, v.first, occupied)){
-//        double angle = std::atan2(f.first.y-v.first.y, f.first.x-v.first.x);
-//        tf::Transform tf_t(tf::Quaternion(tf::Vector3(0.0,0.0,1.0),angle),
-//                           tf::Vector3(v.first.x*last_map_.info.resolution+last_map_.info.origin.position.x,
-//                                       v.first.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
-//        tf::Transform diff_t = transform.inverse()*tf_t;
-//        if(diff_t.getOrigin().length() < 0.1 && tf::getYaw(diff_t.getRotation()) < 0.05)
-//          continue;
-//
-//        tf::poseTFToMsg(tf_t, curr_frontier_);
-//        if(old_frontier.position.x != curr_frontier_.position.x || old_frontier.position.y != curr_frontier_.position.y || old_frontier.orientation.w != curr_frontier_.orientation.w){
-//          frontier_changed_ = true;
-//        }
-//        std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
-//        return;
-//      }
-//    }
-//  }
-//  std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
-//  finished_ = true;
 }
 
 

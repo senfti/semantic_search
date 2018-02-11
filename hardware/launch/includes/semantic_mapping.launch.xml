@@ -69,7 +69,7 @@
     <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
     <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="4.0" />  
     <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
-    <param name="ObjectMapper/V_H" value="0.02" />   
+    <param name="ObjectMapper/V_H" value="0.03" />   
     <param name="ObjectMapper/V_M" value="0.00002" />  
     <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
     <param name="ObjectMapper/ROOM_EXPECTED_SIZE" value="0.0" />

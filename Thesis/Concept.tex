@@ -86,21 +86,58 @@ with the inverse sensor model $P(R_{Cj}=RT|I_t,s_{Cj,t}$, the recursive term $P(
 
 The inverse sensor model has to model what is visible in an image. In addition the model also has to take into account that multiple cells of different room type can be visible. This lead to the following inverse sensor model.
 \begin{equation}
- P(R_{Cj}=RT|I_t,s_{Cj,t}) = \begin{cases}P(R_{I,t}=RT\:|\:I_t) \cdot V_H + P(R_{I,t}\neq RT\:|\:I_t)\cdot V_M & if\:cell\:Cj\:visible\\P(R_{Cj}=RT) & else\end{cases}
+ P(R_{Cj}=RT|I_t,s_{Cj,t}) = \begin{cases}P(R_{I,t}=RT\:|\:I_t) \cdot V_{H_R} + P(R_{I,t}\neq RT\:|\:I_t)\cdot V_{M_R} & if\:cell\:Cj\:visible\\P(R_{Cj}=RT) & else\end{cases}
 \end{equation}
-$P(R_{I,t}=RT\:|\:I_t)$ is the probability of the image showing a room of type $RT$, $V_H$ is the parameter which influences how much the probability increases if the images shows a room of type $RT$ and $V_M$ how much it decreases otherwise. 
+$P(R_{I,t}=RT\:|\:I_t)$ is the probability of the image showing a room of type $RT$, $V_{H_R}$ is the parameter which influences how much the probability increases if the images shows a room of type $RT$ and $V_{M_R}$ how much it decreases otherwise. 
 %Therefore only cells within the view cone and within a chosen distance range are updated with the information of the image classification. This approach is sufficient as cells outside the room are discarded later on and the occasional update of invisible cells behind an obstacle should not cause 
 
 \subsection{Object mapping}
 
-The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation of a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. The probabilities of the different object classes within a cell are assumed to be independent as multiple objects can be located within a cell. With this assumption the update can be done similar to the update in occupancy grid mapping for every object class.
+The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
 
+The probability of an object of type $o$ being in a cell $P(O_{Cj}^o | I_{1:t}, x_{1:t})$ can be split into the calculation of the probability of the cell being occupied $P(occ_{Cj} | I_{1:t}, x_{1:t})$ and the probability of one of the occupying things being an object of type $o$ $P(OT_{Cj}^o| I_{1:t}, x_{1:t})$, with $I_{1:t}$ being the taken RGBD images and $x_{1:t}$ being the positions where the images where made.
 \begin{equation}
- P(O_{Cj}^o = true | I_{1:t}, x_{1:t})=\frac1Z\frac{P(O_{Cj}^o = true|I_t,x_{t})\cdot P(O_{Cj}^o = true | I_{1:t-1}, x_{1:t-1})}{P(O_{Cj}^o = true)}
-\end{equation}
-with the inverse sensor model $P(O_{Cj}^o = true|I_t,x_{t})$, the recursive term $P(O_{Cj}^o = true | I_{1:t-1}, x_{1:t-1})$, the prior $P(R_{Cj}=RT)$ and the normalization term
-\begin{equation}
- Z=\sum_{X\:\in \: \{true, false\} }\frac{P(O_{Cj}^o = X|I_t,x_{t})\cdot P(O_{Cj}^o = X | I_{1:t-1}, x_{1:t-1})}{P(O_{Cj}^o = X)}
+ P(O_{Cj}^o | I_{1:t}, x_{1:t}) = P(occ_{Cj} | I_{1:t}, x_{1:t}) \cdot P(OT_{Cj}^o| I_{1:t}, x_{1:t})
 \end{equation}
 
-There are some difficulties to define an appropriate inverse sensor model. One part is to find the cells which should be updated. The 
+The calculation of the probabilities of a cell being occupied is already done by the 3D mapping, so the segmentation of the problem as described above makes things easier as the occupancy needs not be taken into account in the rest of this section. 
+\begin{equation}
+ P(OT_{Cj}^o | I_{1:t}, x_{1:t})=\frac1Z\frac{P(OT_{Cj}^o|I_t,x_{t})\cdot P(OT_{Cj}^o | I_{1:t-1}, x_{1:t-1})}{P(OT_{Cj}^o)}
+\end{equation}
+with $OT_{Cj}^o$ specifying the occurrence of an object $o$ in cell $C_j$ in case $C_j$ is occupied, the inverse sensor model $P(OT_{Cj}^o|I_t,x_{t})$, the recursive term $P(OT_{Cj}^o | I_{1:t-1}, x_{1:t-1})$, the prior $P(R_{Cj}=RT)$ and the normalization term
+\begin{equation}
+ Z=\sum_{X\:\in \: \{true, false\} }\frac{P(OT_{Cj}^o = X|I_t,x_{t})\cdot P(OT_{Cj}^o = X | I_{1:t-1}, x_{1:t-1})}{P(OT_{Cj}^o = X)}
+\end{equation}
+
+The inverse sensor model is the difficult part as it has to model the connection between object detection results given as bounding boxes with associated object class probabilities and per pixel depth information and the 3D probability representation. The basic idea is to project the object detection in the image into 3D space using the per pixel depth information from the depth image. 
+
+There are five things that make this a difficult problem:
+\begin{enumerate}
+\item Not every pixel within a bounding box is part of the detected object
+\item Bounding boxes can overlap.
+\item There are pixels without depth information: Parts in the image not visible to the IR camera, reflexions, out of range and other things can cause pixels having no depth information.
+\item A cell is usually not fully filled by an object.
+\item A cell can contain more than one object.
+\end{enumerate}
+
+The algorithm used for the inverse sensor model draws a certain number of samples randomly from the image. Not using all pixels is done due to performance reasons. The random selection of samples was done as pixels with invalid depth can easily be discarded and also because finding samples regularly distributed in 3D is performance intensive. 
+
+The samples are then assigned to the corresponding cell in the 3D grid representation. For every cells containing at least one sample the probability of every object class is updated using the maximum probability of the object class of every bounding box containing a sample which falls into the cell. The maximum is used here as a lower probability is said to be caused by
+\begin{itemize}
+ \item a sample hitting another object, which is also located in the cell.
+ \item an overlapping bounding box, which represents another object.
+\end{itemize}
+
+These assumptions lead to probabilities being higher than they should be and high probabilities also around the objects. Another thing is that there might be no sample on an object in a cell, especially if the object is small. Therefore two additional parameters $V_{H_O}$ and $V_{M_O}$ were introduced to improve the model. The resulting inverse sensor model is
+\begin{equation}
+ P(OT_{Cj}^o|I_t,x_{t}) = \begin{cases}P_{max}(OT_{Cj}^o|I_t,x_t) \cdot V_{H_O} + P_{max}(\neg OT_{Cj}^o|I_t,x_t) \cdot V_{M_O} & if\:sample\:in\:cell\\P(OT_{Cj}^o) & else\end{cases}
+\end{equation}
+with $P_{max}(OT_{Cj}^o|I_t,x_t)$ being the maximum probability of object class $o$ of all bounding boxes containing a sample that falls into cell $C_j$.
+
+\subsection{Doorway mapping}
+
+The doorway detections are transformed into the map coordinate frame using the position of the robot at the time when the image for the detection was made. If a detection is near a previous detection the detection is said to be caused by the same doorway and the doorway position is updated using a running average filter. If no previous detection near the new detection is found a new doorway is inserted into the map.
+
+\subsection{Topological Mapping}
+
+The so far discussed mapping parts cover the mapping of the rooms. To generate 

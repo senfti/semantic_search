@@ -157,7 +157,7 @@ geometry_msgs::Pose DoorDetector::rectToPose(const cv::RotatedRect& rect) const{
 #ifdef DEBUG_OUTPUT
 cv::Mat_<cv::Vec3b> tmp(4*50, 3*50, cv::Vec3b(0,0,0));
 #endif
-cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contour) const{
+cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contour, const pcl::PointCloud<pcl::PointXYZ>& laser_cloud) const{
   cv::RotatedRect rect = cv::minAreaRect(contour);
   cv::Point2f box_points[4];
   rect.points(box_points);
@@ -198,12 +198,13 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
   for(int j = 0; j < 4; j++)
     cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
 #endif
-  for(const auto& p : laser_cloud_)
+
+  for(const auto& p : laser_cloud)
     in_zone += (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
 
   laser_check_rect.size.width = rect.size.width * LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR;
   laser_check_rect.size.height += 2*LASER_IN_FRONT_OF_DOOR_DEPTH_AREA;
-  for(const auto& p : laser_cloud_)
+  for(const auto& p : laser_cloud)
     in_zone += (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
 #ifdef DEBUG_OUTPUT
   laser_check_rect.points(rect_points);
@@ -214,10 +215,10 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
   int at_doorframe = 0;
   laser_check_rect.size.width = rect.size.width*LASER_IN_DOOR_NARROWING_FACTOR;
   laser_check_rect.size.height = rect.size.height+LASER_DOORFRAME_DEPTH*2;
-  for(const auto& p : laser_cloud_)
+  for(const auto& p : laser_cloud)
     at_doorframe -= (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
   laser_check_rect.size.width = rect.size.width+LASER_DOORFRAME_WIDTH*2;
-  for(const auto& p : laser_cloud_)
+  for(const auto& p : laser_cloud)
     at_doorframe += (isInRotatedRect(p, laser_check_rect) ? 1 : 0);
 #ifdef DEBUG_OUTPUT
   laser_check_rect.points(rect_points);
@@ -288,16 +289,30 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(occupancy, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 
+  pcl::PointCloud<pcl::PointXYZ> laser_cloud_transformed(laser_cloud_);
+  try{
+    tf::StampedTransform trans_tf;
+    tf_listener_.lookupTransform("base_link", msg->header.stamp, "base_link", ros::Time(laser_cloud_.header.stamp), "odom", trans_tf);
+    Eigen::Matrix4f trans;
+    pcl_ros::transformAsMatrix(trans_tf, trans);
+    pcl::transformPointCloud(laser_cloud_transformed, laser_cloud_transformed, trans);
+  }
+  catch (tf::TransformException& ex){
+    ROS_ERROR("%s", ex.what());
+  }
+
   static unsigned seq = 0;
   geometry_msgs::PoseArray door_poses;
   door_poses.header.frame_id = "base_link";
   door_poses.header.stamp = msg->header.stamp;
   door_poses.header.seq = seq++;
   for(const auto& contour : contours){
-    cv::RotatedRect rect = isContourDoor(contour);
+    cv::RotatedRect rect = isContourDoor(contour, laser_cloud_transformed);
     if(rect.size.area() >= MIN_WIDTH*MIN_DEPTH){
       geometry_msgs::Pose pose = rectToPose(rect);
-      if(pose.position.x >= 0.2)
+      tf::Transform pose_tf;
+      tf::poseMsgToTF(pose, pose_tf);
+      if(pose.position.x >= 0.2 && std::abs(tf::getYaw(pose_tf.getRotation())) < M_PI*75.0/180.0 && std::abs(pose.position.y) < 0.5);
         door_poses.poses.push_back(pose);
     }
   }

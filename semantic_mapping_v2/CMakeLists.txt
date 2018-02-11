@@ -42,6 +42,7 @@ add_service_files(
   RoomTypeProbSrv.srv
   MapSrv.srv
   OctomapSrv.srv
+  DoorPoseSrv.srv
 )
 generate_messages(
   DEPENDENCIES

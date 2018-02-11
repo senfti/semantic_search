@@ -12,6 +12,7 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <semantic_mapping_v2/RoomSwitchMsg.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/PoseArray.h>
 
 #include <execution/StartRotationStateMachine.h>
 #include <execution/Explorer.h>
@@ -36,11 +37,13 @@ class ExecuteActionServer{
     move_base_msgs::MoveBaseGoal move_base_goal_;
 
     bool move_to_first_reached_ = false;
+    float move_offset_dist_;
     StartRotationStateMachine start_rotation_state_machine_;
     Explorer explorer_;
     Searcher searcher_;
 
     ros::Subscriber map_switch_sub_;
+    ros::Subscriber door_pose_sub_;
 
     ros::Publisher frontier_pub_;
     ros::Publisher vel_pub_;
@@ -64,6 +67,7 @@ class ExecuteActionServer{
     void preemptCb();
 
     void mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr& msg);
+    void doorPoseCb(const geometry_msgs::PoseArrayConstPtr& msg);
 
     void run();
 };

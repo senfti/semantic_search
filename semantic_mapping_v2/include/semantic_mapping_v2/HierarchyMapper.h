@@ -15,6 +15,7 @@
 #include <semantic_mapping_v2/RoomTypeMapSrv.h>
 #include <semantic_mapping_v2/RoomTypeProbSrv.h>
 #include <semantic_mapping_v2/ObjFoundSrv.h>
+#include <semantic_mapping_v2/DoorPoseSrv.h>
 #include <prob_map_view/ProbMapMsg.h>
 
 #include <std_msgs/Int8.h>
@@ -68,6 +69,7 @@ class HierarchyMapper{
     ros::ServiceServer room_type_prob_srv_;
     ros::ServiceServer hierarchy_srv_;
     ros::ServiceServer obj_found_srv_;
+    ros::ServiceServer door_pose_srv_;
     std::vector<semantic_mapping_v2::RoomMsg> last_room_msgs_;
     std::vector<bool> room_changed_;
 
@@ -120,6 +122,7 @@ class HierarchyMapper{
     bool objProbSrvCb(semantic_mapping_v2::ObjectProbSrv::Request& req, semantic_mapping_v2::ObjectProbSrv::Response& res);
     bool hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res);
     bool objFoundSrvCb(semantic_mapping_v2::ObjFoundSrv::Request& req, semantic_mapping_v2::ObjFoundSrv::Response& res);
+    bool doorPoseSrvCb(semantic_mapping_v2::DoorPoseSrv::Request& req, semantic_mapping_v2::DoorPoseSrv::Response& res);
 
     //void publish();
     void downprojecAndPublish();
@@ -138,11 +141,17 @@ class HierarchyMapper{
                                         const nav_msgs::OccupancyGrid& grid_map, const std::vector<Door>& doors, float resolution, int base_size);
     std::vector<cv::Mat_<float>> getRoomBasedObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Point& new_orig, const cv::Size& new_size, int num_obj_types);
     std::vector<ObjectMap> getCompleteObjMap(const std::vector<cv::Mat_<float>>& room_base_obj_maps, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map);
-    int estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, const ObjectMap& obj_map, const cv::Mat_<float> behind_door_mask, bool explored);
+    int estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, const ObjectMap& obj_map, const cv::Mat_<float> behind_door_mask, bool explored, int& search_cells);
     std::vector<float> getCompleteObjProbs(const std::vector<ObjectMap>& complete_obj_map, std::vector<float> room_type_probs, const ObjectMap& occ_map, int unseen_estimate);
     float getTravelTime(const geometry_msgs::Pose& door1, const geometry_msgs::Pose& door2);
     std::vector<float> getToLinkTravelTime(int room, const std::vector<Door>& doors, const nav_msgs::OccupancyGrid& grid_map);
-    float getSearchTime(const nav_msgs::OccupancyGrid& grid_map);
+    float getSearchTime(int search_cells);
+
+    void publishDebug(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map, const std::vector<cv::Mat_<float>>& obj_prob_2d_area,
+                      const std::vector<cv::Mat_<float>>& obj_based_room_type_map, const std::vector<cv::Mat_<float>>& complete_room_type_map,
+                      const std::vector<cv::Mat_<float>>& room_based_obj_map, const std::vector<float>& complete_room_type_probs,
+                      const std::vector<ObjectMap>& complete_obj_map, const ObjectMap& dummy_occ_map, const std::vector<nav_msgs::OccupancyGrid>& grid_maps,
+                      const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps, int i);
 };
 
 #endif //SEMANTIC_MAPPING_V2_HIERARCHYMAPPER_H
