@@ -74,7 +74,7 @@ class ObjectMap{
     visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = 0.f) const;
     visualization_msgs::MarkerArray getProbMsg(OctoMapper& occ, int id=0, float thresh = 0.f) const;
 
-    float getObjectProb(const ObjectMap& occupancy_map, float prior, int unseen_estimate, bool multiply_occ = true) const;
+    float getObjectProb(const ObjectMap& occupancy_map, bool multiply_occ = true) const;
     float getObjectProb(float prior, float expected_room_size) const;
     std::pair<geometry_msgs::Pose, float> getObjMax(const ObjectMap& occupancy_map);
 

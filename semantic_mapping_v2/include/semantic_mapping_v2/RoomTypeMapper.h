@@ -110,6 +110,7 @@ class RoomTypeMapper{
     }
 
     std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order);
+    std::vector<float> getTypeCellNumberEstimate(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors);
 
     semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int room_type_id) {
       boost::lock_guard<boost::mutex> lock(maps_mutex_);

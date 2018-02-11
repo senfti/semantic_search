@@ -137,7 +137,7 @@ class HierarchyMapper{
                                                       const cv::Point& room_origin, int room_width, int room_height, float kernel_size);
     std::vector<cv::Mat_<float>> getObjBasedRoomTypeMap(const std::vector<cv::Mat_<float>>& obj_prob_2d_area, int num_room_types);
     std::vector<cv::Mat_<float>> getCompleteRoomTypeMap(const std::vector<RoomTypeMap>& room_type_map, const std::vector<cv::Mat_<float>>& obj_based_room_type_map);
-    std::vector<float> getRoomTypeProbs(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin,
+    std::vector<float> getRoomTypeCellNumberEstimate(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin,
                                         const nav_msgs::OccupancyGrid& grid_map, const std::vector<Door>& doors, float resolution, int base_size);
     std::vector<cv::Mat_<float>> getRoomBasedObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Point& new_orig, const cv::Size& new_size, int num_obj_types);
     std::vector<ObjectMap> getCompleteObjMap(const std::vector<cv::Mat_<float>>& room_base_obj_maps, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map);

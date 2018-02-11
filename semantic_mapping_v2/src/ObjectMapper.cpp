@@ -281,7 +281,7 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(OctoMapper& occ, int id, f
 }
 
 
-float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, int unseen_estimate, bool multiply_occ) const{
+float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, bool multiply_occ) const{
   double prob = 1.0;
   int num = 0;
   for(int x=0; x<getWidth(); x++){
@@ -294,7 +294,6 @@ float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, int 
       }
     }
   }
-  prob *= (std::pow(1.f-prior, unseen_estimate));
 
   return (1.0-prob);
 }
@@ -564,7 +563,7 @@ std::vector<float> ObjectMapper::getObjectProbs(OctoMapper& octo_mapper, const s
 
   std::vector<float> probs(maps_.size());
   for(int i=0; i<maps_.size(); i++){
-    probs[i] = maps_[i].getObjectProb(occ_map, OBJ_PRIOR_PROB, 0);
+    probs[i] = maps_[i].getObjectProb(occ_map);
   }
   std::cout << "Object Probs in :" << (ros::Time::now() - t).toSec() << std::endl;
 

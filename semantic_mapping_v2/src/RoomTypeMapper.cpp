@@ -467,6 +467,59 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 }
 
 
+std::vector<float> RoomTypeMapper::getTypeCellNumberEstimate(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors){
+  if(prob_maps_.empty() || map.data.size() == 0)
+    return std::vector<float>();
+
+  ros::Time t = ros::Time::now();
+  cv::Mat_<uchar> mask(map.info.height, map.info.width, uchar(0));
+  for(int x=0; x<mask.cols; x++){
+    for(int y=0; y<mask.rows; y++){
+      if(map.data[y * map.info.width + x] >= 0)
+        mask(y,x) = 255;
+    }
+  }
+  cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::erode(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+  std::vector<float> probs(prob_maps_.size(), 0.0);
+  double res = 1.00 / map.info.resolution;
+  double v = std::log(ROOM_PRIOR_PROB);
+  int num = 0;
+  for(int x=0; x<prob_maps_[0].getWidth(); x++){
+    for(int y=0; y<prob_maps_[0].getHeight(); y++){
+      if(prob_maps_[0].wasSeen(x,y)){
+        float x_world = prob_maps_[0].getXWorld(x);
+        float y_world = prob_maps_[0].getYWorld(y);
+        int x_map = ((x_world - map.info.origin.position.x)) * res;
+        int y_map = ((y_world - map.info.origin.position.y)) * res;
+        if(x_map >= 0 && x_map < mask.cols && y_map >= 0 && y_map < mask.rows && mask(y_map, x_map) > 0){
+          bool behind = false;
+          for(const auto &door : doors){
+            if(door.isBehindDoor(x_world, y_world)){
+              behind = true;
+              break;
+            }
+          }
+          if(!behind){
+            for(int i = 0; i < probs.size(); i++){
+              probs[i] += prob_maps_[i].getProb(x, y);
+            }
+            num++;
+          }
+        }
+      }
+    }
+  }
+  for(int i = 0; i < probs.size(); i++){
+    probs[i] /= num;
+  }
+
+  return probs;
+}
+
+
 std::vector<semantic_mapping_v2::RoomTypeMapMsg> RoomTypeMapper::getAllRoomTypeMapMsgs(){
   std::vector<semantic_mapping_v2::RoomTypeMapMsg> res;
   boost::lock_guard<boost::mutex> lock(maps_mutex_);
