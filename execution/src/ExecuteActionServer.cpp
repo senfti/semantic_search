@@ -92,12 +92,12 @@ geometry_msgs::Pose offsetPose(const geometry_msgs::Pose& pose, double dist){
 
 void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr &msg){
   if(goal_.action == 0 && msg->new_room == goal_.target_room){
+    move_to_map_switched_ = true;
     tf::Transform transform;
     tf::Transform pose;
     tf::poseMsgToTF(msg->transform, transform);
     tf::poseMsgToTF(goal_.pose, pose);
     tf::poseTFToMsg(pose*transform, goal_.pose);
-    move_offset_dist_ = -0.5;
     sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
   }
   else{
@@ -125,6 +125,8 @@ void ExecuteActionServer::doorPoseCb(const geometry_msgs::PoseArrayConstPtr& msg
     for(int i=0; i<msg->poses.size(); i++){
       tf::Transform pose;
       tf::poseMsgToTF(msg->poses[i], pose);
+      if(move_to_map_switched_)
+        pose.setRotation(tf::createQuaternionFromYaw(tf::getYaw(pose.getRotation())));
       tf::Transform diff = pose.inverseTimes(curr_pose);
       double confidence = (1.0-diff.getOrigin().length()) * std::max(M_PI_2-std::abs(tf::getYaw(diff.getRotation()))/M_PI_2, 0.001);
       if(confidence > best_confidence){
@@ -152,6 +154,7 @@ void ExecuteActionServer::doMoveTo(){
     if(!move_to_first_reached_){
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(MOVE_MAX_ROT_VEL)).c_str());
       std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(MOVE_MAX_TRANS_VEL)).c_str());
+      move_to_map_switched_ = false;
       move_offset_dist_ = -0.5;
       sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
     }
@@ -190,6 +193,13 @@ void ExecuteActionServer::doMoveTo(){
     }
     else{
       execution::ExecuteResult result;
+      geometry_msgs::Twist cmd_vel;
+      cmd_vel.linear.x = -0.1;
+      cmd_vel.linear.y = 0.0;
+      cmd_vel.angular.z = 0.0;
+      vel_pub_.publish(cmd_vel);
+      ros::Rate r(0.5);
+      r.sleep();
       result.result_number = -2;
       action_server_.setAborted(result, "ABORTED");
       goal_.action = -1;

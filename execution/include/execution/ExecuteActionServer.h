@@ -37,6 +37,7 @@ class ExecuteActionServer{
     move_base_msgs::MoveBaseGoal move_base_goal_;
 
     bool move_to_first_reached_ = false;
+    bool move_to_map_switched_ = false;
     float move_offset_dist_;
     StartRotationStateMachine start_rotation_state_machine_;
     Explorer explorer_;

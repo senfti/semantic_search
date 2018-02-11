@@ -26,7 +26,7 @@
     <param name="gmapping/angularUpdate" value="0.436"/>
     <param name="gmapping/temporalUpdate" value="5.0"/>
     <param name="gmapping/resampleThreshold" value="0.5"/>
-    <param name="gmapping/particles" value="8"/>
+    <param name="gmapping/particles" value="6"/>
 
     <param name="gmapping/xmin" value="-1.0"/>
     <param name="gmapping/ymin" value="-1.0"/>
