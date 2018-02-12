@@ -125,8 +125,8 @@ void ExecuteActionServer::doorPoseCb(const geometry_msgs::PoseArrayConstPtr& msg
     for(int i=0; i<msg->poses.size(); i++){
       tf::Transform pose;
       tf::poseMsgToTF(msg->poses[i], pose);
-      if(move_to_map_switched_)
-        pose.setRotation(tf::createQuaternionFromYaw(tf::getYaw(pose.getRotation())));
+      if(pose.getRotation().angleShortestPath(curr_pose.getRotation()) > M_PI_2)
+        pose.setRotation(tf::createQuaternionFromYaw(tf::getYaw(pose.getRotation())+M_PI));
       tf::Transform diff = pose.inverseTimes(curr_pose);
       double confidence = (1.0-diff.getOrigin().length()) * std::max(M_PI_2-std::abs(tf::getYaw(diff.getRotation()))/M_PI_2, 0.001);
       if(confidence > best_confidence){

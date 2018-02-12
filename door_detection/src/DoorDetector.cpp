@@ -145,7 +145,9 @@ geometry_msgs::Pose DoorDetector::rectToPose(const cv::RotatedRect& rect) const{
   pose.position = pixelToPoint(rect.center);
   float angle = (rect.angle+90)*PI_180;
   angle = makeBetweenPi(angle);
-  if(std::abs(angle) > M_PI_2)
+  if(angle > M_PI_2)
+    angle -= M_PI;
+  if(angle < -M_PI_2)
     angle += M_PI;
   pose.orientation.w = std::cos(angle/2);
   pose.orientation.x = 0.0;

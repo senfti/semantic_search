@@ -1,0 +1,51 @@
+\section{Sensing}
+
+This section describes the processing of the sensor information to get it into the form needed by the other parts of the system. The data from the laser scanner and the depth information from the RGBD-cameras can be used without significant preprocessing. Therefore this section focuses on the object detection, the room type classification and the doorway detection.
+
+\subsection{Object detection}
+
+Object detection is a difficult problem. In the robot setup for this thesis the available sensor data for object detection are the RGB-image and the depth image created by the ASUS Xtion RGBD-camera. The basic idea of this thesis was to create an intelligent system which uses available data to perform the search. Therefore a general object detection system was preferred instead of a specialized one. To find such a system submissions to object detection challenges were investigated. The criteria based on which the object detection system was chosen were the number of detectable object types, the detection accuracy and if it is possible to run the system on the given hardware. 
+
+The most suitable object detection system found was YOLO (``you only look once''), a system using a single neural network for object detection. In contrast to other object detection systems YOLO is quiet fast, even running at more than 2 frames per second on the used mid-class GPU, while still having a detection accuracy not far from the best submissions. There exists a version of YOLO trained on the COCO dataset. The COCO data contains more than 200000 color images with labels for 80 different object types. This number of different detectable object types was said to be sufficient for this work. 
+
+\begin{table}
+\caption{Detectable object classes}
+\begin{tabular}{|l|l|}
+\hline
+Categories & Classes\\ \hline
+Person & Person\\ \hline
+Accessory & Backpack, Umbrella, Handbag, Tie, Suitcase\\ \hline
+Animal & Bird, Cat, Dog, Horse, Sheep, Cow, Elephant, Bear, \\ & Zebra, Giraffe \\ \hline
+Vehicle & Bicycle, Car, Motorbike, Aeroplane, Bus, Train, Truck, \\ &  Boat \\ \hline
+Outdoor Objects & Traffic light, Fire hydrant, Stop sign, Parking Meter, \\ &  Bench \\ \hline
+Sports & Frisbee, Skis, Snowboard, Sports Ball, Kite, \\ &  Baseball Bat, Baseball Glove, Skateboard, Surfboard, \\ & Tennis Racket \\ \hline
+Kitchenware & Bottle, Wine glass, cup, fork, knife, spoon, bowl\\ \hline
+Food & Banana, apple, sandwich, orange, broccoli, carrot, \\ &  hot dog, pizza, donut, cake\\ \hline
+Furniture & chair, sofa, potted plant, bed, dinig table, toilet\\ \hline
+Appliance & Microwave, oven, toaster, sink, refrigerator\\ \hline
+Electronics & TV, laptop, mouse, remote, keyboard, cell phone\\ \hline
+Indoor Objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toothbrush \\ \hline
+\end{tabular}
+\end{table}
+
+YOLO only uses the RGB-image as input. Using the depth image should improve the detection accuracy and also the resulting position would be in 3D and not only in 2D. However as the focus of current research is on RGB only images no suitable RGBD object detection systems was found. The output of YOLO is an array of 845 bounding boxes. Each bounding box marks the location and size of a detected object and also holds the probability of the detected object being of a certain class for all detectable classes. The sum of all those probabilities is the ``objectness'', which is the probability of an detectable object being marked by the bounding box. Using the depth image an estimation of the 3D position of the detected object is possible.
+
+Figure \ref{obj detection} shows a typical result of the object detection, only showing the most likely detectiosn. As one can see the result is far from perfect, especially the confidence is low. This has to be taken into account in the design of the object mapping system.
+
+\begin{figure}[h]
+  \includegraphics[width=1.0\textwidth]{figures/obj_detection.png}
+  \caption{A typical result of the object detection and the place recognition; The bounding boxes together with the most likely class and its probability of the most likely detections are inserted into the image; in the upper left corner of the image the top 5 classification of the place classifier are shown}
+  \label{obj detection}
+\end{figure}
+
+\subsection{Room type classification}
+
+There are various features which can be used to classify rooms into categories used by humans. Visual features are very expressive for room classification. Another advantage of using images for room type classification is the existence of CNNs trained for place classification due to various computer vision challenges for this task. Therefore such a CNN is used for room type classification. The used classifier is a GoogLeNet CNN trained with 2.5 million images classified into 205 place categories. The network achieves a Top1 accuracy of 0.555 and a Top5 accuracy of 0.857. 
+
+Many of the detectable categories are outdoor place categories. Setting the probabilities of those categories to 0 and renormalizing the other probabilities results in a probability distribution over 82 indoor categories. 
+
+Other features like shape of a room are not used because of their limited expressiveness and the lack of out-of-the-box classifiers. 
+
+\subsection{Doorway detection}
+
+The detection of doorways is important for the segmentation of the environment into rooms. Doorways are narrow passages through walls. Doorways are lower than rooms, usually 2 meters high, and the ceiling of rooms is usually not very cluttered. Therefore the detection was done using point clouds generated by a RGBD-camera looking upwards. The used simple approach classifies space to be a doorway if there is a narrow passage which is about 2 meters high and the space in front and behind the passage is free of obstacles.

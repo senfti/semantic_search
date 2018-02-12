@@ -35,7 +35,8 @@ double Door::getIsDoorConfidence(const tf::Transform &pose) const{
 
 bool Door::didDriveThrough(const tf::Transform &robot_pose) const{
   tf::Transform robot_door = pose_.inverse()*robot_pose;
-  return (robot_door.getOrigin().length() < MAX_SAME_DOOR_DIST && robot_door.getOrigin().x() > MIN_THROUGH_DOOR_DIST && robot_door.getBasis().getColumn(0).x() > 0.5);
+  return (robot_door.getOrigin().length() < MAX_SAME_DOOR_DIST && robot_door.getOrigin().x() > MIN_THROUGH_DOOR_DIST
+          && robot_door.getBasis().getColumn(0).x() > 0.5 && std::abs(robot_door.getOrigin().y()) < 0.5);
 }
 
 void Door::updatePose(const tf::Transform &pose){

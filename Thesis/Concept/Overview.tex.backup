@@ -1,6 +1,26 @@
 \section{Overview}
 
-The goal of this thesis is to find an object of a certain object type in an indoor environment. To improve the search strategy commonsense knowledge should be used. The most important thing to know about indoor environments is that it can be segmented into rooms. Rooms are of a certain type, e.g. living room, or an assambly of room types, e.g. a living room with a kitchenette. Rooms are seperated by walls and are usually only connected by narrow doorways. Therefore splitting the problem into a high-level part, where the whole indoor environment is represented as a topology of rooms with attributes and their connections and a low-level part, which works within a room 
+The goal of this thesis is to find an object of a certain object type in an indoor environment. To improve the search strategy commonsense knowledge should be used. The most important thing to know about indoor environments is that they can be segmented into rooms. Rooms are of a certain type, e.g. living room, or an assambly of room types, e.g. a living room with a kitchenette. Rooms are seperated by walls and are usually only connected by narrow doorways. The other major chunk of commonsense knowledge is information about the correlation between room types and objects located in this room. Therefore the selection of the correct room to search is the most important part of finding a good search path.
+
+The basic idea in this thesis is to split the search problem into a high-level part, where the whole indoor environment is represented as a topology of rooms with attributes and their connections and a low-level part, which considers only a single room independently of the other rooms. This division simplifies the problem in multiple ways. Firstly the planning is far less complex. The high-level
+planner selects the best next room to search and the low-level planner, which generates the actual view poses, has only to consider poses within this room. Also the generation of the semantic map,s containing a metric map for navigation and information about room type and object locations, is easier. The smaller maps, only having the size of a room, are easier to keep consistent and are also more efficient.
+
+The whole system is split into four parts, sensing, mapping, high-level planning and low-level plannig and execution.
+
+The sensing comprises the gathering of sensor data and the extraction of information from this data. Images are a very descriptive data source for object detection. Due to various challanges for visual object detection many different systems capable of detecting various different object types are available. This is also true for visual place recognition. Therefore the image of an RGBD-camera is used for object detection and also for room type classification. The depth information gathered by the RGBD-camera together with laser scanner data is used to create a three dimensional 
+
+The mapping creates semantic maps for each visited room, consisting of an occupancy grid map for navigation and localization, information to the type and subsections of the room, information about already observed objects and positions of the doorways connecting the room to other rooms. The mapping also creates the topological map with a node for every room, holding the semantic map of the room, and a link for every doorway to connect the semantic maps. Figure \ref{fig:topological map} shows an example of such a topological map. Together this results in a hybrid map representation for the environment. 
+
+\begin{figure}
+  \centering
+    \includegraphics[width=1.0\textwidth]{figures/DSC_0031.JPG}
+  \caption{Example of a topological map}
+  \label{fig:topological map}
+\end{figure}
+
+
+
+
 
 % At the beginning the basic hardware setup was decided to be based on a Turtlebot 2 with an rigidly mounted additional RGBD-camera. This reduces the complexity of the problem as only movement of the whole robot in two dimensional space is possible with this setup. Assuming not too cluttered environments this setup should be sufficient for most search tasks.
 % 

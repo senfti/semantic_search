@@ -601,12 +601,14 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   cv::Mat_<float> tmp;
   prob_map.copyTo(tmp);
   cv::pow(tmp, 0.25, tmp);
-//  for(int x=0; x<prob_map.cols; x++){
-//    for(int y=0; y<prob_map.rows; y++){
-//      if(border_map_(y,x))
-//        tmp(y,x) = 1.f;
-//    }
-//  }
+  double prob = 1.0;
+  for(int x=0; x<prob_map.cols; x++){
+    for(int y=0; y<prob_map.rows; y++){
+      prob *= (1.0-prob_map(y,x));
+    }
+  }
+  prob = 1-prob;
+  std::cout << "Remaining prob: " << prob << std::endl;
   showProbImage("probabilities", tmp, 2);
 
   cv::Point curr_point = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
