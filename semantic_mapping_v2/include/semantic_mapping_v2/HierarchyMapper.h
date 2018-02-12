@@ -55,6 +55,8 @@ class HierarchyMapper{
     ros::Publisher particle_pose_pub_;
     std::vector<ros::Publisher> base_obj_prob_pub_;
     std::vector<ros::Publisher> base_room_prob_pub_;
+    ros::Publisher debug_output_map_pub_;
+    ros::Publisher debug_output_marker_pub_;
     ros::Publisher hierarchy_pub_;
 
     ros::CallbackQueue service_queue_;
@@ -151,7 +153,8 @@ class HierarchyMapper{
                       const std::vector<cv::Mat_<float>>& obj_based_room_type_map, const std::vector<cv::Mat_<float>>& complete_room_type_map,
                       const std::vector<cv::Mat_<float>>& room_based_obj_map, const std::vector<float>& complete_room_type_probs,
                       const std::vector<ObjectMap>& complete_obj_map, const ObjectMap& dummy_occ_map, const std::vector<nav_msgs::OccupancyGrid>& grid_maps,
-                      const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps, int i);
+                      const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps,
+                      OctoMapper& octomaps, int i);
 };
 
 #endif //SEMANTIC_MAPPING_V2_HIERARCHYMAPPER_H

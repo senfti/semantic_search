@@ -36,6 +36,8 @@ HierarchyMapper::HierarchyMapper()
   base_room_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("base_room_prob_map_view", 1);
   sdf_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("sdf", 1);
   hierarchy_pub_ = nh_.advertise<semantic_mapping_v2::HierarchySrvResponse>("hierarchy", 1);
+  debug_output_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("debug_output_map", 1);
+  debug_output_marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("debug_output_occupied_cells", 1);
 
   ros::NodeHandle service_nh;
   service_nh.setCallbackQueue(&service_queue_);
@@ -260,53 +262,54 @@ void HierarchyMapper::downprojecAndPublish(){
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
 
+  semantic_mapping_v2::ObjFoundMsg obj_found_msg;
+  std::vector<std::pair<geometry_msgs::Pose, float>> tmp = room_mapper_[current_mapper_]->getObjectMax();
+  obj_found_msg.poses.resize(tmp.size());
+  obj_found_msg.probs.resize(tmp.size());
+  for(int i=0; i<tmp.size(); i++){
+    obj_found_msg.poses[i] = tmp[i].first;
+    obj_found_msg.probs[i] = tmp[i].second;
+  }
+  obj_found_pub_.publish(obj_found_msg);
+
   static int counter=0;
   if((counter%debug_publish_interval_) == debug_publish_interval_-1){
-    semantic_mapping_v2::ObjFoundMsg obj_found_msg;
-    std::vector<std::pair<geometry_msgs::Pose, float>> tmp = room_mapper_[current_mapper_]->getObjectMax();
-    obj_found_msg.poses.resize(tmp.size());
-    obj_found_msg.probs.resize(tmp.size());
-    for(int i=0; i<tmp.size(); i++){
-      obj_found_msg.poses[i] = tmp[i].first;
-      obj_found_msg.probs[i] = tmp[i].second;
-    }
-    obj_found_pub_.publish(obj_found_msg);
-
-    if(base_obj_prob_pub_.empty()){
-      base_obj_prob_pub_.resize(80);
-      for(int i=0; i<80; i++){
-        std::string s = "base_obj_" + ObjectMapper::getObjName(i);
-        std::replace( s.begin(), s.end(), ' ', '_');
-        base_obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
-      }
-    }
-    for(int i=0; i<80; i++)
-      base_obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
-
-    if(base_room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
-      int num = room_mapper_[current_mapper_]->getRoomNames().size();
-      base_room_prob_pub_.resize(num);
-      for(int i=0; i<num; i++){
-        std::string s = "base_room_" + room_mapper_[current_mapper_]->getRoomName(i);
-        std::replace( s.begin(), s.end(), ' ', '_');
-        base_room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
-      }
-    }
-    if(!base_room_prob_pub_.empty())
-      for(int i=0; i<room_mapper_[current_mapper_]->getRoomNames().size(); i++)
-        base_room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
-
-    std::vector<size_t> order;
-    std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
-    if(!probs.empty()){
-      for(int i = 0; i < probs.size(); i++){
-        std::cout << room_mapper_[current_mapper_]->getRoomName(order[i]) << ": " << probs[order[i]] << std::endl;
-      }
-    }
-    std::cout << std::endl;
-    probs = room_mapper_[current_mapper_]->getObjectProbs(order);
-    for(int i=0; i<probs.size(); i++)
-      std::cout << ObjectMapper::getObjName(order[i]) << ": " << probs[order[i]] << std::endl;
+    ;
+//    if(base_obj_prob_pub_.empty()){
+//      base_obj_prob_pub_.resize(80);
+//      for(int i=0; i<80; i++){
+//        std::string s = "base_obj_" + ObjectMapper::getObjName(i);
+//        std::replace( s.begin(), s.end(), ' ', '_');
+//        base_obj_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+//      }
+//    }
+//    for(int i=0; i<80; i++)
+//      base_obj_prob_pub_[i].publish(room_mapper_[current_mapper_]->getObjectProbMsg(i));
+//
+//    if(base_room_prob_pub_.empty() && !room_mapper_[current_mapper_]->getRoomName(1).empty()){
+//      int num = room_mapper_[current_mapper_]->getRoomNames().size();
+//      base_room_prob_pub_.resize(num);
+//      for(int i=0; i<num; i++){
+//        std::string s = "base_room_" + room_mapper_[current_mapper_]->getRoomName(i);
+//        std::replace( s.begin(), s.end(), ' ', '_');
+//        base_room_prob_pub_[i] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+//      }
+//    }
+//    if(!base_room_prob_pub_.empty())
+//      for(int i=0; i<room_mapper_[current_mapper_]->getRoomNames().size(); i++)
+//        base_room_prob_pub_[i].publish(room_mapper_[current_mapper_]->getRoomProbMsg(i));
+//
+//    std::vector<size_t> order;
+//    std::vector<float> probs = room_mapper_[current_mapper_]->getRoomTypeProbs(order);
+//    if(!probs.empty()){
+//      for(int i = 0; i < probs.size(); i++){
+//        std::cout << room_mapper_[current_mapper_]->getRoomName(order[i]) << ": " << probs[order[i]] << std::endl;
+//      }
+//    }
+//    std::cout << std::endl;
+//    probs = room_mapper_[current_mapper_]->getObjectProbs(order);
+//    for(int i=0; i<probs.size(); i++)
+//      std::cout << ObjectMapper::getObjName(order[i]) << ": " << probs[order[i]] << std::endl;
   }
   counter++;
 
@@ -626,7 +629,6 @@ std::vector<float> HierarchyMapper::getCompleteObjProbs(const std::vector<Object
     for(int r = 0; r < room_type_cell_number.size(); r++){
       unseen_prob_estimate *= std::pow(1.0-RoomMapper::getObjProbGivenRoomPerCell(o,r),room_type_cell_number[r]*unseen_estimate);
     }
-    std::cout << "________________________________________" << 1.0-unseen_prob_estimate << std::endl;
     complete_obj_probs[o] = std::min(1.0-(1.0-complete_obj_map[o].getObjectProb(occ_map, false))*(unseen_prob_estimate), 0.999);
   }
   return complete_obj_probs;
@@ -806,7 +808,8 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
                                    const std::vector<cv::Mat_<float>>& obj_based_room_type_map, const std::vector<cv::Mat_<float>>& complete_room_type_map,
                                    const std::vector<cv::Mat_<float>>& room_based_obj_map, const std::vector<float>& room_type_cell_number,
                                    const std::vector<ObjectMap>& complete_obj_map, const ObjectMap& dummy_occ_map, const std::vector<nav_msgs::OccupancyGrid>& grid_maps,
-                                   const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps, int i)
+                                   const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps,
+                                   OctoMapper& octomaps, int i)
 {
   for(int j = 0; j < complete_obj_map.size(); j++){
     publishObjProbMap(complete_obj_map[j], j);
@@ -815,6 +818,45 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
     publishRoomTypeProbMap(RoomTypeMap(complete_room_type_map[j], room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
                                        room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize()),j);
   }
+
+  if(base_obj_prob_pub_.empty()){
+    base_obj_prob_pub_.resize(80);
+    for(int j=0; j<80; j++){
+      std::string s = "base_obj_" + ObjectMapper::getObjName(j);
+      std::replace( s.begin(), s.end(), ' ', '_');
+      base_obj_prob_pub_[j] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+    }
+  }
+  for(int j=0; j<80; j++)
+    base_obj_prob_pub_[j].publish((obj_maps[i][j]*occ_map).getProbMsg(0, 0.0));
+
+  if(base_room_prob_pub_.empty() && !room_mapper_[0]->getRoomName(1).empty()){
+    int num = room_mapper_[0]->getRoomNames().size();
+    base_room_prob_pub_.resize(num);
+    for(int j=0; j<num; j++){
+      std::string s = "base_room_" + room_mapper_[0]->getRoomName(j);
+      std::replace( s.begin(), s.end(), ' ', '_');
+      base_room_prob_pub_[j] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+    }
+  }
+  if(!base_room_prob_pub_.empty())
+    for(int j=0; j<room_mapper_[0]->getRoomNames().size(); j++)
+      base_room_prob_pub_[j].publish(room_type_maps[i][j].getProbMsg(j));
+
+  std::vector<size_t> order;
+  std::vector<float> probs = room_mapper_[0]->getRoomTypeProbs(order);
+  if(!probs.empty()){
+    for(int j = 0; j < probs.size(); j++){
+      std::cout << room_mapper_[0]->getRoomName(order[j]) << ": " << probs[order[j]] << std::endl;
+    }
+  }
+  std::cout << std::endl;
+  probs = room_mapper_[0]->getObjectProbs(order);
+  for(int j=0; j<probs.size(); j++)
+    std::cout << ObjectMapper::getObjName(order[j]) << ": " << probs[order[j]] << std::endl;
+
+  debug_output_map_pub_.publish(grid_maps[i]);
+  debug_output_marker_pub_.publish(octomaps.getOccupiedCellMsg(ros::Time::now()));
 
   std::vector<cv::Mat_<float>> debug_maps = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
                                                                  complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 0);
@@ -1076,7 +1118,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
 
     if(PUBLISH_DEBUG_IMAGES && req.debug_room == i){
       publishDebug(behind_door_mask, occ_map, obj_prob_2d_area, obj_based_room_type_map, complete_room_type_map, room_based_obj_map, room_type_cell_number,
-                   complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, i);
+                   complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], i);
     }
 
     std::vector<float> single_view_max_probs(single_view_prob_map.size());

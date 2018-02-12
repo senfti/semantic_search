@@ -137,6 +137,7 @@ ObjectMap ObjectMap::operator*(const ObjectMap &rhs) const{
   ObjectMap res(resolution_, base_size_, getWidth(), getHeight(), origin_, max_height_, 0.f);
   for(int z=0; z<getZSteps(); z++){
     res.prob_maps_[z] = prob_maps_[z].mul(rhs.prob_maps_[z]);
+    prob_maps_[z].copyTo(res.count_maps_[z]);
   }
   return res;
 }
