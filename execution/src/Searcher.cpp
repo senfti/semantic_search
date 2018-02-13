@@ -623,7 +623,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
-                (std::abs(curr_point.x-x)>1 && std::abs(curr_point.y-y)>1 && std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)){
+                (std::abs(curr_point.x-x)>2 && std::abs(curr_point.y-y)>2 && std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_point, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){

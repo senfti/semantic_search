@@ -239,11 +239,11 @@ RoomMapper::~RoomMapper(){
 void RoomMapper::doOctomapping(){
   ros::Rate rate(10.0);
   while(ros::ok()){
+    boost::unique_lock<boost::mutex> lock(latest_cloud_mutex_);
     if(!latest_cloud_.data.empty()){
       ros::Time t = ros::Time::now();
 
       OctoMapper::PCLPointCloudPtr pc_ground(new OctoMapper::PCLPointCloud());
-      boost::unique_lock<boost::mutex> lock(latest_cloud_mutex_);
       pcl::fromROSMsg(latest_cloud_, *pc_ground);
       ros::Time stamp = latest_cloud_.header.stamp;
       latest_cloud_ = sensor_msgs::PointCloud2();
@@ -287,6 +287,8 @@ void RoomMapper::doOctomapping(){
 
       ROS_INFO("Octomaps update in %.3lf, downsample: %d", ros::Time::now().toSec() - t.toSec(), downsample_factor_);
     }
+    else
+      lock.unlock();
     rate.sleep();
   }
 }

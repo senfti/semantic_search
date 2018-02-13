@@ -11,6 +11,7 @@
 HierarchyMapper::HierarchyMapper()
   : service_spinner_(1, &service_queue_)
 {
+  room_mapper_.reserve(64);
   addMapper(Door());
 
   laser_sub_ = nh_.subscribe("scan_filtered", 1, &HierarchyMapper::laserCallback, this);
@@ -224,8 +225,9 @@ void HierarchyMapper::transformPublishLoop(double transform_publish_period){
 
   ros::Rate r(1.0 / transform_publish_period);
   while(ros::ok()){
-    if(current_mapper_ >= 0 && current_mapper_ < room_mapper_.size()){
-      tfB_->sendTransform(room_mapper_[current_mapper_]->getTransform());
+    int i = current_mapper_;
+    if(i >= 0 && i < room_mapper_.size()){
+      tfB_->sendTransform(room_mapper_[i]->getTransform());
     }
     r.sleep();
   }

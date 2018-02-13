@@ -242,7 +242,7 @@ void Explorer::calcFrontier(){
   }
 
   bool inside = false;
-  if((pos-best_pos).ddot(pos-best_pos) < ROBOT_SIZE*ROBOT_SIZE*1.2){
+  if((pos-best_pos).ddot(pos-best_pos) < ROBOT_SIZE*ROBOT_SIZE*1.5){
     bool pos_found = false;
     for(const auto& offset : circle_points_){
       cv::Point p = best_pos+offset;
@@ -276,11 +276,17 @@ void Explorer::calcFrontier(){
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
   tf::Transform diff = old_frontier.inverseTimes(tf_t);
-  if(diff.getOrigin().length() > 0.1 || std::abs(tf::getYaw(diff.getRotation())) > 0.2){
+  static ros::Time last_frontier_change = ros::Time(0);
+  static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
+  if(diff.getOrigin().length() > 0.1 || std::abs(tf::getYaw(diff.getRotation())) > 0.1
+     || (ros::Time::now()-last_frontier_change > ros::Duration(5.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3)){
     frontier_changed_ = true;
+    last_frontier_calc_pos = transform.getOrigin();
+    last_frontier_change = ros::Time::now();
     tf::poseTFToMsg(tf_t, curr_frontier_);
+    std::cout << "NEW FRONTIER in " << (ros::Time::now()-t).toSec() << std::endl;
   }
-  std::cout << "NEW FRONTIER in" << (ros::Time::now()-t).toSec() << std::endl;
+  std::cout << "No frontier change in " << (ros::Time::now()-t).toSec() << std::endl;
 }
 
 
