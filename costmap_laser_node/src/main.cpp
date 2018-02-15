@@ -48,8 +48,8 @@ void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
 
   filtered.ranges = std::vector<float>(num_ranges);
   filtered.intensities = std::vector<float>(num_ranges);
-  for(int i=0; i<num_ranges; i++){
-    filtered.ranges[i] = (msg->ranges[i+min_cutoff] < 4.0 ? msg->ranges[i+min_cutoff] : 4.0);
+  for(int i=0; i<num_ranges; i++){bool neighbor_in = (i>0 && msg->ranges[i+min_cutoff] < 4.0) || (i<num_ranges-1 && msg->ranges[num_ranges-1+min_cutoff] < 4.0) || i==0 || i==num_ranges-1;
+    filtered.ranges[i] = (msg->ranges[i+min_cutoff] < 4.0 || neighbor_in ? msg->ranges[i+min_cutoff] : 4.0);
   }
   if(!msg->intensities.empty()){
     for(int i = 0; i < num_ranges; i++){

@@ -549,7 +549,7 @@ void SlamGMapping::updateMap() {
       GMapping::IntPoint p(x, y);
       double occ = smap.cell(p);
       assert(occ <= 1.0);
-      if(occ < 0)
+      if(smap.cell(p).visits < 2)
         map.data[MAP_IDX(map.info.width, x, y)] = -1;
       else if(occ > occ_thresh_){
         //map_.map.data[MAP_IDX(map_.map.info.width, x, y)] = (int)round(occ*100.0);
