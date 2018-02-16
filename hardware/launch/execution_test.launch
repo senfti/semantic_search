@@ -36,18 +36,14 @@
     <param name="VIEW_MAX_DIST" value="3.5" />
     <param name="VIEW_ANGLE" value="0.8727" />
 
-    <param name="TURN_SPEED" value="9999999.0" />
-    <param name="MOVE_SPEED" value="9999999.9" />
-    <param name="VIEW_TIME" value="100.0" />
-<!--
-    <param name="TURN_SPEED" value="0.1" />
-    <param name="MOVE_SPEED" value="9999.9" />
-    <param name="VIEW_TIME" value="0.001" />
--->
+    <param name="TURN_SPEED" value="1.0" />
+    <param name="MOVE_SPEED" value="0.3" />
+    <param name="VIEW_TIME" value="1.0" />
+
     <param name="BORDER_SEEN_THRESH" value="2147483647" />
     <param name="BORDER_SEEN_SIGMA" value="0.35" />
     <param name="SEEN_MAP_MAX_DIST" value="2.5" />
-    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.1" />
+    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.01" />
 
     <param name="QUICK_SEARCH_VIEWS" value="5" />
     <param name="QUICK_SEARCH_MIN_DIST" value="0.8" />

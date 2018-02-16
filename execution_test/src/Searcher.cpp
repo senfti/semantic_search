@@ -354,7 +354,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::threshold(accessible_mat, accessible_mat, 192, 255, cv::THRESH_BINARY);
   accessible_map_ = cv::Mat_<uchar>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
   accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_[0]->getXPixel(msg->info.origin.position.x), obj_map_[0]->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
-  cv::erode(accessible_map_, good_accessible_map_, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::erode(accessible_map_, good_accessible_map_, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 1);
 
   cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
   cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
@@ -628,10 +628,9 @@ cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resol
 
 
 float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
-  return 1.f;
   cv::Point diff = pos-curr_pos;
   float move_angle = std::atan2(float(diff.y),float(diff.x));
-  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/MOVE_SPEED +
+  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))/MOVE_SPEED +
     VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
 }
 
@@ -659,8 +658,8 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
       interesting_border_seen += seen_kernel_points_value_[angle_step][idx]*val;
     }
 
-//    if(angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x))) < BORDER_SEEN_SIGMA)
-//      prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
+    float val = gaussian(angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x))), BORDER_SEEN_SIGMA);
+    prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]*val);
 
 //    if(old_angle_step != angle_step){
 //      if(not_fully_viewed_border_(pos+p) > 0 && angleDist(angle, border_dir_map_(pos+p)) < BORDER_SEEN_SIGMA)
@@ -669,8 +668,10 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
 //        seen(pos+p) = 0.2;
 //    }
   }
-  if(interesting_border_seen < 0.0f)
+  if(interesting_border_seen < 0.0f){
+    std::cout << "NO INTERESTING BORDER" << std::endl;
     return 0.f;
+  }
 
 //  if(old_angle_step != angle_step){
 //    //old_angle_step = angle_step;
@@ -682,7 +683,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
 
 //  std::cout << (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle)*100.f << " "
 //            << 1.f-prob << " " << pos.x << " " << pos.y << " " << angle_step << " " << angle << " " << interesting_border_seen<< std::endl;
-  return 1.f/*(1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)*//calcMoveTime(pos, angle, curr_pos, curr_angle);
+  return (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle);
 }
 
 
@@ -713,12 +714,13 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   cv::Mat_<uchar> seen_mat(prob_map.rows, prob_map.cols, uchar(0));
   std::vector<cv::Mat_<float>> prob_mats;
   for(int i=0; i<VIEW_ANGLE_STEPS; i++){
+    std::cout << std::endl;
     prob_mats.push_back(cv::Mat_<float>(prob_map.rows, prob_map.cols,0.f));
     //cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
-                ((std::abs(curr_point.x-x)>2 || std::abs(curr_point.y-y)>2 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
+                ((std::abs(curr_point.x-x)>1 || std::abs(curr_point.y-y)>1 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_point, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
@@ -733,6 +735,8 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
             }
           }
           prob_mats[i](y,x) = prob;
+          if(prob < 0 || prob > 1)
+            std::cout << "PROB OUT OF BOUNDS " << prob << std::endl;
         }
         //if(border_map_(y,x))
         //  sdf(y,x) = 1.f;
