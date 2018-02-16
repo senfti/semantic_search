@@ -184,7 +184,7 @@ void ObjectMap::resample(const ObjectMap &target, float prior){
       for(int y=0; y<target.getHeight(); y++){
         if(isWithin(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z))){
           prob_tmp[z](y,x) = getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z)); //1.f-std::pow(1.f-getProb(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z)), exponent);
-          count_tmp[z](y,x) = (target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
+          count_tmp[z](y,x) = getCount(target.getXWorld(x), target.getYWorld(y), target.getZWorld(z));
         }
       }
     }
@@ -219,7 +219,7 @@ void ObjectMap::resetProbs(float prior){
 }
 
 
-visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
+visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id, float thresh) const{
   static int seq=0;
   visualization_msgs::Marker def;
 
@@ -242,11 +242,11 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id) const{
   for(int x=0; x<getWidth(); x++){
     for(int y=0; y<getHeight(); y++){
       for(int z=0; z<getZSteps(); z++){
-        if(count_maps_[z](y,x) > uchar(0)){
+        if(count_maps_[z](y,x) > uchar(0) && getProb(x,y,z) >= thresh){
           min = std::min(min, getProb(x,y,z));
           max = std::max(max, getProb(x,y,z));
 
-          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::sqrt(getProb(x,y,z))*150, 255, 255));
+          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::max(std::log10(getProb(x,y,z)) + 4.f, 0.f)*150/4.f, 255, 255));
           cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
           std_msgs::ColorRGBA c;
           c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;

@@ -86,7 +86,7 @@ class ObjectMap{
     float getResolution() const { return resolution_; }
     cv::Point getOrigin() const { return origin_; }
 
-    visualization_msgs::MarkerArray getProbMsg(int id=0) const;
+    visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = -1.f) const;
     visualization_msgs::MarkerArray getProbMsg(float scale) const;
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;

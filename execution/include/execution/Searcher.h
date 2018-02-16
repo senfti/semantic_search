@@ -16,6 +16,7 @@
 #include <std_msgs/Int8.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <std_msgs/Float64MultiArray.h>
 
 #include <vision/VisionMsg.h>
 
@@ -54,7 +55,7 @@ class Searcher{
     float VIEW_TIME = 0.2;
 
     int BORDER_SEEN_THRESH = 1;
-    float BORDER_SEEN_MAX_ANGLE = 25.f*M_PI/180.0;
+    float BORDER_SEEN_SIGMA = 25.f*M_PI/180.0;
     int SEEN_MAP_MAX_DIST = 2.5;
 
     float INTERESTING_BORDER_SEEN_REWARD = 0.01f;
@@ -75,6 +76,7 @@ class Searcher{
     ros::Publisher count_pub_;
     ros::Publisher next_pose_pub_;
     ros::Publisher obj_found_pub_;
+    ros::Publisher prior_pub_;
 
     ros::ServiceClient obj_map_service_client_;
 
