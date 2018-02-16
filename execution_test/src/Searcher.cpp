@@ -8,6 +8,16 @@
 #include <tf/transform_datatypes.h>
 
 
+inline float angleDist(float angle1, float angle2){
+  float angle = angle1-angle2;
+  while(angle > M_PI)
+    angle-=2*M_PI;
+  while(angle <= -M_PI)
+    angle+=2*M_PI;
+  return std::abs(angle);
+}
+
+
 void showProbImage(const std::string& name, const cv::Mat mat, float resize_factor){
   cv::Mat tmp;
   cv::resize(mat, tmp, cv::Size(mat.cols*resize_factor, mat.rows*resize_factor), 0, 0, cv::INTER_NEAREST);
@@ -233,7 +243,9 @@ void Searcher::calcSeenKernels(){
         if(kernel(y,x)){
           cv::Point diff = cv::Point(x,y)-center;
           seen_kernel_points_[i].push_back(diff);
-          seen_kernel_points_value_[i].push_back(std::max(1.25f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION) - 2.f)/2.f,1.f));
+          float va = std::min(1.5f-2.f*angleDist(std::atan2(float(diff.y),float(diff.x)), angle), 1.f);
+          float vr = std::min(1.5f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION)-2.f)/1.5f, 1.f);
+          seen_kernel_points_value_[i].push_back(va*vr);
         }
       }
     }
@@ -605,16 +617,6 @@ cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resol
 }
 
 
-inline float angleDist(float angle1, float angle2){
-  float angle = angle1-angle2;
-  while(angle > M_PI)
-    angle-=2*M_PI;
-  while(angle <= -M_PI)
-    angle+=2*M_PI;
-  return std::abs(angle);
-}
-
-
 float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
   return 1.f;
   cv::Point diff = pos-curr_pos;
@@ -636,6 +638,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
   int idx = -1;
   static int old_angle_step = -1;
   cv::Mat_<float> seen(prob_map.rows, prob_map.cols, 0.f);
+  cv::Mat_<float> angle_diff(prob_map.rows, prob_map.cols, 0.f);
   for(const auto& p : seen_kernel_points_[angle_step]){
     idx++;
     if(!(pos+p).inside(cv::Rect(0,0,prob_map.cols,prob_map.rows))){
@@ -645,22 +648,29 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
     //if(not_fully_viewed_border_(pos+p) > 0 && angleDist(angle, border_dir_map_(pos+p)) < BORDER_SEEN_MAX_ANGLE)
       interesting_border_seen += seen_kernel_points_value_[angle_step][idx];
 
-    if(angleDist(border_dir_map_(pos+p), std::atan2(float((pos+p-curr_pos).y),float((pos+p-curr_pos).x))) < BORDER_SEEN_MAX_ANGLE)
+    if(angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x))) < BORDER_SEEN_MAX_ANGLE)
       prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
 
-    if(old_angle_step != angle_step){
-      seen(pos+p) = 0.5 + 0.5*std::pow(prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx], 0.25);
-    }
+    //angle_diff(pos+p) = 0.5f + angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x)))/(2*M_PI);
+
+//    if(old_angle_step != angle_step){
+//      if(angleDist(border_dir_map_(pos+p), std::atan2(float((p).y),float((p).x))) < BORDER_SEEN_MAX_ANGLE)
+//        seen(pos+p) = 0.5 + 0.5*std::pow(prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx], 1.f);
+//      else
+//        seen(pos+p) = 0.2;
+//    }
   }
   if(interesting_border_seen < 0.0f)
     return 0.f;
 
-  if(old_angle_step != angle_step){
-    old_angle_step = angle_step;
-    seen(pos) = 1.f;
-    showProbImage("seen" + std::to_string(pos.x) + " " + std::to_string(pos.y) + " " + std::to_string(angle_step) + " " + std::to_string(angle*180.0/M_PI), seen, 4, 255-accessible_map_*0.3);
-    cv::waitKey();
-  }
+//  if(old_angle_step != angle_step){
+//    //old_angle_step = angle_step;
+//    seen(pos) = 1.f;
+//    showProbImage("angle_diff", angle_diff, 4, 255-accessible_map_*0.3);
+//    showProbImage("seen" + std::to_string(pos.x) + " " + std::to_string(pos.y) + " " + std::to_string(angle_step) + " " + std::to_string(angle*180.0/M_PI), seen, 4, 255-accessible_map_*0.3);
+//    cv::waitKey();
+//    cv::destroyWindow("seen" + std::to_string(pos.x) + " " + std::to_string(pos.y) + " " + std::to_string(angle_step) + " " + std::to_string(angle*180.0/M_PI));
+//  }
 
 //  std::cout << (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle)*100.f << " "
 //            << 1.f-prob << " " << pos.x << " " << pos.y << " " << angle_step << " " << angle << " " << interesting_border_seen<< std::endl;
