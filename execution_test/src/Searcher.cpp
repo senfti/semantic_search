@@ -18,6 +18,11 @@ inline float angleDist(float angle1, float angle2){
 }
 
 
+inline float gaussian(float x, float sigma){
+  return std::exp(-0.5*x*x/(sigma*sigma));
+}
+
+
 void showProbImage(const std::string& name, const cv::Mat mat, float resize_factor){
   cv::Mat tmp;
   cv::resize(mat, tmp, cv::Size(mat.cols*resize_factor, mat.rows*resize_factor), 0, 0, cv::INTER_NEAREST);
@@ -101,7 +106,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("VIEW_TIME", VIEW_TIME, VIEW_TIME);
 
   private_nh.param("BORDER_SEEN_THRESH", BORDER_SEEN_THRESH, BORDER_SEEN_THRESH);
-  private_nh.param("BORDER_SEEN_MAX_ANGLE", BORDER_SEEN_MAX_ANGLE, BORDER_SEEN_MAX_ANGLE);
+  private_nh.param("BORDER_SEEN_SIGMA", BORDER_SEEN_SIGMA, BORDER_SEEN_SIGMA);
   private_nh.param("SEEN_MAP_MAX_DIST", SEEN_MAP_MAX_DIST, SEEN_MAP_MAX_DIST);
   private_nh.param("INTERESTING_BORDER_SEEN_REWARD", INTERESTING_BORDER_SEEN_REWARD, INTERESTING_BORDER_SEEN_REWARD);
 
@@ -238,17 +243,22 @@ void Searcher::calcSeenKernels(){
     points.push_back(cv::Point(std::cos(angle+VIEW_ANGLE/2.f)*VIEW_MAX_DIST*RESOLUTION, std::sin(angle+VIEW_ANGLE/2.f)*VIEW_MAX_DIST*RESOLUTION)+center);
     points.push_back(cv::Point(std::cos(angle+VIEW_ANGLE/2.f)*VIEW_MIN_DIST*RESOLUTION, std::sin(angle+VIEW_ANGLE/2.f)*VIEW_MIN_DIST*RESOLUTION)+center);
     cv::fillConvexPoly(kernel, points, cv::Scalar(255));
+    //cv::Mat_<float> sdf(kernel.rows, kernel.cols, 0.f);
     for(int x=0;x<kernel.cols; x++){
       for(int y=0; y<kernel.rows; y++){
         if(kernel(y,x)){
           cv::Point diff = cv::Point(x,y)-center;
           seen_kernel_points_[i].push_back(diff);
           float va = std::min(1.5f-2.f*angleDist(std::atan2(float(diff.y),float(diff.x)), angle), 1.f);
-          float vr = std::min(1.5f-std::abs(std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION)-2.f)/1.5f, 1.f);
+          float r = std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION);
+          float vr = (r > 2.f ? 1.0f-0.6f*(r-2.f) : (r < 1.5f ? 1.0f-0.4f*(1.5f-r) : 1.f));
           seen_kernel_points_value_[i].push_back(va*vr);
+          //sdf(y,x) = va*vr;
         }
       }
     }
+    //showProbImage("kernel", sdf, 4);
+    //cv::waitKey(0);
   }
 }
 
@@ -638,24 +648,23 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
   int idx = -1;
   static int old_angle_step = -1;
   cv::Mat_<float> seen(prob_map.rows, prob_map.cols, 0.f);
-  cv::Mat_<float> angle_diff(prob_map.rows, prob_map.cols, 0.f);
   for(const auto& p : seen_kernel_points_[angle_step]){
     idx++;
     if(!(pos+p).inside(cv::Rect(0,0,prob_map.cols,prob_map.rows))){
       std::cout << "out" << std::endl;
       continue;
     }
-    //if(not_fully_viewed_border_(pos+p) > 0 && angleDist(angle, border_dir_map_(pos+p)) < BORDER_SEEN_MAX_ANGLE)
-      interesting_border_seen += seen_kernel_points_value_[angle_step][idx];
+    if(not_fully_viewed_border_(pos+p) > 0){
+      float val = gaussian(angleDist(angle, border_dir_map_(pos+p)), BORDER_SEEN_SIGMA);
+      interesting_border_seen += seen_kernel_points_value_[angle_step][idx]*val;
+    }
 
-    if(angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x))) < BORDER_SEEN_MAX_ANGLE)
-      prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
-
-    //angle_diff(pos+p) = 0.5f + angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x)))/(2*M_PI);
+//    if(angleDist(border_dir_map_(pos+p), std::atan2(float(p.y),float(p.x))) < BORDER_SEEN_SIGMA)
+//      prob *= (1.f-prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx]);
 
 //    if(old_angle_step != angle_step){
-//      if(angleDist(border_dir_map_(pos+p), std::atan2(float((p).y),float((p).x))) < BORDER_SEEN_MAX_ANGLE)
-//        seen(pos+p) = 0.5 + 0.5*std::pow(prob_map(pos+p)*seen_kernel_points_value_[angle_step][idx], 1.f);
+//      if(not_fully_viewed_border_(pos+p) > 0 && angleDist(angle, border_dir_map_(pos+p)) < BORDER_SEEN_SIGMA)
+//        seen(pos+p) = 0.5 + 0.5*seen_kernel_points_value_[angle_step][idx];
 //      else
 //        seen(pos+p) = 0.2;
 //    }
@@ -666,15 +675,14 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
 //  if(old_angle_step != angle_step){
 //    //old_angle_step = angle_step;
 //    seen(pos) = 1.f;
-//    showProbImage("angle_diff", angle_diff, 4, 255-accessible_map_*0.3);
-//    showProbImage("seen" + std::to_string(pos.x) + " " + std::to_string(pos.y) + " " + std::to_string(angle_step) + " " + std::to_string(angle*180.0/M_PI), seen, 4, 255-accessible_map_*0.3);
+//    showProbImage("seen" + std::to_string(pos.x) + " " + std::to_string(pos.y) + " " + std::to_string(angle_step) + " " + std::to_string(angle*180.0/M_PI), seen, 4, 192+not_fully_viewed_border_*0.25);
 //    cv::waitKey();
 //    cv::destroyWindow("seen" + std::to_string(pos.x) + " " + std::to_string(pos.y) + " " + std::to_string(angle_step) + " " + std::to_string(angle*180.0/M_PI));
 //  }
 
 //  std::cout << (1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)/calcMoveTime(pos, angle, curr_pos, curr_angle)*100.f << " "
 //            << 1.f-prob << " " << pos.x << " " << pos.y << " " << angle_step << " " << angle << " " << interesting_border_seen<< std::endl;
-  return (1.f-prob/* + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD*/)/calcMoveTime(pos, angle, curr_pos, curr_angle);
+  return 1.f/*(1.f-prob + interesting_border_seen*INTERESTING_BORDER_SEEN_REWARD)*//calcMoveTime(pos, angle, curr_pos, curr_angle);
 }
 
 
@@ -877,6 +885,9 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::moveWindow("not_fully_viewed_border_", 1600,300);
   cv::waitKey(1);
   std::cout << "In seen map inserted" << std::endl;
+
+  showProbImage("not_fully_viewed_border_dir", border_dir_map_/(2*M_PI), 4, not_fully_viewed_border_);
+  cv::waitKey(1);
 
   return (countNonZero(not_fully_viewed_border_) == 0);
 }

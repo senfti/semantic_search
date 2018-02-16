@@ -55,7 +55,7 @@ class Searcher{
     float VIEW_TIME = 0.2;
 
     int BORDER_SEEN_THRESH = 1;
-    float BORDER_SEEN_MAX_ANGLE = 25.f*M_PI/180.0;
+    float BORDER_SEEN_SIGMA = 25.f*M_PI/180.0;
     int SEEN_MAP_MAX_DIST = 2.5;
 
     float INTERESTING_BORDER_SEEN_REWARD = 0.01f;
