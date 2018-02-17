@@ -101,10 +101,7 @@ class Searcher{
     bool finished_ = false;
     bool running_ = false;
     bool obj_found_ = false;
-    bool is_quick_search_ = false;
-    int quick_search_step_ = 0;
-    bool quick_search_step_viewed_ = true;
-    geometry_msgs::Pose quick_search_target_;
+    bool search_step_viewed_ = true;
     geometry_msgs::PoseStamped found_pose_;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
@@ -131,7 +128,7 @@ class Searcher{
     bool running() const { return running_; }
     bool objectFound() const { return obj_found_; }
 
-    void start(int searched_obj, bool quick_search, geometry_msgs::Pose& target_pose);
+    void start(int searched_obj);
     void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
@@ -142,9 +139,8 @@ class Searcher{
     bool objFound();
 
     bool calcNextViewpoint(const tf::Transform& curr_pose);
-    bool calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_pose);
 
-    void doCalculations();
+    bool doCalculations(bool force_new);
 
     bool did_abort_ = false;
 };

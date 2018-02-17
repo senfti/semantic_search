@@ -110,11 +110,6 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("SEEN_MAP_MAX_DIST", SEEN_MAP_MAX_DIST, SEEN_MAP_MAX_DIST);
   private_nh.param("INTERESTING_BORDER_SEEN_REWARD", INTERESTING_BORDER_SEEN_REWARD, INTERESTING_BORDER_SEEN_REWARD);
 
-  private_nh.param("QUICK_SEARCH_VIEWS", QUICK_SEARCH_VIEWS, QUICK_SEARCH_VIEWS);
-  private_nh.param("QUICK_SEARCH_MIN_DIST", QUICK_SEARCH_MIN_DIST, QUICK_SEARCH_MIN_DIST);
-  private_nh.param("QUICK_SEARCH_MAX_DIST", QUICK_SEARCH_MAX_DIST, QUICK_SEARCH_MAX_DIST);
-  private_nh.param("QUICK_SEARCH_ANGLE_AREA", QUICK_SEARCH_ANGLE_AREA, QUICK_SEARCH_ANGLE_AREA);
-
   while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
     ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
     ros::spinOnce();
@@ -148,7 +143,7 @@ geometry_msgs::Pose Searcher::getNextViewPose(){
   return curr_view_pose_;
 }
 
-void Searcher::start(int searched_obj, bool quick_search, geometry_msgs::Pose& target_pose){
+void Searcher::start(int searched_obj){
   if(running_)
     return;
 
@@ -160,15 +155,10 @@ void Searcher::start(int searched_obj, bool quick_search, geometry_msgs::Pose& t
   curr_view_changed_= true;
   got_map_ = false;
   got_vision_ = false;
-  is_quick_search_ = quick_search;
-  quick_search_step_ = 0;
-  quick_search_step_viewed_ = true;
-  quick_search_target_ = target_pose;
+  search_step_viewed_ = true;
 
-  if(!is_quick_search_){
-    std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
-    std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
-  }
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
   
   octo_mapper_ = new OctoMapper(RESOLUTION);
 
@@ -364,15 +354,15 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::dilate(tmp, tmp2, cv::Mat_<uchar>::ones(3,3));
   border_map_ = tmp2-tmp;
 
-  cv::Mat_<float> bla = border_dir_map_/(2.0*M_PI);
-  showProbImage("border_dir_map", bla, 4, 255-accessible_map_*0.3);
-  cv::flip(dists/20.0, mag, 0);
-  cv::resize(mag, mag, cv::Size(mag.cols, mag.rows), 0, 0, cv::INTER_NEAREST);
-  cv::imshow("dists", mag);
-  cv::flip(accessible_map_, mag, 0);
-  cv::resize(mag, mag, cv::Size(mag.cols*4, mag.rows*4), 0, 0, cv::INTER_NEAREST);
-  cv::imshow("accessible_map_", mag);
-  cv::waitKey(1);
+//  cv::Mat_<float> bla = border_dir_map_/(2.0*M_PI);
+//  showProbImage("border_dir_map", bla, 4, 255-accessible_map_*0.3);
+//  cv::flip(dists/20.0, mag, 0);
+//  cv::resize(mag, mag, cv::Size(mag.cols, mag.rows), 0, 0, cv::INTER_NEAREST);
+//  cv::imshow("dists", mag);
+//  cv::flip(accessible_map_, mag, 0);
+//  cv::resize(mag, mag, cv::Size(mag.cols*4, mag.rows*4), 0, 0, cv::INTER_NEAREST);
+//  cv::imshow("accessible_map_", mag);
+//  cv::waitKey(1);
 
   got_map_ = true;
   //std::cout << "Map processed" << std::endl;
@@ -434,7 +424,7 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
-  if(insertIntoSeenMaps(transform) && !is_quick_search_){
+  if(insertIntoSeenMaps(transform)){
     finished_ = true;
     std::cout << "FINISHED, ALL BORDER SEEN" << std::endl;
   }
@@ -442,22 +432,26 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   tf::Transform target_pose;
   tf::poseMsgToTF(curr_view_pose_, target_pose);
   tf::Transform diff = target_pose.inverseTimes(transform);
-  if(diff.getOrigin().length() < 0.15 && std::abs(tf::getYaw(diff.getRotation())) < 0.1)
-    quick_search_step_viewed_ = true;
+  if(diff.getOrigin().length() < 0.2 && std::abs(tf::getYaw(diff.getRotation())) < 0.05)
+    search_step_viewed_ = true;
 
   got_vision_ = true;
   std::cout << "VISION CALLBACK in " << (ros::Time::now()-t).toSec() << std::endl;
 }
 
 
-void Searcher::doCalculations(){
+bool Searcher::doCalculations(bool force_new){
   if(!running_ || !got_map_ || !got_vision_)
-    return;
+    return false;
 
   if(objFound()){
     finished_ = true;
     std::cout << "OBJECT FOUND: " << found_pose_.pose.position.x << " " << found_pose_.pose.position.y << " " << found_pose_.pose.position.z << std::endl;
+    return false;
   }
+
+  if(!force_new && !search_step_viewed_)
+    return false;
 
   tf::StampedTransform transform;
   try{
@@ -466,17 +460,10 @@ void Searcher::doCalculations(){
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
-  if(is_quick_search_){
-    if(calcNextQuickSearchViewpoint(quick_search_target_)){
-      finished_ = true;
-      std::cout << "FINISHED, NOT FOUND" << std::endl;
-    }
-  }
-  else{
-    if(calcNextViewpoint(transform)){
-      finished_ = true;
-      std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
-    }
+
+  if(calcNextViewpoint(transform)){
+    finished_ = true;
+    std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
   }
 }
 
@@ -684,6 +671,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   prob = 1-prob;
   std::cout << "Remaining prob: " << prob << std::endl;
   showProbImage("probabilities", tmp, 2, 255-accessible_map_*0.3);
+  cv::waitKey(1);
 
   cv::Point curr_point = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
   float curr_angle = tf::getYaw(curr_pose.getRotation());
@@ -727,16 +715,16 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     //showProbImage(std::to_string(i), sdf, 2);
   }
 
-  for(int i=0; i<VIEW_ANGLE_STEPS; i++){
-    prob_mats[i] = prob_mats[i]/max;
-    showProbImage("prob_mat_"+std::to_string(i*30)+"_max_"+std::to_string(max), prob_mats[i], 2, accessible_map_);
-    cv::waitKey(0);
-  }
+//  for(int i=0; i<VIEW_ANGLE_STEPS; i++){
+//    prob_mats[i] = prob_mats[i]/max;
+//    showProbImage("prob_mat_"+std::to_string(i*30)+"_max_"+std::to_string(max), prob_mats[i], 2, accessible_map_);
+//    cv::waitKey(0);
+//  }
 
-  cv::resize(seen_mat, seen_mat, cv::Size(seen_mat.cols*2, seen_mat.rows*2), 0, 0, cv::INTER_NEAREST);
-  cv::flip(seen_mat,seen_mat,0);
-  cv::imshow("SEEEEEEEN", seen_mat);
-  cv::waitKey(1);
+//  cv::resize(seen_mat, seen_mat, cv::Size(seen_mat.cols*2, seen_mat.rows*2), 0, 0, cv::INTER_NEAREST);
+//  cv::flip(seen_mat,seen_mat,0);
+//  cv::imshow("SEEEEEEEN", seen_mat);
+//  cv::waitKey(1);
 
   if(max < 0.0){
     return true;
@@ -760,52 +748,6 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   return false;
 }
 
-
-bool Searcher::calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_pose){
-  if(quick_search_step_viewed_){
-    quick_search_step_viewed_ = false;
-
-    quick_search_step_++;
-    if(quick_search_step_ > QUICK_SEARCH_VIEWS)
-      return true;
-
-    cv::Point target_pos(obj_map_->getXPixel(target_pose.position.x), obj_map_->getYPixel(target_pose.position.y));
-    cv::Point new_pos;
-    float new_angle;
-    if(accessible_map_(target_pos)){
-      int tries = 0;
-      do{
-        float r = (QUICK_SEARCH_MIN_DIST + (rand()%20)/19.f*(QUICK_SEARCH_MAX_DIST-QUICK_SEARCH_MIN_DIST))*RESOLUTION;
-        new_angle = (rand()%180)/180.f*2*M_PI;
-        new_pos = target_pos - cv::Point(r*std::cos(new_angle), r*std::sin(new_angle));
-      }while(!accessible_map_(new_pos) && tries++ < 1000);
-      if(!accessible_map_(new_pos) && tries < 1000)
-        return true;
-    }
-    else{
-      int tries = 0;
-      float target_angle = border_dir_map_(target_pos);
-      do{
-        float r = (QUICK_SEARCH_MIN_DIST + (rand()%20)/19.f*(QUICK_SEARCH_MAX_DIST-QUICK_SEARCH_MIN_DIST))*RESOLUTION;
-        new_angle = target_angle - QUICK_SEARCH_ANGLE_AREA + (rand()%180)/180.f*(2*QUICK_SEARCH_ANGLE_AREA);
-        new_pos = target_pos - cv::Point(r*std::cos(new_angle), r*std::sin(new_angle));
-      }while(!accessible_map_(new_pos) && tries++ < 1000);
-      if(!accessible_map_(new_pos) && tries < 1000)
-        return true;
-    }
-    tf::Transform curr_view(tf::createQuaternionFromYaw(new_angle), tf::Vector3(obj_map_->getXWorld(new_pos.x), obj_map_->getYWorld(new_pos.y), 0.0));
-    tf::poseTFToMsg(curr_view, curr_view_pose_);
-    curr_view_changed_ = true;
-    geometry_msgs::PoseStamped pose;
-    pose.header.stamp = ros::Time::now();
-    pose.pose = curr_view_pose_;
-    pose.header.frame_id = "map";
-    next_pose_pub_.publish(pose);
-    have_curr_view_ = true;
-  }
-
-  return false;
-}
 
 bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   if(!got_map_)
@@ -871,8 +813,8 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::waitKey(1);
   std::cout << "In seen map inserted" << std::endl;
 
-  showProbImage("not_fully_viewed_border_dir", border_dir_map_/(2*M_PI), 4, not_fully_viewed_border_);
-  cv::waitKey(1);
+//  showProbImage("not_fully_viewed_border_dir", border_dir_map_/(2*M_PI), 4, not_fully_viewed_border_);
+//  cv::waitKey(1);
 
   return (countNonZero(not_fully_viewed_border_) == 0);
 }

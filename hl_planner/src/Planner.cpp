@@ -107,7 +107,7 @@ SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cu
   if(level >= cutoff_prob)
     return finishGreedy(graph, old_plan, cutoff_time);
 
-  std::deque<SearchAction> search_actions_ = old_plan.end_state_.getPossibleSearchActions();
+  std::deque<SearchAction> search_actions_ = old_plan.end_state_.getPossibleFullSearchActions();
   if(search_actions_.empty()){
     return old_plan;
   }
