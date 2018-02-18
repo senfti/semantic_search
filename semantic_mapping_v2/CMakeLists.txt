@@ -11,8 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   vision
-  message_generation
   octomap_msgs
+  message_generation
   prob_map_view
   ${PACKAGE_DEPENDENCIES}
 )

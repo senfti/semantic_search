@@ -356,16 +356,46 @@ cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float>& behind_door_mask, const 
 }
 
 
-cv::Mat_<uchar> ObjectMap::getCount2D() const{
+cv::Mat_<float> ObjectMap::get2D(const cv::Mat_<float> &behind_door_mask) const{
+  cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
+  for(int z=0; z<getZSteps(); z++){
+    cv::Mat_<float> tmp(prob_maps_[z].rows, prob_maps_[z].cols, 0.f);
+    prob_maps_[z].copyTo(tmp, count_maps_[z]);
+    map2D = map2D.mul(1.f-tmp);
+  }
+  return (1.f - map2D).mul(1.f-behind_door_mask);
+}
+
+
+cv::Mat_<uchar> ObjectMap::getCount2D(const cv::Mat_<float>& behind_door_mask) const{
   cv::Mat_<uchar> map2D(count_maps_[0].rows, count_maps_[0].cols, uchar(0));
   for(int y=0; y<getHeight(); y++){
     for(int x=0; x<getWidth(); x++){
-      for(int z=0; z<getZSteps(); z++){
-        map2D(y,x) = map2D(y,x) | count_maps_[z](y,x);
+      if(behind_door_mask(y,x) < 0.5f){
+        for(int z=0; z<getZSteps(); z++){
+          map2D(y, x) = map2D(y, x) | count_maps_[z](y, x);
+        }
       }
     }
   }
   return map2D;
+}
+
+
+std::vector<float> ObjectMap::getProbDistribution(const cv::Mat_<float>& behind_door_mask) const{
+  cv::Mat_<float> prob_map = get2D(behind_door_mask);
+  cv::Mat_<uchar> count_map = getCount2D(behind_door_mask);
+
+  std::vector<float> probs;
+  for(int y=0; y<getHeight(); y++){
+    for(int x=0; x<getWidth(); x++){
+      if(count_map(y,x) > 0){
+        probs.push_back(prob_map(y,x));
+      }
+    }
+  }
+  std::sort(probs.begin(), probs.end(), std::greater<float>());
+  return probs;
 }
 
 

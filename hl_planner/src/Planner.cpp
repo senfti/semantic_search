@@ -73,7 +73,7 @@ SearchPlan Planner::greedyPlan(const HierarchyMap &graph, const State &state){
         best_action = a;
       }
     }
-    curr_state = plan.addAction(best_action, graph, curr_state.current_room_, curr_state.quick_searched_);
+    curr_state = plan.addAction(best_action, graph, curr_state.current_room_);
     search_actions_ = curr_state.getPossibleFullSearchActions();
   }
 
@@ -94,7 +94,7 @@ SearchPlan finishGreedy(const HierarchyMap &graph, SearchPlan search_plan, float
         best_action = a;
       }
     }
-    curr_state = search_plan.addAction(best_action, graph, curr_state.current_room_, curr_state.quick_searched_);
+    curr_state = search_plan.addAction(best_action, graph, curr_state.current_room_);
     if(search_plan.expected_search_time_ >= cutoff_time)
       return search_plan;
     search_actions_ = curr_state.getPossibleFullSearchActions();
@@ -115,7 +115,7 @@ SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cu
   SearchPlan best_plan(old_plan.end_state_, std::vector<SearchAction>(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), 0.f);
   for(const auto& a : search_actions_){
     SearchPlan new_plan = old_plan;
-    new_plan.addAction(a, graph, old_plan.end_state_.current_room_, old_plan.end_state_.quick_searched_);
+    new_plan.addAction(a, graph, old_plan.end_state_.current_room_);
     if(new_plan.expected_search_time_ >= cutoff_time)
       continue;
 
@@ -144,7 +144,7 @@ Plan Planner::generateFullPlan(const SearchPlan &search_plan, State state, const
       state.changeState(*plan.actions_.rbegin());
     }
     plan.actions_.push_back(Action(action.type_ == SearchAction::SEARCH ? Action::SEARCH : Action::QUICK_SEARCH, graph.searched_obj_,
-                                   state.current_room_, graph.quick_search_poses_[state.current_room_]));
+                                   state.current_room_));
     state.changeState(*plan.actions_.rbegin());
   }
   if(plan.actions_.front().type_ == Action::MOVE_TO && graph.not_visited_[plan.actions_.front().target_room_]){
@@ -203,6 +203,7 @@ void Planner::run(int obj){
     state_.updateState(graph_map, hierarchy.curr_room);
     std::cout << state_;
 
+    std::cin.get();
     Plan plan = generatePlan(graph_map, state_);
     if(plan.finished())
       std::cout << "OBJECT NOT FOUND!" << std::endl;

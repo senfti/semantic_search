@@ -58,43 +58,24 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
   semantic_mapping_v2::HierarchySrvResponse response = res;
   searched_obj_ = obj;
   search_times_.resize(response.rooms.size());
-  quick_search_times_.resize(response.rooms.size());
   expected_search_times_.resize(response.rooms.size());
   search_prob_.resize(response.rooms.size());
-  quick_search_prob_.resize(response.rooms.size());
   not_visited_.resize(response.rooms.size(), false);
-  quick_search_poses_.resize(response.rooms.size());
 
   std::cout << res.curr_room << " " << res.rooms.size() << " " << res.links.size() << std::endl;
 
   for(int i=0; i<response.rooms.size(); i++){
     search_times_[i] = response.rooms[i].search_time;
-    quick_search_times_[i] = response.rooms[i].single_view_search_time;
-    quick_search_poses_[i].position = response.rooms[i].single_view_points[obj];
-    quick_search_poses_[i].orientation.w = 1.0;
     search_prob_[i] = response.rooms[i].obj_probs[obj];
-    quick_search_prob_[i] = response.rooms[i].single_view_obj_probs[obj];
-//    expected_search_times_[i] = quick_search_times_[i]*quick_search_prob_[i]
-//                                + (search_prob_[i]-quick_search_prob_[i])/(search_times_[i]-quick_search_times_[i])
-//                                  * (search_times_[i]*search_times_[i]-quick_search_times_[i]*quick_search_times_[i])/2.f
-//                                + (1.f-search_prob_[i])*search_times_[i];
-    expected_search_times_[i] = calcExpectedSearchTime(quick_search_times_[i], search_times_[i], quick_search_prob_[i], search_prob_[i]);
+    expected_search_times_[i] = response.rooms[i].expected_search_time[obj];
   }
 
   int room_idx = search_times_.size();
   for(int i=0; i<response.links.size(); i++){
     if(response.links[i].room2 < 0 || response.links[i].room2 >= room_idx){
       search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE);
-      quick_search_times_.push_back(UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
-      quick_search_poses_.push_back(geometry_msgs::Pose());
-      quick_search_poses_.back().orientation.w = 1.0;
       search_prob_.push_back(UNEXPLORED_PROB_ESTIMATE);
-      quick_search_prob_.push_back(UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
-//      expected_search_times_[room_idx] = quick_search_times_[room_idx]*quick_search_prob_[room_idx]
-//                                  + (search_prob_[room_idx]-quick_search_prob_[room_idx])/(search_times_[room_idx]-quick_search_times_[room_idx])
-//                                    * (search_times_[room_idx]*search_times_[room_idx]-quick_search_times_[room_idx]*quick_search_times_[room_idx])/2.f
-//                                  + (1.f-search_prob_[room_idx])*search_times_[room_idx];
-      expected_search_times_[room_idx] = calcExpectedSearchTime(quick_search_times_[room_idx], search_times_[room_idx], quick_search_prob_[room_idx], search_prob_[room_idx]);
+      expected_search_times_[room_idx] = search_times_.back()/3;
       not_visited_.push_back(true);
       semantic_mapping_v2::RoomMsg unknown_room;
       unknown_room.links.push_back(i);
@@ -234,8 +215,8 @@ float HierarchyMap::calcExpectedSearchTime(float quick_search_time, float search
 std::ostream& operator<<(std::ostream& os, const HierarchyMap& map){
   for(int i=0; i<map.search_times_.size(); i++){
     os << i << ":" << std::endl;
-    os << "times: quick: " << map.quick_search_times_[i] << ",   expected: " << map.expected_search_times_[i] << ",   full: " << map.search_times_[i] << std::endl;
-    os << "probs: quick: " << map.quick_search_prob_[i] << ",   full: " << map.search_prob_[i] << std::endl;
+    os << "expected: " << map.expected_search_times_[i] << ",   full: " << map.search_times_[i] << std::endl;
+    os << "probs: " << map.search_prob_[i] << std::endl;
     os << "travel: ";
     for(int j=0; j<map.travel_times_[i].size(); j++){
       os << j << ": ";
@@ -243,7 +224,6 @@ std::ostream& operator<<(std::ostream& os, const HierarchyMap& map){
         os << map.travel_path_[i][j][k] << " ";
       os << ", " << map.travel_times_[i][j] << "; ";
     }
-    os << std::endl << "quick pos: " << map.quick_search_poses_[i].position.x << " " << map.quick_search_poses_[i].position.y << std::endl;
     os << (map.not_visited_[i] ? "not visited" : "visited") << std::endl << std::endl;
   }
   os << std::endl;

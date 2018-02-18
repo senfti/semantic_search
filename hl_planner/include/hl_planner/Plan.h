@@ -22,30 +22,14 @@ class SearchPlan{
       : actions_(actions), end_state_(end_state), expected_search_time_(expected_search_time), full_search_time_(full_search_time), found_prob_(find_prob)
     {}
 
-    State addAction(const SearchAction& action, const HierarchyMap& graph, int curr_room, const std::list<int>& quick_searched){
+    State addAction(const SearchAction& action, const HierarchyMap& graph, int curr_room){
       actions_.push_back(action);
       end_state_.changeState(action);
-      if(action.type_ == SearchAction::SEARCH){
-        float prob = graph.search_prob_[action.target_];
-        float time = graph.getExpectedSearchTime(curr_room, action.target_);
-        if(std::find(quick_searched.begin(), quick_searched.end(), action.target_) != quick_searched.end()){
-          prob = (prob-graph.quick_search_prob_[action.target_]) / (1.f-graph.quick_search_prob_[action.target_]);
-          time = graph.travel_times_[curr_room][action.target_] +
-            prob/(graph.search_times_[action.target_]-graph.quick_search_times_[action.target_])
-              *(graph.search_times_[action.target_]*graph.search_times_[action.target_] - graph.quick_search_times_[action.target_]*graph.quick_search_times_[action.target_]) / 2.f
-            + (1.f-prob)*graph.search_times_[action.target_];
-        }
-
-        expected_search_time_ += (1.f-found_prob_)*time;
-        full_search_time_ += graph.getFullSearchTime(curr_room, action.target_);
-        found_prob_ = 1.f-(1.f-found_prob_)*(1.f-prob);
-
-      }
-      else{
-        expected_search_time_ += graph.getQuickSearchTime(curr_room, action.target_);
-        full_search_time_ += graph.getQuickSearchTime(curr_room, action.target_);
-        found_prob_ = 1.f-(1.f-found_prob_)*(1.f-graph.quick_search_prob_[action.target_]);
-      }
+      float prob = graph.search_prob_[action.target_];
+      float time = graph.getExpectedSearchTime(curr_room, action.target_);
+      expected_search_time_ += (1.f-found_prob_)*time;
+      full_search_time_ += graph.getFullSearchTime(curr_room, action.target_);
+      found_prob_ = 1.f-(1.f-found_prob_)*(1.f-prob);
 
       return end_state_;
     }

@@ -79,8 +79,11 @@ class ObjectMap{
     std::pair<geometry_msgs::Pose, float> getObjMax(const ObjectMap& occupancy_map);
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
+    cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask) const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
-    cv::Mat_<uchar> getCount2D() const;
+    cv::Mat_<uchar> getCount2D(const cv::Mat_<float>& behind_door_mask) const;
+
+    std::vector<float> getProbDistribution(const cv::Mat_<float>& behind_door_mask) const;
 };
 
 

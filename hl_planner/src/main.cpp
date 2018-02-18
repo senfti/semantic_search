@@ -9,10 +9,7 @@
 semantic_mapping_v2::RoomMsg getRoom(int id, float single_view_obj_probs, float obj_probs, float single_view_search_time, float search_time, std::vector<short> links, float to_link_travel_time){
   semantic_mapping_v2::RoomMsg room;
   room.id = id;
-  room.single_view_obj_probs = std::vector<float>(80, single_view_obj_probs);
-  room.single_view_points = std::vector<geometry_msgs::Point>(80);
   room.obj_probs = std::vector<float>(80, obj_probs);
-  room.single_view_search_time = single_view_search_time;
   room.search_time = search_time;
   room.links = links;
   room.to_link_travel_times = std::vector<float>(links.size(), to_link_travel_time);

@@ -471,7 +471,7 @@ bool Searcher::doCalculations(bool force_new){
   }
 
   static ros::Time last_calc_time(0);
-  if(!force_new && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2))
+  if(!force_new && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0)))
     return false;
 
   last_calc_time = ros::Time::now();
@@ -482,11 +482,14 @@ bool Searcher::doCalculations(bool force_new){
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
+    return false;
   }
   if(calcNextViewpoint(transform)){
     finished_ = true;
     std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
   }
+
+  return true;
 }
 
 
@@ -623,7 +626,7 @@ float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point&
     return angleDist(curr_angle, angle)/TURN_SPEED + VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
   }
   float move_angle = std::atan2(float(diff.y),float(diff.x));
-  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))/MOVE_SPEED +
+  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))/RESOLUTION/MOVE_SPEED +
     VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
 }
 
@@ -661,7 +664,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
 //        seen(pos+p) = 0.2;
 //    }
   }
-  if(interesting_border_seen < 0.1f){
+  if(interesting_border_seen < 0.8f){
     return 0.f;
   }
 
@@ -824,7 +827,11 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
       }
     }
   }
-  //previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](pos) = 255;
+  for(int x=std::max(pos.x-1, 0); x<=std::min(pos.x+1,previous_pose_maps_[0].cols-1); x++){
+    for(int y=std::max(pos.y-1, 0); y<=std::min(pos.y+1,previous_pose_maps_[0].rows-1); y++){
+      previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](y,x) = 255;
+    }
+  }
 
   cv::threshold(border_map_, tmp, 64, 64, cv::THRESH_TRUNC);
   cv::bitwise_or(tmp, not_fully_viewed_border_, tmp);

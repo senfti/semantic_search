@@ -724,6 +724,30 @@ float HierarchyMapper::getSearchTime(int search_cells){
 }
 
 
+std::vector<float> HierarchyMapper::getExpectedSearchTime(float search_time, std::vector<float> obj_probs, const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float>& behind_door_mask){
+  std::vector<float> exp_search_times(obj_probs.size(), 0.f);
+  int boxes = std::ceil(search_time/10.f);
+  float box_time = search_time/boxes;
+
+  for(int i=0; i<obj_probs.size(); i++){
+    std::vector<float> prob_distr = obj_maps[i].getProbDistribution(behind_door_mask);
+    std::vector<float> box_probs;
+    int last_idx = 0;
+    for(int j=0; j<boxes; j++){
+      box_probs.push_back(std::accumulate(prob_distr.begin()+last_idx, prob_distr.begin()+int(std::round((j+1.f)/boxes*prob_distr.size())), 0.f) * std::exp(-(j+1.f)/boxes));
+      last_idx = int(std::round((j+1.f)/boxes*prob_distr.size()));
+    }
+    float sum = std::accumulate(box_probs.begin(), box_probs.end(), 0.f);
+    for(int j=0; j<boxes; j++){
+      exp_search_times[i] += box_probs[j]*(obj_probs[i]/sum) * (j+1)*box_time;
+    }
+    exp_search_times[i] += (1.f-obj_probs[i])*search_time;
+  }
+
+  return exp_search_times;
+}
+
+
 bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& req, semantic_mapping_v2::ObjectMapSrv::Response& res){
   ROS_INFO("SERVICE OBJ_MAP %d", req.id);
   ros::Time start = ros::Time::now();
@@ -780,7 +804,7 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
 
 
 int HierarchyMapper::estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, const ObjectMap& obj_map, const cv::Mat_<float> behind_door_mask, bool explored, int& search_cells){
-  cv::Mat_<uchar> count2D = obj_map.getCount2D();
+  cv::Mat_<uchar> count2D = obj_map.getCount2D(behind_door_mask);
   cv::Mat_<uchar> occ(count2D.rows, count2D.cols, uchar(0));
   for(int xi=0; xi<map.info.width; xi++){
     for(int yi=0; yi<map.info.height; yi++){
@@ -1158,11 +1182,9 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     room.room_type_probs = room_type_cell_number;
     room.room_type_probs_2 = base_room_type_probs[i];
     room.obj_probs_2 = base_obj_probs[i];
-    room.single_view_obj_probs = single_view_max_probs;
-    room.single_view_points = single_view_points;
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
-    room.single_view_search_time = (room.to_link_travel_times.empty() ? 4.f*TRAVEL_DIST_LIN_FACTOR+M_PI*TRAVEL_TURN_FACTOR : std::accumulate(room.to_link_travel_times.begin(), room.to_link_travel_times.end(), 0.f) / room.to_link_travel_times.size());
-    room.search_time = getSearchTime(search_cells)+room.single_view_search_time;
+    room.search_time = getSearchTime(search_cells)+20.f;
+    room.expected_search_time = getExpectedSearchTime(room.search_time, complete_obj_probs, complete_obj_map, behind_door_mask);
     last_room_msgs[i] = room;
     res.rooms.push_back(room);
   }

@@ -148,6 +148,7 @@ class HierarchyMapper{
     float getTravelTime(const geometry_msgs::Pose& door1, const geometry_msgs::Pose& door2);
     std::vector<float> getToLinkTravelTime(int room, const std::vector<Door>& doors, const nav_msgs::OccupancyGrid& grid_map);
     float getSearchTime(int search_cells);
+    std::vector<float> getExpectedSearchTime(float search_time, std::vector<float> obj_probs, const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float>& behind_door_mask);
 
     void publishDebug(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map, const std::vector<cv::Mat_<float>>& obj_prob_2d_area,
                       const std::vector<cv::Mat_<float>>& obj_based_room_type_map, const std::vector<cv::Mat_<float>>& complete_room_type_map,
