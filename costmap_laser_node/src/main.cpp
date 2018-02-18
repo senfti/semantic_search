@@ -10,7 +10,7 @@
 #include <std_msgs/Int8.h>
 
 ros::Publisher filtered_pub;
-float min_angle = -1.95, max_angle = 1.95, min_z=0.1, max_z=1.0, max_range=4.0;
+float min_angle = -1.95, max_angle = 1.95, min_z=0.1, max_z=1.0, max_range=4.01;
 float true_angle_min = -1.f, true_angle_max = -1.f, true_increment = -1.f;
 
 std::vector<float> cloud_ranges;
@@ -48,7 +48,8 @@ void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
 
   filtered.ranges = std::vector<float>(num_ranges);
   filtered.intensities = std::vector<float>(num_ranges);
-  for(int i=0; i<num_ranges; i++){bool neighbor_in = (i>0 && msg->ranges[i+min_cutoff] < 4.0) || (i<num_ranges-1 && msg->ranges[num_ranges-1+min_cutoff] < 4.0) || i==0 || i==num_ranges-1;
+  for(int i=0; i<num_ranges; i++){
+    bool neighbor_in = (i>0 && msg->ranges[i+min_cutoff-1] < 4.0) || (i<num_ranges-1 && msg->ranges[i+1+min_cutoff] < 4.0) || i==0 || i==num_ranges-1;
     filtered.ranges[i] = (msg->ranges[i+min_cutoff] < 4.0 || neighbor_in ? msg->ranges[i+min_cutoff] : 4.0);
   }
   if(!msg->intensities.empty()){

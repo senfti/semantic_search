@@ -14,6 +14,6 @@
   </group>
 
   <node pkg="my_laser_filter" type="my_laser_filter" name="my_laser_filter" args="-1.95 1.95" />  
-  <node pkg="costmap_laser_node" type="costmap_laser_node" name="costmap_laser_node" args="-1.95 1.95 0.1 1.0 4.0" /> 
+  <node pkg="costmap_laser_node" type="costmap_laser_node" name="costmap_laser_node" args="-1.95 1.95 0.1 1.0 4.01" /> 
   
 </launch>

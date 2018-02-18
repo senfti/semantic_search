@@ -216,6 +216,7 @@ void Explorer::calcFrontier(){
 //  cv::waitKey(1);
 
   cv::Point best_pos(-1,-1);
+  double best_dir = 0.0;
   double best_dist = 999999999999999.9;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
@@ -229,6 +230,7 @@ void Explorer::calcFrontier(){
           if(dist < best_dist){
             best_dist = dist;
             best_pos = cv::Point(p);
+            best_dir = std::atan2(-cp.y,-cp.x);
           }
         }
       }
@@ -249,6 +251,7 @@ void Explorer::calcFrontier(){
       if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && good_accessibles[3](p)){
         best_pos = p;
         pos_found = true;
+        best_dir = std::atan2(-offset.y,-offset.x);
         break;
       }
     }
@@ -258,6 +261,7 @@ void Explorer::calcFrontier(){
         if(p.x >= 0 && p.y >= 0 && p.x < accessible.cols && p.y < accessible.rows && accessible(p)){
           best_pos = p;
           pos_found = true;
+          best_dir = std::atan2(-offset.y,-offset.x);
           break;
         }
       }
@@ -267,18 +271,17 @@ void Explorer::calcFrontier(){
       std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
       return;
     }
-    inside = true;
   }
 
   tf::Transform old_frontier;
   tf::poseMsgToTF(curr_frontier_, old_frontier);
-  tf::Transform tf_t(tf::createQuaternionFromYaw(std::atan2(best_pos.y-pos.y, best_pos.x-pos.x)+(inside ? M_PI : 0.0)),
+  tf::Transform tf_t(tf::createQuaternionFromYaw(best_dir),
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
   tf::Transform diff = old_frontier.inverseTimes(tf_t);
   static ros::Time last_frontier_change = ros::Time(0);
   static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
-  if(diff.getOrigin().length() > 0.1 || std::abs(tf::getYaw(diff.getRotation())) > 0.1
+  if(diff.getOrigin().length() > 0.2 || std::abs(tf::getYaw(diff.getRotation())) > 0.1
      || (ros::Time::now()-last_frontier_change > ros::Duration(5.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3)){
     frontier_changed_ = true;
     last_frontier_calc_pos = transform.getOrigin();

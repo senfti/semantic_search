@@ -80,7 +80,8 @@ class Searcher{
 
     ros::ServiceClient obj_map_service_client_;
 
-    int searched_obj_ = 0;
+    int searched_obj_ = -100;
+    int searched_room_ = -100;
     ObjectMap* obj_map_ = nullptr;
     ObjectMap* prior_prob_map_ = nullptr;
     OctoMapper* octo_mapper_ = nullptr;
@@ -102,6 +103,7 @@ class Searcher{
     bool running_ = false;
     bool obj_found_ = false;
     bool search_step_viewed_ = true;
+    bool search_goal_reached_ = false;
     geometry_msgs::PoseStamped found_pose_;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
@@ -128,7 +130,7 @@ class Searcher{
     bool running() const { return running_; }
     bool objectFound() const { return obj_found_; }
 
-    void start(int searched_obj);
+    void start(int searched_obj, int searched_room);
     void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
@@ -143,6 +145,7 @@ class Searcher{
     bool doCalculations(bool force_new);
 
     bool did_abort_ = false;
+    void setSearchGoalReached() { search_goal_reached_ = true; }
 };
 
 

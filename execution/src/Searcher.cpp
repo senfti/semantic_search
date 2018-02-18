@@ -143,11 +143,13 @@ geometry_msgs::Pose Searcher::getNextViewPose(){
   return curr_view_pose_;
 }
 
-void Searcher::start(int searched_obj){
+void Searcher::start(int searched_obj, int searched_room){
   if(running_)
     return;
 
+  bool reset_searcher = (searched_obj != searched_obj_ || searched_room != searched_room_);
   searched_obj_ = searched_obj;
+  searched_room_ = searched_room;
   running_ = true;
   finished_ = false;
   obj_found_ = false;
@@ -159,9 +161,24 @@ void Searcher::start(int searched_obj){
 
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(SEARCH_MAX_ROT_VEL)).c_str());
   std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(SEARCH_MAX_TRANS_VEL)).c_str());
-  
-  octo_mapper_ = new OctoMapper(RESOLUTION);
 
+  if(reset_searcher){
+    seen_maps_.clear();
+    previous_pose_maps_.clear();
+    accessible_map_ = cv::Mat_<uchar>();
+    border_map_ = cv::Mat_<uchar>();
+    border_dir_map_ = cv::Mat_<float>();
+    not_fully_viewed_border_ = cv::Mat_<uchar>();
+
+    delete obj_map_;
+    delete octo_mapper_;
+
+    obj_map_ = nullptr;
+    octo_mapper_ = nullptr;
+  }
+
+  delete prior_prob_map_;
+  prior_prob_map_ = nullptr;
   semantic_mapping_v2::ObjectMapSrvRequest req;
   req.id = searched_obj_;
   req.room_id = -1;
@@ -171,17 +188,21 @@ void Searcher::start(int searched_obj){
     return;
   }
   prior_prob_map_ = new ObjectMap(res.maps[0]);
-  obj_map_ = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
-  obj_map_->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
+
+  if(octo_mapper_ == nullptr){
+    octo_mapper_ = new OctoMapper(RESOLUTION);
+    obj_map_ = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
+    obj_map_->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
+
+    seen_maps_.resize(SEEN_MAP_STEPS);
+    previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
+    for(auto &map : seen_maps_)
+      map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+    for(auto &map : previous_pose_maps_)
+      map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+  }
+
   prior_prob_map_->resample(*obj_map_, 0.0);
-
-  seen_maps_.resize(SEEN_MAP_STEPS);
-  previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
-  for(auto &map : seen_maps_)
-    map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
-  for(auto &map : previous_pose_maps_)
-    map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
-
   tf::StampedTransform transform;
   try{
     tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
@@ -201,21 +222,6 @@ void Searcher::stop(){
   running_ = false;
   finished_ = false;
   have_curr_view_ = false;
-
-  seen_maps_.clear();
-  previous_pose_maps_.clear();
-  accessible_map_ = cv::Mat_<uchar>();
-  border_map_ = cv::Mat_<uchar>();
-  border_dir_map_ = cv::Mat_<float>();
-  not_fully_viewed_border_ = cv::Mat_<uchar>();
-
-  delete obj_map_;
-  delete prior_prob_map_;
-  delete octo_mapper_;
-
-  obj_map_ = nullptr;
-  prior_prob_map_ = nullptr;
-  octo_mapper_ = nullptr;
 }
 
 
@@ -240,7 +246,7 @@ void Searcher::calcSeenKernels(){
           seen_kernel_points_[i].push_back(diff);
           float va = std::min(1.5f-2.f*angleDist(std::atan2(float(diff.y),float(diff.x)), angle), 1.f);
           float r = std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION);
-          float vr = (r > 2.f ? 1.0f-0.6f*(r-2.f) : (r < 1.5f ? 1.0f-0.4f*(1.5f-r) : 1.f));
+          float vr = (r > 1.5f ? 1.0f-0.45f*(r-2.f) : (r < 1.5f ? 1.0f-0.3f*(1.5f-r) : 1.f));
           seen_kernel_points_value_[i].push_back(va*vr);
           //sdf(y,x) = va*vr;
         }
@@ -432,8 +438,10 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   tf::Transform target_pose;
   tf::poseMsgToTF(curr_view_pose_, target_pose);
   tf::Transform diff = target_pose.inverseTimes(transform);
-  if(diff.getOrigin().length() < 0.2 && std::abs(tf::getYaw(diff.getRotation())) < 0.05)
+  if(diff.getOrigin().length() < 0.2 && std::abs(tf::getYaw(diff.getRotation())) < 0.05 || search_goal_reached_){
     search_step_viewed_ = true;
+    search_goal_reached_ = false;
+  }
 
   got_vision_ = true;
   std::cout << "VISION CALLBACK in " << (ros::Time::now()-t).toSec() << std::endl;
@@ -450,17 +458,31 @@ bool Searcher::doCalculations(bool force_new){
     return false;
   }
 
-  if(!force_new && !search_step_viewed_)
+  tf::StampedTransform t1, t2;
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("odom", "base_link", ros::Time(ros::Time::now()-ros::Duration(5.0)), t1);
+    tf_listener_->lookupTransform("odom", "base_link", ros::Time(0.0), t2);
+    transform = tf::StampedTransform(t1.inverseTimes(t2), ros::Time(), "/base_link", "/odom");
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    return false;
+  }
+
+  static ros::Time last_calc_time(0);
+  if(!force_new && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2))
     return false;
 
-  tf::StampedTransform transform;
+  last_calc_time = ros::Time::now();
+  search_step_viewed_= false;
+
   try{
     tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
-
   if(calcNextViewpoint(transform)){
     finished_ = true;
     std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
@@ -597,6 +619,9 @@ cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resol
 
 float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
   cv::Point diff = pos-curr_pos;
+  if(std::abs(diff.x) < 0.2 && std::abs(diff.y) < 0.2){
+    return angleDist(curr_angle, angle)/TURN_SPEED + VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
+  }
   float move_angle = std::atan2(float(diff.y),float(diff.x));
   return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))/MOVE_SPEED +
     VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
@@ -636,8 +661,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
 //        seen(pos+p) = 0.2;
 //    }
   }
-  if(interesting_border_seen < 0.0f){
-    std::cout << "NO INTERESTING BORDER" << std::endl;
+  if(interesting_border_seen < 0.1f){
     return 0.f;
   }
 

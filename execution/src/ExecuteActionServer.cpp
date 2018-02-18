@@ -318,7 +318,7 @@ void ExecuteActionServer::doExplore(){
 
 void ExecuteActionServer::doSearch(){
   if(!searcher_.running()){
-    searcher_.start(goal_.target_obj);
+    searcher_.start(goal_.target_obj, goal_.target_room);
   }
   if(searcher_.doCalculations(false)){
     geometry_msgs::PoseStamped pose;
@@ -367,7 +367,7 @@ void ExecuteActionServer::doSearch(){
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      ;
+      searcher_.setSearchGoalReached();
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       ;

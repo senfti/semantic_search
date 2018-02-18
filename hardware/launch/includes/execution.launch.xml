@@ -3,7 +3,7 @@
     <param name="EXPLORE_MAX_ROT_VEL" value="0.7" />
     <param name="EXPLORE_MAX_TRANS_VEL" value="0.3" />
     <param name="VIEW_DIST" value="8" />
-    <param name="ROBOT_SIZE" value="5" />
+    <param name="ROBOT_SIZE" value="6" />
 
     <param name="MOVE_MAX_ROT_VEL" value="5.0" />
     <param name="MOVE_MAX_TRANS_VEL" value="0.5" />
@@ -42,7 +42,7 @@
 
     <param name="BORDER_SEEN_THRESH" value="5" />
     <param name="BORDER_SEEN_SIGMA" value="0.35" />
-    <param name="SEEN_MAP_MAX_DIST" value="2.5" />
+    <param name="SEEN_MAP_MAX_DIST" value="2.0" />
     <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.01" />
 
     <param name="Octomap/resolution" value="0.1" />    
