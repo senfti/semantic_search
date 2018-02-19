@@ -88,7 +88,7 @@ class Searcher{
     std::vector<cv::Mat_<uchar>> seen_maps_;
     std::vector<cv::Mat_<uchar>> previous_pose_maps_;
     cv::Mat_<uchar> accessible_map_;
-    cv::Mat_<uchar> good_accessible_map_;
+    std::vector<cv::Mat_<uchar>> good_accessible_map_;
     cv::Mat_<uchar> border_map_;
     cv::Mat_<float> border_dir_map_;
     cv::Mat_<uchar> not_fully_viewed_border_;

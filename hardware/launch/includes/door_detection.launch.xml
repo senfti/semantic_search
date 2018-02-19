@@ -1,5 +1,5 @@
  <launch>
-  <node pkg="door_detection" type="door_detection" name="door_detection">
+  <node pkg="door_detection" type="door_detection" name="door_detection" output="screen">
     <param name="door_detection/MIN_DOOR_HEIGHT" value="1.95"/>
     <param name="door_detection/MAX_DOOR_HEIGHT" value="2.05"/>
     <param name="door_detection/OCC_RES" value="50.0"/>

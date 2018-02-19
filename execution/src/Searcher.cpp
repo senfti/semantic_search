@@ -340,11 +340,19 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::Mat grad_x, grad_y, mag, dir;
 
   double factor = obj_map_->getResolution()*msg->info.resolution;
+  good_accessible_map_.clear();
+  for(int i=1; i<=5; i++){
+    good_accessible_map_.push_back(cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f));
+    cv::Mat_<uchar> tmp;
+    cv::erode(accessible_mat, tmp, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), i+1);
+    cv::resize(tmp, tmp, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor));
+    cv::threshold(tmp, tmp, 192, 255, cv::THRESH_BINARY);
+    tmp.copyTo(good_accessible_map_.back()(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), tmp.cols, tmp.rows)));
+  }
   cv::resize(accessible_mat, accessible_mat, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor));
   cv::threshold(accessible_mat, accessible_mat, 192, 255, cv::THRESH_BINARY);
   accessible_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
   accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
-  cv::erode(accessible_map_, good_accessible_map_, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 1);
 
   cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
   cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
@@ -622,12 +630,16 @@ cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resol
 
 float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
   cv::Point diff = pos-curr_pos;
+  float bad_accessible_penalty = 0.f;
+  for(int i=0; i<good_accessible_map_.size(); i++){
+    bad_accessible_penalty += (good_accessible_map_[i](pos) ? 0.f : 1.f*RESOLUTION/MOVE_SPEED);
+  }
   if(std::abs(diff.x) < 0.2 && std::abs(diff.y) < 0.2){
-    return angleDist(curr_angle, angle)/TURN_SPEED + VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
+    return angleDist(curr_angle, angle)/TURN_SPEED + VIEW_TIME + bad_accessible_penalty;
   }
   float move_angle = std::atan2(float(diff.y),float(diff.x));
-  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))/RESOLUTION/MOVE_SPEED +
-    VIEW_TIME + (good_accessible_map_(pos) ? 0.f : 10.f/MOVE_SPEED);
+  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))*RESOLUTION/MOVE_SPEED +
+    VIEW_TIME + bad_accessible_penalty;
 }
 
 

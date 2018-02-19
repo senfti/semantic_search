@@ -108,7 +108,7 @@ bool DoorDetector::useCloud(){
   angle = makeBetweenPi(angle);
   double dist = (transform.getOrigin() - last_used_transform_.getOrigin()).length();
   if(std::abs(angle) < MIN_ANGLE_DIFF && dist < MIN_DIST_DIFF){
-    std::cout << "NOTHING CHANGED" << std::endl;
+    //std::cout << "NOTHING CHANGED" << std::endl;
     return false;
   }
   last_used_transform_ = transform;
@@ -314,7 +314,7 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
       geometry_msgs::Pose pose = rectToPose(rect);
       tf::Transform pose_tf;
       tf::poseMsgToTF(pose, pose_tf);
-      if(pose.position.x >= 0.2 && std::abs(tf::getYaw(pose_tf.getRotation())) < M_PI*75.0/180.0 && std::abs(pose.position.y) < 0.5);
+      if(pose.position.x >= 0.2 && std::abs(tf::getYaw(pose_tf.getRotation())) < M_PI*75.0/180.0 && std::abs(pose.position.y) < 0.7)
         door_poses.poses.push_back(pose);
     }
   }
