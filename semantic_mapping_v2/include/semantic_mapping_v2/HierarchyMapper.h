@@ -157,7 +157,7 @@ class HierarchyMapper{
                       const std::vector<cv::Mat_<float>>& room_based_obj_map, const std::vector<float>& complete_room_type_probs,
                       const std::vector<ObjectMap>& complete_obj_map, const ObjectMap& dummy_occ_map, const std::vector<nav_msgs::OccupancyGrid>& grid_maps,
                       const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps,
-                      OctoMapper& octomaps, int i);
+                      OctoMapper& octomaps, std::vector<cv::Point>& only_laser_points, int i);
 };
 
 #endif //SEMANTIC_MAPPING_V2_HIERARCHYMAPPER_H

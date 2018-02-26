@@ -12,6 +12,8 @@
   <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
     <arg name="scan_topic" value="scan_filtered" />
   </include>
+
+  <node pkg="odom_to_tf" type="odom_to_tf" name="odom_to_tf" args="odom" /> 
 <!--
   <include file="$(find hardware)/launch/includes/door_detection.launch.xml" >
   </include> 
