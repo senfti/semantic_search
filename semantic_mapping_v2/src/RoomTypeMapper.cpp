@@ -330,16 +330,22 @@ void applyMinAndMax(std::vector<double>& probs, double min, double max){
 
 void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, int y){
   std::vector<double> probs(prob_maps_.size());
-  for(int i=0; i<prob_maps_.size(); i++){
-    probs[i] = prob_maps_[i].getProb(x,y);
-  }
-
   double sum = 0.0;
-  for(int i=0; i<NUM_CLASSES; i++){
-    double prob = msg->place_guesses[i].prob;
-    probs[i] = (prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i];      // division by ROOM_PRIOR_PROB cancels out with normalization
+  for(int i=0; i<prob_maps_.size(); i++){
+    double update_prob = 0.0;
+    for(int j=0; j<prob_maps_.size(); j++){
+      update_prob += msg->place_guesses[j].prob*getRoomSimilarity(i,j);
+    }
+    probs[i] = update_prob*prob_maps_[i].getProb(x,y);
     sum += probs[i];
   }
+
+//  double sum = 0.0;
+//  for(int i=0; i<NUM_CLASSES; i++){
+//    double prob = msg->place_guesses[i].prob;
+//    probs[i] = (prob*CELL_HIT_MISS_RATIO + (1-prob)) * probs[i];      // division by ROOM_PRIOR_PROB cancels out with normalization
+//    sum += probs[i];
+//  }
   for(int i=0; i<NUM_CLASSES; i++){
     probs[i] /= sum;
   }
@@ -467,7 +473,8 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
 }
 
 
-std::vector<float> RoomTypeMapper::getTypeCellNumberEstimate(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors){
+std::vector<float> RoomTypeMapper::getTypeCellNumberEstimate(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors)
+{
   if(prob_maps_.empty() || map.data.size() == 0)
     return std::vector<float>();
 
@@ -480,7 +487,6 @@ std::vector<float> RoomTypeMapper::getTypeCellNumberEstimate(const nav_msgs::Occ
     }
   }
   cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
-  cv::erode(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
 
   boost::lock_guard<boost::mutex> lock(maps_mutex_);
   std::vector<float> probs(prob_maps_.size(), 0.0);
@@ -489,11 +495,11 @@ std::vector<float> RoomTypeMapper::getTypeCellNumberEstimate(const nav_msgs::Occ
   int num = 0;
   for(int x=0; x<prob_maps_[0].getWidth(); x++){
     for(int y=0; y<prob_maps_[0].getHeight(); y++){
+      float x_world = prob_maps_[0].getXWorld(x);
+      float y_world = prob_maps_[0].getYWorld(y);
+      int x_map = ((x_world - map.info.origin.position.x)) * res;
+      int y_map = ((y_world - map.info.origin.position.y)) * res;
       if(prob_maps_[0].wasSeen(x,y)){
-        float x_world = prob_maps_[0].getXWorld(x);
-        float y_world = prob_maps_[0].getYWorld(y);
-        int x_map = ((x_world - map.info.origin.position.x)) * res;
-        int y_map = ((y_world - map.info.origin.position.y)) * res;
         if(x_map >= 0 && x_map < mask.cols && y_map >= 0 && y_map < mask.rows && mask(y_map, x_map) > 0){
           bool behind = false;
           for(const auto &door : doors){

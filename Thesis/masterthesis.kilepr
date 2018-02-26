@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/Hardware.tex
+lastDocument=ProblemFormulation.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -218,10 +218,10 @@ order=-1
 
 [item:ProblemFormulation.tex]
 archive=true
-column=11
+column=493
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=16
 mode=LaTeX
 open=true
 order=1
@@ -341,10 +341,10 @@ JumpList=
 ViMarks=.,0,21,[,0,9,],0,21
 
 [view-settings,view=0,item:ProblemFormulation.tex]
-CursorColumn=11
-CursorLine=6
+CursorColumn=493
+CursorLine=16
 JumpList=
-ViMarks=.,6,10,[,6,0,],6,10
+ViMarks=.,16,492,[,16,446,],16,492
 
 [view-settings,view=0,item:RelatedResearch.tex]
 CursorColumn=0

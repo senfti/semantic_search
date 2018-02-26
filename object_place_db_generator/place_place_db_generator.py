@@ -20,26 +20,30 @@ i = 1
 #    f.write(w2 + ' ')
 #f.write('\n')
 
-for w1 in places:
+for i1,w1 in enumerate(places):
 #    f.write(w1 + ' ')
     ss = []
     sum = 0.0
     #min = 0.0
-    for w2 in places:
+    for i2,w2 in enumerate(places):
         try:
-            s = spread.entry_named(w1, w2)+1.0
+            s = max(spread.entry_named(w1, w2), 0.01)
+            if i1 == i2:
+                s = 0.27
+            else:
+                sum += s
             ss.append(s)
-            sum += s
             if(s < 0):
-                print "lsdkfjsdlfkj"
-            #if s<min:
-            #    min = s
+                print "lsdkfjsdlfkj%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
         except KeyError:
             print i, w1, w2
             i+=1
+    print
 
-    #sum += len(content)*min
-
-    for s in ss:
-        f.write(str(s/sum) + ' ')
+    for i2,s in enumerate(ss):
+        if i1 != i2:
+            s = s / sum * 0.73
+        f.write(str(s) + ' ')
+        print s,
+    print
     f.write('\n')

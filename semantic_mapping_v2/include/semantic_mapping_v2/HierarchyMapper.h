@@ -142,7 +142,9 @@ class HierarchyMapper{
     std::vector<float> getRoomTypeCellNumberEstimate(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Mat_<uchar>& seen_map, const cv::Point& origin,
                                         const nav_msgs::OccupancyGrid& grid_map, const std::vector<Door>& doors, float resolution, int base_size);
     std::vector<cv::Mat_<float>> getRoomBasedObjMap(const std::vector<cv::Mat_<float>>& complete_room_type_map, const cv::Point& new_orig, const cv::Size& new_size, int num_obj_types, int obj = -1);
-    std::vector<ObjectMap> getCompleteObjMap(const std::vector<cv::Mat_<float>>& room_base_obj_maps, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map, int obj = -1);
+    std::vector<cv::Point> getOnlyLaserPoints(const ObjectMap& obj_map, const nav_msgs::OccupancyGrid& map, const cv::Mat_<float> behind_door_mask);
+    std::vector<ObjectMap> getCompleteObjMap(const std::vector<cv::Mat_<float>>& room_base_obj_maps, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map,
+                                             const std::vector<cv::Point>& only_laser_points, const std::vector<float>& room_type_probs, int obj = -1);
     int estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, const ObjectMap& obj_map, const cv::Mat_<float> behind_door_mask, bool explored, int& search_cells);
     std::vector<float> getCompleteObjProbs(const std::vector<ObjectMap>& complete_obj_map, std::vector<float> room_type_probs, const ObjectMap& occ_map, int unseen_estimate);
     float getTravelTime(const geometry_msgs::Pose& door1, const geometry_msgs::Pose& door2);
