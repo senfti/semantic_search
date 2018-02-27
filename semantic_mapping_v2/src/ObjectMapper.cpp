@@ -138,16 +138,12 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
   for(int r = 0; r < room_type_probs.size(); r++){
     unseen_prob_estimate += RoomMapper::getObjProbGivenRoomPerCell(obj,r)*room_type_probs[r];
   }
-  cv::Mat_<uchar> sdf(object_map.getHeight(), object_map.getWidth(), uchar(0));
   for(const auto& p : only_laser_points){
     for(int z=0; z<getZSteps(); z++){
       prob_maps_[z](p) = unseen_prob_estimate;
       count_maps_[z](p) = 1;
-      sdf(p) = 255;
     }
   }
-  cv::imshow("only_laser", sdf);
-  cv::waitKey(1);
 }
 
 

@@ -58,7 +58,7 @@
     <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.8" />             
     <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
     <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="4.0" />
-    <param name="RoomTypeMapper/ASUS_FOV" value="20" />
+    <param name="RoomTypeMapper/ASUS_FOV" value="27" />
     <param name="RoomTypeMapper/MIN_DIST" value="0.7" />
     <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  
     <param name="RoomTypeMapper/SIMILARITY_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat" />  

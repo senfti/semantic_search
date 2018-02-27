@@ -203,7 +203,6 @@ void Planner::run(int obj){
     state_.updateState(graph_map, hierarchy.curr_room);
     std::cout << state_;
 
-    std::cin.get();
     Plan plan = generatePlan(graph_map, state_);
     if(plan.finished())
       std::cout << "OBJECT NOT FOUND!" << std::endl;

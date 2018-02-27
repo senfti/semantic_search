@@ -664,7 +664,7 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
 {
   std::vector<ObjectMap> complete_obj_map;
   if(obj >= 0){
-    complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[obj], only_laser_points, room_type_probs, obj));
+    complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[0], only_laser_points, room_type_probs, obj));
   }
   else{
     for(int o=0; o<obj_map.size(); o++){
