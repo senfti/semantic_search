@@ -1,5 +1,6 @@
 int16 debug_room
 ---
 RoomMsg[] rooms
+RoomMsg unknown_room
 int16 curr_room
 HierarchyLinkMsg[] links

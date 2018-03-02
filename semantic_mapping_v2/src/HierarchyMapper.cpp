@@ -640,7 +640,7 @@ std::vector<cv::Point> HierarchyMapper::getOnlyLaserPoints(const ObjectMap& obj_
         mask(y,x) = 255;
     }
   }
-  cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::dilate(mask, mask, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 3);
   cv::Mat_<uchar> map2d = obj_map.getCount2D(behind_door_mask);
 
   double res = 1.00 / map.info.resolution;
@@ -1123,6 +1123,42 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
 //      sdf_prob_map_view_pub_.publish(msg);
 }
 
+void HierarchyMapper::insertUnknowRoom(semantic_mapping_v2::RoomMsg& msg, const std::vector<std::vector<Door>>& doors){
+  msg.header.stamp = ros::Time::now();
+  msg.id = -1;
+
+  msg.obj_probs = std::vector<float>(ObjectMapper::getObjNames().size());
+  std::vector<float> room_type_cell_number(82, ROOM_ESTIMATED_OCCUPIED_AREA*ObjectMapper::OBJ_DEFAULT_RESOLUTION*ObjectMapper::OBJ_DEFAULT_RESOLUTION/82);
+  for(int o=0; o<msg.obj_probs.size(); o++){
+    double unseen_prob_estimate = 1.f;
+    for(int r = 0; r < room_type_cell_number.size(); r++){
+      unseen_prob_estimate *= std::pow(1.0-RoomMapper::getObjProbGivenRoomPerCell(o,r),room_type_cell_number[r]);
+    }
+    msg.obj_probs[o] = std::min(1-unseen_prob_estimate, 0.999);
+  }
+
+  msg.obj_probs_2 = msg.obj_probs;
+  msg.room_type_probs = std::vector<float>(82, 1.f/82);
+  msg.room_type_probs_2 = msg.room_type_probs;
+  msg.to_link_travel_times.push_back(M_PI*TRAVEL_TURN_FACTOR + 2.f*TRAVEL_DIST_LIN_FACTOR);
+  msg.search_time = ROOM_ESTIMATED_OCCUPIED_AREA * ObjectMapper::OBJ_DEFAULT_RESOLUTION * ObjectMapper::OBJ_DEFAULT_RESOLUTION*SEARCH_TIME_PER_GRID_CELL;
+
+  msg.expected_search_time = std::vector<float>(ObjectMapper::getObjNames().size(), 0.f);
+  int boxes = std::ceil(msg.search_time/10.f);
+  float box_time = msg.search_time/boxes;
+  for(int i=0; i<msg.expected_search_time.size(); i++){
+    std::vector<float> box_probs(1, 1.f);
+    for(int j=1; j<boxes; j++){
+      box_probs.push_back(box_probs.back()*0.8);
+    }
+    float sum = std::accumulate(box_probs.begin(), box_probs.end(), 0.f);
+    for(int j=0; j<boxes; j++){
+      msg.expected_search_time[i] += box_probs[j]*(msg.obj_probs[i]/sum) * (j+1)*box_time;
+    }
+    msg.expected_search_time[i] += (1.f-msg.obj_probs[i])*msg.search_time;
+  }
+}
+
 
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
@@ -1198,26 +1234,10 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
 
     ObjectMap dummy_occ_map(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
                             obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), 1.f, 1);
-    std::vector<cv::Mat_<float>> single_view_prob_map = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
-                                                                             complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), SINGLE_VIEW_OBJ_KERNEL_SIZE);
 
     if(PUBLISH_DEBUG_IMAGES && req.debug_room == i){
       publishDebug(behind_door_mask, occ_map, obj_prob_2d_area, obj_based_room_type_map, complete_room_type_map, room_based_obj_map, room_type_cell_number,
                    complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i);
-    }
-
-    std::vector<float> single_view_max_probs(single_view_prob_map.size());
-    std::vector<geometry_msgs::Point> single_view_points(single_view_prob_map.size());
-    for(int o=0;o<single_view_max_probs.size();o++){
-      double min, max;
-      cv::Point min_loc, max_loc;
-      cv::minMaxLoc(single_view_prob_map[o], &min, &max, &min_loc, &max_loc);
-      single_view_max_probs[o] = std::min(max, complete_obj_probs[o]*0.99);
-      geometry_msgs::Point point;
-      point.x = complete_obj_map[0].getXWorld(max_loc.x);
-      point.y = complete_obj_map[0].getYWorld(max_loc.y);
-      point.z = 0;
-      single_view_points[o] = point;
     }
 
     semantic_mapping_v2::RoomMsg room;
@@ -1280,6 +1300,8 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
         res.links[i].dists[j] = getTravelTime(res.links[i].door2_pose, res.links[j].door2_pose);
     }
   }
+
+  insertUnknowRoom(res.unknown_room, doors);
 
   hierarchy_pub_.publish(res);
 

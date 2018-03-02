@@ -483,7 +483,9 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
 
   if(maps_.empty()){
     boost::lock_guard<boost::mutex> lock(maps_mutex_);
-    maps_.resize(msg.num_objects, ObjectMap(OBJ_DEFAULT_RESOLUTION, 4.f, OBJ_DEFUALT_MAX_HEIGHT, OBJ_PRIOR_PROB));
+    maps_.reserve(msg.num_objects);
+    for(int o=0; o<msg.num_objects; o++)
+      maps_.push_back(ObjectMap(OBJ_DEFAULT_RESOLUTION, 4.f, OBJ_DEFUALT_MAX_HEIGHT, RoomMapper::getObjProbGivenRoomObjPriorPerCell(o)/6));
   }
 
   pcl::PointXYZ min, max;
@@ -555,8 +557,8 @@ bool ObjectMapper::expandUntilFitting(const pcl::PointXYZ& min, const pcl::Point
     return false;
 
   boost::lock_guard<boost::mutex> lock(maps_mutex_);
-  for(auto& map : maps_)
-    map.resize(left, right, top, bottom, OBJ_PRIOR_PROB);
+  for(int o=0; o<maps_.size(); o++)
+    maps_[o].resize(left, right, top, bottom, RoomMapper::getObjProbGivenRoomObjPriorPerCell(o)/6);
   return true;
 }
 

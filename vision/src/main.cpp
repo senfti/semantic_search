@@ -311,6 +311,9 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
     }
   }
   cv::imshow("img", debug_img);
+  static int sdf=0;
+  cv::imwrite("/tmp/" + std::to_string(sdf)+ ".png", debug_img);
+  sdf++;
   uchar key = cv::waitKey(1) & 255;
   if(key == 27)
     run_ = false;

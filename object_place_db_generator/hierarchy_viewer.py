@@ -27,14 +27,33 @@ def callback(data):
     for i in range(len(data.rooms)):
         obj_sort = sorted(range(len(data.rooms[i].obj_probs)), key=lambda x: data.rooms[i].obj_probs[x], reverse=True)
         for j in range(len(obj_sort)):
-            print obj_sort[j], '{:22}'.format(obj_name[obj_sort[j]]), '{:6.4f}'.format(data.rooms[i].obj_probs[obj_sort[j]])
+            print obj_sort[j], '{:22}'.format(obj_name[obj_sort[j]]), '{:6.4f}'.format(data.rooms[i].obj_probs[obj_sort[j]]), '{:6.4f}'.format(data.rooms[i].obj_probs_2[obj_sort[j]]), '{:9.4f}'.format(data.rooms[i].expected_search_time[obj_sort[j]]), '{:9.4f}'.format(data.rooms[i].search_time), '{:7.5f}'.format(data.rooms[i].obj_probs[obj_sort[j]]/data.rooms[i].expected_search_time[obj_sort[j]])
         print
+
+    obj_sort = sorted(range(len(data.unknown_room.obj_probs)), key=lambda x: data.unknown_room.obj_probs[x], reverse=True)
+    for j in range(len(obj_sort)):
+        print obj_sort[j], '{:22}'.format(obj_name[obj_sort[j]]), '{:6.4f}'.format(data.unknown_room.obj_probs[obj_sort[j]]), '{:9.4f}'.format(data.unknown_room.expected_search_time[obj_sort[j]]), '{:9.4f}'.format(data.unknown_room.search_time), '{:7.5f}'.format(data.unknown_room.obj_probs[obj_sort[j]]/data.unknown_room.expected_search_time[obj_sort[j]])
+    print
+
+    for j in range(len(obj_sort)):
+        max_v = data.unknown_room.obj_probs[j]/data.unknown_room.expected_search_time[j]
+        max_prob = data.unknown_room.obj_probs[j]
+        max_idx = -1
+        for i in range(len(data.rooms)):
+            if data.rooms[i].obj_probs[j]/data.rooms[i].expected_search_time[j] > max_v:
+                max_idx = i
+                max_prob = data.rooms[i].obj_probs[j]
+                max_v = data.rooms[i].obj_probs[j]/data.rooms[i].expected_search_time[j]
+        print '{:22}'.format(obj_name[j]), max_idx, "         ", '{:6.4f}'.format(max_prob), '{:6.4f}'.format(data.unknown_room.obj_probs[j]), max_v, data.unknown_room.obj_probs[j]/data.unknown_room.expected_search_time[j]
+
 
     obj = int(input("Object: "))
     print data.curr_room
     for i in range(len(data.rooms)):
-        print '{:6.4f}'.format(data.rooms[i].obj_probs[obj]), '{:6.4f}'.format(data.rooms[i].single_view_obj_probs[obj]), '{:6.4f}'.format(data.rooms[i].obj_probs[obj]),
-        print '{:9.4f}'.format(data.rooms[i].search_time), '{:9.4f}'.format(data.rooms[i].single_view_search_time)
+        print '{:6.4f}'.format(data.rooms[i].obj_probs[obj]),
+        print '{:9.4f}'.format(data.rooms[i].search_time)
+    print '{:6.4f}'.format(data.unknown_room.obj_probs[obj]),
+    print '{:9.4f}'.format(data.unknown_room.search_time)
 
     for i in range(len(data.links)):
         print data.links[i].room1, data.links[i].room2

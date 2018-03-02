@@ -73,14 +73,13 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
   int room_idx = search_times_.size();
   for(int i=0; i<response.links.size(); i++){
     if(response.links[i].room2 < 0 || response.links[i].room2 >= room_idx){
-      search_times_.push_back(UNEXPLORED_SEARCH_TIME_ESTIMATE);
-      search_prob_.push_back(UNEXPLORED_PROB_ESTIMATE);
-      expected_search_times_[room_idx] = search_times_.back()/3;
+      search_times_.push_back(response.unknown_room.search_time);
+      search_prob_.push_back(response.unknown_room.obj_probs[obj]);
+      expected_search_times_.push_back(response.unknown_room.expected_search_time[obj]);
       not_visited_.push_back(true);
-      semantic_mapping_v2::RoomMsg unknown_room;
-      unknown_room.links.push_back(i);
-      unknown_room.to_link_travel_times.push_back(0.f);
-      response.rooms.push_back(unknown_room);
+      response.rooms.push_back(response.unknown_room);
+      response.rooms.back().links.push_back(i);
+      response.rooms.back().id = room_idx;
       response.links[i].room2 = room_idx++;
     }
   }

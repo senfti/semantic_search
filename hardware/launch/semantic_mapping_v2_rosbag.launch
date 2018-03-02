@@ -1,4 +1,13 @@
 <launch>
+  <arg name="octomap_hit" default="0.62" />
+  <arg name="octomap_miss" default="0.4" />
+  <arg name="octomap_downproj_thresh" default="0.6" />
+
+  <arg name="object_prior" default="0.003" />
+  <arg name="object_hit" default="0.03" />
+  <arg name="object_miss" default="0.00002" />
+  <arg name="object_samples" default="4000" />
+
   <param name="use_sim_time" value="true" />
 
   <include file="$(find hardware)/launch/includes/robot.launch.xml">
@@ -11,6 +20,15 @@
 
   <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
     <arg name="scan_topic" value="scan_filtered" />
+
+    <arg name="octomap_hit" value="$(arg octomap_hit)" />
+    <arg name="octomap_miss" value="$(arg octomap_miss)" />
+    <arg name="octomap_downproj_thresh" value="$(arg octomap_downproj_thresh)" />
+
+    <arg name="object_prior" value="$(arg object_prior)" />    
+    <arg name="object_hit" value="$(arg object_hit)" />
+    <arg name="object_miss" value="$(arg object_miss)" />
+    <arg name="object_samples" value="$(arg object_samples)" />
   </include>
 
   <node pkg="odom_to_tf" type="odom_to_tf" name="odom_to_tf" args="odom" /> 
