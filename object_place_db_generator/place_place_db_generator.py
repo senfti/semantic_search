@@ -20,6 +20,8 @@ i = 1
 #    f.write(w2 + ' ')
 #f.write('\n')
 
+param = 0.1
+
 for i1,w1 in enumerate(places):
 #    f.write(w1 + ' ')
     ss = []
@@ -29,7 +31,7 @@ for i1,w1 in enumerate(places):
         try:
             s = max(spread.entry_named(w1, w2), 0.01)
             if i1 == i2:
-                s = 0.27
+                s = param
             else:
                 sum += s
             ss.append(s)
@@ -42,7 +44,7 @@ for i1,w1 in enumerate(places):
 
     for i2,s in enumerate(ss):
         if i1 != i2:
-            s = s / sum * 0.73
+            s = s / sum * (1-param)
         f.write(str(s) + ' ')
         print s,
     print

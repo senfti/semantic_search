@@ -36,6 +36,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   private_nh.param("vision/MAX_ROT_VELOCITY", MAX_ROT_VELOCITY, MAX_ROT_VELOCITY);
 
   private_nh.param("vision/DEBUG_IMAGES", DEBUG_IMAGES, DEBUG_IMAGES);
+  private_nh.param("vision/IMAGE_SAVE", IMAGE_SAVE, IMAGE_SAVE);
 
   PRINT_PARAM(PLACE_MODEL_FILE)
   PRINT_PARAM(PLACE_TRAINED_FILE)
@@ -55,6 +56,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   PRINT_PARAM(MIN_DIST_DIFF)
   PRINT_PARAM(MAX_ROT_VELOCITY)
   PRINT_PARAM(DEBUG_IMAGES)
+  PRINT_PARAM(IMAGE_SAVE)
 
   auto begin = std::chrono::steady_clock::now();
   classifier_ = new CaffeClassifier(PLACE_MODEL_FILE, PLACE_TRAINED_FILE, PLACE_MEAN_FILE, PLACE_LABEL_FILE);
@@ -311,9 +313,11 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
     }
   }
   cv::imshow("img", debug_img);
-  static int sdf=0;
-  cv::imwrite("/tmp/" + std::to_string(sdf)+ ".png", debug_img);
-  sdf++;
+  if(IMAGE_SAVE){
+    static int sdf = 0;
+    cv::imwrite("/tmp/" + std::to_string(sdf) + ".png", debug_img);
+    sdf++;
+  }
   uchar key = cv::waitKey(1) & 255;
   if(key == 27)
     run_ = false;

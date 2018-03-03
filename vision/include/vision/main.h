@@ -48,7 +48,8 @@ class VisionApp{
     float MIN_DIST_DIFF = 0.5;
     float MAX_ROT_VELOCITY = 0.3;
 
-    bool DEBUG_IMAGES = true;
+    int DEBUG_IMAGES = 1;
+    int IMAGE_SAVE = 0;
 
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;

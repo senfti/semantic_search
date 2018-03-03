@@ -1170,7 +1170,6 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
   std::vector<std::vector<Door>> doors;
   std::vector<std::vector<ObjectMap>> obj_maps;
   std::vector<std::vector<RoomTypeMap>> room_type_maps;
-  std::vector<std::vector<float>> base_room_type_probs;
   std::vector<std::vector<float>> base_obj_probs;
   std::vector<bool> room_changed;
   std::vector<bool> explored;
@@ -1192,7 +1191,6 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     obj_maps.push_back(room_mapper_[i]->getObjMaps());
     room_type_maps.push_back(room_mapper_[i]->getRoomTypeMaps());
     std::vector<size_t> order;
-    base_room_type_probs.push_back(room_mapper_[i]->getRoomTypeProbs(order));
     base_obj_probs.push_back(room_mapper_[i]->getObjectProbs(order));
     room_changed_[i] = false;
   }
@@ -1246,7 +1244,8 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<size_t> order;
     room.obj_probs = complete_obj_probs;
     room.room_type_probs = room_type_cell_number;
-    room.room_type_probs_2 = base_room_type_probs[i];
+    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(room_type_maps[i], room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+                                                           grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
     room.obj_probs_2 = base_obj_probs[i];
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
     room.search_time = getSearchTime(search_cells)+20.f;

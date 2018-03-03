@@ -94,14 +94,14 @@ for p in param:
     proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
     time.sleep(5)
 
-    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock /media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/robolab_2.bag', shell=True)
+    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock -s 20 /media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/home_asus_7.bag', shell=True)
     proc_rosbag.wait()
 
     proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
     proc_hierarchy.wait()
 
-    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_rl_' + str(p) +'.bag'
-    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_rl_' + str(p) +'.bag', shell=True)
+    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_enter1_' + str(p) +'.bag'
+    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_enter1_' + str(p) +'.bag', shell=True)
     time.sleep(3)
     last_clock.clock = last_clock.clock + rospy.Duration(0.1)
     pub.publish(last_clock)
@@ -123,14 +123,14 @@ for p in param:
     proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
     time.sleep(5)
 
-    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock /media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/home_asus_0.bag', shell=True)
+    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock -s 48 /media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/home_asus_9.bag', shell=True)
     proc_rosbag.wait()
 
     proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
     proc_hierarchy.wait()
 
-    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_ws_' + str(p) +'.bag'
-    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_ws_' + str(p) +'.bag', shell=True)
+    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_enter2_' + str(p) +'.bag'
+    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_enter2_' + str(p) +'.bag', shell=True)
     time.sleep(3)
     last_clock.clock = last_clock.clock + rospy.Duration(0.1)
     pub.publish(last_clock)
@@ -144,34 +144,3 @@ for p in param:
     time.sleep(3)
     terminate_process_and_children(proc_map)
     time.sleep(3)
-
-for p in param:
-    createDat(p)
-
-    print p
-    proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
-    time.sleep(5)
-
-    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock /media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/home_asus_2.bag', shell=True)
-    proc_rosbag.wait()
-
-    proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
-    proc_hierarchy.wait()
-
-    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_we_' + str(p) + '.bag'
-    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/result_test_we_' + str(p) + '.bag', shell=True)
-    time.sleep(3)
-    last_clock.clock = last_clock.clock + rospy.Duration(0.1)
-    pub.publish(last_clock)
-    time.sleep(3)
-
-    proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
-    proc_hierarchy.wait()
-    time.sleep(5)
-    terminate_ros_node("/record")
-
-    time.sleep(3)
-    terminate_process_and_children(proc_map)
-    time.sleep(3)
-
-

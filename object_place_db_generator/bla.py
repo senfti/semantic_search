@@ -44,5 +44,5 @@ if 1:
     for i in range(0,82):
         print '{:22}'.format(room_name[room_sort[i]]), '{:6.4f}'.format(room_type_probs[room_sort[i]]), '{:6.4f}'.format(room_type_probs_2[room_sort[i]]), '        ',
         if i < 80:
-            print '{:22}'.format(obj_name[obj_sort[i]]), '{:6.4f}'.format(obj_probs[obj_sort[i]]), '{:6.4f}'.format(obj_probs_2[obj_sort[i]]), '{:6.4f}'.format(single_view_obj_probs[obj_sort[i]]),
+            print '{:22}'.format(obj_name[obj_sort[i]]), '{:6.4f}'.format(obj_probs[obj_sort[i]]), '{:6.4f}'.format(obj_probs_2[obj_sort[i]]),
         print

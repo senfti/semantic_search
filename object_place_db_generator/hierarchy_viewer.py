@@ -46,6 +46,12 @@ def callback(data):
                 max_v = data.rooms[i].obj_probs[j]/data.rooms[i].expected_search_time[j]
         print '{:22}'.format(obj_name[j]), max_idx, "         ", '{:6.4f}'.format(max_prob), '{:6.4f}'.format(data.unknown_room.obj_probs[j]), max_v, data.unknown_room.obj_probs[j]/data.unknown_room.expected_search_time[j]
 
+    for i in range(len(data.rooms)):
+        room_sort = sorted(range(len(data.rooms[i].room_type_probs)), key=lambda x: data.rooms[i].room_type_probs[x], reverse=True)
+        for j in range(len(room_sort)):
+            print room_sort[j], '{:22}'.format(room_name[room_sort[j]]), '{:6.4f}'.format(data.rooms[i].room_type_probs[room_sort[j]])
+        print
+
 
     obj = int(input("Object: "))
     print data.curr_room
