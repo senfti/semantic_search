@@ -317,10 +317,10 @@ order=14
 
 [item:Prerequisites/ROS.tex]
 archive=true
-column=163
+column=554
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=6
 mode=LaTeX
 open=true
 order=15
@@ -490,10 +490,10 @@ JumpList=
 ViMarks=.,0,15,[,0,9,],0,15
 
 [view-settings,view=0,item:Prerequisites/ROS.tex]
-CursorColumn=163
-CursorLine=2
+CursorColumn=554
+CursorLine=6
 JumpList=
-ViMarks=.,2,163,[,2,163,],2,163
+ViMarks=.,6,553,[,6,553,],6,553
 
 [view-settings,view=0,item:Prerequisites/YOLO.tex]
 CursorColumn=0

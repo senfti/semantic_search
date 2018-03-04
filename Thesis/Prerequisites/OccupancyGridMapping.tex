@@ -1,1 +1,38 @@
 \section{Occupancy Grid Mapping}
+
+Occupancy grid mapping is a commonly used way to create consistent maps from noisy and uncertain sensor data, assuming the pose of the robot is known. The environment is split into a evenly spaced grid and the goal is to estimate the probability of a cell being occupied for every cell. The basic assumptions used to make the problem feasible is that a cell is either completely occupied or completely free and the probabilities of a cell $c$ being occupied given the measurement data $z_{1:t}$ and robot poses $x_{1:t}$, $p(m_c|z_{1:t},x_{1:t})$, are independent of each other. 
+
+A binary bayes filter with static state is applied on all cells, resulting in the formulas 
+\begin{equation} \label{eq4_1}
+    p(m_c|z_{1:t},x_{1:t}) = \frac{p(m_c|z_t,x_t)p(z_t,x_t)p(m_c|z_{1:t-1},x_{1:t-1})}{p(m_c)p(z_t|z_{1:t-1},x_{1:t})}
+\end{equation}
+with $p(m_c|z_t,x_t)$ being the inverse sensor model, $p(m_c|z_{1:t-1},x_{1:t-1})$ being the recursive term and $p(m_c)$ being the prior probability. The terms $p(z_t,x_t)$ and $p(z_t|z_{1:t-1},x_{1:t})$ are difficult to estimate, but using $P(\neg x) = 1-P(x)$ these terms can be eliminated. 
+%and
+%\begin{equation} \label{eq4_2}
+%    p(\neg m_c|z_{1:t},x_{1:t}) = \frac{p(\neg m_c|z_t,x_t)p(z_t,x_t)p(\neg m_c|z_{1:t-1},x_{1:t-1})}{p(\neg m_c)p(z_t|z_{1:t-1},x_{1:t})}
+%\end{equation}
+
+Computing the ratio and applying the logarithm results in
+\begin{equation} \label{eq4_2}
+    l(m_c|z_{1:t},x_{1:t}) = l(m_c|z_{t},x_{t}) + l(m_c|z_{1:t-1},x_{1:t-1}) - l(m_c)
+\end{equation}
+with the term based on the inverse sensor model
+\begin{equation} \label{eq4_3}
+    l(m_c|z_{t},x_{t}) = log\frac{p(m_c|z_t,x_t)}{1-p(m_c|z_t,x_t)}
+\end{equation}
+the recursive term
+\begin{equation} \label{eq4_4}
+    l(m_c|z_{1:t-1},x_{1:t-1}) = log\frac{p(m_c|z_{1:t-1},x_{1:t-1})}{1-p(m_c|z_{1:t-1},x_{1:t-1})}
+\end{equation}
+and the prior term
+\begin{equation} \label{eq4_5}
+    l(m_c) = log\frac{p(m_c)}{1-p(m_c)}
+\end{equation}
+
+The final probability is 
+\begin{equation} \label{eq4_6}
+  p(m_c|z_{1:t},x_{1:t}) = 1-\frac{1}{1+exp(l(m_c|z_{1:t},x_{1:t}))}
+\end{equation}
+
+The prior $p(m_c)$ is usually set to $0.5$, but the inverse sensor model has to be chosen. A simple and effective way with sensors measuring range data is to do raytracing. In this simple model the inverse sensor model at cells on the ray is set to a parameter $V_M$, at cells where a ray ends to a parameter $V_H$ and to $p(m_c)$ at every other cell. The parameters $V_M$ and $V_H$ have to be chosen based on the trustworthiness in the range data with the restrictions $V_M < p_c(m)$ and $V_H > p_{c}(m)$.
+

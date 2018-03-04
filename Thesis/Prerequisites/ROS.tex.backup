@@ -1,0 +1,11 @@
+\section{ROS Robot Operating System}
+
+Robot Operating System (ROS) is no operating system but a robotic framework. The main purpose of ROS is providing a structured communication layer for interprocess communication. As TCP-IP sockets are used the processes, called nodes in ROS terminology, can also run on different machines. This can be used for example for outsourcing of computational heavy tasks to off-board computers or mu. In addition 
+
+
+providing a structured communication layer and is running on Linux-based host systems. As TCP-IP sockets are used communication between processes running on different machines is possible
+
+
+
+Due to the communication being carried out using TCP-IP sockets ROS is able to work in multi-computer systems. 
+
