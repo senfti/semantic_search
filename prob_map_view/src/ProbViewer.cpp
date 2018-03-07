@@ -93,7 +93,7 @@ void ProbViewer::saveAll( wxCommandEvent& event ){
   prob_view_app->saveAll();
 }
 
-void ProbViewer::save(const std::string& folder){
+void ProbViewer::save(const std::string& folder, const std::string& postfix){
   int i=0;
   for(auto &image : prob_images_){
     cv::Mat_<double> img;
@@ -128,7 +128,7 @@ void ProbViewer::save(const std::string& folder){
       cv::merge(std::vector<cv::Mat>({out, tmp, tmp2}), out);
       cv::cvtColor(out, out, CV_HSV2BGR);
 
-      cv::imwrite(folder + "/" + std::string(GetTitle()) + "_" + prob_names_[i] + ".png", out);
+      cv::imwrite(folder + "/" + std::string(GetTitle()) + "_" + prob_names_[i] + postfix + ".png", out);
       i++;
     }
   }

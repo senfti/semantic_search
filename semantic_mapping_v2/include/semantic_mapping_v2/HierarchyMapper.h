@@ -16,6 +16,7 @@
 #include <semantic_mapping_v2/RoomTypeProbSrv.h>
 #include <semantic_mapping_v2/ObjFoundSrv.h>
 #include <semantic_mapping_v2/DoorPoseSrv.h>
+#include <semantic_mapping_v2/HierarchyTestMsg.h>
 #include <prob_map_view/ProbMapMsg.h>
 
 #include <std_msgs/Int8.h>
@@ -35,6 +36,7 @@ class HierarchyMapper{
     ros::Subscriber vision_sub_;
     ros::Subscriber curr_action_sub_;
     ros::Subscriber explored_sub_;
+    ros::Subscriber hierarchy_test_sub_;
 
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
@@ -113,6 +115,8 @@ class HierarchyMapper{
     void visionCb(const vision::VisionMsgConstPtr& msg);
     void currActionCb(const std_msgs::Int8ConstPtr& msg);
     void exploredCb(const std_msgs::Int8ConstPtr& msg);
+
+    void hierarchyTestCb(const semantic_mapping_v2::HierarchyTestMsgConstPtr& msg);
 
     bool gmapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);
     bool mapSrvCb(semantic_mapping_v2::MapSrv::Request& req, semantic_mapping_v2::MapSrv::Response& res);

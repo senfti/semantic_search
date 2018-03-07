@@ -10,6 +10,7 @@
 #include <wx/wx.h>
 #include <prob_map_view/ProbMapMsg.h>
 #include "prob_map_view/ProbViewer.h"
+#include <std_msgs/String.h>
 
 
 class ProbViewApp : public wxApp{
@@ -20,6 +21,7 @@ class ProbViewApp : public wxApp{
     ros::Subscriber base_obj_sub_;
     ros::Subscriber base_room_sub_;
     ros::Subscriber sdf_sub_;
+    ros::Subscriber save_all_sub_;
 
     ProbViewer* place_viewer_ = nullptr;
     ProbViewer* obj_viewer_ = nullptr;
@@ -42,8 +44,9 @@ class ProbViewApp : public wxApp{
     void baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void sdfProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+    void saveAllCb(const std_msgs::StringConstPtr& msg);
 
-    void saveAll();
+    void saveAll(const std::string& postfix = std::string(""));
 };
 
 extern ProbViewApp* prob_view_app;

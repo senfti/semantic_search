@@ -53,6 +53,7 @@ HierarchyMapper::HierarchyMapper()
   hierarchy_srv_ = service_nh.advertiseService("hierarchy_srv", &HierarchyMapper::hierarchySrvCb, this);
   obj_found_srv_ = service_nh.advertiseService("obj_found_srv", &HierarchyMapper::objFoundSrvCb, this);
   door_pose_srv_ = service_nh.advertiseService("door_pose_srv", &HierarchyMapper::doorPoseSrvCb, this);
+  hierarchy_test_sub_ = service_nh.subscribe("hierarchy_test", 1, &HierarchyMapper::hierarchyTestCb, this);
 
   ros::NodeHandle("~").param("transform_publish_period", transform_publish_period_, 0.05);
   ros::NodeHandle("~").param("publish_period", publish_period_, 0.5);
@@ -1244,8 +1245,8 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<size_t> order;
     room.obj_probs = complete_obj_probs;
     room.room_type_probs = room_type_cell_number;
-    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(room_type_maps[i], room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
-                                                           grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
+//    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(room_type_maps[i],get, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+//                                                           grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
     room.obj_probs_2 = base_obj_probs[i];
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
     room.search_time = getSearchTime(search_cells)+20.f;
@@ -1367,3 +1368,182 @@ bool HierarchyMapper::doorPoseSrvCb(semantic_mapping_v2::DoorPoseSrv::Request& r
   return true;
 }
 
+
+void HierarchyMapper::hierarchyTestCb(const semantic_mapping_v2::HierarchyTestMsgConstPtr &msg){
+  ROS_INFO("Test HIERARCHY");
+  ros::Time start = ros::Time::now();
+  semantic_mapping_v2::HierarchySrv::Response res;
+
+  std::vector<OctoMapper> octomaps;
+  std::vector<nav_msgs::OccupancyGrid> gmapping_maps;
+  std::vector<nav_msgs::OccupancyGrid> grid_maps;
+  std::vector<std::vector<Door>> doors;
+  std::vector<std::vector<ObjectMap>> obj_maps;
+  std::vector<std::vector<RoomTypeMap>> room_type_maps;
+  std::vector<std::vector<float>> base_obj_probs;
+  std::vector<bool> room_changed;
+  std::vector<bool> explored;
+  std::vector<semantic_mapping_v2::RoomMsg> last_room_msgs;
+
+  float old_OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE = OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE;
+  float old_ROOM_ESTIMATED_OCCUPIED_AREA = ROOM_ESTIMATED_OCCUPIED_AREA;
+  float old_ROOM_MIN_UNEXPLORED_AREA = ROOM_MIN_UNEXPLORED_AREA;
+  float old_TRAVEL_DIST_LIN_FACTOR = TRAVEL_DIST_LIN_FACTOR;
+  float old_TRAVEL_TURN_FACTOR = TRAVEL_TURN_FACTOR;
+  float old_SEARCH_TIME_PER_GRID_CELL = SEARCH_TIME_PER_GRID_CELL;
+
+  OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE = msg->OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE;
+  ROOM_ESTIMATED_OCCUPIED_AREA = msg->ROOM_ESTIMATED_OCCUPIED_AREA;
+  ROOM_MIN_UNEXPLORED_AREA = msg->ROOM_MIN_UNEXPLORED_AREA;
+  TRAVEL_DIST_LIN_FACTOR = msg->TRAVEL_DIST_LIN_FACTOR;
+  TRAVEL_TURN_FACTOR = msg->TRAVEL_TURN_FACTOR;
+  SEARCH_TIME_PER_GRID_CELL = msg->SEARCH_TIME_PER_GRID_CELL;
+
+  boost::unique_lock<boost::mutex> maps_lock(mapper_mutex_);
+  RoomMapper::getObjProbGivenRoomPerCell(0,0,true,msg->OBJ_FILL_FRACTION);
+  RoomMapper::getObjProbGivenRoomObjPriorPerCell(0,true);
+  RoomMapper::getObjProbGivenRoomRoomPriorPerCell(0,true);
+  room_changed = room_changed_;
+  last_room_msgs = last_room_msgs_;
+  explored = explored_;
+  for(int i=0; i<room_mapper_.size(); i++){
+    grid_maps.push_back(room_mapper_[i]->getMap());
+    if(grid_maps.back().data.size() == 0){
+      grid_maps.pop_back();
+      continue;
+    }
+    gmapping_maps.push_back(room_mapper_[i]->getGMap());
+    octomaps.push_back(room_mapper_[i]->getOctomap());
+    doors.push_back(room_mapper_[i]->getDoors());
+    obj_maps.push_back(room_mapper_[i]->getObjMaps());
+    room_type_maps.push_back(room_mapper_[i]->getRoomTypeMaps());
+    std::vector<size_t> order;
+    base_obj_probs.push_back(room_mapper_[i]->getObjectProbs(order));
+    room_changed_[i] = false;
+  }
+  res.curr_room = current_mapper_;
+  maps_lock.unlock();
+
+
+
+  for(int i=0; i<grid_maps.size(); i++){
+    if(obj_maps[i].empty() || room_type_maps[i].empty() || grid_maps[i].info.width == 0){
+      res.rooms.push_back(semantic_mapping_v2::RoomMsg());
+      continue;
+    }
+
+    cv::Mat_<float> behind_door_mask = getBehindDoorMask(doors[i], obj_maps[i][0]);
+    ObjectMap occ_map(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
+                      obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), octomaps[i], doors[i]);
+
+    std::vector<cv::Mat_<float>> obj_prob_2d_area = get2dAreaObjProbMaps(obj_maps[i], behind_door_mask, occ_map, room_type_maps[i][0].getOrigin(),
+                                                                         room_type_maps[i][0].getWidth(), room_type_maps[i][0].getHeight(), ROOM_CELL_OBJ_KERNEL_SIZE);
+    std::vector<cv::Mat_<float>> obj_based_room_type_map = getObjBasedRoomTypeMap(obj_prob_2d_area, room_type_maps[i].size());
+    std::vector<cv::Mat_<float>> complete_room_type_map = getCompleteRoomTypeMap(room_type_maps[i], obj_based_room_type_map);
+    std::vector<float> room_type_cell_number = getRoomTypeCellNumberEstimate(complete_room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+                                                                             grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
+
+    std::vector<cv::Mat_<float>> room_based_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin(),
+                                                                         cv::Size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight()), obj_maps[i].size());
+    std::vector<cv::Point> only_laser_points = getOnlyLaserPoints(obj_maps[i][0], grid_maps[i], behind_door_mask);
+    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps[i], occ_map, only_laser_points, room_type_cell_number);
+    int search_cells;
+    int num_unseen = estimateUnseen2dCells(gmapping_maps[i], obj_maps[i][0], behind_door_mask, explored[i], search_cells);
+    std::vector<float> complete_obj_probs = getCompleteObjProbs(complete_obj_map, room_type_cell_number, occ_map, num_unseen);
+    std::vector<float> complete_obj_probs2 = getCompleteObjProbs(complete_obj_map, room_type_cell_number, occ_map, 0);
+    for(int i=0; i<complete_obj_probs.size(); i++){
+      std::cout << ObjectMapper::getObjName(i) << " " << complete_obj_probs[i] << " " << complete_obj_probs2[i] << std::endl;
+    }
+
+    ObjectMap dummy_occ_map(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
+                            obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), 1.f, 1);
+
+    if(PUBLISH_DEBUG_IMAGES && msg->output_room == i){
+      publishDebug(behind_door_mask, occ_map, obj_prob_2d_area, obj_based_room_type_map, complete_room_type_map, room_based_obj_map, room_type_cell_number,
+                   complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i);
+    }
+
+    semantic_mapping_v2::RoomMsg room;
+    room.header.stamp = ros::Time::now();
+    room.id = i;
+    std::vector<size_t> order;
+    room.obj_probs = complete_obj_probs;
+    room.room_type_probs = room_type_cell_number;
+//    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(room_type_maps[i],get, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+//                                                           grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
+    room.obj_probs_2 = base_obj_probs[i];
+    room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
+    room.search_time = getSearchTime(search_cells)+20.f;
+    room.expected_search_time = getExpectedSearchTime(room.search_time, complete_obj_probs, complete_obj_map, behind_door_mask);
+    last_room_msgs[i] = room;
+    res.rooms.push_back(room);
+  }
+
+  int link_count = 0;
+  for(int i=0; i<doors.size(); i++){
+    for(const auto& door : doors[i]){
+      if(door.getOtherRoom() <= i){
+        semantic_mapping_v2::HierarchyLinkMsg link;
+        link.header.stamp = ros::Time::now();
+        if(door.getOtherRoom() < 0){
+          link.room1 = i;
+          link.room2 = door.getOtherRoom();
+          res.rooms[i].links.push_back(link_count);
+          tf::poseTFToMsg(door.getPose(), link.door1_pose);
+        }
+        else{
+          link.room1 = door.getOtherRoom();
+          link.room2 = i;
+          res.rooms[door.getOtherRoom()].links.push_back(link_count);
+          res.rooms[i].links.push_back(link_count);
+          tf::poseTFToMsg(door.getPose(), link.door2_pose);
+          std::vector<Door> other_doors = doors[door.getOtherRoom()];
+          for(const auto& door2 : other_doors){
+            if(door2.getId() == door.getCounterpartId()){
+              tf::poseTFToMsg(door2.getPose(), link.door1_pose);
+              break;
+            }
+          }
+        }
+        res.links.push_back(link);
+        link_count++;
+      }
+    }
+  }
+
+  for(int i=0; i<res.links.size(); i++){
+    res.links[i].dists.resize(res.links.size(), std::numeric_limits<float>::max());
+    for(int j=0; j<res.links.size(); j++){
+      if(res.links[i].room1 == res.links[j].room1)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door1_pose, res.links[j].door1_pose);
+      else if(res.links[i].room1 == res.links[j].room2)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door1_pose, res.links[j].door2_pose);
+      else if(res.links[i].room2 == res.links[j].room1)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door2_pose, res.links[j].door1_pose);
+      else if(res.links[i].room2 != -1 && res.links[i].room2 == res.links[j].room2)
+        res.links[i].dists[j] = getTravelTime(res.links[i].door2_pose, res.links[j].door2_pose);
+    }
+  }
+
+  insertUnknowRoom(res.unknown_room, doors);
+
+  hierarchy_pub_.publish(res);
+
+  maps_lock.lock();
+  last_room_msgs_ = last_room_msgs;
+  RoomMapper::getObjProbGivenRoomPerCell(0,0,true,-1.f);
+  RoomMapper::getObjProbGivenRoomObjPriorPerCell(0,true);
+  RoomMapper::getObjProbGivenRoomRoomPriorPerCell(0,true);
+  OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE = old_OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE;
+  ROOM_ESTIMATED_OCCUPIED_AREA = old_ROOM_ESTIMATED_OCCUPIED_AREA;
+  ROOM_MIN_UNEXPLORED_AREA = old_ROOM_MIN_UNEXPLORED_AREA;
+  TRAVEL_DIST_LIN_FACTOR = old_TRAVEL_DIST_LIN_FACTOR;
+  TRAVEL_TURN_FACTOR = old_TRAVEL_TURN_FACTOR;
+  SEARCH_TIME_PER_GRID_CELL = old_SEARCH_TIME_PER_GRID_CELL;
+  maps_lock.unlock();
+
+  std::ofstream file;
+
+
+  ROS_INFO("Test HIERARCHY IN %.4lf", (ros::Time::now()-start).toSec());
+}

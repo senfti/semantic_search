@@ -83,10 +83,13 @@ double RoomMapper::getObjProbGivenRoomRoomPrior(int room){
   return prob_sum[room];
 }
 
-double RoomMapper::getObjProbGivenRoomPerCell(int obj, int room){
+double RoomMapper::getObjProbGivenRoomPerCell(int obj, int room, bool recalc, float recalc_fill){
   double fill_fraction;
-  if(prob_map_per_2d_cell.empty()){
-    ros::NodeHandle("~").param("OBJ_FILL_FRACTION", fill_fraction, fill_fraction);
+  if(prob_map_per_2d_cell.empty() || recalc){
+    if(recalc_fill < 0)
+      ros::NodeHandle("~").param("OBJ_FILL_FRACTION", fill_fraction, fill_fraction);
+    else
+      fill_fraction = recalc_fill;
     ROS_ERROR("OBJ FILL %lf", fill_fraction);
     if(prob_map.empty())
       getObjProbGivenRoom(0,0);
@@ -103,9 +106,9 @@ double RoomMapper::getObjProbGivenRoomPerCell(int obj, int room){
   return prob_map_per_2d_cell[room][obj];
 }
 
-double RoomMapper::getObjProbGivenRoomObjPriorPerCell(int obj){
+double RoomMapper::getObjProbGivenRoomObjPriorPerCell(int obj, bool recalc){
   static std::vector<double> prob_sum;
-  if(prob_sum.empty()){
+  if(prob_sum.empty() || recalc){
     if(prob_map_per_2d_cell.empty())
       getObjProbGivenRoomPerCell(0,0);
     int no = prob_map_per_2d_cell[0].size();
@@ -124,9 +127,9 @@ double RoomMapper::getObjProbGivenRoomObjPriorPerCell(int obj){
   return prob_sum[obj];
 }
 
-double RoomMapper::getObjProbGivenRoomRoomPriorPerCell(int room){
+double RoomMapper::getObjProbGivenRoomRoomPriorPerCell(int room, bool recalc){
   static std::vector<double> prob_sum;
-  if(prob_sum.empty()){
+  if(prob_sum.empty() || recalc){
     if(prob_map_per_2d_cell.empty())
       getObjProbGivenRoomPerCell(0,0);
     int no = prob_map_per_2d_cell[0].size();

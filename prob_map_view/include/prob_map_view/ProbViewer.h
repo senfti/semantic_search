@@ -34,7 +34,7 @@ class ProbViewer : public ProbViewer_B{
     void updateImages(const std::vector<cv::Mat_<double>>& prob_images, const cv::Mat_<uchar>& occ);
     void setCurrent();
 
-    void save(const std::string& folder);
+    void save(const std::string& folder, const std::string& postfix = std::string(""));
 };
 
 #endif //SEMANTIC_MAPPING_PROBVIEWER_H

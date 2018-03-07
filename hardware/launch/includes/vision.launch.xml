@@ -15,7 +15,7 @@
     <param name="vision/MAX_Z" value="3.5"/>
 
     <param name="vision/DETECTION_SAMPLE_NUM" value="20000"/>
-    <param name="vision/MIN_OBJECT_PROB" value="0.001"/>
+    <param name="vision/MIN_OBJECT_PROB" value="0.0005"/>
 
     <param name="vision/MAX_DISCARD_TIME" value="5.0"/>
     <param name="vision/MIN_ANGLE_DIFF" value="0.1"/>

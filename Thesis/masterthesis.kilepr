@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Prerequisites/ROS.tex
+lastDocument=main.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -277,10 +277,10 @@ order=10
 
 [item:Prerequisites/GMapping.tex]
 archive=true
-column=17
+column=478
 encoding=UTF-8
 highlight=LaTeX
-line=0
+line=6
 mode=LaTeX
 open=true
 order=11
@@ -307,10 +307,10 @@ order=13
 
 [item:Prerequisites/Octomapping.tex]
 archive=true
-column=17
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=0
+line=2
 mode=LaTeX
 open=true
 order=14
@@ -466,10 +466,10 @@ JumpList=
 ViMarks=.,4,325,[,4,325,],4,325
 
 [view-settings,view=0,item:Prerequisites/GMapping.tex]
-CursorColumn=17
-CursorLine=0
+CursorColumn=478
+CursorLine=6
 JumpList=
-ViMarks=.,0,16,[,0,9,],0,16
+ViMarks=.,6,477,[,6,477,],6,477
 
 [view-settings,view=0,item:Prerequisites/MOVE_BASE.tex]
 CursorColumn=18
@@ -484,10 +484,10 @@ JumpList=
 ViMarks=.,0,30,[,0,24,],0,30
 
 [view-settings,view=0,item:Prerequisites/Octomapping.tex]
-CursorColumn=17
-CursorLine=0
+CursorColumn=0
+CursorLine=2
 JumpList=
-ViMarks=.,0,15,[,0,9,],0,15
+ViMarks=.,1,0,[,1,0,],-1,-1
 
 [view-settings,view=0,item:Prerequisites/ROS.tex]
 CursorColumn=554

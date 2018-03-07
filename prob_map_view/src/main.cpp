@@ -19,6 +19,7 @@ bool ProbViewApp::OnInit(){
   base_obj_sub_ = node_handle_->subscribe("base_obj_prob_map_view", 1, &ProbViewApp::baseObjProbCb, this);
   base_room_sub_ = node_handle_->subscribe("base_room_prob_map_view", 1, &ProbViewApp::baseRoomProbCb, this);
   sdf_sub_ = node_handle_->subscribe("sdf", 10, &ProbViewApp::sdfProbCb, this);
+  save_all_sub_ = node_handle_->subscribe("save_all", 1, &ProbViewApp::saveAllCb, this);
 
   input_timer_ = new wxTimer(this);
   Connect(input_timer_->GetId(), wxEVT_TIMER, wxTimerEventHandler(ProbViewApp::input), NULL, this);
@@ -135,19 +136,23 @@ void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   sdf_viewer_[idx]->updateImages(imgs, occ);
 }
 
-void ProbViewApp::saveAll(){
-  std::string folder = "/tmp/" + std::to_string(ros::Time::now().sec) + std::to_string(ros::Time::now().nsec);
+void ProbViewApp::saveAllCb(const std_msgs::StringConstPtr &msg){
+  saveAll(msg->data);
+}
+
+void ProbViewApp::saveAll(const std::string& postfix){
+  std::string folder = "/media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/hierarchy/";
   wxMkdir(folder);
   if(place_viewer_ != nullptr)
-    place_viewer_->save(folder);
+    place_viewer_->save(folder, postfix);
   if(obj_viewer_ != nullptr)
-    obj_viewer_->save(folder);
+    obj_viewer_->save(folder, postfix);
   if(base_obj_viewer_ != nullptr)
-    base_obj_viewer_->save(folder);
+    base_obj_viewer_->save(folder, postfix);
   if(base_room_viewer_ != nullptr)
-    base_room_viewer_->save(folder);
+    base_room_viewer_->save(folder, postfix);
   for(auto & v : sdf_viewer_){
     if(v != nullptr)
-      v->save(folder);
+      v->save(folder, postfix);
   }
 }

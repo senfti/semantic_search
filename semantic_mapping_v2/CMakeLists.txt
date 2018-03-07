@@ -30,6 +30,7 @@ add_message_files(
   RoomMsg.msg
   RoomSwitchMsg.msg
   ObjFoundMsg.msg
+  HierarchyTestMsg.msg
 )
 add_service_files(
   DIRECTORY srv
