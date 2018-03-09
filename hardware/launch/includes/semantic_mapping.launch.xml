@@ -7,9 +7,9 @@
   <arg name="octomap_miss" default="0.38" />
   <arg name="octomap_downproj_thresh" default="0.6" />
 
-  <arg name="object_prior" default="0.001" />
-  <arg name="object_hit" default="0.03" />
-  <arg name="object_miss" default="0.00002" />
+  <arg name="object_prior" default="0.003" />
+  <arg name="object_hit" default="0.05" />
+  <arg name="object_miss" default="0.0005" />
   <arg name="object_samples" default="4000" />
 
   <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" >
@@ -75,7 +75,7 @@
     <param name="RoomMapper/OBJ_PLACE_MAP_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/obj_places_map.dat" />
     
     <param name="ObjectMapper/OBJ_PRIOR_PROB" value="$(arg object_prior)" />  
-    <param name="ObjectMapper/OBJ_MIN_PROB" value="0.000001" />  
+    <param name="ObjectMapper/OBJ_MIN_PROB" value="0.000002" />  
     <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
     <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="4.0" />  
     <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
@@ -89,8 +89,8 @@
     <param name="debug_publish_interval" value="10" />
     <param name="ROOM_CELL_OBJ_KERNEL_SIZE" value="3.0" />
     <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="30.0" />
-    <param name="OBJ_FILL_FRACTION" value="0.01" />
-    <param name="ROOM_ESTIMATED_OCCUPIED_AREA" value="8.0" />
+    <param name="OBJ_FILL_FRACTION" value="0.005" />
+    <param name="ROOM_ESTIMATED_OCCUPIED_AREA" value="16.0" />
     <param name="ROOM_MIN_UNEXPLORED_AREA" value="1.0" />
     <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="0.5" />
     <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />

@@ -119,7 +119,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
 
 
 ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room,
-                     const std::vector<cv::Point>& only_laser_points, const std::vector<float>& room_type_probs, int obj)
+                     const std::vector<cv::Point>& only_laser_points, const std::vector<float>& room_type_probs, int obj, const cv::Mat_<uchar>& occ_2d)
 {
   *this = object_map;
   //cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
@@ -130,7 +130,7 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
     tmp = tmp.mul(1.f-obj_from_room);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
     cv::threshold(prob_maps_[z], prob_maps_[z], ObjectMapper::OBJ_MAX_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
-    cv::threshold(1-prob_maps_[z], prob_maps_[z], 1-ObjectMapper::OBJ_MIN_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
+    cv::threshold(1-prob_maps_[z], prob_maps_[z], 1-ObjectMapper::OBJ_MIN_PROB, 1-ObjectMapper::OBJ_MIN_PROB, cv::THRESH_TRUNC);
     prob_maps_[z] = 1-prob_maps_[z];
   }
 
@@ -143,6 +143,9 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
       prob_maps_[z](p) = unseen_prob_estimate;
       count_maps_[z](p) = 1;
     }
+  }
+  for(int z=0; z<getZSteps(); z++){
+    cv::bitwise_or(count_maps_[z], occ_2d, count_maps_[z]);
   }
 }
 

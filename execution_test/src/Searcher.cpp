@@ -6,6 +6,7 @@
 #include <pcl/common/common.h>
 #include <semantic_mapping_v2/ObjectMapSrv.h>
 #include <tf/transform_datatypes.h>
+#include <rosbag/bag.h>
 
 
 inline float angleDist(float angle1, float angle2){
@@ -61,14 +62,14 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::moveWindow(name, 1000,0);
 }
 
-std::vector<std::string> obj_name = {"person",  "bicycle",  "car",  "motorbike",  "aeroplane",  "bus",  "train",  "truck",  "boat",  "trafficlight",
-                                     "firehydrant",  "stopsign",  "parkmeter",  "bench",  "bird",  "cat",  "dog",  "horse",  "sheep",  "cow",  "elephant",
-                                     "bear",  "zebra",  "giraffe",  "backpack",  "umbrella",  "handbag",  "tie",  "suitcase",  "frisbee",  "ski",
-                                     "snowboard",  "sportball",  "kite",  "baseballbat",  "glove",  "skateboard",  "surfboard",  "racket",
+std::vector<std::string> obj_name = {"person",  "_bicycle",  "_car",  "_motorbike",  "_aeroplane",  "_bus",  "_train",  "_truck",  "boat",  "_trafficlight",
+                                     "_firehydrant",  "_stopsign",  "_parkmeter",  "bench",  "_bird",  "cat",  "dog",  "_horse",  "_sheep",  "_cow",  "_elephant",
+                                     "_bear",  "_zebra",  "_giraffe",  "backpack",  "umbrella",  "handbag",  "tie",  "suitcase",  "_frisbee",  "_ski",
+                                     "_snowboard",  "_sportball",  "_kite",  "_baseballbat",  "_glove",  "_skateboard",  "_surfboard",  "_racket",
                                      "bottle",  "wineglass",  "cup",  "fork",  "knife",  "spoon",  "bowl",  "banana",  "apple",  "sandwich",  "orange",
-                                     "broccoli",  "carrot",  "hotdog",  "pizza",  "donut",  "cake",  "chair",  "sofa",  "potplant",  "bed",  "table",
+                                     "_broccoli",  "carrot",  "_hotdog",  "_pizza",  "_donut",  "cake",  "chair",  "sofa",  "potplant",  "bed",  "table",
                                      "toilet",  "monitor",  "laptop",  "mouse",  "remote",  "keyboard",  "cellphone",  "microwave",  "oven",  "toaster",
-                                     "sink",  "refrigerator",  "book",  "clock",  "vase",  "scissor",  "teddybear",  "hairdryer",  "toothbrush"};
+                                     "sink",  "refrigerator",  "book",  "clock",  "vase",  "_scissor",  "_teddybear",  "_hairdryer",  "_toothbrush"};
 
 Searcher::Searcher(tf::TransformListener *tf_listener)
   : tf_listener_(tf_listener), obj_map_service_client_(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
@@ -115,12 +116,12 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("QUICK_SEARCH_MAX_DIST", QUICK_SEARCH_MAX_DIST, QUICK_SEARCH_MAX_DIST);
   private_nh.param("QUICK_SEARCH_ANGLE_AREA", QUICK_SEARCH_ANGLE_AREA, QUICK_SEARCH_ANGLE_AREA);
 
-  while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
-    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
-    ros::spinOnce();
-  }
+//  while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
+//    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
+//    ros::spinOnce();
+//  }
 
-  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  //map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
   vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
   search_query_sub_ = ros::NodeHandle().subscribe("search_query", 1, &Searcher::searchQueryCb, this);
 
@@ -135,6 +136,9 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
+
+  for(int i=0; i<80; i++)
+    found_pubs_.push_back(ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("obj_found_" + obj_name[i], 1, true));
 
   calcSeenKernels();
 }
@@ -172,36 +176,36 @@ void Searcher::start(int searched_obj, bool quick_search, geometry_msgs::Pose& t
   
   octo_mapper_ = new OctoMapper(RESOLUTION);
 
-  semantic_mapping_v2::ObjectMapSrvRequest req;
-  req.id = -1;
-  req.room_id = -1;
-  semantic_mapping_v2::ObjectMapSrvResponse res;
-  if(!obj_map_service_client_.call(req, res)){
-    ROS_WARN("SEMANTIC MAP CALL FAILED");
-    return;
-  }
-  for(int i=0; i<prior_prob_map_.size(); i++){
-    prior_prob_map_[i] = new ObjectMap(res.maps[i]);
-    obj_map_[i] = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_[i]->getMaxHeight(), OBJ_PRIOR_PROB);
-    obj_map_[i]->expandUntilFitting(prior_prob_map_[i]->getMinX(), prior_prob_map_[i]->getMaxX(), prior_prob_map_[i]->getMinY(), prior_prob_map_[i]->getMaxY(), OBJ_PRIOR_PROB);
-    prior_prob_map_[i]->resample(*obj_map_[i], 0.0);
-  }
-  seen_maps_.resize(SEEN_MAP_STEPS);
-  previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
-  for(auto &map : seen_maps_)
-    map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
-  for(auto &map : previous_pose_maps_)
-    map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
-
-  tf::StampedTransform transform;
-  try{
-    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
-  }
-  catch (tf::TransformException ex){
-    ROS_ERROR("%s",ex.what());
-  }
-  transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
-  tf::poseTFToMsg(transform, curr_view_pose_);
+//  semantic_mapping_v2::ObjectMapSrvRequest req;
+//  req.id = -1;
+//  req.room_id = -1;
+//  semantic_mapping_v2::ObjectMapSrvResponse res;
+//  if(!obj_map_service_client_.call(req, res)){
+//    ROS_WARN("SEMANTIC MAP CALL FAILED");
+//    return;
+//  }
+//  for(int i=0; i<prior_prob_map_.size(); i++){
+//    prior_prob_map_[i] = new ObjectMap(res.maps[i]);
+//    obj_map_[i] = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_[i]->getMaxHeight(), OBJ_PRIOR_PROB);
+//    obj_map_[i]->expandUntilFitting(prior_prob_map_[i]->getMinX(), prior_prob_map_[i]->getMaxX(), prior_prob_map_[i]->getMinY(), prior_prob_map_[i]->getMaxY(), OBJ_PRIOR_PROB);
+//    prior_prob_map_[i]->resample(*obj_map_[i], 0.0);
+//  }
+//  seen_maps_.resize(SEEN_MAP_STEPS);
+//  previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
+//  for(auto &map : seen_maps_)
+//    map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
+//  for(auto &map : previous_pose_maps_)
+//    map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
+//
+//  tf::StampedTransform transform;
+//  try{
+//    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+//  }
+//  catch (tf::TransformException ex){
+//    ROS_ERROR("%s",ex.what());
+//  }
+//  transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
+//  tf::poseTFToMsg(transform, curr_view_pose_);
 
   ROS_INFO("SEARCH STARTED");
 }
@@ -427,6 +431,31 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   Eigen::Matrix4f cam_to_base;
   pcl_ros::transformAsMatrix(transform, cam_to_base);
   pcl::transformPointCloud(*cloud, *cloud, cam_to_base);
+
+
+  static std::ofstream output_file("/media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/data.txt", std::ios_base::binary | std::ios_base::out);
+  if(!output_file.good()){
+    ROS_ERROR("FILE BAD");
+  }
+  output_file.write((char*)(&msg->objects.num_boxes), sizeof(msg->objects.num_boxes));
+  output_file.write((char*)(&msg->objects.num_objects), sizeof(msg->objects.num_objects));
+  output_file.write((char*)(&msg->objects.probs[0]), msg->objects.probs.size() * sizeof(msg->objects.probs[0]));
+  size_t size = msg->objects.samples.size();
+  output_file.write((char*)&(size), sizeof(size));
+  for(int i=0; i<msg->objects.samples.size(); i++){
+    output_file.write((char*)(&cloud->at(i).data[0]), sizeof(cloud->at(i).data));
+    size_t size = msg->objects.samples[i].boxes.size();
+    output_file.write((char*)(&size), sizeof(size));
+    output_file.write((char*)(&msg->objects.samples[i].boxes[0]), size*sizeof(msg->objects.samples[i].boxes[0]));
+  }
+  output_file.write((char*)(&transform.getOrigin().m_floats[0]), sizeof(transform.getOrigin().m_floats));
+
+  static int sdff = 0;
+  std::cout << "out " << sdff << "   " << (ros::Time::now()-t).toSec() << std::endl;
+  sdff++;
+  return;
+
+
   pcl::PointXYZ min, max;
   pcl::getMinMax3D(*cloud, min, max);
   resize(min.x, max.x, min.y, max.y);
@@ -501,6 +530,9 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
   float max_z = std::min(POINTCLOUD_MAX_Z, obj_map_[0]->getMaxHeight()-0.001f);
 
   for(int i=0; i<obj_map_.size(); i++){
+    if(obj_name[i][0] == '_')
+      continue;
+
     ObjectMap tmp(ObjectMap(obj_map_[i]->getResolution(), obj_map_[i]->getBaseSize(), obj_map_[i]->getWidth(), obj_map_[i]->getHeight(), obj_map_[i]->getOrigin(), obj_map_[i]->getMaxHeight(), -1.f));
 
     for(int j=0; j<cloud.size(); j++){
@@ -914,4 +946,92 @@ void Searcher::searchQueryCb(const geometry_msgs::QuaternionConstPtr& msg){
   prior_pub_.publish(prior_prob_map_[obj]->getProbMsg(obj, 0.01f));
   searched_obj_ = obj;
   calcNextViewpoint(trans_tf);
+}
+
+
+void Searcher::testrun(float vh, float vm){
+  V_H = vh;
+  V_M = vm;
+  running_ = false;
+  finished_ = false;
+  obj_found_ = false;
+  have_curr_view_ = false;
+  curr_view_changed_= true;
+  got_map_ = false;
+  got_vision_ = false;
+  is_quick_search_ = false;
+  quick_search_step_ = 0;
+  quick_search_step_viewed_ = true;
+
+  octo_mapper_ = new OctoMapper(RESOLUTION);
+
+  semantic_mapping_v2::ObjectMapSrvRequest req;
+  req.id = -1;
+  req.room_id = -1;
+  semantic_mapping_v2::ObjectMapSrvResponse res;
+  prior_prob_map_.resize(80, nullptr);
+  for(int i=0; i<80; i++){
+    prior_prob_map_[i] = new ObjectMap(RESOLUTION, 4.0, 1.6, OBJ_PRIOR_PROB);
+    obj_map_[i] = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_[i]->getMaxHeight(), OBJ_PRIOR_PROB);
+  }
+
+  std::ifstream input_file("/media/thomas/EE702FC8702F967D/studium/Masterarbeit/data/data.txt", std::ios_base::binary | std::ios_base::in);
+  if(!input_file.good()){
+    ROS_ERROR("FILE BAD");
+    return;
+  }
+
+  int sdf = 0;
+  while(!input_file.eof()){
+    vision::ObjectDetectionMsg msg;
+    input_file.read((char*)(&msg.num_boxes), sizeof(int16_t));
+    if(input_file.eof())
+      break;
+    input_file.read((char*)(&msg.num_objects), sizeof(int16_t));
+    msg.probs.resize(msg.num_objects*msg.num_boxes);
+    input_file.read((char*)(&msg.probs[0]), msg.num_objects*msg.num_boxes*sizeof(float));
+
+    size_t size;
+    input_file.read((char*)(&size), sizeof(size_t));
+    msg.samples.resize(size);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>(size, 1));
+    for(int i=0; i<size; i++){
+      input_file.read((char*)(&cloud->at(i).data[0]), sizeof(cloud->at(i).data));
+      size_t size2;
+      input_file.read((char*)(&size2), sizeof(size_t));
+      msg.samples[i].boxes.resize(size2);
+      input_file.read((char*)(&msg.samples[i].boxes[0]), size2*sizeof(msg.samples[i].boxes[0]));
+    }
+    tf::Point pt;
+    input_file.read((char*)(&pt.m_floats[0]), sizeof(pt.m_floats));
+
+    pcl::PointXYZ min, max;
+    pcl::getMinMax3D(*cloud, min, max);
+    resize(min.x, max.x, min.y, max.y);
+
+    insertObject(*cloud, msg);
+    insertCloud(cloud, pt);
+
+
+    ObjectMap occ_map(obj_map_[0]->getResolution(), obj_map_[0]->getBaseSize(), obj_map_[0]->getWidth(), obj_map_[0]->getHeight(),
+                      obj_map_[0]->getOrigin(), obj_map_[0]->getMaxHeight(), *octo_mapper_);
+    found_pubs_[41].publish((*obj_map_[41]*occ_map).getProbMsg(41, 0.1));
+    objFound(41);
+
+    //std::cin.get();
+
+    std::cout << sdf++ << std::endl;
+  }
+
+  rosbag::Bag bag;
+  bag.open("/media/thomas/EE702FC8702F967D/studium/Masterarbeit/output/searcher_found_" + std::to_string(vh) + "_" + std::to_string(vm) + ".bag", rosbag::bagmode::Write);
+  ObjectMap occ_map(obj_map_[0]->getResolution(), obj_map_[0]->getBaseSize(), obj_map_[0]->getWidth(), obj_map_[0]->getHeight(),
+                    obj_map_[0]->getOrigin(), obj_map_[0]->getMaxHeight(), *octo_mapper_);
+  for(int i=0; i<found_pubs_.size(); i++){
+    auto pub_msg = (*obj_map_[i]*occ_map).getProbMsg(i, 0.1);
+    found_pubs_[i].publish(pub_msg);
+    bag.write("found_" + obj_name[i], ros::Time(1520446172), pub_msg);
+  }
+  bag.close();
+  std::cout << "FIN" << std::endl;
 }

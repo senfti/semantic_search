@@ -9,7 +9,7 @@
     <param name="door_detection/MAX_DEPTH" value="0.5"/>
     <param name="door_detection/LASER_IN_DOOR_NARROWING_FACTOR" value="0.7"/>
     <param name="door_detection/LASER_IN_FRONT_OF_DOOR_NARROWING_FACTOR" value="0.5"/>
-    <param name="door_detection/LASER_IN_FRONT_OF_DOOR_DEPTH_AREA" value="0.3"/>
+    <param name="door_detection/LASER_IN_FRONT_OF_DOOR_DEPTH_AREA" value="0.8"/>
     <param name="door_detection/MAX_LASER_IN_ZONE" value="5"/>
     <param name="door_detection/LASER_DOORFRAME_WIDTH" value="0.3"/>
     <param name="door_detection/LASER_DOORFRAME_DEPTH" value="0.05"/>

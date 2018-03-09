@@ -53,6 +53,7 @@ class Searcher{
     float TURN_SPEED = 0.5;
     float MOVE_SPEED = 0.01;
     float VIEW_TIME = 0.2;
+    float BAD_ACCESSIBLE_PENALTY = 0.2;
 
     int BORDER_SEEN_THRESH = 1;
     float BORDER_SEEN_SIGMA = 25.f*M_PI/180.0;

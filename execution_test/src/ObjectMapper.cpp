@@ -246,10 +246,11 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(int id, float thresh) cons
           min = std::min(min, getProb(x,y,z));
           max = std::max(max, getProb(x,y,z));
 
-          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::max(std::log10(getProb(x,y,z)) + 4.f, 0.f)*150/4.f, 255, 255));
+          //cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(std::max(std::log10(getProb(x,y,z)) + 4.f, 0.f)*150/4.f, 255, 255));
+          cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(getProb(x,y,z)*150, 255, 255));
           cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
           std_msgs::ColorRGBA c;
-          c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
+          c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = (getProb(x,y,z) > 0.5 ? 1.0 : 0.3);
           markers.markers[0].colors.push_back(c);
           geometry_msgs::Point p;
           p.x = getXWorld(x);  p.y = getYWorld(y);  p.z = getZWorld(z);

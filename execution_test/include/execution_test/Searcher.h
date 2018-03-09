@@ -79,6 +79,8 @@ class Searcher{
     ros::Publisher obj_found_pub_;
     ros::Publisher prior_pub_;
 
+    std::vector<ros::Publisher> found_pubs_;
+
     ros::ServiceClient obj_map_service_client_;
 
     int searched_obj_ = 0;
@@ -150,6 +152,9 @@ class Searcher{
     bool did_abort_ = false;
 
     void searchQueryCb(const geometry_msgs::QuaternionConstPtr& msg);
+
+
+    void testrun(float vh, float vm);
 };
 
 

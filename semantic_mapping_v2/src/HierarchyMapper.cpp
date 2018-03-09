@@ -661,15 +661,15 @@ std::vector<cv::Point> HierarchyMapper::getOnlyLaserPoints(const ObjectMap& obj_
 }
 
 std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::Mat_<float>>& room_base_obj_maps, const std::vector<ObjectMap>& obj_map, const ObjectMap& occ_map,
-                                                          const std::vector<cv::Point>& only_laser_points, const std::vector<float>& room_type_probs, int obj)
+                                                          const std::vector<cv::Point>& only_laser_points, const std::vector<float>& room_type_probs, const cv::Mat_<uchar>& occ_2d, int obj)
 {
   std::vector<ObjectMap> complete_obj_map;
   if(obj >= 0){
-    complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[0], only_laser_points, room_type_probs, obj));
+    complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[0], only_laser_points, room_type_probs, obj, occ_2d));
   }
   else{
     for(int o=0; o<obj_map.size(); o++){
-      complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, room_base_obj_maps[o], only_laser_points, room_type_probs, o));
+      complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, room_base_obj_maps[o], only_laser_points, room_type_probs, o, occ_2d));
     }
   }
   return complete_obj_map;
@@ -757,7 +757,7 @@ float HierarchyMapper::getSearchTime(int search_cells){
 
 std::vector<float> HierarchyMapper::getExpectedSearchTime(float search_time, std::vector<float> obj_probs, const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float>& behind_door_mask){
   std::vector<float> exp_search_times(obj_probs.size(), 0.f);
-  int boxes = std::ceil(search_time/10.f);
+  int boxes = std::ceil(search_time/5.f);
   float box_time = search_time/boxes;
 
   for(int i=0; i<obj_probs.size(); i++){
@@ -820,7 +820,7 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
   std::vector<cv::Mat_<float>> room_based_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[0].getOrigin() - obj_maps[0].getOrigin(),
                                                                        cv::Size(obj_maps[0].getWidth(), obj_maps[0].getHeight()), obj_maps.size(), req.id);
   std::vector<cv::Point> only_laser_points = getOnlyLaserPoints(obj_maps[0], grid_maps, behind_door_mask);
-  std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps, occ_map, only_laser_points, room_type_cell_number, req.id);
+  std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps, occ_map, only_laser_points, room_type_cell_number, obj_maps[0].getCount2D(behind_door_mask), req.id);
 
   if(req.id < 0){
     for(int i=0; i<complete_obj_map.size(); i++){
@@ -836,8 +836,6 @@ bool HierarchyMapper::objMapSrvCb(semantic_mapping_v2::ObjectMapSrv::Request& re
 
 
 int HierarchyMapper::estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, const ObjectMap& obj_map, const cv::Mat_<float> behind_door_mask, bool explored, int& search_cells){
-  if(explored)
-    return 0;
 
   cv::Mat_<uchar> count2D = obj_map.getCount2D(behind_door_mask);
   cv::Mat_<uchar> occ(count2D.rows, count2D.cols, uchar(0));
@@ -867,6 +865,9 @@ int HierarchyMapper::estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, c
   int min_unseen = ROOM_MIN_UNEXPLORED_AREA * obj_map.getResolution() * obj_map.getResolution();
   ROS_ERROR("UNSEEN val %d est %d min_unseen %d only_laser %d seen %d", std::max(estimate - seen, min_unseen), estimate, min_unseen, only_laser, seen);
   search_cells = std::max(estimate, min_unseen + seen);
+  if(explored)
+    return 0;
+
   return std::max(estimate - seen, min_unseen);
 }
 
@@ -1048,6 +1049,22 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   msg.occupancy.cols = occupancy_map_obj.cols;
   msg.occupancy.type = occupancy_map_obj.type();
   msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
+  msg.img_are_log = 5;
+  msg.images.resize(msg.names.size());
+  std::vector<cv::Mat_<float>> debug_maps2 = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
+                                                                 complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 3);
+  for(int j=0; j<msg.images.size(); j++){
+    msg.images[j].rows = debug_maps2[j].rows;
+    msg.images[j].cols = debug_maps2[j].cols;
+    msg.images[j].type = debug_maps2[j].type();
+    msg.images[j].data.assign(debug_maps2[j].datastart,debug_maps2[j].dataend);
+  }
+  sdf_prob_map_view_pub_.publish(msg);
+
+  msg.occupancy.rows = occupancy_map_obj.rows;
+  msg.occupancy.cols = occupancy_map_obj.cols;
+  msg.occupancy.type = occupancy_map_obj.type();
+  msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
   msg.img_are_log = 3;
   msg.images.resize(msg.names.size());
   for(int j=0; j<msg.images.size(); j++){
@@ -1222,9 +1239,9 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<cv::Mat_<float>> room_based_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin(),
                                                                         cv::Size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight()), obj_maps[i].size());
     std::vector<cv::Point> only_laser_points = getOnlyLaserPoints(obj_maps[i][0], grid_maps[i], behind_door_mask);
-    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps[i], occ_map, only_laser_points, room_type_cell_number);
     int search_cells;
     int num_unseen = estimateUnseen2dCells(gmapping_maps[i], obj_maps[i][0], behind_door_mask, explored[i], search_cells);
+    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps[i], occ_map, only_laser_points, room_type_cell_number, obj_maps[i][0].getCount2D(behind_door_mask));
     std::vector<float> complete_obj_probs = getCompleteObjProbs(complete_obj_map, room_type_cell_number, occ_map, num_unseen);
     std::vector<float> complete_obj_probs2 = getCompleteObjProbs(complete_obj_map, room_type_cell_number, occ_map, 0);
     for(int i=0; i<complete_obj_probs.size(); i++){
@@ -1446,9 +1463,9 @@ void HierarchyMapper::hierarchyTestCb(const semantic_mapping_v2::HierarchyTestMs
     std::vector<cv::Mat_<float>> room_based_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin(),
                                                                          cv::Size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight()), obj_maps[i].size());
     std::vector<cv::Point> only_laser_points = getOnlyLaserPoints(obj_maps[i][0], grid_maps[i], behind_door_mask);
-    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps[i], occ_map, only_laser_points, room_type_cell_number);
     int search_cells;
     int num_unseen = estimateUnseen2dCells(gmapping_maps[i], obj_maps[i][0], behind_door_mask, explored[i], search_cells);
+    std::vector<ObjectMap> complete_obj_map = getCompleteObjMap(room_based_obj_map, obj_maps[i], occ_map, only_laser_points, room_type_cell_number, obj_maps[i][0].getCount2D(behind_door_mask));
     std::vector<float> complete_obj_probs = getCompleteObjProbs(complete_obj_map, room_type_cell_number, occ_map, num_unseen);
     std::vector<float> complete_obj_probs2 = getCompleteObjProbs(complete_obj_map, room_type_cell_number, occ_map, 0);
     for(int i=0; i<complete_obj_probs.size(); i++){

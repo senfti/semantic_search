@@ -55,7 +55,7 @@ void ProbViewer::setCurrent(){
     if(img_are_log_ && !log_checkbox_->IsChecked())
       curr_img_ = lToP(curr_img_);
     else if(!img_are_log_ && log_checkbox_->IsChecked())
-      curr_img_ = pToL(curr_img_, (prob_names_.size() == 80 ? -4.0 : -3.0));
+      curr_img_ = pToL(curr_img_, (prob_names_.size() == 80 ? -6.0 : -3.0));
 
     double min, max;
     cv::minMaxIdx(curr_img_, &min, &max);

@@ -11,20 +11,20 @@
     <param name="SEARCH_MAX_ROT_VEL" value="0.5" />
     <param name="SEARCH_MAX_TRANS_VEL" value="0.3" />
 
-    <param name="OBJ_PRIOR_PROB" value="0.001" />
+    <param name="OBJ_PRIOR_PROB" value="0.03" />
     <param name="OBJ_MIN_PROB" value="0.00001" />
     <param name="OBJ_MAX_PROB" value="0.9" />
 
     <param name="RESOLUTION" value="5.0" />
     <param name="OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />
 
-    <param name="V_H" value="0.03" />
-    <param name="V_M" value="0.00002" />
+    <param name="V_H" value="0.1" />
+    <param name="V_M" value="0.001" />
 
     <param name="POINTCLOUD_MIN_Z" value="0.1" />
     <param name="POINTCLOUD_MAX_Z" value="1.6" />
 
-    <param name="OBJECT_FOUND_THRESH" value="0.5" />
+    <param name="OBJECT_FOUND_THRESH" value="0.7" />
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
     <param name="SEEN_MAP_STEPS" value="36" />
@@ -36,12 +36,13 @@
 
     <param name="TURN_SPEED" value="0.3" />
     <param name="MOVE_SPEED" value="0.3" />
-    <param name="VIEW_TIME" value="3.0" />
+    <param name="VIEW_TIME" value="5.0" />
+    <param name="BAD_ACCESSIBLE_PENALTY" value="0.2" />
 
-    <param name="BORDER_SEEN_THRESH" value="5" />
+    <param name="BORDER_SEEN_THRESH" value="3" />
     <param name="BORDER_SEEN_SIGMA" value="0.35" />
     <param name="SEEN_MAP_MAX_DIST" value="2.0" />
-    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.01" />
+    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.015" />
 
     <param name="Octomap/resolution" value="0.1" />    
     <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    

@@ -19,7 +19,8 @@ inline float angleDist(float angle1, float angle2){
 
 
 inline float gaussian(float x, float sigma){
-  return std::exp(-0.5*x*x/(sigma*sigma));
+  float val = std::exp(-0.5*x*x/(sigma*sigma));
+  return (val < 0.01f ? 0.0f : val);
 }
 
 
@@ -104,6 +105,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("TURN_SPEED", TURN_SPEED, TURN_SPEED);
   private_nh.param("MOVE_SPEED", MOVE_SPEED, MOVE_SPEED);
   private_nh.param("VIEW_TIME", VIEW_TIME, VIEW_TIME);
+  private_nh.param("BAD_ACCESSIBLE_PENALTY", BAD_ACCESSIBLE_PENALTY, BAD_ACCESSIBLE_PENALTY);
 
   private_nh.param("BORDER_SEEN_THRESH", BORDER_SEEN_THRESH, BORDER_SEEN_THRESH);
   private_nh.param("BORDER_SEEN_SIGMA", BORDER_SEEN_SIGMA, BORDER_SEEN_SIGMA);
@@ -351,7 +353,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   }
   cv::resize(accessible_mat, accessible_mat, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor));
   cv::threshold(accessible_mat, accessible_mat, 192, 255, cv::THRESH_BINARY);
-  accessible_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+  accessible_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), uchar(0));
   accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
 
   cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
@@ -479,7 +481,7 @@ bool Searcher::doCalculations(bool force_new){
   }
 
   static ros::Time last_calc_time(0);
-  if(!force_new && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0)))
+  if(!force_new && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2))
     return false;
 
   last_calc_time = ros::Time::now();
@@ -632,7 +634,7 @@ float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point&
   cv::Point diff = pos-curr_pos;
   float bad_accessible_penalty = 0.f;
   for(int i=0; i<good_accessible_map_.size(); i++){
-    bad_accessible_penalty += (good_accessible_map_[i](pos) ? 0.f : 1.f*RESOLUTION/MOVE_SPEED);
+    bad_accessible_penalty += (good_accessible_map_[i](pos) ? 0.f : BAD_ACCESSIBLE_PENALTY*RESOLUTION/MOVE_SPEED);
   }
   if(std::abs(diff.x) < 0.2 && std::abs(diff.y) < 0.2){
     return angleDist(curr_angle, angle)/TURN_SPEED + VIEW_TIME + bad_accessible_penalty;
@@ -661,7 +663,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
       std::cout << "out" << std::endl;
       continue;
     }
-    if(not_fully_viewed_border_(pos+p) > 0){
+    if(not_fully_viewed_border_(pos+p) == 255){
       float val = gaussian(angleDist(angle, border_dir_map_(pos+p)), BORDER_SEEN_SIGMA);
       interesting_border_seen += seen_kernel_points_value_[angle_step][idx]*val;
     }
@@ -845,9 +847,9 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
     }
   }
 
-  cv::threshold(border_map_, tmp, 64, 64, cv::THRESH_TRUNC);
+  cv::threshold(border_map_, tmp, 96, 96, cv::THRESH_TRUNC);
   cv::bitwise_or(tmp, not_fully_viewed_border_, tmp);
-  cv::threshold(kernel, kernel, 32, 32, cv::THRESH_TRUNC);
+  cv::threshold(kernel, kernel, 48, 48, cv::THRESH_TRUNC);
   cv::bitwise_or(not_fully_viewed_border_(cv::Rect(x1,y1,kernel.cols,kernel.rows)), kernel, tmp(cv::Rect(x1,y1,kernel.cols,kernel.rows)));
   cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);

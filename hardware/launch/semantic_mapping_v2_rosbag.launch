@@ -4,8 +4,8 @@
   <arg name="octomap_downproj_thresh" default="0.6" />
 
   <arg name="object_prior" default="0.003" />
-  <arg name="object_hit" default="0.03" />
-  <arg name="object_miss" default="0.00002" />
+  <arg name="object_hit" default="0.3" />
+  <arg name="object_miss" default="0.0002" />
   <arg name="object_samples" default="4000" />
 
   <param name="use_sim_time" value="true" />

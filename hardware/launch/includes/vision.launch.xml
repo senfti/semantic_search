@@ -15,12 +15,12 @@
     <param name="vision/MAX_Z" value="3.5"/>
 
     <param name="vision/DETECTION_SAMPLE_NUM" value="20000"/>
-    <param name="vision/MIN_OBJECT_PROB" value="0.0005"/>
+    <param name="vision/MIN_OBJECT_PROB" value="0.00001"/>
 
     <param name="vision/MAX_DISCARD_TIME" value="5.0"/>
     <param name="vision/MIN_ANGLE_DIFF" value="0.1"/>
     <param name="vision/MIN_DIST_DIFF" value="0.3"/>
-    <param name="vision/MAX_ROT_VELOCITY" value="0.3"/>
+    <param name="vision/MAX_ROT_VELOCITY" value="0.5"/>
 
     <param name="vision/DEBUG_IMAGES" value="0"/>    
     <param name="vision/IMAGE_SAVE" value="0"/>    
