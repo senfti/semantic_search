@@ -89,7 +89,7 @@
     <param name="debug_publish_interval" value="10" />
     <param name="ROOM_CELL_OBJ_KERNEL_SIZE" value="3.0" />
     <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="30.0" />
-    <param name="OBJ_FILL_FRACTION" value="0.005" />
+    <param name="OBJ_FILL_FRACTION" value="0.01" />
     <param name="ROOM_ESTIMATED_OCCUPIED_AREA" value="16.0" />
     <param name="ROOM_MIN_UNEXPLORED_AREA" value="1.0" />
     <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="0.5" />

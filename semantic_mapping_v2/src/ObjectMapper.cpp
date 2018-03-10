@@ -118,8 +118,8 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
 }
 
 
-ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room,
-                     const std::vector<cv::Point>& only_laser_points, const std::vector<float>& room_type_probs, int obj, const cv::Mat_<uchar>& occ_2d)
+ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room, const std::vector<cv::Point>& only_laser_points,
+                     const std::vector<cv::Mat_<float>>& room_type_probs_maps, int obj, const cv::Mat_<uchar>& occ_2d)
 {
   *this = object_map;
   //cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
@@ -134,13 +134,13 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
     prob_maps_[z] = 1-prob_maps_[z];
   }
 
-  double unseen_prob_estimate = 0.f;
-  for(int r = 0; r < room_type_probs.size(); r++){
-    unseen_prob_estimate += RoomMapper::getObjProbGivenRoomPerCell(obj,r)*room_type_probs[r];
-  }
   for(const auto& p : only_laser_points){
+    float prob = 0.f;
+    for(int r = 0; r < room_type_probs_maps.size(); r++){
+      prob += RoomMapper::getObjProbGivenRoomPerCell(obj,r)*room_type_probs_maps[r](p);
+    }
     for(int z=0; z<getZSteps(); z++){
-      prob_maps_[z](p) = unseen_prob_estimate;
+      prob_maps_[z](p) = prob;
       count_maps_[z](p) = 1;
     }
   }
