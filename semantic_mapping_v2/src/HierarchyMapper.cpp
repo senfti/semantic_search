@@ -1127,7 +1127,7 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   for(int j=0; j<complete_room_type_map.size(); j++){
     room_type_maps_filtered.push_back(cv::Mat_<float>(complete_room_type_map[j].rows, complete_room_type_map[j].cols, room_type_cell_number[j]));
     complete_room_type_map[j].copyTo(room_type_maps_filtered[j], room_type_maps[i][j].getSeenMap());
-    cv::GaussianBlur(room_type_maps_filtered[j], room_type_maps_filtered[j], cv::Size(13,13), 4.0, 4.0);
+    cv::GaussianBlur(room_type_maps_filtered[j], room_type_maps_filtered[j], cv::Size(11,11), 3.0, 3.0);
     room_type_maps_filtered[j] = room_type_maps_filtered[j](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
   }
   msg.img_are_log = 6;
