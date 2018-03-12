@@ -8,6 +8,7 @@
 #include <hl_planner/Action.h>
 #include <hl_planner/Plan.h>
 #include <hl_planner/State.h>
+#include <fstream>
 
 Planner::Planner()
 : execute_action_client_(nh_, "execute_action", false), hierarchy_service_client_(nh_.serviceClient<semantic_mapping_v2::HierarchySrv>("hierarchy_srv"))
@@ -185,11 +186,15 @@ Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
 }
 
 
+std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res);
+
 void Planner::run(int obj){
+  std::ofstream output_file("/home/thomas/output/" + std::to_string(ros::Time::now().toSec()) + ".txt");
   state_.resetState();
   while(ros::ok()){
     ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+    output_file << hierarchy;
     if(hierarchy.rooms.empty())
       return;
 
@@ -200,8 +205,10 @@ void Planner::run(int obj){
 
     HierarchyMap graph_map(hierarchy, obj);
     std::cout << graph_map;
+    output_file << graph_map;
     state_.updateState(graph_map, hierarchy.curr_room);
     std::cout << state_;
+    output_file << state_;
 
     Plan plan = generatePlan(graph_map, state_);
     if(plan.finished())
@@ -228,7 +235,13 @@ void Planner::run(int obj){
           sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
       }
       else if(result->result_number == 100){
+        output_file << "OBJECT FOUND" << std::endl;
         std::cout << "OBJECT FOUND" << std::endl;
+        return;
+      }
+      if(state_.searchable_.empty()){
+        output_file << "OBJECT NOT FOUND" << std::endl;
+        std::cout << "OBJECT NOT FOUND!" << std::endl;
         return;
       }
     }
@@ -294,4 +307,31 @@ void Planner::exploreAll(){
       }
     }
   }
+}
+
+std::vector<std::string> obj_name = {"person",  "_bicycle",  "_car",  "_motorbike",  "_aeroplane",  "_bus",  "_train",  "_truck",  "boat",  "_trafficlight",
+                                     "_firehydrant",  "_stopsign",  "_parkmeter",  "bench",  "_bird",  "cat",  "dog",  "_horse",  "_sheep",  "_cow",  "_elephant",
+                                     "_bear",  "_zebra",  "_giraffe",  "backpack",  "umbrella",  "handbag",  "tie",  "suitcase",  "_frisbee",  "_ski",
+                                     "_snowboard",  "_sportball",  "_kite",  "_baseballbat",  "_glove",  "_skateboard",  "_surfboard",  "_racket",
+                                     "bottle",  "wineglass",  "cup",  "fork",  "knife",  "spoon",  "bowl",  "banana",  "apple",  "sandwich",  "orange",
+                                     "_broccoli",  "carrot",  "_hotdog",  "_pizza",  "_donut",  "cake",  "chair",  "sofa",  "potplant",  "bed",  "table",
+                                     "toilet",  "monitor",  "laptop",  "mouse",  "remote",  "keyboard",  "cellphone",  "microwave",  "oven",  "toaster",
+                                     "sink",  "refrigerator",  "book",  "clock",  "vase",  "_scissor",  "_teddybear",  "_hairdryer",  "_toothbrush"};
+
+std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res){
+  os << "current room: " << res.curr_room << std::endl;
+  for(int i=0; i<res.links.size(); i++){
+    os << "link " << i << ": \trooms" << res.links[i].room1 << " " << res.links[i].room2 << std::endl;
+  }
+  os << std::endl;
+  for(int i=0; i<res.rooms.size(); i++){
+    os << "room " << i << ": " << res.rooms[i].search_time << " " << std::endl;
+    for(int j=0; j<res.rooms[i].obj_probs.size(); j++){
+      os << obj_name[j] << ": " << res.rooms[i].obj_probs[j] << " " << res.rooms[i].expected_search_time[j] << " " << res.rooms[i].obj_probs[j]/res.rooms[i].expected_search_time[j] << std::endl;
+    }
+    os << std::endl;
+  }
+  os << std::endl << std::endl;
+
+  return os;
 }

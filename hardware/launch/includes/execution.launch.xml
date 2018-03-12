@@ -28,7 +28,7 @@
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
     <param name="SEEN_MAP_STEPS" value="36" />
-    <param name="SAMPLE_COUNT_THRESH" value="5" />
+    <param name="SAMPLE_COUNT_THRESH" value="10" />
 
     <param name="VIEW_MIN_DIST" value="0.55" />
     <param name="VIEW_MAX_DIST" value="3.5" />

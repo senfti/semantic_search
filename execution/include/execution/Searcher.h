@@ -75,6 +75,7 @@ class Searcher{
     ros::Publisher obj_pub_;
     ros::Publisher full_pub_;
     ros::Publisher count_pub_;
+    ros::Publisher count2_pub_;
     ros::Publisher next_pose_pub_;
     ros::Publisher obj_found_pub_;
     ros::Publisher prior_pub_;

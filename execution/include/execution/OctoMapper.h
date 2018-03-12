@@ -101,10 +101,12 @@ class OctoMapper {
     bool isOccupied(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max, float thresh);
     float getOccupancy(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getOccupancy(min.x, min.y, min.z, max.x, max.y, max.z); }
     float getOccupancy(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
-    int getCount(float x, float y, float z);
-    int getCount(const pcl::PointXYZ& pos) { return getCount(pos.x, pos.y, pos.z); }
-    int getCount(const pcl::PointXYZ& min, const pcl::PointXYZ& max) {return getCount(min.x, min.y, min.z, max.x, max.y, max.z); }
-    int getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max);
+    int getCount(float x, float y, float z) const;
+    int getCount(const pcl::PointXYZ& pos) const { return getCount(pos.x, pos.y, pos.z); }
+    int getCount(const pcl::PointXYZ& min, const pcl::PointXYZ& max) const {return getCount(min.x, min.y, min.z, max.x, max.y, max.z); }
+    int getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) const;
+    OcTreeT* getCountOctree() const { return count_octree_; }
+    unsigned getMaxTreeDepth() const { return m_maxTreeDepth; }
 
     visualization_msgs::MarkerArray getOccupiedCellMsg(const ros::Time &rostime);
     visualization_msgs::MarkerArray getCountMsg(const ros::Time &rostime, float scale);

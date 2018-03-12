@@ -33,7 +33,7 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
     map = cv::Mat_<uchar>(height, width, uchar(0));
 }
 
-ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, ObjectMap* count_map)
+ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap)
   : resolution_(resolution), base_size_(base_size), max_height_(max_height), origin_(origin)
 {
   prob_maps_.resize(getZSteps());
@@ -50,21 +50,19 @@ ObjectMap::ObjectMap(float resolution, int base_size, int width, int height, con
         p.x = getXWorld(x);
         p.y = getYWorld(y);
         p.z = getZWorld(z);
-        insertMax(x,y,z,octomap.getOccupancy(p.x, p.y, p.z));
+        prob_maps_[z](y,x) = octomap.getOccupancy(p.x, p.y, p.z);
       }
     }
   }
-  if(count_map != 0){
-    *count_map = ObjectMap(resolution, base_size, width, height, origin, max_height, 0.f);
-    for(int x=0; x<getWidth(); x++){
-      for(int y=0; y<getHeight(); y++){
-        for(int z=0; z<getZSteps(); z++){
-          geometry_msgs::Point p;
-          p.x = getXWorld(x);
-          p.y = getYWorld(y);
-          p.z = getZWorld(z);
-          count_map->insertMax(x,y,z,octomap.getCount(p.x, p.y, p.z));
-        }
+
+  for (octomap::OcTree::iterator it = octomap.getCountOctree()->begin(octomap.getMaxTreeDepth()), end = octomap.getCountOctree()->end(); it != end; ++it){
+    if(it->getLogOdds() > 0){
+      double z = it.getZ();
+      if(z > 0 && z < max_height_){
+        double x = it.getX();
+        double y = it.getY();
+
+        count_maps_[getZPixel(z)](getYPixel(y), getXPixel(x)) = std::min(100.f, it->getLogOdds());
       }
     }
   }
@@ -309,6 +307,46 @@ visualization_msgs::MarkerArray ObjectMap::getProbMsg(float scale) const{
 }
 
 
+visualization_msgs::MarkerArray ObjectMap::getCountMsg(float scale) const{
+  static int seq=0;
+  visualization_msgs::Marker def;
+
+  def.header.frame_id = "map";
+  def.header.stamp = ros::Time::now();
+  def.ns = "count";
+  def.id = 0;
+  def.type = visualization_msgs::Marker::CUBE_LIST;
+  def.scale.x = 1/(2*resolution_);
+  def.scale.y = def.scale.x;
+  def.scale.z = def.scale.x;
+  def.action = visualization_msgs::Marker::ADD;
+  def.pose.orientation.x = def.pose.orientation.y = def.pose.orientation.z = 0.0;
+  def.pose.orientation.w = 1.0;
+
+  visualization_msgs::MarkerArray markers;
+  markers.markers.resize(1);
+  markers.markers[0] = def;
+  for(int x=0; x<getWidth(); x++){
+    for(int y=0; y<getHeight(); y++){
+      for(int z=0; z<getZSteps(); z++){
+        if(count_maps_[z](y,x) > uchar(0)){
+          cv::Mat_<cv::Vec3b> color(1,1,(cv::Vec3b(std::min(getCount(x,y,z)*scale,1.f)*150, 255, 255)));
+          cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
+          std_msgs::ColorRGBA c;
+          c.r = color(0,0)[0]/255.f;  c.g = color(0,0)[1]/255.f;  c.b = color(0,0)[2]/255.f;  c.a = 1.0;
+          markers.markers[0].colors.push_back(c);
+          geometry_msgs::Point p;
+          p.x = getXWorld(x);  p.y = getYWorld(y);  p.z = getZWorld(z);
+          markers.markers[0].points.push_back(p);
+        }
+      }
+    }
+  }
+
+  return markers;
+}
+
+
 float ObjectMap::getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const{
   double prob = 1.0;
   int num = 0;
@@ -418,13 +456,14 @@ semantic_mapping_v2::ObjectMapMsg ObjectMap::getObjMapMsg() const{
 }
 
 
-cv::Mat_<float> ObjectMap::get2D(ObjectMap occ_map, ObjectMap prior_map, ObjectMap count_map, int count_thresh, cv::Point& origin) const{
+cv::Mat_<float> ObjectMap::get2D(ObjectMap occ_map, ObjectMap prior_map, int count_thresh, cv::Point& origin) const{
   cv::Mat_<float> map2D(prob_maps_[0].rows, prob_maps_[0].cols, 1.f);
   for(int z=0; z<getZSteps(); z++){
     for(int x=0; x<getWidth(); x++){
       for(int y=0; y<getHeight(); y++){
-        if(count_map.getProb(x,y,z) < count_thresh){
-          float s = count_map.getProb(x,y,z)/(count_thresh*2.f);
+        int count = occ_map.getCount(x,y,z);
+        if(count < count_thresh){
+          float s = float(count)/count_thresh;
           float val = prior_map.getProb(x,y,z)*(1.f-s) + getProb(x,y,z)*occ_map.getProb(x,y,z)*s;
           map2D(y,x) = map2D(y,x) * (1.f-val);
         }

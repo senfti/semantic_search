@@ -35,8 +35,8 @@
     <param name="gmapping/angularUpdate" value="0.436"/>
     <param name="gmapping/temporalUpdate" value="5.0"/>
     <param name="gmapping/resampleThreshold" value="0.5"/>
-    <param name="gmapping/particles" value="6"/>
-    <param name="gmapping/occ_thresh" value="0.15"/>
+    <param name="gmapping/particles" value="5"/>
+    <param name="gmapping/occ_thresh" value="0.3"/>
 
     <param name="gmapping/xmin" value="-1.0"/>
     <param name="gmapping/ymin" value="-1.0"/>
@@ -99,5 +99,6 @@
     <param name="SEARCH_TIME_PER_GRID_CELL" value="0.5" />
     <param name="ROOM_MAX_PROB" value="0.8" />
     <param name="PUBLISH_DEBUG_IMAGES" value="1" />
+    <param name="DEBUG_OUTPUT" value="1" />
   </node>
 </launch>

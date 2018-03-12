@@ -334,6 +334,9 @@ void OctoMapper::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud
   for (KeySet::iterator it = occupied_cells2.begin(), end=occupied_cells2.end(); it!= end; it++) {
     count_octree_->updateNode(*it, true);
   }
+  for (KeySet::iterator it = free_cells2.begin(), end=free_cells2.end(); it!= end; it++) {
+    count_octree_->updateNode(*it, true);
+  }
 
   ROS_DEBUG_STREAM("Bounding box keys (before): " << m_updateBBXMin[0] << " " <<m_updateBBXMin[1] << " " << m_updateBBXMin[2] << " / " <<m_updateBBXMax[0] << " "<<m_updateBBXMax[1] << " "<< m_updateBBXMax[2]);
 
@@ -383,7 +386,7 @@ float OctoMapper::getOccupancy(float x_min, float y_min, float z_min, float x_ma
 }
 
 
-int OctoMapper::getCount(float x, float y, float z){
+int OctoMapper::getCount(float x, float y, float z) const{
   OcTreeT::NodeType* node = count_octree_->search(x,y,z);
   if(!node)
     return 0;
@@ -392,7 +395,7 @@ int OctoMapper::getCount(float x, float y, float z){
 }
 
 
-int OctoMapper::getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max){
+int OctoMapper::getCount(float x_min, float y_min, float z_min, float x_max, float y_max, float z_max) const{
   int count = 0;
   for(float x = x_min+0.5f*m_res; x < x_max; x+=m_res){
     for(float y = y_min+0.5f*m_res; y < y_max; y+=m_res){
@@ -514,7 +517,7 @@ visualization_msgs::MarkerArray OctoMapper::getCountMsg(const ros::Time &rostime
 
   // now, traverse all leafs in the tree:
   for (OcTreeT::iterator it = count_octree_->begin(m_maxTreeDepth), end = count_octree_->end(); it != end; ++it){
-    if(it->getLogOdds()*scale > 0.2){
+    if(it->getLogOdds()*scale > 0.15){
       double z = it.getZ();
       if(z > m_occupancyMinZ && z < m_occupancyMaxZ){
         double x = it.getX();

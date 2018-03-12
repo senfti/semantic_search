@@ -126,6 +126,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
   obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
+  count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
 
   calcSeenKernels();
@@ -497,6 +498,7 @@ bool Searcher::doCalculations(bool force_new){
   if(calcNextViewpoint(transform)){
     finished_ = true;
     std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
+    return false;
   }
 
   return true;
@@ -531,7 +533,7 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
       }
     }
   }
-  obj_pub_.publish(obj_map_->getProbMsg());
+  //obj_pub_.publish(obj_map_->getProbMsg());
 
   std::cout << "Obj inserted" << std::endl;
 }
@@ -584,8 +586,8 @@ bool Searcher::objFound(){
       }
     }
   }
-  octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
-  count_pub_.publish(octo_mapper_->getCountMsg(ros::Time::now(), 0.1f));
+  //octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
+  //count_pub_.publish(octo_mapper_->getCountMsg(ros::Time::now(), 0.1f));
   if(max_prob > OBJECT_FOUND_THRESH){
     found_pose_.header.stamp = ros::Time::now();
     found_pose_.header.frame_id = "map";
@@ -603,13 +605,13 @@ bool Searcher::objFound(){
 
 
 cv::Mat_<float> Searcher::getProbMap(cv::Point& origin){
-  ObjectMap count_map(1.f,1.f,1.f,0.f);
   ObjectMap occ_map(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
-                    obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_, &count_map);
+                    obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
 
   full_pub_.publish((*obj_map_*occ_map).getProbMsg());
+  //count2_pub_.publish(occ_map.getCountMsg(0.1f));
 
-  return obj_map_->get2D(occ_map, *prior_prob_map_, count_map, SAMPLE_COUNT_THRESH, origin);
+  return obj_map_->get2D(occ_map, *prior_prob_map_, SAMPLE_COUNT_THRESH, origin);
 //  cv::Mat_<float> tmp = obj_map_->get2D(occ_map, *prior_prob_map_, count_map, 1000);
 //  float factor = 1.f/(VIEW_POS_RESOLUTION*obj_map_->getResolution();
 //  cv::resize(tmp, tmp, cv::Size(factor*obj_map_->getWidth(),factor*obj_map_->getHeight()));
@@ -702,7 +704,6 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
 
   cv::Mat_<float> tmp;
   prob_map.copyTo(tmp);
-  cv::pow(tmp, 0.25, tmp);
   double prob = 1.0;
   for(int x=0; x<prob_map.cols; x++){
     for(int y=0; y<prob_map.rows; y++){
@@ -767,7 +768,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
 //  cv::imshow("SEEEEEEEN", seen_mat);
 //  cv::waitKey(1);
 
-  if(max < 0.0){
+  if(max <= 0.0){
     return true;
   }
 

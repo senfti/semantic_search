@@ -101,6 +101,7 @@ class HierarchyMapper{
     float TRAVEL_TURN_FACTOR = 10.f;
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
     int PUBLISH_DEBUG_IMAGES = 1;
+    bool DEBUG_OUTPUT = false;
 
   public:
     HierarchyMapper();
