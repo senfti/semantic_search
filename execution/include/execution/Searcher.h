@@ -114,9 +114,9 @@ class Searcher{
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
     cv::Mat_<float> getProbMap(cv::Point& origin);
     cv::Mat_<uchar> getViewKernel(float angle, float max_dist, float resolution) const;
-    float calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle);
+    float calcMoveTime(const cv::Point& pos, float angle, const cv::Point2f& curr_pos, float curr_angle);
     bool insertIntoSeenMaps(const tf::Transform& curr_pose);
-    float calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float>& prob_map, const cv::Point& curr_pos, float curr_angle);
+    float calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float>& prob_map, const cv::Point2f& curr_pos, float curr_angle);
     void calcSeenKernels();
 
     void resize(float x1, float x2, float y1, float y2);

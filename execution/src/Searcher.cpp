@@ -599,7 +599,10 @@ bool Searcher::objFound(){
     obj_found_pub_.publish(found_pose_);
     obj_found_ = true;
   }
-  std::cout << "Max Obj Prob " << obj_name[searched_obj_] << ":" << max_prob << (max_prob > OBJECT_FOUND_THRESH ? "  ___________________________________________ FOUND" : "") << std::endl;
+  std::cout << "Max Obj Prob " << obj_name[searched_obj_] << ":" << max_prob
+            << (max_prob > OBJECT_FOUND_THRESH ? (std::to_string(found_pose_.pose.position.x) + " " +
+              std::to_string(found_pose_.pose.position.y) + " " +
+              std::to_string(found_pose_.pose.position.z)) : "") << std::endl;
   return obj_found_;
 }
 
@@ -632,27 +635,27 @@ cv::Mat_<uchar> Searcher::getViewKernel(float angle, float max_dist, float resol
 }
 
 
-float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle){
-  cv::Point diff = pos-curr_pos;
+float Searcher::calcMoveTime(const cv::Point& pos, float angle, const cv::Point2f& curr_pos, float curr_angle){
+  cv::Point2f diff((pos.x-curr_pos.x)/RESOLUTION, (pos.y-curr_pos.y)/RESOLUTION);
   float bad_accessible_penalty = 0.f;
   for(int i=0; i<good_accessible_map_.size(); i++){
-    bad_accessible_penalty += (good_accessible_map_[i](pos) ? 0.f : BAD_ACCESSIBLE_PENALTY*RESOLUTION/MOVE_SPEED);
+    bad_accessible_penalty += (good_accessible_map_[i](pos) ? 0.f : BAD_ACCESSIBLE_PENALTY/MOVE_SPEED);
   }
-  if(std::abs(diff.x) < 0.2 && std::abs(diff.y) < 0.2){
+  if(std::abs(diff.x) < 0.15 && std::abs(diff.y) < 0.15){
     return angleDist(curr_angle, angle)/TURN_SPEED + VIEW_TIME + bad_accessible_penalty;
   }
   float move_angle = std::atan2(float(diff.y),float(diff.x));
-  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(float(diff.x),float(diff.y))*RESOLUTION/MOVE_SPEED +
+  return (angleDist(curr_angle,move_angle)+angleDist(move_angle,angle))/TURN_SPEED + std::hypot(diff.x,diff.y)/MOVE_SPEED +
     VIEW_TIME + bad_accessible_penalty;
 }
 
 
-inline cv::Point poseToPoint(const tf::Transform& pose, cv::Point origin, float resolution){
-  return cv::Point(pose.getOrigin().x()*resolution + origin.x, pose.getOrigin().y()*resolution + origin.y);
+inline cv::Point2f poseToPoint(const tf::Transform& pose, cv::Point origin, float resolution){
+  return cv::Point2f(pose.getOrigin().x()*resolution + origin.x, pose.getOrigin().y()*resolution + origin.y);
 }
 
 
-float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float> &prob_map, const cv::Point& curr_pos, float curr_angle){
+float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float> &prob_map, const cv::Point2f& curr_pos, float curr_angle){
   float angle = float(angle_step)/VIEW_ANGLE_STEPS*M_PI*2;
   float prob = 1.0;
   float interesting_border_seen = 0.f;
@@ -715,7 +718,8 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   showProbImage("probabilities", tmp, 2, 255-accessible_map_*0.3);
   cv::waitKey(1);
 
-  cv::Point curr_point = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
+  cv::Point2f curr_pos = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
+  cv::Point curr_point(curr_pos);
   float curr_angle = tf::getYaw(curr_pose.getRotation());
   int curr_step = int(curr_angle/(2*M_PI)*VIEW_ANGLE_STEPS+VIEW_ANGLE_STEPS)%VIEW_ANGLE_STEPS;
 
@@ -732,7 +736,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
                 ((std::abs(curr_point.x-x)>1 || std::abs(curr_point.y-y)>1 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
-          float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_point, curr_angle);
+          float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_pos, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
             max = prob;

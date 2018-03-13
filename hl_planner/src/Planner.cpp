@@ -13,10 +13,7 @@
 Planner::Planner()
 : execute_action_client_(nh_, "execute_action", false), hierarchy_service_client_(nh_.serviceClient<semantic_mapping_v2::HierarchySrv>("hierarchy_srv"))
 {
-  ros::NodeHandle("~").param("UNEXPLORED_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE);
-  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE);
-  ros::NodeHandle("~").param("UNEXPLORED_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_PROB_ESTIMATE);
-  ros::NodeHandle("~").param("UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE", HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE, HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE);
+  ros::NodeHandle("~").param("DOOR_DRIVE_TIME_LOSS", HierarchyMap::DOOR_DRIVE_TIME_LOSS, HierarchyMap::DOOR_DRIVE_TIME_LOSS);
 
   while(!execute_action_client_.waitForServer(ros::Duration(1.0))){
     ROS_WARN("EXECUTE ACTION SERVER NOT UP");
@@ -190,10 +187,13 @@ std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchyS
 
 void Planner::run(int obj){
   std::ofstream output_file("/home/thomas/output/" + std::to_string(ros::Time::now().toSec()) + ".txt");
+  ros::Time start_time = ros::Time::now();
   state_.resetState();
   while(ros::ok()){
     ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+    output_file << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+    output_file << (ros::Time::now() - start_time).toSec() << std::endl;
     output_file << hierarchy;
     if(hierarchy.rooms.empty())
       return;
@@ -217,13 +217,13 @@ void Planner::run(int obj){
     actionlib::SimpleClientGoalState execution_state = sendGoal(plan.actions_.front());
     if(execution_state != actionlib::SimpleClientGoalState::SUCCEEDED){
       ROS_ERROR("EXECUTION FAILED!");
-      std::cout << "Stop trying [y]: ";
-      std::string s;
-      std::cin >> s;
-      if(!s.empty() && s[0] == 'y'){
-        ROS_ERROR("QUIT SEARCH");
-        return;
-      }
+//      std::cout << "Stop trying [y]: ";
+//      std::string s;
+//      std::cin >> s;
+//      if(!s.empty() && s[0] == 'y'){
+//        ROS_ERROR("QUIT SEARCH");
+//        return;
+//      }
     }
     else{
       auto result = execute_action_client_.getResult();
@@ -235,12 +235,12 @@ void Planner::run(int obj){
           sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
       }
       else if(result->result_number == 100){
-        output_file << "OBJECT FOUND" << std::endl;
+        output_file << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT FOUND" << std::endl;
         std::cout << "OBJECT FOUND" << std::endl;
         return;
       }
-      if(state_.searchable_.empty()){
-        output_file << "OBJECT NOT FOUND" << std::endl;
+      if(state_.searchable_.empty() && state_.not_explored_.empty()){
+        output_file << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT NOT FOUND" << std::endl;
         std::cout << "OBJECT NOT FOUND!" << std::endl;
         return;
       }
@@ -321,7 +321,7 @@ std::vector<std::string> obj_name = {"person",  "_bicycle",  "_car",  "_motorbik
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res){
   os << "current room: " << res.curr_room << std::endl;
   for(int i=0; i<res.links.size(); i++){
-    os << "link " << i << ": \trooms" << res.links[i].room1 << " " << res.links[i].room2 << std::endl;
+    os << "link " << i << ": " << res.links[i].room1 << " " << res.links[i].room2 << std::endl;
   }
   os << std::endl;
   for(int i=0; i<res.rooms.size(); i++){

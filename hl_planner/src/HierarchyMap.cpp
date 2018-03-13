@@ -7,10 +7,7 @@
 #include <limits>
 #include <boost/math/special_functions/gamma.hpp>
 
-float HierarchyMap::UNEXPLORED_SEARCH_TIME_ESTIMATE = 1000.f;
-float HierarchyMap::UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE = 100.f;
-float HierarchyMap::UNEXPLORED_PROB_ESTIMATE = 0.5f;
-float HierarchyMap::UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE = 0.001f;
+float HierarchyMap::DOOR_DRIVE_TIME_LOSS = 5.f;
 
 // based on wikipedia pseudocode: https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm
 void floydWarshall(const std::vector<std::vector<float>>& edges, std::vector<std::vector<float>>& dist, std::vector<std::vector<std::vector<int>>>& path){
@@ -143,6 +140,7 @@ HierarchyMap::HierarchyMap(const semantic_mapping_v2::HierarchySrvResponse& res,
 //          waypoint.position.y += 0.5*tmp.getBasis().getColumn(0).y();
           travel_waypoints_[r1][r2].push_back(waypoint);
         }
+        travel_times_[r1][r2] += DOOR_DRIVE_TIME_LOSS;
       }
       search_speeds_[r1][r2] = search_prob_[r2]/(search_times_[r2] + travel_times_[r1][r2]);
     }

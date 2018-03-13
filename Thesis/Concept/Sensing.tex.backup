@@ -4,11 +4,18 @@ This section describes the processing of the sensor information to get it into t
 
 \subsection{Object detection}
 
-The basic idea of this thesis was to create an intelligent system which uses available data to perform the search. Therefore a general object detection system was preferred instead of a specialized one. This is different to most of the re
+The basic idea of this thesis was to create an intelligent system which uses available data to perform the search. Therefore a general object detection system was preferred instead of a specialized one. This is different to most research in this area, where an object detector trained on a few specific objects was used. 
 
-Object detection is a difficult problem. In the robot setup for this thesis the available sensor data for object detection are the RGB-image and the depth image created by an ASUS Xtion RGBD-camera. The basic idea of this thesis was to create an intelligent system which uses available data to perform the search. Therefore a general object detection system was preferred instead of a specialized one. To find such a system submissions to object detection challenges were investigated. The criteria based on which the object detection system was chosen were the number of detectable object types, the detection accuracy and if it is possible to run the system on the given hardware. 
+General purpose object detection is a very difficult problem and only the recent success of CNNs in computer vision combined with huge training datasets lead to reasonable solutions. Many of these CNNs including the trained weights are publicly available as they were submitted to computer vision challenges. One of those had to be chosen based on hardware requirements, detectable objects and accuracy.
 
-The most suitable object detection system found was YOLO (``you only look once''), a system using a single neural network for object detection. In contrast to other object detection systems YOLO is quiet fast, even running at more than 2 frames per second on the used mid-class GPU, while still having a detection accuracy not far from the best submissions. There exists a version of YOLO trained on the COCO dataset. The COCO data contains more than 200000 color images with labels for 80 different object types. This number of different detectable object types was said to be sufficient for this work. 
+YOLO was chosen because
+\begin{itemize}
+ \item there is a version available trained on the COCO dataset and therefore can detect a reasonable number of different object classes. Table \ref{detectable objects} lists the detectable object classes.
+ \item it is fast, running with more than 2 frames per second on the used mid-class CPU
+ \item it is nearly as accurate as the best solutions and the best of all solutions which run at a reasonable framerate on the used hardware
+\end{itemize}
+
+Figure \ref{obj detection} shows a typical result of the object detection, only showing the most likely detections. As one can see the result is far from perfect, especially the confidence is low. This has to be taken into account in the design of the object mapping system.
 
 \begin{table}
 \caption{Detectable object classes}
@@ -28,17 +35,22 @@ Appliance & Microwave, oven, toaster, sink, refrigerator\\ \hline
 Electronics & TV, laptop, mouse, remote, keyboard, cell phone\\ \hline
 Indoor Objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toothbrush \\ \hline
 \end{tabular}
+\label{detectable objects}
 \end{table}
-
-YOLO only uses the RGB-image as input. Using the depth image should improve the detection accuracy and also the resulting position would be in 3D and not only in 2D. However as the focus of current research is on RGB only images no suitable RGBD object detection systems was found. The output of YOLO is an array of 845 bounding boxes. Each bounding box marks the location and size of a detected object and also holds the probability of the detected object being of a certain class for all detectable classes. The sum of all those probabilities is the ``objectness'', which is the probability of an detectable object being marked by the bounding box. Using the depth image an estimation of the 3D position of the detected object is possible.
-
-Figure \ref{obj detection} shows a typical result of the object detection, only showing the most likely detectiosn. As one can see the result is far from perfect, especially the confidence is low. This has to be taken into account in the design of the object mapping system.
-
 \begin{figure}[h]
   \includegraphics[width=1.0\textwidth]{figures/obj_detection.png}
   \caption{A typical result of the object detection and the place recognition; The bounding boxes together with the most likely class and its probability of the most likely detections are inserted into the image; in the upper left corner of the image the top 5 classification of the place classifier are shown}
   \label{obj detection}
 \end{figure}
+
+The problem with this approach is that the result of YOLO is two dimensional bounding boxes whereas in the further processing three dimensional probability distributions of object locations are needed. The RGBD-camera also takes depth images, which contain depth values for every pixel. Due to range limitations and occlusions some pixels may have invalid depth values. Using the depth image every pixel with a valid depth value can be projected into 3D space. However projecting a object detection, represented as a bounding box in 2D, into 3D is much more difficult. A 3D bounding box is not meaningful in many cases, as stray points can be much nearer or further away than the actual object. Fitting a parametric representation is also problematic as they are either not suitable (like a Gaussian) or to costly to compute. 
+
+Therefore a sample-based representation is used. Sample pixels are randomly drawn from the image and projected into 3D. Also information about the enclosing bounding boxes is added to every sample. The result of the object detection system are a list of all bounding boxes with the corresponding object probabilities and a list of 3D points with additional information about enclosing bounding boxes. 
+
+YOLO only uses the RGB-image as input. Using the depth image should improve the detection accuracy and also the resulting position would be in 3D and not only in 2D. However as the focus of current research is on RGB only images no suitable RGBD object detection systems was found. The output of YOLO is an array of 845 bounding boxes. Each bounding box marks the location and size of a detected object and also holds the probability of the detected object being of a certain class for all detectable classes. The sum of all those probabilities is the ``objectness'', which is the probability of an detectable object being marked by the bounding box. Using the depth image an estimation of the 3D position of the detected object is possible.
+
+
+
 
 \subsection{Room type classification}
 

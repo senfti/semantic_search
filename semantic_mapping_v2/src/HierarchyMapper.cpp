@@ -1127,7 +1127,7 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   cv::Point new_orig = room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin();
   cv::Size new_size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight());
   for(int j=0; j<complete_room_type_map.size(); j++){
-    room_type_maps_filtered.push_back(cv::Mat_<float>(complete_room_type_map[j].rows, complete_room_type_map[j].cols, room_type_cell_number[j]));
+    room_type_maps_filtered.push_back(cv::Mat_<float>());
     complete_room_type_map[j].copyTo(room_type_maps_filtered[j], room_type_maps[i][j].getSeenMap());
     cv::GaussianBlur(room_type_maps_filtered[j], room_type_maps_filtered[j], cv::Size(11,11), 3.0, 3.0);
     room_type_maps_filtered[j] = room_type_maps_filtered[j](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
@@ -1177,36 +1177,39 @@ void HierarchyMapper::insertUnknowRoom(semantic_mapping_v2::RoomMsg& msg, const 
   msg.header.stamp = ros::Time::now();
   msg.id = -1;
 
-  msg.obj_probs = std::vector<float>(ObjectMapper::getObjNames().size());
-  std::vector<float> room_type_cell_number(82, ROOM_ESTIMATED_OCCUPIED_AREA*ObjectMapper::OBJ_DEFAULT_RESOLUTION*ObjectMapper::OBJ_DEFAULT_RESOLUTION/82);
-  for(int o=0; o<msg.obj_probs.size(); o++){
-    double unseen_prob_estimate = 1.f;
-    for(int r = 0; r < room_type_cell_number.size(); r++){
-      unseen_prob_estimate *= std::pow(1.0-RoomMapper::getObjProbGivenRoomPerCell(o,r),room_type_cell_number[r]);
-    }
-    msg.obj_probs[o] = std::min(1-unseen_prob_estimate, 0.999);
-  }
+//  msg.obj_probs = std::vector<float>(ObjectMapper::getObjNames().size());
+//  std::vector<float> room_type_cell_number(82, ROOM_ESTIMATED_OCCUPIED_AREA*ObjectMapper::OBJ_DEFAULT_RESOLUTION*ObjectMapper::OBJ_DEFAULT_RESOLUTION/82);
+//  for(int o=0; o<msg.obj_probs.size(); o++){
+//    double unseen_prob_estimate = 1.f;
+//    for(int r = 0; r < room_type_cell_number.size(); r++){
+//      unseen_prob_estimate *= std::pow(1.0-RoomMapper::getObjProbGivenRoomPerCell(o,r),room_type_cell_number[r]);
+//    }
+//    msg.obj_probs[o] = std::min(1-unseen_prob_estimate, 0.999);
+//  }
+  msg.obj_probs = std::vector<float>(ObjectMapper::getObjNames().size(), 1.f);
 
   msg.obj_probs_2 = msg.obj_probs;
   msg.room_type_probs = std::vector<float>(82, 1.f/82);
   msg.room_type_probs_2 = msg.room_type_probs;
   msg.to_link_travel_times.push_back(M_PI*TRAVEL_TURN_FACTOR + 2.f*TRAVEL_DIST_LIN_FACTOR);
-  msg.search_time = ROOM_ESTIMATED_OCCUPIED_AREA * ObjectMapper::OBJ_DEFAULT_RESOLUTION * ObjectMapper::OBJ_DEFAULT_RESOLUTION*SEARCH_TIME_PER_GRID_CELL;
+  //msg.search_time = ROOM_ESTIMATED_OCCUPIED_AREA * ObjectMapper::OBJ_DEFAULT_RESOLUTION * ObjectMapper::OBJ_DEFAULT_RESOLUTION*SEARCH_TIME_PER_GRID_CELL;
+  msg.search_time = 1.f;
 
-  msg.expected_search_time = std::vector<float>(ObjectMapper::getObjNames().size(), 0.f);
-  int boxes = std::ceil(msg.search_time/10.f);
-  float box_time = msg.search_time/boxes;
-  for(int i=0; i<msg.expected_search_time.size(); i++){
-    std::vector<float> box_probs(1, 1.f);
-    for(int j=1; j<boxes; j++){
-      box_probs.push_back(box_probs.back()*0.8);
-    }
-    float sum = std::accumulate(box_probs.begin(), box_probs.end(), 0.f);
-    for(int j=0; j<boxes; j++){
-      msg.expected_search_time[i] += box_probs[j]*(msg.obj_probs[i]/sum) * (j+1)*box_time;
-    }
-    msg.expected_search_time[i] += (1.f-msg.obj_probs[i])*msg.search_time;
-  }
+//  msg.expected_search_time = std::vector<float>(ObjectMapper::getObjNames().size(), 0.f);
+//  int boxes = std::ceil(msg.search_time/10.f);
+//  float box_time = msg.search_time/boxes;
+//  for(int i=0; i<msg.expected_search_time.size(); i++){
+//    std::vector<float> box_probs(1, 1.f);
+//    for(int j=1; j<boxes; j++){
+//      box_probs.push_back(box_probs.back()*0.8);
+//    }
+//    float sum = std::accumulate(box_probs.begin(), box_probs.end(), 0.f);
+//    for(int j=0; j<boxes; j++){
+//      msg.expected_search_time[i] += box_probs[j]*(msg.obj_probs[i]/sum) * (j+1)*box_time;
+//    }
+//    msg.expected_search_time[i] += (1.f-msg.obj_probs[i])*msg.search_time;
+//  }
+  msg.expected_search_time = std::vector<float>(ObjectMapper::getObjNames().size(), 0.5f);
 }
 
 

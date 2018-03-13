@@ -1,8 +1,5 @@
 <launch>
   <node pkg="hl_planner" type="hl_planner" name="hl_planner" output="screen">
-    <param name="UNEXPLORED_SEARCH_TIME_ESTIMATE" value="200.0"/>
-    <param name="UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE" value="50.0"/>
-    <param name="UNEXPLORED_PROB_ESTIMATE" value="0.1"/>
-    <param name="UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE" value="0.00001"/>
+    <param name="DOOR_DRIVE_TIME_LOSS" value="5.0"/>
   </node>
 </launch>

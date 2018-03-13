@@ -258,10 +258,10 @@ order=5
 
 [item:Concept/Sensing.tex]
 archive=true
-column=92
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=38
+line=45
 mode=LaTeX
 open=true
 order=4
@@ -493,10 +493,10 @@ JumpList=
 ViMarks=.,12,539,[,12,535,],12,539
 
 [view-settings,view=0,item:Concept/Sensing.tex]
-CursorColumn=92
-CursorLine=38
+CursorColumn=0
+CursorLine=45
 JumpList=
-ViMarks=.,38,59,[,38,58,],38,59
+ViMarks=.,48,467,[,48,423,],48,467
 
 [view-settings,view=0,item:Conclusion.tex]
 CursorColumn=19

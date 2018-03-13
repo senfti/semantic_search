@@ -11,10 +11,7 @@
 
 class HierarchyMap{
   public:
-    static float UNEXPLORED_SEARCH_TIME_ESTIMATE;
-    static float UNEXPLORED_QUICK_SEARCH_TIME_ESTIMATE;
-    static float UNEXPLORED_PROB_ESTIMATE;
-    static float UNEXPLORED_QUICK_SEARCH_PROB_ESTIMATE;
+    static float DOOR_DRIVE_TIME_LOSS;
 
     int searched_obj_ = -1;
 

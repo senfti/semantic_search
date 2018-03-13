@@ -523,7 +523,7 @@ std::pair<cv::Point,cv::Size> ObjectMapper::addCloud(const pcl::PointCloud<pcl::
           float vh = c*V_H + (1-c)*OBJ_PRIOR_PROB;
           float vm = c*V_M + (1-c)*OBJ_PRIOR_PROB;
           for(int m=0; m<tmp.size(); m++){
-            maps_[m].insertProb(x,y,z,tmp[m].getProb(x,y,z), OBJ_PRIOR_PROB, vh, vm, OBJ_MIN_PROB, OBJ_MAX_PROB);
+            maps_[m].insertProb(x,y,z,tmp[m].getProb(x,y,z), OBJ_PRIOR_PROB, vh, vm, RoomMapper::getObjProbGivenRoomObjPriorPerCell(m)/6/2, OBJ_MAX_PROB);
           }
         }
       }
