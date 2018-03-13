@@ -58,6 +58,7 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
 
   std::vector<cv::Mat_<double>> imgs(msg->images.size());
+  std::cout << "baseRoom " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
@@ -74,6 +75,7 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
 
   std::vector<cv::Mat_<double>> imgs(msg->images.size());
+  std::cout << "Obj " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
@@ -91,6 +93,7 @@ void ProbViewApp::baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
 
   std::vector<cv::Mat_<double>> imgs(msg->images.size());
+  std::cout << "baseObj " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
@@ -108,6 +111,7 @@ void ProbViewApp::baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   }
 
   std::vector<cv::Mat_<double>> imgs(msg->images.size());
+  std::cout << "baseRoom " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }
@@ -127,6 +131,7 @@ void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   }
 
   std::vector<cv::Mat_<double>> imgs(msg->images.size());
+  std::cout << "sdf" << idx << " " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
   }

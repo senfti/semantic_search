@@ -164,7 +164,8 @@ class ObjectMapper{
 
     std::vector<ObjectMap> getMaps() {
       boost::lock_guard<boost::mutex> lock(maps_mutex_);
-      return maps_;
+      std::vector<ObjectMap> maps = maps_;
+      return maps;
     }
 };
 

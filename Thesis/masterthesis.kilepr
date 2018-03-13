@@ -204,7 +204,7 @@ highlight=LaTeX
 line=0
 mode=LaTeX
 open=true
-order=1
+order=0
 
 [item:Concept/GeneralDesignDecisions.tex]
 archive=true
@@ -224,7 +224,7 @@ highlight=LaTeX
 line=14
 mode=LaTeX
 open=true
-order=3
+order=1
 
 [item:Concept/Knowledge.tex]
 archive=true
@@ -248,23 +248,23 @@ order=9
 
 [item:Concept/Overview.tex]
 archive=true
-column=54
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=21
+line=0
 mode=LaTeX
 open=false
 order=5
 
 [item:Concept/Sensing.tex]
 archive=true
-column=0
+column=37
 encoding=UTF-8
 highlight=LaTeX
 line=45
 mode=LaTeX
 open=true
-order=4
+order=2
 
 [item:Conclusion.tex]
 archive=true
@@ -298,10 +298,10 @@ order=-1
 
 [item:Introduction.tex]
 archive=true
-column=256
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=0
 mode=LaTeX
 open=false
 order=8
@@ -314,7 +314,7 @@ highlight=LaTeX
 line=7
 mode=LaTeX
 open=true
-order=5
+order=3
 
 [item:Prerequisites/CNN.tex]
 archive=true
@@ -324,11 +324,11 @@ highlight=LaTeX
 line=4
 mode=LaTeX
 open=true
-order=6
+order=4
 
 [item:Prerequisites/GMapping.tex]
 archive=true
-column=478
+column=0
 encoding=UTF-8
 highlight=LaTeX
 line=6
@@ -338,7 +338,7 @@ order=11
 
 [item:Prerequisites/MOVE_BASE.tex]
 archive=true
-column=18
+column=0
 encoding=UTF-8
 highlight=LaTeX
 line=0
@@ -348,7 +348,7 @@ order=12
 
 [item:Prerequisites/OccupancyGridMapping.tex]
 archive=true
-column=31
+column=0
 encoding=UTF-8
 highlight=LaTeX
 line=0
@@ -368,10 +368,10 @@ order=14
 
 [item:Prerequisites/ROS.tex]
 archive=true
-column=554
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=0
 mode=LaTeX
 open=false
 order=15
@@ -384,14 +384,14 @@ highlight=LaTeX
 line=12
 mode=LaTeX
 open=true
-order=7
+order=5
 
 [item:ProblemFormulation.tex]
 archive=true
-column=493
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=16
+line=0
 mode=LaTeX
 open=false
 order=1
@@ -434,7 +434,7 @@ highlight=LaTeX
 line=180
 mode=LaTeX
 open=true
-order=8
+order=6
 
 [item:masterthesis.kilepr]
 archive=true
@@ -493,10 +493,10 @@ JumpList=
 ViMarks=.,12,539,[,12,535,],12,539
 
 [view-settings,view=0,item:Concept/Sensing.tex]
-CursorColumn=0
+CursorColumn=37
 CursorLine=45
 JumpList=
-ViMarks=.,48,467,[,48,423,],48,467
+ViMarks=.,0,0,[,0,0,],60,534
 
 [view-settings,view=0,item:Conclusion.tex]
 CursorColumn=19

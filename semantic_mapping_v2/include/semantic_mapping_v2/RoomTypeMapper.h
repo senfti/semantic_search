@@ -120,7 +120,8 @@ class RoomTypeMapper{
 
     std::vector<RoomTypeMap> getMaps() {
       boost::lock_guard<boost::mutex> lock(maps_mutex_);
-      return prob_maps_;
+      std::vector<RoomTypeMap> maps = prob_maps_;
+      return maps;
     }
 };
 

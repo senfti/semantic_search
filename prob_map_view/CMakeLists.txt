@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   kb_query
 )
 find_package( wxWidgets COMPONENTS core base adv REQUIRED )
+find_package( OpenCV REQUIRED )
 include( "${wxWidgets_USE_FILE}" )
 
 include_directories(include ${catkin_INCLUDE_DIRS})
@@ -47,6 +48,7 @@ add_executable(prob_map_view src/main.cpp src/ProbViewer_B.cpp src/ProbViewer.cp
 target_link_libraries(prob_map_view
   ${catkin_LIBRARIES}
   ${wxWidgets_LIBRARIES}
+  ${OpenCV_LIBS}
  )
 
 add_dependencies(prob_map_view prob_map_view_generate_messages_cpp)
