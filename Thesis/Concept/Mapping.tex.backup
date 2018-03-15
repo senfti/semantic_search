@@ -10,17 +10,15 @@ An elegant way to cope with the problem of uncertain localization causing incons
 
 Tests using Gmapping, a 2D-SLAM library using Rao-Blackwellized particle filters and a sophisticated sampling technique, and a laser scanner showed good results, even with less than 10 particles. The use of Gmapping splits the occupancy map into two parts, the 2D-SLAM and a 3D mapping with know pose for every particle. The 3D mapping is needed for the detection of obstacles not visible to the laser scanner and also in the object probability mapping, as can be seen later. The split of the metric mapping has another benefit. The crucial SLAM is done using only the accurate laser scanner while the comparable inaccurate depth image of the RGDB-camera is only used in the less important 3D mapping.
 
-The second fundamental concept is the hybrid map representation. Every room has its own semantic map. Each of these maps is a node in a topological map representing the room structure of the environment and an edge between two rooms states that the rooms are connected by a doorway. The edge further holds information about the corresponding mapped doorways in both rooms. Figure \ref{hybridmap} depicts a hybrid map example.
+The second fundamental concept is the hybrid map representation. Every room has its own semantic map. Each of these maps is a node in a topological map representing the room structure of the environment. The edges 
 
-\begin{figure}[htp]
- \centering
- \includegraphics[width=1.\textwidth,trim={0 0 0 0},clip]{figures/HybridMap.pdf}
- \caption{hybrid map structure}
- \label{hybridmap}
-\end{figure}
+\subsection{Localization and metric mapping}
 
+For localization and navigation a metric map is needed. The generation of a two dimensional map using the laser scanner is not sufficient to avoid obstacles as many obstacles are not or only partially visible to the LIDAR. Such an obstacle is for example a table, where only the feet are visible to the LIDAR. Therefore the creation of a three dimensional map was decided as it is also useful in the creation of the object probability map. However 3D simultaneous localization and mapping (SLAM) is computational expensive and the tests of different 3D SLAM implementation showed worse map quality and localization accuracy than 2D SLAM using GMapping. This is probably due to the inaccuracy of the RGBD-camera compared to the LIDAR. Therefore the decision was to used GMapping for accurate 2D SLAM and create the 3D map by mapping with known pose.
 
-Every time a new doorway is found a new node is inserted into the topological map containing an empty room map. If a doorway is passed, the mapping in the old room is paused and the mapping in the new room is started (if it is the first time the robot enters this room) or resumed. When resuming, the poses of the doorway in both room coordinate frames are used to transform the robot position into the new rooms coordinate frame. Generally loops in the topological maps are possible, but no loop closure was implemented as there were no loops in the test environments.
+The challenge with this approach is to keep the 3D map consistent with the 2D map. In GMapping every particle carries its own map. Therefore it is necessary to do also the 3D mapping for every particle. Therefore the number of particles has to be low. As there is usually enough structure in indoor environment for GMapping's scan matcher and the maps are only as large as a room, hight quality maps can also generated with less than 10 particles.
+
+The 3D occupancy grid mapping library OctoMap is used for the 3D mapping. For every particle the point cloud created from the Asus Xtion depth image is transformed into the map frame using the particles pose. Then ray-tracing is done for every point in the point cloud to adjust the occupancy values in the Octomap, cells where a ray ends increase their occupancy value and the other cells intersected by a ray decrease the occupancy value. As the ray-tracing of all points in the point cloud is quiet costly and the quality of the 3D map is not that important, a the point cloud is downsampled before used in the 3D mapping.
 
 \subsection{Room type mapping}
 
@@ -94,12 +92,3 @@ The doorway detections are transformed into the map coordinate frame using the p
 \subsection{Topological Mapping}
 
 The so far discussed mapping parts cover the mapping of a room in a metric representation. Large metric maps are difficult to keep consistent and have negative impact on the performance. As rooms are separated by walls and only connected through narrow, easy to detect doorways splitting the map into submaps covering single rooms is simple. When the robot passes a doorway the currently used metric map is switched to the map of entered room. If no map exists for the entered room a new set of maps is created for this room. 
-
-
-% \subsection{Localization and metric mapping}
-% 
-% For localization and navigation a metric map is needed. The generation of a two dimensional map using the laser scanner is not sufficient to avoid obstacles as many obstacles are not or only partially visible to the LIDAR. Such an obstacle is for example a table, where only the feet are visible to the LIDAR. Therefore the creation of a three dimensional map was decided as it is also useful in the creation of the object probability map. However 3D simultaneous localization and mapping (SLAM) is computational expensive and the tests of different 3D SLAM implementation showed worse map quality and localization accuracy than 2D SLAM using GMapping. This is probably due to the inaccuracy of the RGBD-camera compared to the LIDAR. Therefore the decision was to used GMapping for accurate 2D SLAM and create the 3D map by mapping with known pose.
-% 
-% The challenge with this approach is to keep the 3D map consistent with the 2D map. In GMapping every particle carries its own map. Therefore it is necessary to do also the 3D mapping for every particle. Therefore the number of particles has to be low. As there is usually enough structure in indoor environment for GMapping's scan matcher and the maps are only as large as a room, hight quality maps can also generated with less than 10 particles.
-% 
-% The 3D occupancy grid mapping library OctoMap is used for the 3D mapping. For every particle the point cloud created from the Asus Xtion depth image is transformed into the map frame using the particles pose. Then ray-tracing is done for every point in the point cloud to adjust the occupancy values in the Octomap, cells where a ray ends increase their occupancy value and the other cells intersected by a ray decrease the occupancy value. As the ray-tracing of all points in the point cloud is quiet costly and the quality of the 3D map is not that important, a the point cloud is downsampled before used in the 3D mapping.

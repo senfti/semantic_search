@@ -125,13 +125,13 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
   //cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
   for(int z=0; z<getZSteps(); z++){
     prob_maps_[z] = prob_maps_[z].mul(occ_map.prob_maps_[z]);
+    prob_maps_[z] = cv::max(prob_maps_[z], RoomMapper::getObjProbGivenRoomObjPriorPerCell(obj)/6/4);
     cv::Mat_<float> tmp = 1.f - prob_maps_[z];
     prob_maps_[z] = prob_maps_[z].mul(obj_from_room);
     tmp = tmp.mul(1.f-obj_from_room);
     cv::divide(prob_maps_[z],prob_maps_[z]+tmp,prob_maps_[z]);
-    cv::threshold(prob_maps_[z], prob_maps_[z], ObjectMapper::OBJ_MAX_PROB, ObjectMapper::OBJ_MAX_PROB, cv::THRESH_TRUNC);
-    cv::threshold(1-prob_maps_[z], prob_maps_[z], 1-ObjectMapper::OBJ_MIN_PROB, 1-ObjectMapper::OBJ_MIN_PROB, cv::THRESH_TRUNC);
-    prob_maps_[z] = 1-prob_maps_[z];
+    prob_maps_[z] = cv::min(prob_maps_[z], ObjectMapper::OBJ_MAX_PROB);
+    prob_maps_[z] = cv::max(prob_maps_[z], ObjectMapper::OBJ_MIN_PROB);
   }
 
   for(const auto& p : only_laser_points){

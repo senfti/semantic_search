@@ -27,7 +27,7 @@ def callback(data):
     for i in range(len(data.rooms)):
         obj_sort = sorted(range(len(data.rooms[i].obj_probs)), key=lambda x: data.rooms[i].obj_probs[x], reverse=True)
         for j in range(len(obj_sort)):
-            print obj_sort[j], '{:22}'.format(obj_name[obj_sort[j]]), '{:6.4f}'.format(data.rooms[i].obj_probs[obj_sort[j]]), '{:6.4f}'.format(data.rooms[i].obj_probs_2[obj_sort[j]]), '{:9.4f}'.format(data.rooms[i].expected_search_time[obj_sort[j]]), '{:9.4f}'.format(data.rooms[i].search_time), '{:7.5f}'.format(data.rooms[i].obj_probs[obj_sort[j]]/data.rooms[i].expected_search_time[obj_sort[j]])
+            print obj_sort[j], '{:22}'.format(obj_name[obj_sort[j]]), '{:6.4f}'.format(data.rooms[i].obj_probs[obj_sort[j]]), '{:9.4f}'.format(data.rooms[i].expected_search_time[obj_sort[j]]), '{:9.4f}'.format(data.rooms[i].search_time), '{:7.5f}'.format(data.rooms[i].obj_probs[obj_sort[j]]/data.rooms[i].expected_search_time[obj_sort[j]])
         print
 
     obj_sort = sorted(range(len(data.unknown_room.obj_probs)), key=lambda x: data.unknown_room.obj_probs[x], reverse=True)

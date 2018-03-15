@@ -18,13 +18,13 @@
     <param name="RESOLUTION" value="5.0" />
     <param name="OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />
 
-    <param name="V_H" value="0.1" />
+    <param name="V_H" value="0.15" />
     <param name="V_M" value="0.0025" />
 
     <param name="POINTCLOUD_MIN_Z" value="0.1" />
     <param name="POINTCLOUD_MAX_Z" value="1.6" />
 
-    <param name="OBJECT_FOUND_THRESH" value="0.7" />
+    <param name="OBJECT_FOUND_THRESH" value="0.5" />
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
     <param name="SEEN_MAP_STEPS" value="36" />
