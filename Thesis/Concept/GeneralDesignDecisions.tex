@@ -1,4 +1,4 @@
-\section{General Design Decisions}
+\section{General Design Decisions} \label{ssec:num3}
 
 This section covers general design decisions made in the process of creating this active object search system. It also describes the reasoning behind these decisions and the impact on the different components of the system.
 
@@ -31,6 +31,6 @@ This section covers general design decisions made in the process of creating thi
  \newline
  
  \item \textbf{Mapping of object probability distribution instead of object locations:} \newline
- Due to the used object detection with a CNN the insertion of found objects in the map and their tracking is not possible. This is because of the confidence of the object detection is low, the number of detected objects might be high and position of a detected object in 3D is very inaccurate, as it can only be estimated based on the bounding box and a depth image. Instead the object probability distribution is mapped using a grid representation. Based on the object detection results the probabilities in the grid cells are updated. This approach can handle the large number of uncertain detections and the probability distribution is needed in the search planning. The downside of this approach is that not objects are found but only cells, which have a high probability containing the object, 
+ Due to the used object detection with a CNN the insertion of found objects in the map and their tracking is not possible. This is because of the confidence of the object detection is low, the number of detected objects might be high and position of a detected object in 3D is very inaccurate, as it can only be estimated based on the bounding box and a depth image. Instead the object probability distribution is mapped using a grid representation. Based on the object detection results the probabilities in the grid cells are updated. This approach can handle the large number of uncertain detections and the probability distribution is needed in the search planning. The downside of this approach is that not objects are found but only cells, which have a high probability containing an object.
  
 \end{itemize}
