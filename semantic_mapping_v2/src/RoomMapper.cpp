@@ -99,7 +99,7 @@ double RoomMapper::getObjProbGivenRoomPerCell(int obj, int room, bool recalc, fl
     for(int r=0; r<nr; r++){
       prob_map_per_2d_cell[r].resize(no);
       for(int o=0; o<no; o++){
-        prob_map_per_2d_cell[r][o] = 1.f-std::pow(1.0-prob_map[r][o], fill_fraction);
+        prob_map_per_2d_cell[r][o] = prob_map[r][o]*fill_fraction;
       }
     }
   }

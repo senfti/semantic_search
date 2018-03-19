@@ -768,20 +768,31 @@ float HierarchyMapper::getSearchTime(int search_cells){
 
 std::vector<float> HierarchyMapper::getExpectedSearchTime(float search_time, std::vector<float> obj_probs, const std::vector<ObjectMap>& obj_maps, const cv::Mat_<float>& behind_door_mask){
   std::vector<float> exp_search_times(obj_probs.size(), 0.f);
-  int boxes = std::ceil(search_time/5.f);
+  int boxes = std::ceil(search_time/(SEARCH_TIME_PER_GRID_CELL*5.f));
   float box_time = search_time/boxes;
 
   for(int i=0; i<obj_probs.size(); i++){
     std::vector<float> prob_distr = obj_maps[i].getProbDistribution(behind_door_mask);
-    std::vector<float> box_probs;
+    std::vector<float> box_probs(boxes, 0.f);
     int last_idx = 0;
+    float cum_prob_inv = 1.f;
     for(int j=0; j<boxes; j++){
-      box_probs.push_back(std::accumulate(prob_distr.begin()+last_idx, prob_distr.begin()+int(std::round((j+1.f)/boxes*prob_distr.size())), 0.f) * std::exp(-(j+1.f)/boxes));
+      box_probs[j] = 1.f;
+      for(int k=last_idx; k<std::round((j+1.f)/boxes*prob_distr.size()); k++){
+        box_probs[j] *= (1-prob_distr[k]);
+      }
+      if(cum_prob_inv*box_probs[j] <= (1.f-obj_probs[i])){
+        box_probs[j] = 1.f - (1.f-obj_probs[i])/cum_prob_inv;
+        break;
+      }
+      box_probs[j] = 1.f-box_probs[j];
       last_idx = int(std::round((j+1.f)/boxes*prob_distr.size()));
     }
     float sum = std::accumulate(box_probs.begin(), box_probs.end(), 0.f);
+    float continue_prob = 1.f;
     for(int j=0; j<boxes; j++){
-      exp_search_times[i] += box_probs[j]*(obj_probs[i]/sum) * (j+1)*box_time;
+      exp_search_times[i] += box_probs[j]*continue_prob*(j+1)*box_time;
+      continue_prob *= (1-box_probs[j]);
     }
     exp_search_times[i] += (1.f-obj_probs[i])*search_time;
   }

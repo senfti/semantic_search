@@ -22,6 +22,10 @@ The second fundamental concept is the hybrid map representation. Every room has 
 
 Every time a new doorway is found a new node is inserted into the topological map containing an empty room map. If a doorway is passed, the mapping in the old room is paused and the mapping in the new room is started (if it is the first time the robot enters this room) or resumed. When resuming, the poses of the doorway in both room coordinate frames are used to transform the robot position into the new rooms coordinate frame. Generally loops in the topological maps are possible, but no loop closure was implemented as there were no loops in the test environments.
 
+\subsection{Doorway mapping}
+
+The doorway locations have to mapped for every particle. The input for this are the results of the doorway detection, which contain the locations of currently seen doorways in the robot coordinate frame. Based on the particle position they are transformed into the map coordinate frame. The doorway mapping system then decides, if a detection is a already seen doorway or if it is a new one. This is done by comparison of location and orientation with all already mapped doorways. If no door with similar orientation is near the detection, a new doorway is inserted. Otherwise the pose of the corresponding doorway is updated, the door pose is then calculated using a running average. The doorway mapper of the currently best particle is also responsible for the detection of passing a door.
+
 \subsection{Room type mapping}
 
 Assigning a single room type to a room is not sufficient in many cases. One room can consists of multiple areas of different types, like an office room with a kitchenette. Therefore a regular, two dimensional grid is laid over the room. Every cell has its own probability distribution over all detectable room types. $P(R_{Cj}=RT|I_{1:t},\mathbf{x}_{1:t})$ is the probability of cell $j$ being of room type $RT$ given all the until now classified images $I_{1:t}$ and the robot poses, where the images were made, $\mathbf{x}_{1:t}$. $RT$ is one of the 82 room types of the room type classifier. As described in section \ref{ssec:num2} this mapping is done for every particle separately.
@@ -59,10 +63,6 @@ $V_{equal}$ is a parameter, which has to be estimated empirically, $M_{R_{Cj},RT
  \sum_{RT \in \mathbf{RT}} P(R_{Cj}=RT|R_{I_{t}})=1 
 \end{equation}
 
-\subsection{Doorway mapping}
-
-The doorway locations have to mapped for every particle. The input for this are the results of the doorway detection, which contain the locations of currently seen doorways in the robot coordinate frame. Based on the particle position they are transformed into the map coordinate frame. The doorway mapping system then decides, if a detection is a already seen doorway or if it is a new one. This is done by comparison of location and orientation with all already mapped doorways. If no door with similar orientation is near the detection, a new doorway is inserted. Otherwise the pose of the corresponding doorway is updated, the door pose is then calculated using a running average. The doorway mapper of the currently best particle is also responsible for the detection of passing a door.
-
 \subsection{Object mapping}
 
 As already mentioned in section \ref{ssec:num3}, the object mapping creates a map of the three dimensional object probability distribution for every detectable object type based on the results of the object detection. The problem is split into two parts, 3D occupancy mapping and mapping of the probability of an object being in the cell in case its occupied. The probability for a cell $C_i$ containing an object of type $OT$ based on the object detection from the used RGBD-images $I_{1:t}$ taken at positions $\mathbf{x}_{1:t}$, $P(O_{D,C_{i}}^{OT}|I_{1:t},\mathbf{x}_{1:t})$, can be calculated with
@@ -74,7 +74,7 @@ where $P(occ_{C_i}|I_{1:t},\mathbf{x}_{1:t})$ is the probability of the cell bei
 The assumptions made in the object mapping are
 \begin{itemize}
  \item The object probability of an object type is independent of the probabilities of the other object types. This assumption is a necessary simplification, as a realistic modeling of the dependence is very complicated and not enough data is available for that. This assumption is a good approximation if the cell size is bigger than the object size, in which case it is likely that more than one object is within a cell. This is the case in this work, as fine grained grid maps are too computational expensive and need much more data for a meaningful result.
- \item The object probabilities of an object type are independent for all cells. This assumption is also made in standard occupancy grid mapping.
+ \item The object probabilities of an object type are independent for all cells. This assumption is also made in standard occupancy grid mapping. 
 \end{itemize}
 
 The mapping is done similar to occupancy grid mapping. The update is done with
@@ -103,7 +103,7 @@ with
 \begin{equation}
 P(O_{s}^{OT})=\begin{cases}\max_{b \in \mathbf{B_s}} P(O_{b}^{OT}) & |\mathbf{B_s}| > 0 \\P_{min} & |\mathbf{B_s}
 | = 0 \end{cases}
-\end{equation}
+\end{equation} 
 $\mathbf{S_t^{C_i}}$ is the set of samples of the result of the object detection on image $I_t$ falling into cell $C_i$, $V_h$ and $V_m$ are parameters modeling the uncertainty of this approach, $\mathbf{B_s}$ are the bounding boxes associated with sample $s$, $P(O_{b}^{OT})$ is the probability of object type $OT$ in bounding box $b$ estimated by the object detection CNN and $P_{min}$ is a minimal probability. 
 
 In words, the inverse sensor is the highest probability for an object type of all bounding boxes associated to a sample falling into a cell with additional application of uncertainty. The assumptions behind this approach are 
@@ -114,7 +114,65 @@ In words, the inverse sensor is the highest probability for an object type of al
 
 One problem of this approach is that it does not really handle the problem of the bounding boxes not being completely filled by an object. This causes areas, which are near the object in an image, having too high probabilities. This is especially problematic as those areas need not be near the object in 3D. Therefore it is important to have multiple views from different positions to reduce the impact of this problem. Another problem is that object probabilities tend to be too high, though this effect is negated by objects not being detected and suitable values for $V_h$ and $V_m$. 
 
+\subsection{Object Probability Distribution Calculation}
 
+This section explains how the object probability distribution needed by the planner is created. This is only calculated when requested by the planner and only for the currently best particle. The information from the object maps, the room type map and the occupancy maps are combined for the estimation of the object probability distribution. This is done in three steps
+\begin{enumerate}
+ \item Improvement of the room type probability distributions using also the object maps and the occupancy grid mapped
+ \item Improvement of the object probability distribution using also the room type probability distributions
+ \item Estimation of the object probability distribution in areas not seen by the camera
+\end{enumerate}
+
+\subsubsection{Improvement of the room type probability distributions using the object maps and the occupancy grid mapped}
+
+Using the correlation between objects in an area and the room type in this area the information object maps is used to get a better estimate of the room type probability distributions. First the probability of an object being near is calculated for every cell from the object maps with
+\begin{equation}
+P(O_{area, C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t})=1-\prod_{C \in Area} (1-P(O_{D,C}^{OT}|I_{1:t},\mathbf{x}_{1:t}))
+\end{equation}
+The size of the area is chosen approximately the size of the visible area in a typical image used for the creation of the room type-object-correlation explained in section \ref{ssec:roomtypeobjcorr}. Therefore the values from the room-type-object-correlation-matrix can be used directly.
+
+Assuming independence between the object probabilities given the room type, the complete room type probability is
+\begin{multline}
+P(R_{complete,Cj}=RT|I_{1:t},\mathbf{x}_{1:t}) = \\ \frac{1}{Z}P(R_{Cj}=RT | I_{1:t}, \mathbf{x}_{1:t})\prod_{k=1}^{|\mathbf{OT}|}\frac{P(R_{O_k,Cj}=RT|I_{1:t},\mathbf{x}_{1:t})}{P(R_{complete,Cj}=RT)}
+\end{multline}
+with 
+\begin{equation}
+Z=\sum_{RT \in \mathbf{RT}}\prod_{k=1}^{|\mathbf{OT}|}P(R_{Cj}=RT | I_{1:t}, \mathbf{x}_{1:t})\frac{P(R_{O_k,Cj}=RT|I_{1:t},\mathbf{x}_{1:t})}{P(R_{complete,Cj}=RT)}
+\end{equation}
+
+$P(R_{O_k,Cj}=RT|I_{1:t},\mathbf{x}_{1:t})$ is the probability of room type $RT$ in cell $C_j$ based on the probability of an object of type $O_k$ being near the cell. This probability is calculated by
+\begin{multline}
+P(R_{O_k,Cj}=RT|I_{1:t},\mathbf{x}_{1:t}) = \\ \sum_{v \in \{false,true\}}P(R_{O_k,Cj}=RT,O_{area, C_i}^{O_k}=v|I_{1:t},\mathbf{x}_{1:t}) \approx \\ \sum_{v \in \{false,true\}} P(O_{area, C_i}^{O_k}=v|I_{1:t},\mathbf{x}_{1:t})P(R_{O_k,Cj}=RT|O_{area, C_i}^{O_k}=v)
+\end{multline}
+$P(R_{O_k,Cj}|O_{area, C_i}^{O_k})$ can be calculated using the room-type-object-correlation matrix with 
+\begin{multline}
+P(R_{O_k,Cj}=RT|O_{area, C_i}^{O_k}=OT)=\\ \frac{P(R_{O_k,Cj}=RT)P(O_{area, C_i}^{O_k}=OT|R_{O_k,Cj}=RT)}{P(O_{area, C_i}^{O_k}=OT)} = \\ \frac{P(R_{O_k,Cj}=RT)P(O_{area, C_i}^{O_k}=OT|R_{O_k,Cj}=RT)}{\sum_{r \in \mathbf{RT}}P(R_{O_k,Cj}=r)P(O_{area, C_i}^{O_k}=OT|R_{O_k,Cj}=r)}
+\end{multline}
+with $P(O_{area, C_i}^{O_k}=OT|R_{O_k,Cj}=RT)$ being the matrix elements and $P(R_{O_k,Cj}=r) = \frac{1}{|\mathbf{RT}|}$.
+
+
+\subsubsection{Improvement of the object probability distribution using the room type probability distributions}
+
+First the object probability distribution $P(O_{R,C_i}^{OT})$ for all cells and object types based on the room type is calculated with
+\begin{equation}
+P(O_{R,C_i}^{OT})=\sum_{r\in \mathbf{RT}}P(R_{complete,Cj}=RT|I_{1:t},\mathbf{x}_{1:t})P_C(_{R,C_i}^{OT}|r)
+\end{equation}
+
+$P_C(_{R,C_i}^{OT}|r)$ is the probability of an object in a cell given the room type of the cell $r$. The room type-object-correlation matrix values are for areas of the usual size visible in an image, therefore the probabilities per cell have to be estimated. This is done by multiplying the matrix values with the estimated fraction of space visible in an image being occupied by an object. $P(O_{R,gauss,C_i}^{OT})$ is then a Gaussian filtered version of $P(O_{R,C_i}^{OT})$, which is done to model uncertainty of the positions of objects in a room. 
+
+
+The object probability distribution using information from the object mapping and the room type is calculated with
+\begin{equation}
+P(O_{R,C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t})=\frac{1}{Z}P(O_{D,C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t})P(O_{R,gauss,C_i}^{OT})
+\end{equation}
+with the normalization term
+\begin{multline}
+Z=P(O_{D,C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t})P(O_{R,gauss,C_i}^{OT})+\\(1-P(O_{D,C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t}))(1-P(O_{R,gauss,C_i}^{OT}))
+\end{multline} 
+
+\subsubsection{Estimation of the object probability distribution in areas not seen by the camera}
+
+Areas, where no information is available, are assumed to be outside the room and therefore the object probability is set to zero. Also the probabilities of areas known to be outside the room, as they are behind a doorway, are set to zero. This leaves areas only seen by the laser scanner, which has a greater field of view, to be considered. The room type of these areas is estimated based on the room type of neighboring cells, with the impact decreasing with distance, and the average room type in the room. Similar to above the object probabilities in the cells for all object types is calculated.
 
 % The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
 % 
