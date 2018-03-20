@@ -3,9 +3,19 @@ roslaunch hardware 1_turtlebot.launch &
 sleep 3
 rosclean purge -y &
 sleep 2
-xterm -hold -e roslaunch hardware 2_cam1_laser.launch &
+if [ $# -eq 0 ]
+  then
+    xterm -hold -e roslaunch hardware 2_cam1_laser.launch &
+  else
+    xterm -hold -e roslaunch hardware 2_cam1_laser.launch cam_nr:="#2" &
+fi
 sleep 5
-xterm -hold -e roslaunch hardware 3_cam2_laser_filter.launch &
+if [ $# -eq 0 ]
+  then
+    xterm -hold -e roslaunch hardware 3_cam2_laser_filter.launch &
+  else
+    xterm -hold -e roslaunch hardware 3_cam2_laser_filter.launch cam_nr:="#1" &
+fi
 sleep 6
 xterm -hold -e roslaunch hardware 4_cam1_settings_move_base.launch &
 sleep 6

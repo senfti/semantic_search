@@ -7,9 +7,14 @@
 #include <iostream>
 #include <chrono>
 
-YoloDetection::YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z)
-      : label_(label), id_(id), prob_(prob, prob + NUM_OBJECT_TYPES), x1_(x1), x2_(x2), y1_(y1), y2_(y2)
+YoloDetection::YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z, const std::vector<bool>& used_classes)
+      : label_(label), id_(id), x1_(x1), x2_(x2), y1_(y1), y2_(y2)
 {
+  prob_.reserve(NUM_USED_OBJECT_TYPES);
+  for(int i=0; i<NUM_OBJECT_TYPES; i++){
+    if(used_classes[i])
+      prob_.push_back(*(prob+i));
+  }
 }
 
 void YoloDetection::draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness){
@@ -42,8 +47,11 @@ bool YoloDetector::loadLabels(const std::string &label_file){
   while(file.good()){
     std::string label;
     std::getline(file, label);
-    if(label.length() > 0)
-      labels_.push_back(label);
+    if(label.length() > 0){
+      if(label[0] != '_')
+        labels_.push_back(label);
+      used_classes_.push_back(label[0] != '_');
+    }
     else
       break;
   }
@@ -184,18 +192,21 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
     if(probs[i][last_layer.classes] > thresh){                // this tests box prob
       float prob = -1.f;
       int max_idx = -1;
+      int idx = 0;
       for(int j = 0; j < last_layer.classes; j++){
-        if(probs[i][j] > prob){
+        if(probs[i][j] > prob && used_classes_[j]){
           prob = probs[i][j];
-          max_idx = j;
+          max_idx = idx;
         }
+        if(used_classes_[j])
+          idx++;
       }
       float x1 = std::max((boxes[i].x - boxes[i].w / 2.f) * img.cols, 0.f);
       float x2 = std::min((boxes[i].x + boxes[i].w / 2.f) * img.cols, img.cols-1.f);
       float y1 = std::max((boxes[i].y - boxes[i].h / 2.f) * img.rows, 0.f);
       float y2 = std::min((boxes[i].y + boxes[i].h / 2.f) * img.rows, img.rows-1.f);
       if(prob > thresh){
-        detections.push_back(YoloDetection(labels_[max_idx], max_idx, probs[i], x1, x2, y1, y2, 0.f));
+        detections.push_back(YoloDetection(labels_[max_idx], max_idx, probs[i], x1, x2, y1, y2, 0.f, used_classes_));
       }
     }
   }

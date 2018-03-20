@@ -40,7 +40,7 @@ std::vector<std::string> ObjectMapper::getObjNames(){
     while(!f.eof()){
       OBJ_NAMES.push_back("");
       std::getline(f, *OBJ_NAMES.rbegin());
-      if(OBJ_NAMES.rbegin()->empty())
+      if(OBJ_NAMES.back().empty() || OBJ_NAMES.back()[0] == '_')
         OBJ_NAMES.pop_back();
     }
   }

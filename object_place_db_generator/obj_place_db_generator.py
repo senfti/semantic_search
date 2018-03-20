@@ -3,6 +3,7 @@ import numpy as np
 object_input_file = '/home/thomas/coco_data_objects.txt'
 places_input_file = '/home/thomas/coco_places.txt'
 label_file = "/home/thomas/BVLCcaffe/models/googlenet_places205/categories_places205.csv"
+obj_label_file = "/home/thomas/darknet/data/coco.names"
 
 f = open(object_input_file, 'r')
 lines = f.readlines()
@@ -43,6 +44,18 @@ for i, c in enumerate(content):
         print c
         names.append(c)
         reduced_place_obj_map = np.vstack((reduced_place_obj_map, place_obj_map[i]))
+
+tmp = reduced_place_obj_map
+print reduced_place_obj_map.shape[0], reduced_place_obj_map.shape[0]
+reduced_place_obj_map = np.zeros((reduced_place_obj_map.shape[0],0), np.float64)
+with open(obj_label_file) as f:
+    content = f.readlines()
+for i, c in enumerate(content):
+    if c[0] != '_':
+        print i, c
+        names.append(c)
+        reduced_place_obj_map = np.hstack((reduced_place_obj_map, tmp[:,[i]]))
+
 
 print reduced_place_obj_map.shape
 np.savetxt('/home/thomas/obj_places_map.dat', reduced_place_obj_map, delimiter=' ')

@@ -21,6 +21,7 @@
 #include "vision/ObjectDetectionMsg.h"
 
 static const int NUM_OBJECT_TYPES = 80;
+static const int NUM_USED_OBJECT_TYPES = 61;
 
 class YoloDetection{
   public:
@@ -29,7 +30,7 @@ class YoloDetection{
     std::vector<float> prob_;
     float x1_, x2_, y1_, y2_;
 
-    YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z);
+    YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z, const std::vector<bool>& used_classes);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
 };
@@ -37,6 +38,7 @@ class YoloDetection{
 class YoloDetector{
   private:
     std::vector<std::string> labels_;
+    std::vector<bool> used_classes_;
     network net_;
     bool is_ok_ = false;
 

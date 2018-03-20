@@ -247,12 +247,12 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, c
   std::vector<YoloDetection> detections = detector_->detect(img, OBJ_THRESH, 0.5, OBJ_NMS);
 
   auto t1 = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-  vision_msg.objects.num_objects = NUM_OBJECT_TYPES;
+  vision_msg.objects.num_objects = NUM_USED_OBJECT_TYPES;
   vision_msg.objects.num_boxes = detections.size();
-  vision_msg.objects.probs.resize(NUM_OBJECT_TYPES*detections.size());
+  vision_msg.objects.probs.resize(NUM_USED_OBJECT_TYPES*detections.size());
   for(int d=0; d<detections.size(); d++){
-    for(int o=0; o<NUM_OBJECT_TYPES; o++){
-      vision_msg.objects.probs[d*NUM_OBJECT_TYPES+o] = detections[d].prob_[o];
+    for(int o=0; o<NUM_USED_OBJECT_TYPES; o++){
+      vision_msg.objects.probs[d*NUM_USED_OBJECT_TYPES+o] = detections[d].prob_[o];
     }
   }
 

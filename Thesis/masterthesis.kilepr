@@ -238,10 +238,10 @@ order=0
 
 [item:Concept/Mapping.tex]
 archive=true
-column=121
+column=600
 encoding=UTF-8
 highlight=LaTeX
-line=146
+line=174
 mode=LaTeX
 open=true
 order=9
@@ -481,10 +481,10 @@ JumpList=
 ViMarks=.,5,68,[,5,54,],5,68
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=121
-CursorLine=146
+CursorColumn=600
+CursorLine=174
 JumpList=
-ViMarks=.,146,121,[,146,121,],146,121
+ViMarks=.,174,599,[,174,589,],174,599
 
 [view-settings,view=0,item:Concept/Overview.tex]
 CursorColumn=54

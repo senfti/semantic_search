@@ -96,7 +96,7 @@
     <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />
     <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.0" />
     <param name="TRAVEL_TURN_FACTOR" value="10.0" />
-    <param name="SEARCH_TIME_PER_GRID_CELL" value="2.0" />
+    <param name="SEARCH_TIME_PER_GRID_CELL" value="4.0" />
     <param name="ROOM_MAX_PROB" value="0.8" />
     <param name="PUBLISH_DEBUG_IMAGES" value="1" />
     <param name="DEBUG_OUTPUT" value="1" />

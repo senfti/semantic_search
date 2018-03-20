@@ -15,6 +15,8 @@
 #include <boost/thread.hpp>
 #include <boost/thread/lock_guard.hpp>
 
+const int NUM_ROOM_TYPES = 60;
+
 class RoomTypeMap{
   private:
     float resolution_;
@@ -76,7 +78,7 @@ class RoomTypeMapper{
     static bool PARAMS_LOADED;
 
     int NUM_CLASSES = 0;
-    float ROOM_PRIOR_PROB = 1.f/82;
+    float ROOM_PRIOR_PROB = 1.f/NUM_ROOM_TYPES;
 
     static float getRoomSimilarity(int i, int j);
 
