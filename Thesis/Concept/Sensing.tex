@@ -10,7 +10,7 @@ General purpose object detection is a very difficult problem and only the recent
 
 YOLO was chosen because
 \begin{itemize}
- \item there is a version available trained on the COCO dataset and therefore can detect a reasonable number of different object classes. Table \ref{detectable objects} lists the detectable object classes.
+ \item there is a version available trained on the COCO dataset and therefore can detect a reasonable number of different object classes. Table \ref{detectable objects} lists the detectable object classes. Some of those object classes are ignored in further processing for efficiency reasons as they are not reasonable to be in indoor environments.
  \item it is fast, running with more than 2 frames per second on the used mid-class CPU
  \item it is nearly as accurate as the best solutions and the best of all solutions which run at a reasonable framerate on the used hardware
 \end{itemize}
@@ -18,15 +18,15 @@ YOLO was chosen because
 Figure \ref{obj detection} shows a typical result of the object detection, only showing the most likely detections. As one can see the result is far from perfect, especially the confidence is low. This has to be taken into account in the design of the object mapping system, as accumulation of information from multiple images is needed for more reliable results.
 
 \begin{table}
-\caption{Detectable object classes}
+\caption{Detectable object classes, strikethrough classes are ignored}
 \begin{tabular}{|l|l|}
 \hline
 Categories & Classes\\ \hline
 Person & Person\\ \hline
 Accessory & Backpack, Umbrella, Handbag, Tie, Suitcase\\ \hline
-Animal & Bird, Cat, Dog, Horse, Sheep, Cow, Elephant, Bear, \\ & Zebra, Giraffe \\ \hline
-Vehicle & Bicycle, Car, Motorbike, Aeroplane, Bus, Train, Truck, \\ &  Boat \\ \hline
-Outdoor Objects & Traffic light, Fire hydrant, Stop sign, Parking Meter, \\ &  Bench \\ \hline
+Animal & Bird, Cat, Dog, \sout{Horse}, \sout{Sheep}, \sout{Cow}, \sout{Elephant}, \sout{Bear}, \\ & \sout{Zebra}, \sout{Giraffe} \\ \hline
+Vehicle & Bicycle, \sout{Car}, \sout{Motorbike}, \sout{Aeroplane}, \sout{Bus}, \sout{Train}, \sout{Truck}, \\ &  \sout{Boat} \\ \hline
+Outdoor Objects & \sout{Traffic light}, \sout{Fire hydrant}, \sout{Stop sign}, \sout{Parking Meter}, \\ &  \sout{Bench} \\ \hline
 Sports & Frisbee, Skis, Snowboard, Sports Ball, Kite, \\ &  Baseball Bat, Baseball Glove, Skateboard, Surfboard, \\ & Tennis Racket \\ \hline
 Kitchenware & Bottle, Wine glass, cup, fork, knife, spoon, bowl\\ \hline
 Food & Banana, apple, sandwich, orange, broccoli, carrot, \\ &  hot dog, pizza, donut, cake\\ \hline
@@ -52,7 +52,29 @@ Therefore a sample-based representation is used. Sample pixels are randomly draw
 
 There are various features which can be used to classify rooms into categories used by humans. Visual features are very expressive for room classification. Another advantage of using images for room type classification is the existence of CNNs trained for place classification due to various computer vision challenges for this task. Therefore such a CNN is used for room type classification. The used classifier is a GoogLeNet CNN trained with 2.5 million images classified into 205 place categories. The network achieves a Top1 accuracy of 0.555 and a Top5 accuracy of 0.857. 
 
-Many of the detectable categories are outdoor place categories. Setting the probabilities of those categories to 0 and renormalizing the other probabilities results in a probability distribution over 82 indoor categories. 
+Many of the detectable categories are outdoor place categories. Setting the probabilities of those categories to 0 and renormalizing the other probabilities results in a probability distribution over 60 indoor categories. 
+
+\begin{table}
+\caption{indoor room categories}
+\begin{tabular}{|l|l|l|l|} \hline
+art gallery &  cafeteria &  game room &  music studio \\ \hline
+art studio &  candy store &  gift shop &  nursery \\ \hline
+assembly line &  classroom &  home office &  office \\ \hline
+attic &  closet &  hospital room &  pantry \\ \hline
+auditorium &  clothe store &  hotel room &  parlor \\ \hline
+bakery &  coffee shop &  ice cream parlor &  reception \\ \hline
+ballroom &  conference center &  jail cell &  restaurant \\ \hline
+banquette hall &  conference room &  kindergarden &  restaurant kitchen \\ \hline
+bar &  corridor &  kitchen &  shoe shop \\ \hline
+basement &  dinette &  kitchenette &  shower \\ \hline
+beauty salon &  dining room &  laundromat &  staircase \\ \hline
+bedroom &  dorm room &  livingroom &  supermarket \\ \hline
+bookstore &  engine room &  lobby &  television studio \\ \hline
+bowling alley &  food court &  locker room &  veranda \\ \hline
+butcher shop &  galley &  martial arts gym &  waiting room \\ \hline
+\end{tabular}
+\label{room types}
+\end{table}
 
 Other features like shape of a room are not used because of their limited expressiveness and the lack of out-of-the-box classifiers. 
 

@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/Mapping.tex
+lastDocument=Concept/Sensing.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -218,30 +218,30 @@ order=2
 
 [item:Concept/Hardware.tex]
 archive=true
-column=91
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=14
+line=2
 mode=LaTeX
 open=true
 order=3
 
 [item:Concept/Knowledge.tex]
 archive=true
-column=69
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=5
+line=27
 mode=LaTeX
 open=true
 order=0
 
 [item:Concept/Mapping.tex]
 archive=true
-column=600
+column=186
 encoding=UTF-8
 highlight=LaTeX
-line=174
+line=87
 mode=LaTeX
 open=true
 order=9
@@ -258,10 +258,10 @@ order=5
 
 [item:Concept/Sensing.tex]
 archive=true
-column=544
+column=49
 encoding=UTF-8
 highlight=LaTeX
-line=52
+line=66
 mode=LaTeX
 open=true
 order=4
@@ -318,10 +318,10 @@ order=5
 
 [item:Prerequisites/CNN.tex]
 archive=true
-column=325
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=4
+line=2
 mode=LaTeX
 open=true
 order=6
@@ -378,10 +378,10 @@ order=15
 
 [item:Prerequisites/YOLO.tex]
 archive=true
-column=0
+column=401
 encoding=UTF-8
 highlight=LaTeX
-line=12
+line=10
 mode=LaTeX
 open=true
 order=7
@@ -469,22 +469,22 @@ JumpList=
 ViMarks=.,0,51,[,0,50,],0,51
 
 [view-settings,view=0,item:Concept/Hardware.tex]
-CursorColumn=91
-CursorLine=14
+CursorColumn=0
+CursorLine=2
 JumpList=
 ViMarks=.,24,0,[,24,0,],24,0
 
 [view-settings,view=0,item:Concept/Knowledge.tex]
-CursorColumn=69
-CursorLine=5
+CursorColumn=0
+CursorLine=27
 JumpList=
-ViMarks=.,5,68,[,5,54,],5,68
+ViMarks=.,27,440,[,27,436,],27,440
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=600
-CursorLine=174
+CursorColumn=186
+CursorLine=87
 JumpList=
-ViMarks=.,174,599,[,174,589,],174,599
+ViMarks=.,87,185,[,87,184,],87,185
 
 [view-settings,view=0,item:Concept/Overview.tex]
 CursorColumn=54
@@ -493,10 +493,10 @@ JumpList=
 ViMarks=.,12,539,[,12,535,],12,539
 
 [view-settings,view=0,item:Concept/Sensing.tex]
-CursorColumn=544
-CursorLine=52
+CursorColumn=49
+CursorLine=66
 JumpList=
-ViMarks=.,68,373,[,68,353,],68,373
+ViMarks=.,66,49,[,66,49,],66,49
 
 [view-settings,view=0,item:Conclusion.tex]
 CursorColumn=19
@@ -529,8 +529,8 @@ JumpList=
 ViMarks=.,2,0,[,2,0,],2,0
 
 [view-settings,view=0,item:Prerequisites/CNN.tex]
-CursorColumn=325
-CursorLine=4
+CursorColumn=0
+CursorLine=2
 JumpList=
 ViMarks=.,4,325,[,4,325,],4,325
 
@@ -565,8 +565,8 @@ JumpList=
 ViMarks=.,6,553,[,6,553,],6,553
 
 [view-settings,view=0,item:Prerequisites/YOLO.tex]
-CursorColumn=0
-CursorLine=12
+CursorColumn=401
+CursorLine=10
 JumpList=
 ViMarks=.,11,0,[,10,400,],-1,-1
 

@@ -10,7 +10,7 @@ General purpose object detection is a very difficult problem and only the recent
 
 YOLO was chosen because
 \begin{itemize}
- \item there is a version available trained on the COCO dataset and therefore can detect a reasonable number of different object classes. Table \ref{detectable objects} lists the detectable object classes.
+ \item there is a version available trained on the COCO dataset and therefore can detect a reasonable number of different object classes. Table \ref{detectable objects} lists the detectable object classes. Some of those object classes are ignored in further processing to 
  \item it is fast, running with more than 2 frames per second on the used mid-class CPU
  \item it is nearly as accurate as the best solutions and the best of all solutions which run at a reasonable framerate on the used hardware
 \end{itemize}
@@ -18,15 +18,15 @@ YOLO was chosen because
 Figure \ref{obj detection} shows a typical result of the object detection, only showing the most likely detections. As one can see the result is far from perfect, especially the confidence is low. This has to be taken into account in the design of the object mapping system, as accumulation of information from multiple images is needed for more reliable results.
 
 \begin{table}
-\caption{Detectable object classes}
+\caption{Detectable object classes, strikethrough classes are ignored}
 \begin{tabular}{|l|l|}
 \hline
 Categories & Classes\\ \hline
 Person & Person\\ \hline
 Accessory & Backpack, Umbrella, Handbag, Tie, Suitcase\\ \hline
-Animal & Bird, Cat, Dog, Horse, Sheep, Cow, Elephant, Bear, \\ & Zebra, Giraffe \\ \hline
-Vehicle & Bicycle, Car, Motorbike, Aeroplane, Bus, Train, Truck, \\ &  Boat \\ \hline
-Outdoor Objects & Traffic light, Fire hydrant, Stop sign, Parking Meter, \\ &  Bench \\ \hline
+Animal & Bird, Cat, Dog, \sout{Horse}, \sout{Sheep}, \sout{Cow}, \sout{Elephant}, \sout{Bear}, \\ & \sout{Zebra}, \sout{Giraffe} \\ \hline
+Vehicle & Bicycle, \sout{Car}, \sout{Motorbike}, \sout{Aeroplane}, \sout{Bus}, \sout{Train}, \sout{Truck}, \\ &  \sout{Boat} \\ \hline
+Outdoor Objects & \sout{Traffic light}, \sout{Fire hydrant}, \sout{Stop sign}, \sout{Parking Meter}, \\ &  \sout{Bench} \\ \hline
 Sports & Frisbee, Skis, Snowboard, Sports Ball, Kite, \\ &  Baseball Bat, Baseball Glove, Skateboard, Surfboard, \\ & Tennis Racket \\ \hline
 Kitchenware & Bottle, Wine glass, cup, fork, knife, spoon, bowl\\ \hline
 Food & Banana, apple, sandwich, orange, broccoli, carrot, \\ &  hot dog, pizza, donut, cake\\ \hline
@@ -58,7 +58,12 @@ Other features like shape of a room are not used because of their limited expres
 
 \subsection{Doorway detection}
 
-The detection of doorways is important for the segmentation of the environment into rooms. As there is usually few stuff at the ceiling and the standard height of a doorway is 2 meters, doorways are easy and reliable to detect in a depth image from a upward looking camera. A passable doorway is found if 
+The detection of doorways is important for the segmentation of the environment into rooms. As there is usually few stuff at the ceiling and the standard height of a doorway is 2 meters, doorways are easy and reliable to detect in a depth image from a upward looking camera. A passable doorway is detected if 
 \begin{itemize}
- \item there is a surface 
+ \item there is a rectangular surface at about 2 meters height
+ \item the length and width of this surface are within a range based on typical door sizes
+ \item the area beside the door is occupied, as there has to be a wall
+ \item the area in front and behind is free from obstacles, so the robot can drive through
 \end{itemize}
+
+The position of the detected doorway is set to the center of the rectangle. As can be seen in the hardware section, the camera can only detect doorways in front of the robot. Therefore the orientation of detected doorways is along the smaller axis of the rectangle and pointing away from the robot, so that doorways are always oriented in the direction for leaving the room.

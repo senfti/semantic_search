@@ -1,0 +1,9 @@
+\section{High-Level Planner}
+
+This section covers the high-level planner, which operates on the topological map and decides to which room the robot should drive and which high-level task, like explore or search, the robot should execute in this room. The goal of the planner is to minimize the expected search time, which is a reasonable for object search. Other possibilities would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most of the cases. 
+
+In addition to the topological map the high-level planner needs information about the rooms, like object probability, which has to be generated from the room maps. The first part of this section covers that. The second part covers the actual planning, which determines the optimal next room to search. The last part then describes the generation of high-level tasks to execute this plan. 
+
+\subsection{Generation of high-level information}
+
+The high level planner does not use the room maps for planning but high-level information extracted from the room maps. The 
