@@ -7,7 +7,6 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <map_msgs/OccupancyGridUpdate.h>
 #include <geometry_msgs/Pose.h>
 #include <vector>
 #include <tf/transform_listener.h>
@@ -22,25 +21,21 @@ class Explorer{
     int VIEW_DIST = 0.5/0.05;
     int ROBOT_SIZE = 0.35/0.05;
     float OBJECT_FOUND_THRESH = 0.5;
-    int OCCUPIED_THRESH = 50;
-    int FINISHED_TRIES = 10;
 
   private:
-    ros::NodeHandle nh_;
     ros::Subscriber map_sub_;
-    ros::Subscriber map_update_sub_;
     ros::Subscriber door_found_sub_;
     ros::Subscriber obj_found_sub_;
     cv::Point curr_point_;
     geometry_msgs::Pose curr_frontier_;
     bool frontier_changed_;
+    int finished_count_ = 0;
     bool finished_ = false;
     bool door_found_stopped_ = false;
     bool obj_found_stopped_ = false;
     geometry_msgs::PoseStamped found_pose_;
     int searched_obj_ = -1;
     bool running_ = false;
-    int finished_count_ = 0;
     nav_msgs::OccupancyGrid last_map_;
     tf::TransformListener* tf_listener_;
 
@@ -57,7 +52,6 @@ class Explorer{
     Explorer(tf::TransformListener* tf_listener);
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
-    void mapUpdateCb(const map_msgs::OccupancyGridUpdateConstPtr& msg);
     void doorFoundCb(const std_msgs::Int8& msg);
     void objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg);
 

@@ -10,20 +10,17 @@
 Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)
 {
-  map_sub_ = nh_.subscribe("move_base/global_costmap/costmap", 1, &Explorer::mapCb, this);
-  map_update_sub_ = nh_.subscribe("move_base/global_costmap/costmap_updates", 1, &Explorer::mapUpdateCb, this);
-  door_found_sub_ = nh_.subscribe("door_found", 1, &Explorer::doorFoundCb, this);
-  obj_found_sub_ = nh_.subscribe("obj_found", 1, &Explorer::objFoundCb, this);
-  map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
-  obj_found_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
+  door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
+  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
+  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);
   ros::NodeHandle("~").param("VIEW_DIST", VIEW_DIST, VIEW_DIST);
   ros::NodeHandle("~").param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
   ros::NodeHandle("~").param("OBJECT_FOUND_THRESH", OBJECT_FOUND_THRESH, OBJECT_FOUND_THRESH);
-  ros::NodeHandle("~").param("OCCUPIED_THRESH", OCCUPIED_THRESH, OCCUPIED_THRESH);
-  ros::NodeHandle("~").param("FINISHED_TRIES", FINISHED_TRIES, FINISHED_TRIES);
 
   cv::Mat_<uchar> mat(VIEW_DIST*4, VIEW_DIST*4, uchar(0));
   cv::circle(mat, cv::Point(2*VIEW_DIST, 2*VIEW_DIST), VIEW_DIST, cv::Scalar(255), 1);
@@ -49,11 +46,11 @@ geometry_msgs::Pose Explorer::getNextFrontier(){
 
 void Explorer::start(int searched_obj){
   running_ = true;
-  finished_count_ = 0;
   door_found_stopped_ = false;
   searched_obj_ = searched_obj;
   obj_found_stopped_ = false;
   finished_ = false;
+  finished_count_ = 0;
   curr_frontier_.position.x = -99999999999.9;
   curr_frontier_.orientation.z = 0.0;
   curr_frontier_.orientation.w = 1.0;
@@ -105,18 +102,7 @@ bool lineFree(const cv::Point& start, const cv::Point& end, const cv::Mat_<uchar
 
 void Explorer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   last_map_ = *msg;
-  if(running_)
-    calcFrontier();
-}
-
-
-void Explorer::mapUpdateCb(const map_msgs::OccupancyGridUpdateConstPtr &msg){
-  int index = 0;
-  for(int y=msg->y; y< msg->y+msg->height; y++){
-    for(int x=msg->x; x< msg->x+msg->width; x++){
-      last_map_.data[y*last_map_.info.width+x] = msg->data[index++];
-    }
-  }
+//  std::cout << (running_ ? "run" : "stop") << std::endl;
   if(running_)
     calcFrontier();
 }
@@ -160,10 +146,10 @@ void Explorer::calcFrontier(){
   cv::Mat_<uchar> occupied(last_map_.info.height, last_map_.info.width, uchar(0));
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
-      if(last_map_.data[y * last_map_.info.width + x] < 0)
-        unknown(y,x) = 255;
-      else if(last_map_.data[y * last_map_.info.width + x] < OCCUPIED_THRESH)
+      if(last_map_.data[y * last_map_.info.width + x] == 0)
         free(y,x) = 255;
+      else if(last_map_.data[y * last_map_.info.width + x] < 0)
+        unknown(y,x) = 255;
       else
         occupied(y,x) = 255;
     }
@@ -175,11 +161,19 @@ void Explorer::calcFrontier(){
 
   cv::Mat_<uchar> occupied_dilate, not_forbidden;
   int robot_kernel_size = ROBOT_SIZE*2+1;
-  //cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
-  cv::bitwise_not(occupied, not_forbidden);
-//  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
-//  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_not(occupied_dilate, not_forbidden);
+  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
+
+  nav_msgs::OccupancyGrid map = last_map_;
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      map.data[y * last_map_.info.width + x] = (not_forbidden(y,x) ? 0 : 100);
+    }
+  }
+  map_pub_.publish(map);
 
   tf::StampedTransform transform;
   try{
@@ -209,14 +203,6 @@ void Explorer::calcFrontier(){
     next[i&1].clear();
     i++;
   }
-
-  nav_msgs::OccupancyGrid map = last_map_;
-  for(int x=0; x<last_map_.info.width; x++){
-    for(int y=0; y<last_map_.info.height; y++){
-      map.data[y * last_map_.info.width + x] = (accessible(y,x) ? 0 : 100);
-    }
-  }
-  map_pub_.publish(map);
 
   cv::Mat_<uchar> good_frontiers_mask;
   cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
@@ -253,11 +239,11 @@ void Explorer::calcFrontier(){
   }
 
   if(best_pos.x < 0){
-    finished_count_++;
-    if(finished_count_ > FINISHED_TRIES){
+    if(finished_count_ > 3){
       finished_ = true;
       std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now() - t).toSec() << std::endl;
     }
+    finished_count_++;
     return;
   }
 
@@ -285,11 +271,11 @@ void Explorer::calcFrontier(){
       }
     }
     if(!pos_found){
-      finished_count_++;
-      if(finished_count_ > FINISHED_TRIES){
+      if(finished_count_ > 3){
         finished_ = true;
         std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now() - t).toSec() << std::endl;
       }
+      finished_count_++;
       return;
     }
   }

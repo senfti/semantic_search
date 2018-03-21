@@ -9,7 +9,6 @@
 #include <execution/OctoMapper.h>
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <map_msgs/OccupancyGridUpdate.h>
 #include <geometry_msgs/Pose.h>
 #include <vector>
 #include <tf/transform_listener.h>
@@ -26,7 +25,6 @@ class Searcher{
     float SEARCH_MAX_ROT_VEL = 1.0;
     float SEARCH_MAX_TRANS_VEL = 0.3;
     int ROBOT_SIZE = 0.35/0.05;
-    int OCCUPIED_THRESH = 50;
 
     float OBJ_PRIOR_PROB = 0.003f;
     float OBJ_MIN_PROB = 0.00001f;
@@ -69,9 +67,7 @@ class Searcher{
     int QUICK_SEARCH_VIEWS = 5;
 
   private:
-    ros::NodeHandle nh_;
     ros::Subscriber map_sub_;
-    ros::Subscriber map_update_sub_;
     ros::Subscriber vision_sub_;
     tf::TransformListener* tf_listener_;
 
@@ -86,7 +82,6 @@ class Searcher{
 
     ros::ServiceClient obj_map_service_client_;
 
-    nav_msgs::OccupancyGrid last_map_;
     int searched_obj_ = -100;
     int searched_room_ = -100;
     ObjectMap* obj_map_ = nullptr;
@@ -107,6 +102,7 @@ class Searcher{
     bool got_map_ = false;
     bool got_vision_ = false;
     bool finished_ = false;
+    int finished_count_ = 0;
     bool running_ = false;
     bool obj_found_ = false;
     bool search_step_viewed_ = true;
@@ -141,8 +137,6 @@ class Searcher{
     void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
-    void mapUpdateCb(const map_msgs::OccupancyGridUpdateConstPtr& msg);
-    void processMap();
     void visionCb(const vision::VisionMsgConstPtr& msg);
     void insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg);
     void insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const tf::Point& sensorOriginTf);

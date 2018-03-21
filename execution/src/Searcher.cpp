@@ -72,13 +72,12 @@ std::vector<std::string> obj_name = {"person",  "bicycle",  "car",  "motorbike",
                                      "sink",  "refrigerator",  "book",  "clock",  "vase",  "scissor",  "teddybear",  "hairdryer",  "toothbrush"};
 
 Searcher::Searcher(tf::TransformListener *tf_listener)
-  : tf_listener_(tf_listener), obj_map_service_client_(nh_.serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
+  : tf_listener_(tf_listener), obj_map_service_client_(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
 {
   ros::NodeHandle private_nh("~");
   private_nh.param("SEARCH_MAX_ROT_VEL", SEARCH_MAX_ROT_VEL, SEARCH_MAX_ROT_VEL);
   private_nh.param("SEARCH_MAX_TRANS_VEL", SEARCH_MAX_TRANS_VEL, SEARCH_MAX_TRANS_VEL);
   private_nh.param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
-  private_nh.param("OCCUPIED_THRESH", OCCUPIED_THRESH, OCCUPIED_THRESH);
 
   private_nh.param("OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
   private_nh.param("OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
@@ -118,18 +117,17 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
     ros::spinOnce();
   }
 
-  map_sub_ = nh_.subscribe("move_base/global_costmap/costmap", 1, &Searcher::mapCb, this);
-  map_update_sub_ = nh_.subscribe("move_base/global_costmap/costmap_updates", 1, &Searcher::mapUpdateCb, this);
-  vision_sub_ = nh_.subscribe("vision_result", 1, &Searcher::visionCb, this);
+  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
 
-  octomap_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
-  obj_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
-  full_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
-  next_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
-  obj_found_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
-  count_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
-  count2_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
-  prior_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
+  octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
+  obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
+  full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
+  next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
+  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+  count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
+  count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
+  prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
 
   calcSeenKernels();
 }
@@ -157,6 +155,7 @@ void Searcher::start(int searched_obj, int searched_room){
   searched_room_ = searched_room;
   running_ = true;
   finished_ = false;
+  finished_count_ = 0;
   obj_found_ = false;
   have_curr_view_ = false;
   curr_view_changed_= true;
@@ -217,7 +216,6 @@ void Searcher::start(int searched_obj, int searched_room){
   }
   transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
   tf::poseTFToMsg(transform, curr_view_pose_);
-  last_map_.info.width = 0;
 
   ROS_INFO("SEARCH STARTED");
 }
@@ -228,7 +226,6 @@ void Searcher::stop(){
   running_ = false;
   finished_ = false;
   have_curr_view_ = false;
-  last_map_.info.width = 0;
 }
 
 
@@ -282,54 +279,30 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
   }
 }
 
-void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
-  if(last_map_.info.width == 0 || last_map_.info.width != msg->info.width || last_map_.info.height != msg->info.height){    // only first case should usually happen
-    last_map_ = *msg;
-  }
-  else{
-    for(int i=0; i<last_map_.data.size(); i++)
-      last_map_.data[i] = 0.8*last_map_.data[i]+0.2*msg->data[i];
-  }
-  if(running_)
-    processMap();
-}
-
-
-void Searcher::mapUpdateCb(const map_msgs::OccupancyGridUpdateConstPtr& msg){
-  int index = 0;
-  for(int y=msg->y; y< msg->y+msg->height; y++){
-    for(int x=msg->x; x< msg->x+msg->width; x++){
-      last_map_.data[y*last_map_.info.width+x] = 0.8*last_map_.data[y*last_map_.info.width+x]+msg->data[index++]*0.2;
-    }
-  }
-  if(running_)
-    processMap();
-}
-
 
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
-void Searcher::processMap(){
+void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   if(!running_)
     return;
 
   ros::Time t = ros::Time::now();
-  cv::Mat_<uchar> free(last_map_.info.height, last_map_.info.width, uchar(0));
-  cv::Mat_<uchar> occupied(last_map_.info.height, last_map_.info.width, uchar(0));
-  for(int x=0; x<last_map_.info.width; x++){
-    for(int y=0; y<last_map_.info.height; y++){
-      if(last_map_.data[y * last_map_.info.width + x] >= 0 && last_map_.data[y * last_map_.info.width + x] < OCCUPIED_THRESH)
+  cv::Mat_<uchar> free(msg->info.height, msg->info.width, uchar(0));
+  cv::Mat_<uchar> occupied(msg->info.height, msg->info.width, uchar(0));
+  for(int x=0; x<msg->info.width; x++){
+    for(int y=0; y<msg->info.height; y++){
+      if(msg->data[y * msg->info.width + x] == 0)
         free(y,x) = 255;
-      else if(last_map_.data[y * last_map_.info.width + x] > 0)
+      else if(msg->data[y * msg->info.width + x] > 0)
         occupied(y,x) = 255;
     }
   }
   cv::Mat_<uchar> occupied_dilate, not_forbidden;
   int robot_kernel_size = ROBOT_SIZE*2+1;
-  //cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
-  cv::bitwise_not(occupied, not_forbidden);
-//  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
-//  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_not(occupied_dilate, not_forbidden);
+  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
 
   tf::StampedTransform transform;
@@ -339,11 +312,11 @@ void Searcher::processMap(){
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
   }
-  cv::Point pos(int((transform.getOrigin().x()-last_map_.info.origin.position.x)/last_map_.info.resolution),
-                int((transform.getOrigin().y()-last_map_.info.origin.position.y)/last_map_.info.resolution));
+  cv::Point pos(int((transform.getOrigin().x()-msg->info.origin.position.x)/msg->info.resolution),
+                int((transform.getOrigin().y()-msg->info.origin.position.y)/msg->info.resolution));
   cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
 
-  cv::Mat_<uchar> accessible_mat = cv::Mat_<uchar>(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> accessible_mat = cv::Mat_<uchar>(msg->info.height, msg->info.width, uchar(0));
   std::deque<cv::Point> next[2];
   cv::Mat_<uchar> already_inserted;
   cv::bitwise_not(not_forbidden, already_inserted);
@@ -361,8 +334,8 @@ void Searcher::processMap(){
     i++;
   }
 
-  resize(last_map_.info.origin.position.x-0.2, last_map_.info.width*last_map_.info.resolution+last_map_.info.origin.position.x+0.4,
-         last_map_.info.origin.position.y-0.2, last_map_.info.height*last_map_.info.resolution+last_map_.info.origin.position.y+0.4);
+  resize(msg->info.origin.position.x-0.2, msg->info.width*msg->info.resolution+msg->info.origin.position.x+0.4,
+         msg->info.origin.position.y-0.2, msg->info.height*msg->info.resolution+msg->info.origin.position.y+0.4);
 
 
   cv::Mat dists, nearest, accessible_dil;
@@ -370,7 +343,7 @@ void Searcher::processMap(){
   cv::distanceTransform(255-accessible_dil, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
   cv::Mat grad_x, grad_y, mag, dir;
 
-  double factor = obj_map_->getResolution()*last_map_.info.resolution;
+  double factor = obj_map_->getResolution()*msg->info.resolution;
   good_accessible_map_.clear();
   for(int i=1; i<=5; i++){
     good_accessible_map_.push_back(cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f));
@@ -378,12 +351,12 @@ void Searcher::processMap(){
     cv::erode(accessible_mat, tmp, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), i+1);
     cv::resize(tmp, tmp, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor));
     cv::threshold(tmp, tmp, 192, 255, cv::THRESH_BINARY);
-    tmp.copyTo(good_accessible_map_.back()(cv::Rect(obj_map_->getXPixel(last_map_.info.origin.position.x), obj_map_->getYPixel(last_map_.info.origin.position.y), tmp.cols, tmp.rows)));
+    tmp.copyTo(good_accessible_map_.back()(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), tmp.cols, tmp.rows)));
   }
   cv::resize(accessible_mat, accessible_mat, cv::Size(accessible_mat.cols*factor, accessible_mat.rows*factor));
   cv::threshold(accessible_mat, accessible_mat, 192, 255, cv::THRESH_BINARY);
   accessible_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), uchar(0));
-  accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(last_map_.info.origin.position.x), obj_map_->getYPixel(last_map_.info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
+  accessible_mat.copyTo(accessible_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), accessible_mat.cols, accessible_mat.rows)));
 
   cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
   cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
@@ -392,7 +365,7 @@ void Searcher::processMap(){
   cv::cartToPolar(grad_x, grad_y, mag, dir);
 
   border_dir_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
-  dir.copyTo(border_dir_map_(cv::Rect(obj_map_->getXPixel(last_map_.info.origin.position.x), obj_map_->getYPixel(last_map_.info.origin.position.y), dir.cols, dir.rows)));
+  dir.copyTo(border_dir_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), dir.cols, dir.rows)));
 
   cv::Mat_<uchar> tmp, tmp2;
   cv::dilate(accessible_map_, tmp, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(std::ceil(ROBOT_SIZE*factor)*2+1,std::ceil(ROBOT_SIZE*factor)*2+1)));
@@ -510,7 +483,7 @@ bool Searcher::doCalculations(bool force_new){
   }
 
   static ros::Time last_calc_time(0);
-  if(!force_new && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2))
+  if(!force_new && finished_count_==0 && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2))
     return false;
 
   last_calc_time = ros::Time::now();
@@ -524,11 +497,15 @@ bool Searcher::doCalculations(bool force_new){
     return false;
   }
   if(calcNextViewpoint(transform)){
-    finished_ = true;
-    std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
+    if(finished_count_ > 0){
+      finished_ = true;
+      std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
+    }
+    finished_count_++;
     return false;
   }
 
+  finished_count_ = 0;
   return true;
 }
 
