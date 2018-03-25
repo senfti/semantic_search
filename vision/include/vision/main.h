@@ -34,6 +34,7 @@ class VisionApp{
     std::string OBJ_LABEL_FILE = "/home/thomas/darknet/data/coco.names";
     std::string YOLO_CFG = "/home/thomas/darknet/cfg/yolo.cfg";
     std::string YOLO_WEIGHTS = "/home/thomas/darknet/data/yolo.weights";
+    std::string RESULT_TOPIC = "vision_result";
     float OBJ_THRESH = 0.01f;
     float OBJ_NMS = 0.8f;
 
@@ -54,7 +55,7 @@ class VisionApp{
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
-    image_transport::Subscriber depth_image_sub_;
+    //image_transport::Subscriber depth_image_sub_;
     ros::Subscriber cloud_sub_;
     ros::Publisher result_pub_;
 
@@ -71,7 +72,7 @@ class VisionApp{
     cv::Mat curr_img_;
     std::mutex cloud_mutex_;
     sensor_msgs::PointCloud2ConstPtr point_cloud_ = nullptr;
-    cv_bridge::CvImagePtr depth_img_ = nullptr;
+    //cv_bridge::CvImagePtr depth_img_ = nullptr;
 
     bool is_ok_ = false;
     bool run_ = true;
@@ -82,7 +83,7 @@ class VisionApp{
     void run();
     void nnThreadRun();
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
-    void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
+    //void depthImageCb(const sensor_msgs::ImageConstPtr& msg);
     void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg);
 
     bool useImage(const cv::Mat& img, ros::Time stamp);

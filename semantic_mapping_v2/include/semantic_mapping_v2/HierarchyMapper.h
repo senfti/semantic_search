@@ -102,6 +102,7 @@ class HierarchyMapper{
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
     int PUBLISH_DEBUG_IMAGES = 1;
     int DEBUG_OUTPUT = 1;
+    int ONLY_ROOM_TYPE = 0;
 
   public:
     HierarchyMapper();

@@ -35,6 +35,7 @@ class ObjectMap{
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, const std::vector<Door>& doors);
     ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room, const std::vector<cv::Point>& only_laser_points,
               const std::vector<cv::Mat_<float>>& room_type_probs_maps, int obj, const cv::Mat_<uchar>& occ_2d);
+    ObjectMap(const ObjectMap& rhs, float val);
 
     ObjectMap operator*(const ObjectMap& rhs) const;
 

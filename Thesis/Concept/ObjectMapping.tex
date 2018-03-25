@@ -1,0 +1,50 @@
+\subsection{Object mapping}
+
+As already mentioned in section \ref{ssec:num3}, the object mapping creates a map of the three dimensional object probability distribution for every detectable object type based on the results of the object detection. The problem is split into two parts, 3D occupancy mapping and mapping of the probability of an object being in the cell in case its occupied. The probability for a cell $C_i$ containing an object of type $OT$ based on the object detection from the used RGBD-images $I_{1:t}$ taken at positions $\mathbf{x}_{1:t}$, $P(O_{D,C_{i}}^{OT}|I_{1:t},\mathbf{x}_{1:t})$, can be calculated with
+\begin{equation}
+ P(O_{D,C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t})=P(occ_{C_i}|I_{1:t},\mathbf{x}_{1:t})P(O_{occ,C_i}^{OT}|I_{1:t}, \mathbf{x}_{1:t},occ_{C_i}=true)
+\end{equation}
+where $P(occ_{C_i}|I_{1:t},\mathbf{x}_{1:t})$ is the probability of the cell being occupied and $P(O_{occ,C_i}^{OT}|I_{1:t}, \mathbf{x}_{1:t},occ_{C_i}=true)$ being the object probability in case the cell is occupied. This approach has two benefits. First, the occupancy map is already created for obstacle detection and can be reused here. Second, the samples from the object detection are always in occupied cells, therefore without further processing like ray-tracing the result is the object probability in case the cell being occupied.
+
+The assumptions made in the object mapping are
+\begin{itemize}
+ \item The object probability of an object type is independent of the probabilities of the other object types. This assumption is a necessary simplification, as a realistic modeling of the dependence is very complicated and not enough data is available for that. This assumption is a good approximation if the cell size is bigger than the object size, in which case it is likely that more than one object is within a cell. This is the case in this work, as fine grained grid maps are too computational expensive and need much more data for a meaningful result.
+ \item The object probabilities of an object type are independent for all cells. This assumption is also made in standard occupancy grid mapping. 
+\end{itemize}
+
+The mapping is done similar to occupancy grid mapping. The update is done with
+\begin{multline}
+ P(O_{occ,C_i}^{OT}|I_{1:t}, \mathbf{x}_{1:t},occ_{C_i}=true) = \\ \frac{1}{Z} \frac{P(O_{occ,C_i}^{OT}|I_{t}, \mathbf{x}_{t})P(O_{occ,C_i}^{OT}|I_{1:t-1}, \mathbf{x}_{1:t-1},occ_{C_i}=true)}{P(O_{occ,C_i}^{OT})}  
+\end{multline}
+with the the recursive term $P(O_{occ,C_i}^{OT}|I_{1:t-1}, \mathbf{x}_{1:t-1},occ_{C_i}=true)$, the inverse sensor model $P(O_{occ,C_i}^{OT}|I_{t}, \mathbf{x}_{t})$, the prior $P(O_{occ,C_i}^{OT})$ and the normalization term $Z$, which is calculated with
+\begin{multline}
+ Z=P(O_{occ,C_i}^{OT}=false|I_{1:t}, \mathbf{x}_{1:t},occ_{C_i}=true)+\\P(O_{occ,C_i}^{OT}=true|I_{1:t}, \mathbf{x}_{1:t},occ_{C_i}=true)
+\end{multline}
+The prior was empirically set to $0.003$ for all object types, which corresponds approximately to a $25\%$ chance of an object being an detectable object (e.g. no wall) divided by the 80 object classes.
+
+Finding a suitable inverse sensor model is a difficult task, as
+\begin{itemize}
+ \item an object usually only partially occupies a cell
+ \item there might be other detectable or not detectable objects in the cell
+ \item the information in the object detection result is not very reliable as the results of the CNN are not very reliable and the bounding boxes contain pixels not belonging to the object. 
+ \item bounding boxes may overlap and there is no reasonable way to select the ``best'' bounding box 
+\end{itemize}
+
+The chosen inverse sensor model is
+\begin{equation}
+ P(O_{occ,C_i}^{OT}|I_{t}, \mathbf{x}_{t})=\begin{cases}\max_{s \in \mathbf{S_t^{C_i}}} V_hP(O_{s}^{OT})+V_m(1-P(O_{s}^{OT})) & |\mathbf{S_t^{C_i}}| > 0 \\P(O_{occ,C_i}^{OT}) & |\mathbf{S_t^{C_i}}| = 0 \end{cases}                                            
+\end{equation}
+with
+\begin{equation}
+P(O_{s}^{OT})=\begin{cases}\max_{b \in \mathbf{B_s}} P(O_{b}^{OT}) & |\mathbf{B_s}| > 0 \\P_{min} & |\mathbf{B_s}
+| = 0 \end{cases}
+\end{equation} 
+$\mathbf{S_t^{C_i}}$ is the set of samples of the result of the object detection on image $I_t$ falling into cell $C_i$, $V_h$ and $V_m$ are parameters modeling the uncertainty of this approach, $\mathbf{B_s}$ are the bounding boxes associated with sample $s$, $P(O_{b}^{OT})$ is the probability of object type $OT$ in bounding box $b$ estimated by the object detection CNN and $P_{min}$ is a minimal probability. 
+
+In words, the inverse sensor is the highest probability for an object type of all bounding boxes associated to a sample falling into a cell with additional application of uncertainty. The assumptions behind this approach are 
+\begin{itemize}
+ \item the sample with the highest probability is on the object, the other samples are on other obstacles in the cell
+ \item the bounding box with the highest probability is representing the object, the other bounding boxes represent other objects and incidentally overlap with the ``true'' bounding box.
+\end{itemize}
+
+One problem of this approach is that it does not really handle the problem of the bounding boxes not being completely filled by an object. This causes areas, which are near the object in an image, having too high probabilities. This is especially problematic as those areas need not be near the object in 3D. Therefore it is important to have multiple views from different positions to reduce the impact of this problem. Another problem is that object probabilities tend to be too high, though this effect is negated by objects not being detected and suitable values for $V_h$ and $V_m$. 

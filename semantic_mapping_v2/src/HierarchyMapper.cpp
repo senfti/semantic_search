@@ -71,6 +71,7 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("SEARCH_TIME_PER_GRID_CELL", SEARCH_TIME_PER_GRID_CELL, SEARCH_TIME_PER_GRID_CELL);
   ros::NodeHandle("~").param("PUBLISH_DEBUG_IMAGES", PUBLISH_DEBUG_IMAGES,PUBLISH_DEBUG_IMAGES);
   ros::NodeHandle("~").param("DEBUG_OUTPUT", DEBUG_OUTPUT, DEBUG_OUTPUT);
+  ros::NodeHandle("~").param("ONLY_ROOM_TYPE", ONLY_ROOM_TYPE, ONLY_ROOM_TYPE);
 
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
@@ -674,6 +675,21 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
     room_type_maps_filtered[i] = room_type_maps_filtered[i](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
   }
 
+  if(ONLY_ROOM_TYPE){
+    std::vector<ObjectMap> complete_obj_map;
+    ObjectMap flat(obj_map[0], 0.002);
+    ObjectMap occ_flat(flat.getResolution(), flat.getBaseSize(), flat.getWidth(), flat.getHeight(), flat.getOrigin(), flat.getMaxHeight(), 1.f, 0);
+    if(obj >= 0){
+      complete_obj_map.push_back(ObjectMap(flat, occ_flat, room_base_obj_maps[0], only_laser_points, room_type_maps_filtered, obj, occ_2d));
+    }
+    else{
+      for(int o=0; o<obj_map.size(); o++){
+        complete_obj_map.push_back(ObjectMap(flat, occ_flat, room_base_obj_maps[o], only_laser_points, room_type_maps_filtered, o, occ_2d));
+      }
+    }
+    return complete_obj_map;
+  }
+
   std::vector<ObjectMap> complete_obj_map;
   if(obj >= 0){
     complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[0], only_laser_points, room_type_maps_filtered, obj, occ_2d));
@@ -1003,7 +1019,7 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   occupancy_map_obj.copyTo(occupancy_map_room);
   if(obj_maps[i][0].getOrigin() != room_type_maps[i][0].getOrigin())
     cv::copyMakeBorder(occupancy_map_room, occupancy_map_room, room_type_maps[i][0].getOrigin().y*4 - obj_maps[i][0].getOrigin().y*4, 0,
-                       room_type_maps[i][0].getOrigin().x*4 - obj_maps[i][0].getOrigin().x*4, 0, cv::BORDER_CONSTANT, cv::Scalar(0.f));
+                       room_type_maps[i][0].getOrigin().x*4 - obj_maps[i][0].getOrigin().x*4, 0, cv::BORDER_CONSTANT, cv::Scalar(128));
   if(occupancy_map_obj.cols != room_type_maps[i][0].getWidth()*4 || occupancy_map_obj.rows != room_type_maps[i][0].getHeight()*4)
     cv::copyMakeBorder(occupancy_map_room, occupancy_map_room, 0, room_type_maps[i][0].getHeight()*4 - occupancy_map_room.rows, 0, room_type_maps[i][0].getWidth()*4 - occupancy_map_room.cols, cv::BORDER_CONSTANT, cv::Scalar(128));
 

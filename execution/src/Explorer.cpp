@@ -167,14 +167,6 @@ void Explorer::calcFrontier(){
   cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
 
-  nav_msgs::OccupancyGrid map = last_map_;
-  for(int x=0; x<last_map_.info.width; x++){
-    for(int y=0; y<last_map_.info.height; y++){
-      map.data[y * last_map_.info.width + x] = (not_forbidden(y,x) ? 0 : 100);
-    }
-  }
-  map_pub_.publish(map);
-
   tf::StampedTransform transform;
   try{
     tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
@@ -211,6 +203,13 @@ void Explorer::calcFrontier(){
   for(int i=1; i<good_accessibles.size(); i++){
     cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
   }
+  nav_msgs::OccupancyGrid map = last_map_;
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 0 : -1);
+    }
+  }
+  map_pub_.publish(map);
 
 //  cv::imshow("explore_accessible", accessible);
 //  cv::imshow("good_frontiers", good_frontiers_mask);

@@ -150,6 +150,20 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
 }
 
 
+ObjectMap::ObjectMap(const ObjectMap& rhs, float val){
+  resolution_ = rhs.resolution_;
+  base_size_ = rhs.base_size_;
+  max_height_ = rhs.max_height_;
+  origin_ = rhs.origin_;
+  prob_maps_.resize(rhs.prob_maps_.size());
+  for(int i=0; i<prob_maps_.size(); i++)
+    prob_maps_[i] = cv::Mat_<float>(rhs.getHeight(), rhs.getWidth(), val);
+  count_maps_.resize(rhs.count_maps_.size());
+  for(int i=0; i<count_maps_.size(); i++)
+    rhs.count_maps_[i].copyTo(count_maps_[i]);
+}
+
+
 ObjectMap ObjectMap::operator*(const ObjectMap &rhs) const{
   ObjectMap res(resolution_, base_size_, getWidth(), getHeight(), origin_, max_height_, 0.f);
   for(int z=0; z<getZSteps(); z++){

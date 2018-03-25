@@ -5,6 +5,7 @@ ros::Publisher filtered_pub;
 float min_angle = -1.95, max_angle = 1.95;
 
 void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
+  static int count=0;
   sensor_msgs::LaserScan filtered = *msg;
   int min_cutoff = std::max(0, int(std::ceil((min_angle-msg->angle_min)/msg->angle_increment)));
   int max_cutoff = std::min(int(msg->ranges.size()), int(std::floor((max_angle-msg->angle_min)/msg->angle_increment))+1);
@@ -18,7 +19,7 @@ void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
   filtered.intensities = std::vector<float>(num_ranges);
   for(int i=0; i<num_ranges; i++){
     bool neighbor_in = (i>0 && msg->ranges[i+min_cutoff-1] < 4.0) || (i<num_ranges-1 && msg->ranges[i+1+min_cutoff] < 4.0) || i==0 || i==num_ranges-1;
-    filtered.ranges[i] = ((msg->ranges[i+min_cutoff] < 4.0 || neighbor_in) ? msg->ranges[i+min_cutoff] : 4.0);
+    filtered.ranges[i] = ((msg->ranges[i+min_cutoff] < 4.0 || neighbor_in || count!=0) ? msg->ranges[i+min_cutoff] : 4.0);
   }
   if(!msg->intensities.empty()){
     for(int i = 0; i < num_ranges; i++){
@@ -26,6 +27,7 @@ void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
     }
   }
   filtered_pub.publish(filtered);
+  count = (count+1)%10;
 }
 
 int main(int argc, char** argv){

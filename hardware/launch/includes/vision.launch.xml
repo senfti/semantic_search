@@ -1,4 +1,5 @@
  <launch>
+  <arg name="result_topic" default="vision_result" />
   <node pkg="vision" type="vision" name="vision" output="screen">
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel"/>
@@ -10,6 +11,7 @@
     <param name="vision/YOLO_WEIGHTS" value="/home/thomas/darknet/data/yolo.weights"/>
     <param name="vision/OBJ_THRESH" value="0.01"/>
     <param name="vision/OBJ_NMS" value="0.8"/>
+    <param name="vision/RESULT_TOPIC" value="$(arg result_topic)"/>
 
     <param name="vision/MIN_Z" value="0.55"/>
     <param name="vision/MAX_Z" value="3.5"/>
@@ -22,7 +24,7 @@
     <param name="vision/MIN_DIST_DIFF" value="0.3"/>
     <param name="vision/MAX_ROT_VELOCITY" value="0.5"/>
 
-    <param name="vision/DEBUG_IMAGES" value="0"/>    
+    <param name="vision/DEBUG_IMAGES" value="1"/>    
     <param name="vision/IMAGE_SAVE" value="0"/>    
   </node>
 </launch>

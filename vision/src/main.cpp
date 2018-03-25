@@ -13,6 +13,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   ::google::InitGoogleLogging(exe_name);
 
   ros::NodeHandle private_nh("~");
+  private_nh.param("vision/RESULT_TOPIC", RESULT_TOPIC, RESULT_TOPIC);
   private_nh.param("vision/PLACE_MODEL_FILE", PLACE_MODEL_FILE, PLACE_MODEL_FILE);
   private_nh.param("vision/PLACE_TRAINED_FILE", PLACE_TRAINED_FILE, PLACE_TRAINED_FILE);
   private_nh.param("vision/PLACE_MEAN_FILE", PLACE_MEAN_FILE, PLACE_MEAN_FILE);
@@ -73,9 +74,9 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   std::cout << "Yolo init in " <<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() << " ms" << std::endl;
 
   image_sub_ = it_.subscribe("/camera/rgb/image_raw", 1, &VisionApp::imageCb, this);
-  depth_image_sub_ = it_.subscribe("/camera/depth_registered/image_raw", 1, &VisionApp::depthImageCb, this);
+  //depth_image_sub_ = it_.subscribe("/camera/depth_registered/image_raw", 1, &VisionApp::depthImageCb, this);
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &VisionApp::cloudCb, this);
-  result_pub_ = nh_.advertise<vision::VisionMsg>("vision_result", 10);
+  result_pub_ = nh_.advertise<vision::VisionMsg>(RESULT_TOPIC, 10);
 
   is_ok_ = true;
   std::srand(ros::Time::now().nsec);
@@ -146,15 +147,15 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
     cv_ptr->image.copyTo(curr_img_);
 }
 
-void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
-  try{
-    depth_img_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
-  }
-  catch (cv_bridge::Exception& e){
-    ROS_ERROR("cv_bridge exception: %s", e.what());
-    return;
-  }
-}
+//void VisionApp::depthImageCb(const sensor_msgs::ImageConstPtr &msg){
+//  try{
+//    depth_img_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1);
+//  }
+//  catch (cv_bridge::Exception& e){
+//    ROS_ERROR("cv_bridge exception: %s", e.what());
+//    return;
+//  }
+//}
 
 
 void VisionApp::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
@@ -173,7 +174,7 @@ inline double makeBetweenPi(double angle){
 
 
 bool VisionApp::useImage(const cv::Mat& img, ros::Time stamp){
-  if(!depth_img_ || !point_cloud_){
+  if(!point_cloud_){
     std::cout << "No depth image" << std::endl;
     return false;
   }
