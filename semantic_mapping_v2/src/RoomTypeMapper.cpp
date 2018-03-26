@@ -126,6 +126,8 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
   if(similarity.empty()){
     ros::NodeHandle private_nh("~");
     std::string sim_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat";
+    double confidence = 0.1;
+    private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
     private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
     std::ifstream f(sim_file);
     if(!f.good()){
@@ -142,10 +144,20 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
     similarity.resize(n);
     for(int r=0; r<n; r++){
       similarity[r].resize(n);
+      double sum = 0.0;
       for(int c=0; c<n; c++){
         similarity[r][c] = tmp[r*n+c];
+        if(c!=r)
+          sum += similarity[r][c];
+        else
+          similarity[r][c] = confidence;
+      }
+      for(int c=0; c<n; c++){
+        if(c!=r)
+          similarity[r][c] = similarity[r][c]*(1.0-confidence)/sum;
       }
     }
+
 //    std::ofstream o("/home/thomas/sdfsdfsdfsdf.csv");
 //    for(int c=0; c<n; c++){
 //      for(int r=0; r<n; r++){
@@ -167,14 +179,12 @@ float RoomTypeMapper::ROOM_DEFAULT_RESOLUTION = 4.f;
 float RoomTypeMapper::ASUS_FOV = 29.f;
 float RoomTypeMapper::MIN_DIST = 1.f;
 float RoomTypeMapper::MAX_DIST = 4.0f;
-float RoomTypeMapper::CELL_HIT_MISS_RATIO = 5.0;
 bool RoomTypeMapper::PARAMS_LOADED = false;
 
 RoomTypeMapper::RoomTypeMapper(){
   if(!PARAMS_LOADED){
     PARAMS_LOADED = true;
     ros::NodeHandle private_nh("~");
-    private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
     private_nh.param("RoomTypeMapper/CELL_MAX_PROB", CELL_MAX_PROB, CELL_MAX_PROB);
     private_nh.param("RoomTypeMapper/CELL_MIN_PROB", CELL_MIN_PROB, CELL_MIN_PROB);
     private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
@@ -184,7 +194,7 @@ RoomTypeMapper::RoomTypeMapper(){
     private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
     ASUS_FOV *= M_PI / 180.f;
 
-    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f", CELL_HIT_MISS_RATIO,CELL_MAX_PROB, CELL_MIN_PROB,
+    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f",CELL_MAX_PROB, CELL_MIN_PROB,
               ROOM_DEFAULT_RESOLUTION, ASUS_FOV, MIN_DIST, MAX_DIST, ROOM_MAX_PROB);
   }
 }
@@ -200,7 +210,6 @@ RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, co
   if(!PARAMS_LOADED){
     PARAMS_LOADED = true;
     ros::NodeHandle private_nh("~");
-    private_nh.param("RoomTypeMapper/CELL_HIT_MISS_RATIO", CELL_HIT_MISS_RATIO, CELL_HIT_MISS_RATIO);
     private_nh.param("RoomTypeMapper/CELL_MAX_PROB", CELL_MAX_PROB, CELL_MAX_PROB);
     private_nh.param("RoomTypeMapper/CELL_MIN_PROB", CELL_MIN_PROB, CELL_MIN_PROB);
     private_nh.param("RoomTypeMapper/ROOM_DEFAULT_RESOLUTION", ROOM_DEFAULT_RESOLUTION, ROOM_DEFAULT_RESOLUTION);
@@ -210,7 +219,7 @@ RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, co
     private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
     ASUS_FOV *= M_PI / 180.f;
 
-    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f", CELL_HIT_MISS_RATIO,CELL_MAX_PROB, CELL_MIN_PROB,
+    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f",CELL_MAX_PROB, CELL_MIN_PROB,
               ROOM_DEFAULT_RESOLUTION, ASUS_FOV, MIN_DIST, MAX_DIST, ROOM_MAX_PROB);
   }
   for(const auto& m : prob_maps){

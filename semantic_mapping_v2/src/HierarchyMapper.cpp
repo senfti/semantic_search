@@ -992,17 +992,22 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
 //      cv::dilate(occ_dil, occ_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(dil_size,dil_size)), cv::Point(-1,-1), 3);
 //      cv::erode(occ_dil, occ_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(dil_size,dil_size)), cv::Point(-1,-1), 2);
 //      cv::bitwise_and(255-occupancy_map_obj*64, occ_dil(cv::Rect(3*dil_size,3*dil_size,occupancy_map_obj.cols,occupancy_map_obj.rows))*255, occupancy_map_obj);
-  cv::Mat_<uchar> occupancy_map_obj(debug_maps[0].rows*4, debug_maps[0].cols*4, uchar(128));
+  cv::Mat_<uchar> occupancy_map_obj(debug_maps[0].rows*4, debug_maps[0].cols*4, uchar(0));
   float factor = 1.f/(complete_obj_map[0].getResolution()*grid_maps[i].info.resolution);
   for(int x=0; x<occupancy_map_obj.cols; x++){
     for(int y=0; y<occupancy_map_obj.rows; y++){
+      if(behind_door_mask(y/4,x/4)){
+        occupancy_map_obj(y,x) = 0;
+        continue;
+      }
+
       float xw=complete_obj_map[0].getXWorld(x/4.0), yw=complete_obj_map[0].getYWorld(y/4.0);
       int xo = (xw-grid_maps[i].info.origin.position.x) / grid_maps[i].info.resolution;
       int yo = (yw-grid_maps[i].info.origin.position.y) / grid_maps[i].info.resolution;
       if(xo < 0 || yo < 0 || xo >= grid_maps[i].info.width || yo >= grid_maps[i].info.height)
         continue;
       int val = (grid_maps[i].data[yo * grid_maps[i].info.width + xo]);
-      occupancy_map_obj(y,x) = (val > 0 ? 196 : (val < 0 ? 128 : 255));
+      occupancy_map_obj(y,x) = (val > 0 ? 196 : (val < 0 ? 0 : 255));
       if(factor > 2 && grid_maps[i].info.width > xo+1 && grid_maps[i].info.height > yo+1){
         occupancy_map_obj(y, x) = ((grid_maps[i].data[(yo + 1) * grid_maps[i].info.width + xo]) > 0 ? 196: occupancy_map_obj(y, x));
         occupancy_map_obj(y,x) = ((grid_maps[i].data[(yo) * grid_maps[i].info.width + xo+1]) > 0 ? 196 : occupancy_map_obj(y,x));
@@ -1019,9 +1024,9 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   occupancy_map_obj.copyTo(occupancy_map_room);
   if(obj_maps[i][0].getOrigin() != room_type_maps[i][0].getOrigin())
     cv::copyMakeBorder(occupancy_map_room, occupancy_map_room, room_type_maps[i][0].getOrigin().y*4 - obj_maps[i][0].getOrigin().y*4, 0,
-                       room_type_maps[i][0].getOrigin().x*4 - obj_maps[i][0].getOrigin().x*4, 0, cv::BORDER_CONSTANT, cv::Scalar(128));
+                       room_type_maps[i][0].getOrigin().x*4 - obj_maps[i][0].getOrigin().x*4, 0, cv::BORDER_CONSTANT, cv::Scalar(0));
   if(occupancy_map_obj.cols != room_type_maps[i][0].getWidth()*4 || occupancy_map_obj.rows != room_type_maps[i][0].getHeight()*4)
-    cv::copyMakeBorder(occupancy_map_room, occupancy_map_room, 0, room_type_maps[i][0].getHeight()*4 - occupancy_map_room.rows, 0, room_type_maps[i][0].getWidth()*4 - occupancy_map_room.cols, cv::BORDER_CONSTANT, cv::Scalar(128));
+    cv::copyMakeBorder(occupancy_map_room, occupancy_map_room, 0, room_type_maps[i][0].getHeight()*4 - occupancy_map_room.rows, 0, room_type_maps[i][0].getWidth()*4 - occupancy_map_room.cols, cv::BORDER_CONSTANT, cv::Scalar(0));
 
   prob_map_view::ProbMapMsg msg;
   msg.names = ObjectMapper::getObjNames();

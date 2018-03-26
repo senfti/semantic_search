@@ -143,7 +143,7 @@ void VisionApp::imageCb(const sensor_msgs::ImageConstPtr &msg){
   }
 
   std::lock_guard<std::mutex> lock(img_mutex_);
-  if(useImage(cv_ptr->image, msg->header.stamp));
+  if(useImage(cv_ptr->image, msg->header.stamp))
     cv_ptr->image.copyTo(curr_img_);
 }
 
@@ -192,28 +192,25 @@ bool VisionApp::useImage(const cv::Mat& img, ros::Time stamp){
   if(last_transform_.frame_id_.empty()){
     last_transform_ = transform;
     last_used_transform_ = transform;
+    std::cout << "FIRST IMAGE USED" << std::endl;
     return true;
   }
 
-  double angle = tf::getYaw(transform.getRotation()) - tf::getYaw(last_used_transform_.getRotation());
-  angle = makeBetweenPi(angle);
-  double dist = (transform.getOrigin() - last_used_transform_.getOrigin()).length();
-  double ang_vel = tf::getYaw(transform.getRotation()) - tf::getYaw(last_transform_.getRotation());
-  ang_vel = std::abs(makeBetweenPi(ang_vel));
-  ang_vel /= (transform.stamp_ - last_transform_.stamp_).toSec();
-  last_transform_ = transform;
+  tf::Transform used_diff = last_used_transform_.inverseTimes(transform);
+  tf::Transform diff = last_transform_.inverseTimes(transform);
 
-  if(std::abs(angle) < MIN_ANGLE_DIFF && dist < MIN_DIST_DIFF && (last_used_transform_.stamp_ - transform.stamp_).toSec() < MAX_DISCARD_TIME){
+  if(std::abs(tf::getYaw(used_diff.getRotation())) < MIN_ANGLE_DIFF && used_diff.getOrigin().length() < MIN_DIST_DIFF && (last_used_transform_.stamp_ - transform.stamp_).toSec() < MAX_DISCARD_TIME){
     last_transform_ = transform;
     std::cout << "NOTHING CHANGED" << std::endl;
     return false;
   }
 
-  if(ang_vel > MAX_ROT_VELOCITY){
+  if(std::abs(tf::getYaw(diff.getRotation()))/(transform.stamp_ - last_transform_.stamp_).toSec() > MAX_ROT_VELOCITY){
     last_transform_ = transform;
     std::cout << "ROTATING TOO FAST" << std::endl;
     return false;
   }
+  std::cout << "IMAGE USED" << std::endl;
 
   last_transform_ = transform;
   last_used_transform_ = transform;

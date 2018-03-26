@@ -12,6 +12,7 @@
 
 class ImagePanel : public wxPanel{
   protected:
+    bool bitmap_valid_ = false;
     wxBitmap bitmap_;
     virtual void paint(wxPaintEvent& event);
 

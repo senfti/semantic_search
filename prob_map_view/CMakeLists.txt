@@ -43,7 +43,7 @@ add_definitions(-std=c++11 -g)
 catkin_package(
 )
 
-add_executable(prob_map_view src/main.cpp src/ProbViewer_B.cpp src/ProbViewer.cpp src/ImagePanel.cpp include/prob_map_view/functions.h include/prob_map_view/ImagePanel.h include/prob_map_view/main.h include/prob_map_view/ProbViewer.h)
+add_executable(prob_map_view src/main.cpp src/ProbViewer_B.cpp src/ProbViewer.cpp src/ImagePanel.cpp include/prob_map_view/functions.h include/prob_map_view/ImagePanel.h include/prob_map_view/main.h include/prob_map_view/ProbViewer.h include/prob_map_view/ImageViewer.h src/ImageViewer.cpp src/ImageViewer_B.h src/ImageViewer_B.cpp)
 
 target_link_libraries(prob_map_view
   ${catkin_LIBRARIES}

@@ -65,14 +65,14 @@
     <param name="Octomap/downproject_erode_iters" value="4" />
     <param name="Octomap/downsample_factor" value="4" />                       <!-- maximum range to integrate (speedup!) --> 
 
-    <param name="RoomTypeMapper/CELL_HIT_MISS_RATIO" value="10.0" />              
+    <param name="RoomTypeMapper/CONFIDENCE" value="0.05" />              
     <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.8" />             
     <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
     <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="4.0" />
     <param name="RoomTypeMapper/ASUS_FOV" value="27" />
     <param name="RoomTypeMapper/MIN_DIST" value="0.7" />
     <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  
-    <param name="RoomTypeMapper/SIMILARITY_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat" />  
+    <param name="RoomTypeMapper/SIMILARITY_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat" />
 
     <param name="RoomMapper/OBJ_PLACE_MAP_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/obj_places_map.dat" />
     

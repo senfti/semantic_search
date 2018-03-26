@@ -428,7 +428,7 @@ void ExecuteActionServer::doStartRotation(){
     goal_.action = -1;
   }
   old_transform = transform;
-  if(ros::Time::now()-start_time > ros::Duration(10.0)){
+  if(ros::Time::now()-start_time > ros::Duration(15.0)){
     started = false;
     execution::ExecuteResult result;
     result.result_number = -11;
@@ -438,7 +438,7 @@ void ExecuteActionServer::doStartRotation(){
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
-  cmd_vel.angular.z = 1.0;
+  cmd_vel.angular.z = 0.5;
   vel_pub_.publish(cmd_vel);
 }
 

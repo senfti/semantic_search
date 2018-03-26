@@ -1,6 +1,6 @@
 \section{High-Level Planner}
 
-This section covers the high-level planner, which operates on the topological map and decides to which room the robot should drive and which high-level task, like explore or search, the robot should execute in this room. The goal of the planner is to minimize the expected search time, which is a reasonable for object search. Other possibilities would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most of the cases. 
+This section covers the high-level planner, which operates on the topological map and decides to which room the robot should drive and which high-level task, like explore or search, the robot should execute in this room. The goal of the planner is to minimize the expected search time, which is a reasonable for object search. Other possibilities would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most of the cases. The high-level planner is called when a search task is started and also every time a low-level tasks finishes.
 
 In addition to the topological map the high-level planner needs information about the rooms, like object probability, which has to be generated from the room maps. The first part of this section covers that. The second part covers the actual planning, which determines the optimal next room to search. The last part then describes the generation of high-level tasks to execute this plan. 
 
@@ -72,7 +72,35 @@ Movement time between rooms has to be further specified, as rooms are areas and 
 
 For the estimation of the movement time between two points a simple model is used, which calculates the time by multiplying the distance between the points with a empirically determined parameter. A more complex model using the length of a planned path is not used as the calculation is much more time-consuming. Further such a model does not take into account how fast the robot will drive on this path and how likely a recovery behavior will be executed.
 
-The time to leave the starting room depends on the location of the robot. This location is not known in when planning ahead as it depends on where the robot ends a room search, which is not known in advance. So the location is assumed to be the center of mass of all accessible cells in the grid map. The time to leave the room through a doorway is then estimated based on the distance to the doorway like explained above.
+To calculate the movement times a graph is created with every doorway being a node and an edge between two nodes if the doorways are in one room. The weight of the edge is the movement time between the doorways estimated as described above. The Floyd-Warshall algorithm is applied on the graph resulting in a matrix containing the shortest paths between two doorways and also the nodes to traverse can be retrieved. 
 
-To estimate the time it takes from the first doorway
+The time to leave the starting room through a certain doorway depends on the location of the robot. This location is not known in when planning ahead as it depends on where the robot ends a room search, which is not known in advance. So the location is assumed to be the center of mass of all accessible cells in the grid map. The time to leave the room through a doorway is then estimated based on the distance to the doorway as explained above. 
+
+The full movement time between to rooms is then the sum of the time calculated using the doorway graph and the time to move to the first doorway. As no loops are assumed there is no loss of optimality by not considering the leave-time in the shortest path calculation.
+
+
+\subsection{High-Level Planning}
+
+The objective of the high-level planner is to find the optimal search path visiting all rooms $\mathbf{p^*}=(r_1,r_2,...,r_{\mathbf{|R|}})$ with $r_i$ being the $i^{th}$ room to search and $\mathbf{|R|}$ being the number of found rooms given a starting room $r_0$. A valid search path contains every room exactly once. In this work the optimal path is the valid path with the minimal expected search time.
+\begin{equation}
+ \mathbf{p^*}=\argminA_{\mathbf{p} \in valid paths} E(t|\mathbf{p},r_0) 
+\end{equation}
+
+The expected search time given a staring room $r_0$ and a search path $\mathbf{p}$ can be calculated with
+\begin{equation}
+ E(t|\mathbf{p},r_0) = \sum_{i=1}^{\mathbf{|p|}} (\prod_{j=1}^{i-1}(1-P_{r_j}(O))(M_{r_{i-1},r_i}+P_{r_i}(O)E_{r_i}+(1-P_{r_i})T_{r_i})
+\end{equation}
+This means for every room the time to move to the room plus the expected time to search the room multiplied by the probability of not stopping the search earlier is added. Searching rooms with high object probabilities first results in a lower expected search time as the probability that another room has to be searched is reduced. 
+
+The valid paths can be seen as the leaf nodes in a tree, where the root is an empty path and the other nodes are incomplete paths. The optimal path is the leave node with the minimal expected search time. The tree representation helps to find an efficient implementation as the recursive structure in the calculation of the expected search time is obvious and pruning techniques can be applied.
+
+\subsection{Generation of High-Level tasks}
+
+The search path contains only the order, in which the rooms are searched. To execute the search path tasks have to be generated, which are then planned and executed by the low-level planner. These high-level tasks are 
+\begin{itemize}
+ \item \textbf{move through doorway:} The robot should drive through the doorway connecting the current room and the target room. The task 
+ \item \textbf{turn around:} The robot should execute a 360° rotation to gather information
+ \item \textbf{explore room:} The robot should explore the room to obtain a complete 2D map of the room and find all doorways in the room
+ \item \textbf{search room:} The robot should 
+\end{itemize}
 

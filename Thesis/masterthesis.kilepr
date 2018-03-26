@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/Mapping.tex
+lastDocument=Concept/Overview.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -64,6 +64,13 @@ Indentation Mode=normal
 Mode=LaTeX
 
 [document-settings,item:Concept/Knowledge.tex]
+Bookmarks=
+Encoding=UTF-8
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+
+[document-settings,item:Concept/LLPlanner.tex]
 Bookmarks=
 Encoding=UTF-8
 Highlighting=LaTeX
@@ -148,6 +155,13 @@ Indentation Mode=normal
 Mode=LaTeX
 
 [document-settings,item:Prerequisites/CNN.tex]
+Bookmarks=
+Encoding=UTF-8
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+
+[document-settings,item:Prerequisites/FrontierExploration.tex]
 Bookmarks=
 Encoding=UTF-8
 Highlighting=LaTeX
@@ -240,10 +254,10 @@ Mode=LaTeX
 
 [item:Concept.tex]
 archive=true
-column=26
+column=29
 encoding=UTF-8
 highlight=LaTeX
-line=8
+line=9
 mode=LaTeX
 open=true
 order=1
@@ -280,73 +294,83 @@ order=16
 
 [item:Concept/HLPlanner.tex]
 archive=true
-column=268
+column=395
 encoding=UTF-8
 highlight=LaTeX
-line=78
+line=98
 mode=LaTeX
 open=true
 order=14
 
 [item:Concept/Hardware.tex]
 archive=true
-column=280
+column=91
 encoding=UTF-8
 highlight=LaTeX
-line=4
+line=14
 mode=LaTeX
 open=true
 order=3
 
 [item:Concept/Knowledge.tex]
 archive=true
-column=0
+column=70
 encoding=UTF-8
 highlight=LaTeX
-line=27
+line=5
 mode=LaTeX
 open=true
 order=0
 
-[item:Concept/Mapping.tex]
+[item:Concept/LLPlanner.tex]
 archive=true
-column=19
+column=366
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=18
+mode=LaTeX
+open=true
+order=22
+
+[item:Concept/Mapping.tex]
+archive=true
+column=35
+encoding=UTF-8
+highlight=LaTeX
+line=8
 mode=LaTeX
 open=true
 order=9
 
 [item:Concept/ObjectMapping.tex]
 archive=true
-column=145
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=10
+line=0
 mode=LaTeX
 open=true
 order=18
 
 [item:Concept/ObjectProbDistr.tex]
 archive=true
-column=156
+column=16
 encoding=UTF-8
 highlight=LaTeX
-line=44
+line=31
 mode=LaTeX
 open=true
 order=19
 
 [item:Concept/Overview.tex]
 archive=true
-column=0
+column=54
 encoding=UTF-8
 highlight=LaTeX
-line=0
+line=21
 mode=LaTeX
-open=false
-order=5
+open=true
+order=21
 
 [item:Concept/RoomTypeMapping.tex]
 archive=true
@@ -400,20 +424,20 @@ order=-1
 
 [item:Introduction.tex]
 archive=true
-column=0
+column=256
 encoding=UTF-8
 highlight=LaTeX
-line=0
+line=6
 mode=LaTeX
-open=false
-order=8
+open=true
+order=20
 
 [item:Prerequisites.tex]
 archive=true
-column=34
+column=45
 encoding=UTF-8
 highlight=LaTeX
-line=7
+line=9
 mode=LaTeX
 open=true
 order=5
@@ -427,6 +451,16 @@ line=2
 mode=LaTeX
 open=true
 order=6
+
+[item:Prerequisites/FrontierExploration.tex]
+archive=true
+column=62
+encoding=UTF-8
+highlight=LaTeX
+line=0
+mode=LaTeX
+open=true
+order=24
 
 [item:Prerequisites/GMapping.tex]
 archive=true
@@ -465,8 +499,8 @@ encoding=UTF-8
 highlight=LaTeX
 line=2
 mode=LaTeX
-open=false
-order=14
+open=true
+order=23
 
 [item:Prerequisites/ROS.tex]
 archive=true
@@ -533,7 +567,7 @@ archive=true
 column=30
 encoding=UTF-8
 highlight=LaTeX
-line=267
+line=191
 mode=LaTeX
 open=true
 order=8
@@ -559,10 +593,10 @@ open=true
 order=12
 
 [view-settings,view=0,item:Concept.tex]
-CursorColumn=26
-CursorLine=8
+CursorColumn=29
+CursorLine=9
 JumpList=
-ViMarks=.,5,28,[,5,28,],5,28
+ViMarks=.,9,28,[,9,17,],9,28
 
 [view-settings,view=0,item:Concept/DoorwayMapping.tex]
 CursorColumn=778
@@ -583,38 +617,44 @@ JumpList=
 ViMarks=.,0,0,[,0,0,],0,0
 
 [view-settings,view=0,item:Concept/HLPlanner.tex]
-CursorColumn=268
-CursorLine=78
+CursorColumn=395
+CursorLine=98
 JumpList=
-ViMarks=.,78,268,[,78,268,],78,268
+ViMarks=.,98,394,[,98,394,],98,394
 
 [view-settings,view=0,item:Concept/Hardware.tex]
-CursorColumn=280
-CursorLine=4
+CursorColumn=91
+CursorLine=14
 JumpList=
 ViMarks=.,24,0,[,24,0,],24,0
 
 [view-settings,view=0,item:Concept/Knowledge.tex]
-CursorColumn=0
-CursorLine=27
+CursorColumn=70
+CursorLine=5
 JumpList=
 ViMarks=.,27,440,[,27,436,],27,440
 
-[view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=19
-CursorLine=2
+[view-settings,view=0,item:Concept/LLPlanner.tex]
+CursorColumn=366
+CursorLine=18
 JumpList=
-ViMarks=.,8,12,[,8,11,],8,12
+ViMarks=.,18,432,[,18,401,],18,432
+
+[view-settings,view=0,item:Concept/Mapping.tex]
+CursorColumn=35
+CursorLine=8
+JumpList=
+ViMarks=.,8,35,[,8,35,],8,35
 
 [view-settings,view=0,item:Concept/ObjectMapping.tex]
-CursorColumn=145
-CursorLine=10
+CursorColumn=0
+CursorLine=0
 JumpList=
 ViMarks=.,49,0,[,0,0,],49,587
 
 [view-settings,view=0,item:Concept/ObjectProbDistr.tex]
-CursorColumn=156
-CursorLine=44
+CursorColumn=16
+CursorLine=31
 JumpList=
 ViMarks=.,58,0,[,0,0,],58,600
 
@@ -661,16 +701,22 @@ JumpList=
 ViMarks=.,10,858,[,10,814,],10,858
 
 [view-settings,view=0,item:Prerequisites.tex]
-CursorColumn=34
-CursorLine=7
+CursorColumn=45
+CursorLine=9
 JumpList=
-ViMarks=.,2,0,[,2,0,],2,0
+ViMarks=.,9,44,[,9,7,],9,44
 
 [view-settings,view=0,item:Prerequisites/CNN.tex]
 CursorColumn=0
 CursorLine=2
 JumpList=
 ViMarks=.,4,325,[,4,325,],4,325
+
+[view-settings,view=0,item:Prerequisites/FrontierExploration.tex]
+CursorColumn=62
+CursorLine=0
+JumpList=
+ViMarks=.,0,61,[,0,43,],0,61
 
 [view-settings,view=0,item:Prerequisites/GMapping.tex]
 CursorColumn=2
@@ -734,9 +780,9 @@ ViMarks=
 
 [view-settings,view=0,item:main.tex]
 CursorColumn=30
-CursorLine=267
+CursorLine=191
 JumpList=
-ViMarks=.,181,0,[,181,0,],181,17
+ViMarks=.,191,0,[,191,0,],191,40
 
 [view-settings,view=0,item:template/preamble.tex]
 CursorColumn=44

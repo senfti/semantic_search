@@ -22,6 +22,7 @@ void ImagePanel::setImage(const cv::Mat& image){
   unsigned char *data = new unsigned char[image.total() * image.channels()];
   memcpy(data, image.data, image.total() * image.channels() * sizeof(unsigned char));
   bitmap_ = wxBitmap(wxImage(image.cols, image.rows, data));
+  bitmap_valid_ = true;
   Refresh();
 }
 
@@ -30,5 +31,6 @@ void ImagePanel::paint(wxPaintEvent& event){
 
   dc.SetBrush(*wxBLACK_BRUSH);
   dc.DrawRectangle(wxPoint(0, 0), GetClientSize());
-  dc.DrawBitmap(bitmap_, 0, 0);
+  if(bitmap_valid_)
+    dc.DrawBitmap(bitmap_, 0, 0);
 }

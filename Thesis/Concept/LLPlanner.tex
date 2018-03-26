@@ -1,0 +1,19 @@
+\section{Low-Level Planner}
+
+The low-level planner is responsible for the generation of goal positions to execute the high level tasks, which are then sent to path planning. As mentioned above, the four high-level tasks are move through doorway, turn around, explore room and search room. This section gives an overview on how those tasks are executed.
+
+\subsection{Move Through Door Task}
+
+This task is responsible for room switching. It is the only high-level task where a room switch happens as all other tasks are only operating in the current room. The goal pose is a short distance behind the doorway to ensure the triggering of a room switch.
+
+\subsection{Turn Around Task}
+
+The purpose of this task is to get a first impression of the new room. As a single image is not enough for a reliable classification of the room type a 360° rotation is done to quickly get multiple views in the room.
+
+\subsection{Explore Room Task}
+
+A frontier-based approach is used for exploration, as described in section \ref{ssec:frontierexploration}. Only 2D exploration is done as the purpose of it is to get an overview over the room and the positions the robot can drive to. Also finding all doorways in the room is ensured as the robot will try to also explore the space behind a doorway until the doorway is detected. During the exploration objects can be detected. An object is found if there is a cell in the object map, where the probability of an object being in the cell is higher than a threshold value.
+
+\subsection{Search Room Task}
+
+The search room task is the most complex high-level task, as the goal is to execute an efficient and intelligent search in a single room. Three problems have to be solved in this task. First, it has to determine if and where an object of the searched class was seen. Second, view poses have to be generated, which minimize the expected time of the search in the room. And last, it has to be determined if the room was fully searched.

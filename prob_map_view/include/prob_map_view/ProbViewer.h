@@ -13,10 +13,10 @@
 
 class ProbViewer : public ProbViewer_B{
   protected:
-    std::vector<cv::Mat_<double>> prob_images_;
+    std::vector<cv::Mat_<float>> prob_images_;
     cv::Mat_<uchar> occ_image_;
     std::vector<std::string> prob_names_;
-    cv::Mat_<double> curr_img_;
+    cv::Mat_<float> curr_img_;
     bool img_are_log_;
     wxChoice* select_choice_;
 
@@ -31,7 +31,7 @@ class ProbViewer : public ProbViewer_B{
       ros::shutdown();
     }
 
-    void updateImages(const std::vector<cv::Mat_<double>>& prob_images, const cv::Mat_<uchar>& occ);
+    void updateImages(const std::vector<cv::Mat_<float>>& prob_images, const cv::Mat_<uchar>& occ);
     void setCurrent();
 
     void save(const std::string& folder, const std::string& postfix = std::string(""));

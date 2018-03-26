@@ -74,7 +74,6 @@ class RoomTypeMapper{
     static float ASUS_FOV;
     static float MIN_DIST;
     static float MAX_DIST;
-    static float CELL_HIT_MISS_RATIO;
     static bool PARAMS_LOADED;
 
     int NUM_CLASSES = 0;
