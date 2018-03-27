@@ -48,7 +48,7 @@ link_directories(
   /home/thomas/darknet
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Caffe_INCLUDE_DIRS} "/home/thomas/darknet/src")
+include_directories(include ${catkin_INCLUDE_DIRS} ${Caffe_INCLUDE_DIRS} "/home/thomas/darknet/include" "/home/thomas/darknet/src")
 
 add_executable(vision src/main.cpp src/CaffeClassifier.cpp src/YoloDetector.cpp)
 
@@ -56,7 +56,7 @@ target_link_libraries(vision
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   ${Caffe_LIBRARIES}
-  darknet
+  libdarknet.so
  )
 
 add_dependencies(vision vision_generate_messages_cpp)

@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/Overview.tex
+lastDocument=Concept/LLPlanner.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -324,10 +324,10 @@ order=0
 
 [item:Concept/LLPlanner.tex]
 archive=true
-column=366
+column=271
 encoding=UTF-8
 highlight=LaTeX
-line=18
+line=26
 mode=LaTeX
 open=true
 order=22
@@ -364,10 +364,10 @@ order=19
 
 [item:Concept/Overview.tex]
 archive=true
-column=54
+column=152
 encoding=UTF-8
 highlight=LaTeX
-line=21
+line=9
 mode=LaTeX
 open=true
 order=21
@@ -635,10 +635,10 @@ JumpList=
 ViMarks=.,27,440,[,27,436,],27,440
 
 [view-settings,view=0,item:Concept/LLPlanner.tex]
-CursorColumn=366
-CursorLine=18
+CursorColumn=271
+CursorLine=26
 JumpList=
-ViMarks=.,18,432,[,18,401,],18,432
+ViMarks=.,26,270,[,26,257,],26,270
 
 [view-settings,view=0,item:Concept/Mapping.tex]
 CursorColumn=35
@@ -659,8 +659,8 @@ JumpList=
 ViMarks=.,58,0,[,0,0,],58,600
 
 [view-settings,view=0,item:Concept/Overview.tex]
-CursorColumn=54
-CursorLine=21
+CursorColumn=152
+CursorLine=9
 JumpList=
 ViMarks=.,12,539,[,12,535,],12,539
 

@@ -39,7 +39,7 @@ class YoloDetector{
   private:
     std::vector<std::string> labels_;
     std::vector<bool> used_classes_;
-    network net_;
+    network* net_;
     bool is_ok_ = false;
 
     bool loadLabels(const std::string& label_file);
@@ -47,6 +47,7 @@ class YoloDetector{
 
   public:
     YoloDetector(const std::string& label_file, const std::string& config_file, const std::string& weight_file);
+    ~YoloDetector();
     std::vector<YoloDetection> detect(const cv::Mat& img, float thresh, float hier_thresh, float nms);
     bool isOk() const { return is_ok_; }
 };

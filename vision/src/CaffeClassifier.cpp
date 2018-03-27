@@ -24,6 +24,7 @@ CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::strin
     return;
   }
   input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
+  std::cout << "INPUT GEOMETRY (w,h): " << input_geometry_.width << " " << input_geometry_.height << std::endl;
 
   /* Load the binaryproto mean file. */
   setMean(mean_file);
@@ -132,34 +133,11 @@ std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img, floa
 
 /* Load the mean file in binaryproto format. */
 void CaffeClassifier::setMean(const std::string& mean_file) {
-//  caffe::BlobProto blob_proto;
-//  ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
-//
-//  /* Convert from BlobProto to Blob<float> */
-//  caffe::Blob<float> mean_blob;
-//  mean_blob.FromProto(blob_proto);
-//  if(mean_blob.channels() != num_channels_)
-//    std::cout << "Number of channels of mean file doesn't match input layer.";
-//
-//  /* The format of the mean file is planar 32-bit float BGR or grayscale. */
-//  std::vector<cv::Mat> channels;
-//  float* data = mean_blob.mutable_cpu_data();
-//  for (int i = 0; i < num_channels_; ++i) {
-//    /* Extract an individual channel. */
-//    cv::Mat channel(mean_blob.height(), mean_blob.width(), CV_32FC1, data);
-//    channels.push_back(channel);
-//    data += mean_blob.height() * mean_blob.width();
-//  }
-//
-//  /* Merge the separate channels into a single image. */
-//  cv::Mat mean;
-//  cv::merge(channels, mean);
-//
-//  /* Compute the global mean pixel value and create a mean image
-//   * filled with this value. */
-//  cv::Scalar channel_mean = cv::mean(mean);
-//  mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
-  mean_ = cv::Mat(input_geometry_, CV_32FC3, cv::Scalar(104.0065, 116.6690, 122.6795));
+  if(mean_file.empty())
+    mean_ = cv::Mat(input_geometry_, CV_32FC3, cv::Scalar(104.0065, 116.6690, 122.6795));
+  else{
+    mean_ = cv::imread(mean_file, cv::IMREAD_UNCHANGED);
+  }
 }
 
 std::vector<float> CaffeClassifier::predict(const cv::Mat& img) {
@@ -229,6 +207,7 @@ void CaffeClassifier::preprocess(const cv::Mat& img,
     sample_resized.convertTo(sample_float, CV_32FC1);
 
   cv::Mat sample_normalized;
+  std::cout << "TYPES " << sample_float.type() << " " << mean_.type() << " " << std::endl;
   cv::subtract(sample_float, mean_, sample_normalized);
 
   /* This operation will write the separate BGR planes directly to the

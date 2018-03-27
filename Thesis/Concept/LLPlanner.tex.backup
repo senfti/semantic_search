@@ -22,9 +22,7 @@ The search room tasks is the actual search within the room. It is the most compl
 
 In course of the mapping an object map is created, which could be used here. However this is not the optimal solution as this map contains old information, which might be outdated, and due to efficiency reasons suboptimal parameters degrade the accuracy of this map. 
 
-For the detection of objects the same principle, a grid map with object probabilities is used. As for the search only one object map has to be created as only one object type is of interest and neglectable uncertainty of the robot pose can be assumed as the room was already explored and a map exists. Therefore more computational power can be invested into the creation of this map leading to better results. 
-
-An object is said to be found if the object probability in a cell exceeds a threshold parameter. The drawback of this solution is that not the actual position of the object is found but only a cell containing the object. This is noticeable for large objects, like a sofa.
+For the detection of objects the same principle, a grid map with object probabilities is used. As for the search only one object map has to be created as only one object type is of interest and neglectable uncertainty of the robot pose can be assumed as the room was already explored and a map exists. Therefore more computational power can be invested into the creating 
 
 \subsubsection{Generation of the best next robot pose}
 
