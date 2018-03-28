@@ -2,7 +2,7 @@
 
 CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::string& trained_file,
                                  const std::string& mean_file, const std::string& label_file){
-  caffe::Caffe::set_mode(caffe::Caffe::GPU);
+  caffe::Caffe::set_mode(caffe::Caffe::Brew(1));
 
   /* Load the network. */
   net_ = new caffe::Net<float>(model_file, caffe::TEST);

@@ -28,12 +28,12 @@ class VisionApp{
   public:
     std::string PLACE_MODEL_FILE   = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt";
     std::string PLACE_TRAINED_FILE = "/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel";
-    std::string PLACE_MEAN_FILE    = "/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat";
+    std::string PLACE_MEAN_FILE    = "";
     std::string PLACE_LABEL_FILE   = "/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv";
 
     std::string OBJ_LABEL_FILE = "/home/thomas/darknet/data/coco.names";
-    std::string YOLO_CFG = "/home/thomas/darknet/cfg/yolo.cfg";
-    std::string YOLO_WEIGHTS = "/home/thomas/darknet/data/yolo.weights";
+    std::string YOLO_CFG = "/home/thomas/darknet/cfg/yolov3.cfg";
+    std::string YOLO_WEIGHTS = "/home/thomas/darknet/data/yolov3.weights";
     std::string RESULT_TOPIC = "vision_result";
     float OBJ_THRESH = 0.01f;
     float OBJ_NMS = 0.8f;

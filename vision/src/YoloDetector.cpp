@@ -170,8 +170,6 @@ void YoloDetector::getRegionBoxes(layer l, int w, int h, float thresh, float **p
 }
 
 std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh, float hier_thresh, float nms){
-  int i=0;
-  std::cout << i++ << std::endl;
   cv::Mat tmp;
   cv::resize(img, tmp, cv::Size(net_->w, net_->h));
   cv::cvtColor(tmp, tmp, CV_BGR2RGB);
@@ -180,20 +178,16 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
   cv::split(tmp, channels);
   cv::vconcat(channels, tmp);
 
-  std::cout << i++ << std::endl;
   network_predict(net_, (float*)(tmp.data));
-  std::cout << i++ << std::endl;
   int nboxes = 0;
   detection *dets = get_network_boxes(net_, 1, 1, 0.0, 0, 0, 0, &nboxes);
   layer l = net_->layers[net_->n-1];
   int output_size =  l.side*l.side*l.n;
-  std::cout << i++ << std::endl;
   if(nms != 1.f)
     do_nms_obj(dets, output_size, l.classes, nms);
-  std::cout << i++ << std::endl;
 
   std::vector<YoloDetection> detections;
-  for(int i=0; i<output_size; i++){
+  for(int i=0; i<nboxes; i++){
     std::cout << i++ << std::endl;
     if(dets[i].objectness > thresh){
       float prob = -1.f;
@@ -216,7 +210,6 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
       }
     }
   }
-  std::cout << i++ << std::endl;
 
   return detections;
 }

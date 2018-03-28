@@ -6,7 +6,7 @@
 #define VISION_YOLODETECTOR_H
 
 #define GPU
-#define OPENCV
+//#define OPENCV
 #define CUDNN
 
 #include <network.h>

@@ -100,6 +100,7 @@ void VisionApp::run(){
 }
 
 void VisionApp::nnThreadRun(){
+  caffe::Caffe::set_mode(caffe::Caffe::Brew(1));
   ros::Rate rate(100);
   while(ros::ok() && run_){
     std::unique_lock<std::mutex> lock(img_mutex_);
@@ -313,7 +314,7 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
   cv::imshow("img", debug_img);
   if(IMAGE_SAVE){
     static int sdf = 0;
-    cv::imwrite("/tmp/" + std::to_string(sdf) + ".bmp", debug_img);
+    cv::imwrite("/tmp/" + std::to_string(sdf) + ".png", debug_img);
     sdf++;
   }
   uchar key = cv::waitKey(1) & 255;

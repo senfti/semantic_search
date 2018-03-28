@@ -1,17 +1,23 @@
  <launch>
   <arg name="result_topic" default="vision_result" />
   <node pkg="vision" type="vision" name="vision" output="screen" launch-prefix="xterm -hold -e" >
-<!--
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16.caffemodel"/>
     <param name="vision/PLACE_MEAN_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/places205_mean.exr"/>
     <param name="vision/PLACE_LABEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv"/>
--->
+<!--
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel"/>
     <param name="vision/PLACE_MEAN_FILE" value=""/>
     <param name="vision/PLACE_LABEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv"/>
+-->
 
+<!--
+    <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/googlenet_places205/train_val_googlenet_places205.prototxt"/>
+    <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/googlenet_places205/googlelet_places205_train_iter_2400000.caffemodel"/>
+    <param name="vision/PLACE_MEAN_FILE" value=""/>
+    <param name="vision/PLACE_LABEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv"/>
+-->
     <param name="vision/OBJ_LABEL_FILE" value="/home/thomas/darknet/data/coco.names"/>
     <param name="vision/YOLO_CFG" value="/home/thomas/darknet/cfg/yolov3.cfg"/>
     <param name="vision/YOLO_WEIGHTS" value="/home/thomas/darknet/data/yolov3.weights"/>
