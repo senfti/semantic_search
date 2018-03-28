@@ -194,7 +194,7 @@ RoomTypeMapper::RoomTypeMapper(){
     private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
     ASUS_FOV *= M_PI / 180.f;
 
-    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f",CELL_MAX_PROB, CELL_MIN_PROB,
+    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f",CELL_MAX_PROB, CELL_MIN_PROB,
               ROOM_DEFAULT_RESOLUTION, ASUS_FOV, MIN_DIST, MAX_DIST, ROOM_MAX_PROB);
   }
 }
@@ -219,7 +219,7 @@ RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, co
     private_nh.param("ROOM_MAX_PROB", ROOM_MAX_PROB, ROOM_MAX_PROB);
     ASUS_FOV *= M_PI / 180.f;
 
-    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f %f",CELL_MAX_PROB, CELL_MIN_PROB,
+    ROS_ERROR("ROOM TYPE PARAMETERS LOADED: %f %f %f %f %f %f %f",CELL_MAX_PROB, CELL_MIN_PROB,
               ROOM_DEFAULT_RESOLUTION, ASUS_FOV, MIN_DIST, MAX_DIST, ROOM_MAX_PROB);
   }
   for(const auto& m : prob_maps){
@@ -287,7 +287,7 @@ void applyMinAndMax(std::vector<double>& probs, double min, double max){
     else
       sum += probs[i];
   }
-  if(clamp_idx > 0){
+  if(clamp_idx >= 0){
     for(int i=0; i<probs.size(); i++){
       if(i!=clamp_idx)
         probs[i] = probs[i]/sum*(1.0-max);

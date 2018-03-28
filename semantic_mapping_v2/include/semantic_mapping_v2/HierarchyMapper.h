@@ -104,6 +104,9 @@ class HierarchyMapper{
     int DEBUG_OUTPUT = 1;
     int ONLY_ROOM_TYPE = 0;
 
+    int OBJ_TO_ROOM = 1;
+    int ROOM_TO_OBJ = 1;
+
   public:
     HierarchyMapper();
     ~HierarchyMapper();

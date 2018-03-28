@@ -64,11 +64,14 @@ uchar colorFromNum(uchar num){
     case 6:   return 15;
     case 7:   return 100;
     case 8:   return 130;
-    case 9:  return 172;
+    case 9:   return 170;
+    case 10:  return 40;
+    case 11:  return 7;
     default:  return uchar(rand()%180);
   }
 }
 
+const int MIN_PER_CLASS = 1;
 void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>& occ, const std::vector<std::string>& names){
   std::vector<uchar> color_nr(names.size(),0);
   std::vector<int> color_times(names.size(),0);
@@ -80,22 +83,31 @@ void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>&
   int colors = 0;
   for(int x=0; x<max_idx_mat.cols; x++){
     for(int y=0; y<max_idx_mat.rows; y++){
-      if(occ_small(y,x) <= 128)
+      if(occ_small(y,x) <= 128 || max_idx_mat(y,x) == 255)
         continue;
       color_times[max_idx_mat(y,x)]++;
-      if(color_times[max_idx_mat(y,x)]==1){
-        color_nr[max_idx_mat(y, x)] = colorFromNum(colors);
-        if(std::find(max_idx.begin(), max_idx.end(), max_idx_mat(y,x)) != max_idx.end())
-          std::cout << "problem" << std::endl;
-        int sdf = max_idx_mat(y,x);
-        max_idx.push_back(max_idx_mat(y,x));
-        colors++;
-      }
+//      if(color_times[max_idx_mat(y,x)]==MIN_PER_CLASS){
+//        color_nr[max_idx_mat(y, x)] = colorFromNum(colors);
+//        if(std::find(max_idx.begin(), max_idx.end(), max_idx_mat(y,x)) != max_idx.end())
+//          std::cout << "problem" << std::endl;
+//        max_idx.push_back(max_idx_mat(y,x));
+//        colors++;
+//      }
     }
+  }
+  std::vector<size_t> idx(color_times.size());
+  iota(idx.begin(), idx.end(), 0);
+  sort(idx.begin(), idx.end(),[&color_times](size_t i1, size_t i2) {return color_times[i1] > color_times[i2];});
+  for(int i=0; i<12; i++){
+    color_nr[idx[i]] = colorFromNum(i);
+    max_idx.push_back(idx[i]);
+  }
+  for(int i=12; i<color_times.size(); i++){
+    color_times[idx[i]] = 0;
   }
   for(int x=0; x<max_idx_mat.cols; x++){
     for(int y=0; y<max_idx_mat.rows; y++){
-      if(color_times[max_idx_mat(y,x)] >= 1 && occ_small(y,x) > 128){
+      if(max_idx_mat(y,x) != 255 && color_times[max_idx_mat(y,x)] >= MIN_PER_CLASS && occ_small(y,x) > 128){
         color_mat(y,x) = color_nr[max_idx_mat(y,x)];
       }
       else{
@@ -115,12 +127,13 @@ void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>&
   cv::cvtColor(out, out, CV_HSV2RGB);
   cv::copyMakeBorder(out,out,0,0,0,200,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
   int y = 10;
-  std::vector<size_t> idx(max_idx.size());
+  idx = std::vector<size_t> (max_idx.size());
   iota(idx.begin(), idx.end(), 0);
   sort(idx.begin(), idx.end(),[&max_idx,&color_nr](size_t i1, size_t i2) {return color_nr[max_idx[i1]] < color_nr[max_idx[i2]];});
   for(auto& i : idx){
     int c = max_idx[i];
-    std::cout << i << " " << c << " " << int(color_nr[c]) << std::endl;
+    if(color_times[c] < MIN_PER_CLASS)
+      continue;
     cv::Mat_<cv::Vec3b> color(1,1,cv::Vec3b(color_nr[c], 255, 255));
     cv::cvtColor(color, color, cv::COLOR_HSV2RGB);
     cv::rectangle(out, cv::Point(color_mat.cols+10, y), cv::Point(color_mat.cols+20, y+10), cv::Scalar(color(0,0)[0],color(0,0)[1],color(0,0)[2]), -1);
@@ -137,6 +150,7 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   if(place_viewer_ == nullptr){
     std::vector<std::string> names = msg->names;
     names.push_back("max");
+    names.push_back("entropy");
     place_viewer_ = new ProbViewer("Place Prob Viewer", names, msg->img_are_log);
     place_viewer_->Show(true);
     room_type_viewer_ = new ImageViewer("RoomTypeClassViewer");
@@ -144,8 +158,9 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
 
   std::vector<cv::Mat_<float>> imgs(msg->images.size());
-  cv::Mat_<float> max_mat(msg->images[0].rows, msg->images[0].cols, 0.f);
-  cv::Mat_<uchar> max_idx_mat(max_mat.rows, max_mat.cols, uchar(0));
+  cv::Mat_<float> max_mat(msg->images[0].rows, msg->images[0].cols, 1/60.f);
+  cv::Mat_<float> ent_mat(msg->images[0].rows, msg->images[0].cols, 0.f);
+  cv::Mat_<uchar> max_idx_mat(max_mat.rows, max_mat.cols, uchar(255));
   std::cout << "baseRoom " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
@@ -155,10 +170,12 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
           max_mat(y,x) = imgs[i](y,x);
           max_idx_mat(y,x) = uchar(i);
         }
+        ent_mat(y,x)-=imgs[i](y,x)*std::log2(imgs[i](y,x))/6.f;
       }
     }
   }
   imgs.push_back(max_mat);
+  imgs.push_back(ent_mat);
   cv::Mat_<uchar> occ;
   cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
   showMaxClassMat(max_idx_mat, occ, msg->names);

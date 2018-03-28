@@ -1,31 +1,5 @@
 <launch>  
-  <node pkg="vision" type="vision" name="vision">
-    <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_deploy.prototxt"/>
-    <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places205CNN_iter_300000.caffemodel"/>
-    <param name="vision/PLACE_MEAN_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/places_mean.mat"/>
-    <param name="vision/PLACE_LABEL_FILE" value="/home/thomas/BVLCcaffe/models/placescnn/categories_places205.csv"/>
-
-    <param name="vision/OBJ_LABEL_FILE" value="/home/thomas/darknet/data/coco.names"/>
-    <param name="vision/YOLO_CFG" value="/home/thomas/darknet/cfg/yolo.cfg"/>
-    <param name="vision/YOLO_WEIGHTS" value="/home/thomas/darknet/data/yolo.weights"/>
-    <param name="vision/OBJ_THRESH" value="0.01"/>
-    <param name="vision/OBJ_NMS" value="0.8"/>
-
-    <param name="vision/MIN_Z" value="0.55"/>
-    <param name="vision/MAX_Z" value="3.5"/>
-
-    <param name="vision/DETECTION_SAMPLE_NUM" value="20000"/>
-    <param name="vision/MIN_OBJECT_PROB" value="0.001"/>
-
-    <param name="vision/MAX_DISCARD_TIME" value="5.0"/>
-    <param name="vision/MIN_ANGLE_DIFF" value="0.1"/>
-    <param name="vision/MIN_DIST_DIFF" value="0.3"/>
-    <param name="vision/MAX_ROT_VELOCITY" value="0.3"/>
-
-    <param name="vision/DEBUG_IMAGES" value="1"/>    
-
-    <remap from="vision_result" to="vision_tmp_result"/>
-  </node>
-
-  <node pkg="odom_to_tf" type="odom_to_tf" name="odom_to_tf" args="odom" /> 
+  <include file="$(find hardware)/launch/includes/vision.launch.xml" >
+    <arg name="result_topic" value="vision_result2" />
+  </include> 
 </launch>

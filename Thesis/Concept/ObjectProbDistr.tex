@@ -39,7 +39,7 @@ with $P(O_{area, C_i}^{O_k}=OT|R_{O_k,Cj}=RT)$ being the matrix elements and $P(
 
 First the object probability distribution $P(O_{R,C_i}^{OT})$ for all cells and object types based on the room type is calculated with
 \begin{equation}
-P(O_{R,C_i}^{OT})=\sum_{r\in \mathbf{RT}}P(R_{complete,Cj}=RT|I_{1:t},\mathbf{x}_{1:t})P_C(_{R,C_i}^{OT}|r)
+P(O_{R,C_i}^{OT})=\sum_{r\in \mathbf{RT}}P(R_{complete,Cj}=r|I_{1:t},\mathbf{x}_{1:t})P_C(_{R,C_i}^{OT}|r)
 \end{equation}
 
 $P_C(_{R,C_i}^{OT}|r)$ is the probability of an object in a cell given the room type of the cell $r$. The room type-object-correlation matrix values are for areas of the usual size visible in an image, therefore the probabilities per cell have to be estimated. This is done by multiplying the matrix values with the estimated fraction of space visible in an image being occupied by an object. $P(O_{R,gauss,C_i}^{OT})$ is then a Gaussian filtered version of $P(O_{R,C_i}^{OT})$, which is done to model uncertainty of the positions of objects in a room. 

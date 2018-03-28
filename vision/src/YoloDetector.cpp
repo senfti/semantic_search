@@ -43,7 +43,7 @@ YoloDetector::YoloDetector(const std::string &label_file, const std::string &con
 }
 
 YoloDetector::~YoloDetector(){
-  free(net_);
+  free_network(net_);
 }
 
 bool YoloDetector::loadLabels(const std::string &label_file){
@@ -188,7 +188,6 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
 
   std::vector<YoloDetection> detections;
   for(int i=0; i<nboxes; i++){
-    std::cout << i++ << std::endl;
     if(dets[i].objectness > thresh){
       float prob = -1.f;
       int max_idx = -1;
@@ -201,15 +200,16 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
         if(used_classes_[j])
           idx++;
       }
-      float x1 = std::max((dets[i].bbox.x - dets[i].bbox.w / 2.f) * img.cols, 0.f);
-      float x2 = std::min((dets[i].bbox.x + dets[i].bbox.w / 2.f) * img.cols, img.cols-1.f);
+      float x1 = std::max((dets[i].bbox.x - dets[i].bbox.w / 2.f) * img.rows - img.rows/2.f + img.cols/2.f, 0.f);
+      float x2 = std::min((dets[i].bbox.x + dets[i].bbox.w / 2.f) * img.rows - img.rows/2.f + img.cols/2.f, img.cols-1.f);
       float y1 = std::max((dets[i].bbox.y - dets[i].bbox.h / 2.f) * img.rows, 0.f);
       float y2 = std::min((dets[i].bbox.y + dets[i].bbox.h / 2.f) * img.rows, img.rows-1.f);
-      if(prob > thresh){
+      if(prob >= thresh){
         detections.push_back(YoloDetection(labels_[max_idx], max_idx, dets[i].prob, x1, x2, y1, y2, 0.f, used_classes_));
       }
     }
   }
+  free_detections(dets,nboxes);
 
   return detections;
 }

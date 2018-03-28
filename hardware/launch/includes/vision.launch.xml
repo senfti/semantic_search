@@ -1,6 +1,6 @@
  <launch>
   <arg name="result_topic" default="vision_result" />
-  <node pkg="vision" type="vision" name="vision" output="screen" launch-prefix="xterm -hold -e" >
+  <node pkg="vision" type="vision" name="vision" output="screen" >
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16.caffemodel"/>
     <param name="vision/PLACE_MEAN_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/places205_mean.exr"/>

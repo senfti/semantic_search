@@ -72,6 +72,8 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("PUBLISH_DEBUG_IMAGES", PUBLISH_DEBUG_IMAGES,PUBLISH_DEBUG_IMAGES);
   ros::NodeHandle("~").param("DEBUG_OUTPUT", DEBUG_OUTPUT, DEBUG_OUTPUT);
   ros::NodeHandle("~").param("ONLY_ROOM_TYPE", ONLY_ROOM_TYPE, ONLY_ROOM_TYPE);
+  ros::NodeHandle("~").param("OBJ_TO_ROOM", OBJ_TO_ROOM, OBJ_TO_ROOM);
+  ros::NodeHandle("~").param("ROOM_TO_OBJ", ROOM_TO_OBJ, ROOM_TO_OBJ);
 
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
@@ -554,13 +556,20 @@ std::vector<cv::Mat_<float>> HierarchyMapper::getObjBasedRoomTypeMap(const std::
 
 std::vector<cv::Mat_<float>> HierarchyMapper::getCompleteRoomTypeMap(const std::vector<RoomTypeMap>& room_type_map, const std::vector<cv::Mat_<float>>& obj_based_room_type_map){
   std::vector<cv::Mat_<float>> complete_room_type_map;
-  cv::Mat_<float> sum(room_type_map[0].getHeight(), room_type_map[0].getWidth(), 0.f);
-  for(int i=0; i<room_type_map.size(); i++){
-    complete_room_type_map.push_back(room_type_map[i].getMap().mul(obj_based_room_type_map[i]));
-    sum += complete_room_type_map[i];
+  if(OBJ_TO_ROOM){
+    cv::Mat_<float> sum(room_type_map[0].getHeight(), room_type_map[0].getWidth(), 0.f);
+    for(int i = 0; i < room_type_map.size(); i++){
+      complete_room_type_map.push_back(room_type_map[i].getMap().mul(obj_based_room_type_map[i]));
+      sum += complete_room_type_map[i];
+    }
+    for(int i = 0; i < room_type_map.size(); i++){
+      cv::divide(complete_room_type_map[i], sum, complete_room_type_map[i]);
+    }
   }
-  for(int i=0; i<room_type_map.size(); i++){
-    cv::divide(complete_room_type_map[i], sum, complete_room_type_map[i]);
+  else{
+    for(int i = 0; i < room_type_map.size(); i++){
+      complete_room_type_map.push_back(room_type_map[i].getMap());
+    }
   }
   return complete_room_type_map;
 }
@@ -685,6 +694,20 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
     else{
       for(int o=0; o<obj_map.size(); o++){
         complete_obj_map.push_back(ObjectMap(flat, occ_flat, room_base_obj_maps[o], only_laser_points, room_type_maps_filtered, o, occ_2d));
+      }
+    }
+    return complete_obj_map;
+  }
+
+  if(ROOM_TO_OBJ){
+    std::vector<ObjectMap> complete_obj_map;
+    cv::Mat_<float> flat(room_base_obj_maps[0].rows, room_base_obj_maps[0].cols, 0.5f);
+    if(obj >= 0){
+      complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, flat, only_laser_points, room_type_maps_filtered, obj, occ_2d));
+    }
+    else{
+      for(int o=0; o<obj_map.size(); o++){
+        complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, flat, only_laser_points, room_type_maps_filtered, o, occ_2d));
       }
     }
     return complete_obj_map;
