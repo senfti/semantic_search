@@ -199,6 +199,7 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
   cv::Mat_<uchar> occ;
   cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
+  occ = cv::max(occ, 128);
 
   obj_viewer_->updateImages(imgs, occ);
 }
@@ -220,6 +221,7 @@ void ProbViewApp::baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   }
   cv::Mat_<uchar> occ;
   cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
+  occ = cv::max(occ, 128);
 
   base_obj_viewer_->updateImages(imgs, occ);
 }

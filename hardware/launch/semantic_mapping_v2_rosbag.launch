@@ -6,7 +6,7 @@
   <arg name="object_prior" default="0.003" />
   <arg name="object_hit" default="0.05" />
   <arg name="object_miss" default="0.0005" />
-  <arg name="object_samples" default="4000" />
+  <arg name="object_samples" default="8000" />
 
   <param name="use_sim_time" value="true" />
 
@@ -19,7 +19,7 @@
   <node pkg="costmap_laser_node" type="costmap_laser_node" name="costmap_laser_node" args="-1.95 1.95 0.1 1.0 4.0" /> 
 
   <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
-    <arg name="result_topic" value="vision_result2" />
+    <arg name="result_topic" value="vision_result" />
     <arg name="scan_topic" value="scan_filtered" />
 
     <arg name="octomap_hit" value="$(arg octomap_hit)" />
@@ -38,10 +38,10 @@
   </include> 
 
 -->
-<!--  
   <include file="$(find hardware)/launch/includes/vision.launch.xml" >
-    <arg name="result_topic" value="vision_result2" />
+    <arg name="result_topic" value="vision_result" />
   </include> 
+<!--  
   <include file="$(find hardware)/launch/includes/move_base.launch.xml"  >
     <arg name="laser_topic" value="scan_costmap" />
   </include>
