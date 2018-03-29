@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Oct 23 2017)
+// C++ code generated with wxFormBuilder (version Mar 26 2018)
 // http://www.wxformbuilder.org/
 //
-// PLEASE DO "NOT" EDIT THIS FILE!
+// PLEASE DO *NOT* EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
 #include "prob_map_view/ImagePanel.h"
@@ -105,6 +105,7 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 	this->Centre( wxBOTH );
 	
 	// Connect Events
+	this->Connect( wxEVT_ACTIVATE, wxActivateEventHandler( ProbViewer_B::activate ) );
 	log_checkbox_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	rescale_checkbox_->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	image_panel_->Connect( wxEVT_MOTION, wxMouseEventHandler( ProbViewer_B::onMouseMove ), NULL, this );
@@ -115,6 +116,7 @@ ProbViewer_B::ProbViewer_B( wxWindow* parent, wxWindowID id, const wxString& tit
 ProbViewer_B::~ProbViewer_B()
 {
 	// Disconnect Events
+	this->Disconnect( wxEVT_ACTIVATE, wxActivateEventHandler( ProbViewer_B::activate ) );
 	log_checkbox_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	rescale_checkbox_->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ProbViewer_B::onCheck ), NULL, this );
 	image_panel_->Disconnect( wxEVT_MOTION, wxMouseEventHandler( ProbViewer_B::onMouseMove ), NULL, this );

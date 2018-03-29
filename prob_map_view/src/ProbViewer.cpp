@@ -84,6 +84,8 @@ void ProbViewer::setCurrent(){
     cv::cvtColor(out, out, CV_HSV2RGB);
 
     image_panel_->setImage(out);
+    SetClientSize(wxSize(out.cols+5, out.rows+5));
+    Refresh();
     Fit();
     Refresh();
   }
@@ -132,5 +134,10 @@ void ProbViewer::save(const std::string& folder, const std::string& postfix){
       i++;
     }
   }
+}
 
+void ProbViewer::activate(wxActivateEvent &event){
+  image_panel_->updateSize();
+  Fit();
+  Refresh();
 }

@@ -15,6 +15,7 @@ class ImagePanel : public wxPanel{
     bool bitmap_valid_ = false;
     wxBitmap bitmap_;
     virtual void paint(wxPaintEvent& event);
+    wxSize default_size_;
 
   public:
     ImagePanel(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition,
@@ -22,6 +23,7 @@ class ImagePanel : public wxPanel{
     ~ImagePanel();
 
     virtual void setImage(const cv::Mat& image);
+    void updateSize();
 };
 
 

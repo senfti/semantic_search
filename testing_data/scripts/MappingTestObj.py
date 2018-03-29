@@ -39,12 +39,12 @@ param = [
        #    ["object_prior:=0.004", "object_hit:=0.04", "object_miss:=0.0001"],
        #    ["object_prior:=0.004", "object_hit:=0.04", "object_miss:=0.0005"],
        #    ["object_prior:=0.004", "object_hit:=0.04", "object_miss:=0.002"],
-          ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.0001"],
-          ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.0005"],
-          ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.002"],
-          ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.0001"],
-          ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.0005"],
-          ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.002"]
+       #   ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.0001"],
+          ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.0005"]
+          # ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.002"],
+          # ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.0001"],
+          # ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.0005"],
+          # ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.002"]
 ]
 
 
@@ -78,46 +78,46 @@ rospy.init_node('mapping_test_script', anonymous=True)
 rospy.Subscriber("/clock", Clock, callback, queue_size=1)
 pub = rospy.Publisher('/clock', Clock, queue_size=1)
 
-# for p in param:
-#     print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch ' + p[0] + ' ' + p[1] + ' ' + p[2]
-#     proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch ' + p[0] + ' ' + p[1] + ' ' + p[2], shell=True)
-#     time.sleep(10)
-#
-#     proc_rosbag = subprocess.Popen('xterm -e rosbag play -u 50 --clock /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/home_asus_18f.bag', shell=True)
-#     proc_rosbag.wait()
-#
-#     proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
-#     proc_hierarchy.wait()
-#
-#     print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_wz1_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag'
-#     proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_wz1_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag', shell=True)
-#     time.sleep(5)
-#     last_clock.clock = last_clock.clock + rospy.Duration(0.1)
-#     pub.publish(last_clock)
-#     time.sleep(5)
-#
-#     proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
-#     proc_hierarchy.wait()
-#     time.sleep(7)
-#     terminate_ros_node("/record")
-#
-#     time.sleep(7)
-#     terminate_process_and_children(proc_map)
-#     time.sleep(3)
+for p in param:
+    print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch ' + p[0] + ' ' + p[1] + ' ' + p[2]
+    proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch ' + p[0] + ' ' + p[1] + ' ' + p[2], shell=True)
+    time.sleep(10)
+
+    proc_rosbag = subprocess.Popen('xterm -e rosbag play -u 650 --clock /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/home_asus_5f.bag', shell=True)
+    proc_rosbag.wait()
+
+    proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
+    proc_hierarchy.wait()
+
+    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_rl1_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag'
+    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_rl1_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag', shell=True)
+    time.sleep(5)
+    last_clock.clock = last_clock.clock + rospy.Duration(0.1)
+    pub.publish(last_clock)
+    time.sleep(5)
+
+    proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
+    proc_hierarchy.wait()
+    time.sleep(7)
+    terminate_ros_node("/record")
+
+    time.sleep(7)
+    terminate_process_and_children(proc_map)
+    time.sleep(3)
 
 for p in param:
     print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch ' + p[0] + ' ' + p[1] + ' ' + p[2]
     proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch ' + p[0] + ' ' + p[1] + ' ' + p[2], shell=True)
     time.sleep(5)
 
-    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/home_asus_18f.bag', shell=True)
+    proc_rosbag = subprocess.Popen('xterm -e rosbag play --clock /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/home_asus_5f.bag', shell=True)
     proc_rosbag.wait()
 
     proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: 0"', shell=True)
     proc_hierarchy.wait()
 
-    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_wz2_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag'
-    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_wz2_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag', shell=True)
+    print 'xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_rl2_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag'
+    proc_save = subprocess.Popen('xterm -e rosbag record -e "/base_obj(.*)|/base_room(.*)|/obj_(.*)|/room_(.*)|/occupied_cells_vis_array|/mapper_door_poses|/gmap|/map|/map_door_blocked|/room_prob_map_view|/obj_prob_map_view|/base_obj_prob_map_view|/base_room_prob_map_view|/sdf|/hierarchy" -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/result_test_rl2_' + p[0][14:] + '_' + p[1][12:] + '_' + p[2][13:] +'.bag', shell=True)
     time.sleep(5)
     last_clock.clock = last_clock.clock + rospy.Duration(0.1)
     pub.publish(last_clock)

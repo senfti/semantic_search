@@ -29,12 +29,14 @@ ImageViewer_B::ImageViewer_B( wxWindow* parent, wxWindowID id, const wxString& t
 	this->Centre( wxBOTH );
 	
 	// Connect Events
+	this->Connect( wxEVT_ACTIVATE, wxActivateEventHandler( ImageViewer_B::activate ) );
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( ImageViewer_B::exit ) );
 }
 
 ImageViewer_B::~ImageViewer_B()
 {
 	// Disconnect Events
+	this->Disconnect( wxEVT_ACTIVATE, wxActivateEventHandler( ImageViewer_B::activate ) );
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( ImageViewer_B::exit ) );
 	
 }

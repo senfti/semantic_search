@@ -20,6 +20,7 @@ class ImageViewer : public ImageViewer_B{
     virtual void exit( wxCommandEvent& event ){
       ros::shutdown();
     }
+    virtual void activate( wxActivateEvent& event );
 
     void updateImage(const cv::Mat& img);
     void save(const std::string& folder, const std::string& postfix = std::string(""));

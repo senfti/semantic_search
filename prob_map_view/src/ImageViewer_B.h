@@ -34,6 +34,7 @@ class ImageViewer_B : public wxFrame
 		ImagePanel* image_panel_;
 		
 		// Virtual event handlers, overide them in your derived class
+		virtual void activate( wxActivateEvent& event ) { event.Skip(); }
 		virtual void exit( wxCloseEvent& event ) { event.Skip(); }
 		
 	

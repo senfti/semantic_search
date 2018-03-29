@@ -7,7 +7,7 @@
 #include <wx/wx.h>
 
 ImagePanel::ImagePanel(wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style, const wxString& name)
-      : wxPanel(parent, id, pos, size, style, name), bitmap_()
+      : wxPanel(parent, id, pos, size, style, name), bitmap_(), default_size_(size)
 {
   SetBackgroundStyle(wxBG_STYLE_PAINT);
   Connect(wxEVT_PAINT, wxPaintEventHandler(ImagePanel::paint), NULL, this);
@@ -18,12 +18,19 @@ ImagePanel::~ImagePanel(){
 }
 
 void ImagePanel::setImage(const cv::Mat& image){
-  SetMinClientSize(wxSize(image.cols, image.rows));
   unsigned char *data = new unsigned char[image.total() * image.channels()];
   memcpy(data, image.data, image.total() * image.channels() * sizeof(unsigned char));
   bitmap_ = wxBitmap(wxImage(image.cols, image.rows, data));
   bitmap_valid_ = true;
-  Refresh();
+  wxFrame* frame = dynamic_cast<wxFrame*>(m_parent);
+  if(frame->IsActive()){
+    SetMinClientSize(wxSize(image.cols, image.rows));
+    Refresh();
+  }
+  else if(image.cols > bitmap_.GetWidth() || image.rows > bitmap_.GetHeight()){
+    SetSize(wxSize(image.cols+100, image.rows+100));
+    Refresh();
+  }
 }
 
 void ImagePanel::paint(wxPaintEvent& event){
@@ -33,4 +40,9 @@ void ImagePanel::paint(wxPaintEvent& event){
   dc.DrawRectangle(wxPoint(0, 0), GetClientSize());
   if(bitmap_valid_)
     dc.DrawBitmap(bitmap_, 0, 0);
+}
+
+void ImagePanel::updateSize(){
+  SetMinClientSize(bitmap_.GetSize());
+  Refresh();
 }

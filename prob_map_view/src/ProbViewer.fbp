@@ -14,6 +14,7 @@
         <property name="file">ProbViewer_B</property>
         <property name="first_id">1000</property>
         <property name="help_provider">none</property>
+        <property name="indent_with_spaces"></property>
         <property name="internationalize">0</property>
         <property name="name">ProbViewer</property>
         <property name="namespace"></property>
@@ -53,7 +54,7 @@
             <property name="window_name"></property>
             <property name="window_style">wxTAB_TRAVERSAL</property>
             <property name="xrc_skip_sizer">1</property>
-            <event name="OnActivate"></event>
+            <event name="OnActivate">activate</event>
             <event name="OnActivateApp"></event>
             <event name="OnAuiFindManager"></event>
             <event name="OnAuiPaneButton"></event>

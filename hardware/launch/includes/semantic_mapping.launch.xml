@@ -8,10 +8,10 @@
   <arg name="octomap_miss" default="0.38" />
   <arg name="octomap_downproj_thresh" default="0.6" />
 
-  <arg name="object_prior" default="0.003" />
-  <arg name="object_hit" default="0.05" />
+  <arg name="object_prior" default="0.004" />
+  <arg name="object_hit" default="0.1" />
   <arg name="object_miss" default="0.0005" />
-  <arg name="object_samples" default="4000" />
+  <arg name="object_samples" default="8000" />
 
   <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" >
     <remap from="$(arg result_topic)" to="vision_result"/>

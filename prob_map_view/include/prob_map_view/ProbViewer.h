@@ -30,6 +30,7 @@ class ProbViewer : public ProbViewer_B{
     virtual void exit( wxCommandEvent& event ){
       ros::shutdown();
     }
+    virtual void activate( wxActivateEvent& event );
 
     void updateImages(const std::vector<cv::Mat_<float>>& prob_images, const cv::Mat_<uchar>& occ);
     void setCurrent();

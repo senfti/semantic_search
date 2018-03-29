@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Oct 23 2017)
+// C++ code generated with wxFormBuilder (version Mar 26 2018)
 // http://www.wxformbuilder.org/
 //
-// PLEASE DO "NOT" EDIT THIS FILE!
+// PLEASE DO *NOT* EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
 #ifndef __PROBVIEWER_B_H__
@@ -50,6 +50,7 @@ class ProbViewer_B : public wxFrame
 		wxButton* exit_button_;
 		
 		// Virtual event handlers, overide them in your derived class
+		virtual void activate( wxActivateEvent& event ) { event.Skip(); }
 		virtual void onCheck( wxCommandEvent& event ) { event.Skip(); }
 		virtual void onMouseMove( wxMouseEvent& event ) { event.Skip(); }
 		virtual void saveAll( wxCommandEvent& event ) { event.Skip(); }
