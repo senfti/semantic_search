@@ -169,6 +169,94 @@ void YoloDetector::getRegionBoxes(layer l, int w, int h, float thresh, float **p
   }
 }
 
+
+int nmsComparator(const void *pa, const void *pb)
+{
+  detection a = *(detection *)pa;
+  detection b = *(detection *)pb;
+  float diff = 0;
+  if(b.sort_class >= 0){
+    diff = a.prob[b.sort_class] - b.prob[b.sort_class];
+  } else {
+    diff = a.objectness - b.objectness;
+  }
+  if(diff < 0) return 1;
+  else if(diff > 0) return -1;
+  return 0;
+}
+
+void doNmsObj(detection *dets, int total, int classes, float thresh, float relevance_thresh)
+{
+  int i, j, k;
+  k = total-1;
+  for(i = 0; i <= k; ++i){
+    if(dets[i].objectness < relevance_thresh){
+      detection swap = dets[i];
+      dets[i] = dets[k];
+      dets[k] = swap;
+      --k;
+      --i;
+    }
+  }
+  total = k+1;
+
+  for(i = 0; i < total; ++i){
+    dets[i].sort_class = -1;
+  }
+
+  qsort(dets, total, sizeof(detection), nmsComparator);
+  for(i = 0; i < total; ++i){
+    if(dets[i].objectness == 0) continue;
+    box a = dets[i].bbox;
+    for(j = i+1; j < total; ++j){
+      if(dets[j].objectness == 0) continue;
+      box b = dets[j].bbox;
+      if (box_iou(a, b) > thresh){
+        dets[j].objectness = 0;
+        for(k = 0; k < classes; ++k){
+          dets[j].prob[k] = 0;
+        }
+      }
+    }
+  }
+}
+
+
+void doNmsSort(detection *dets, int total, int classes, float thresh, float relevance_thresh)
+{
+  int i, j, k;
+  k = total-1;
+  for(i = 0; i <= k; ++i){
+    if(dets[i].objectness < relevance_thresh){
+      detection swap = dets[i];
+      dets[i] = dets[k];
+      dets[k] = swap;
+      --k;
+      --i;
+    }
+  }
+  total = k+1;
+
+  for(k = 0; k < classes; ++k){
+    for(i = 0; i < total; ++i){
+      dets[i].sort_class = k;
+    }
+    qsort(dets, total, sizeof(detection), nmsComparator);
+    for(i = 0; i < total; ++i){
+      if(dets[i].prob[k] == 0) continue;
+      box a = dets[i].bbox;
+      for(j = i+1; j < total; ++j){
+        box b = dets[j].bbox;
+        if (box_iou(a, b) > thresh){
+          dets[j].prob[k] = 0;
+        }
+      }
+    }
+  }
+}
+
+
+
 std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh, float hier_thresh, float nms){
   cv::Mat tmp;
   cv::resize(img, tmp, cv::Size(net_->w, net_->h));
@@ -182,9 +270,8 @@ std::vector<YoloDetection> YoloDetector::detect(const cv::Mat &img, float thresh
   int nboxes = 0;
   detection *dets = get_network_boxes(net_, 1, 1, 0.0, 0, 0, 0, &nboxes);
   layer l = net_->layers[net_->n-1];
-  int output_size =  l.side*l.side*l.n;
   if(nms != 1.f)
-    do_nms_obj(dets, output_size, l.classes, nms);
+    doNmsSort(dets, nboxes, l.classes, nms, thresh);
 
   std::vector<YoloDetection> detections;
   for(int i=0; i<nboxes; i++){

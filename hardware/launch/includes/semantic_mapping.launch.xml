@@ -13,6 +13,8 @@
   <arg name="object_miss" default="0.0005" />
   <arg name="object_samples" default="8000" />
 
+  <arg name="roomtype_confidence" default="0.05" />
+
   <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" >
     <remap from="$(arg result_topic)" to="vision_result"/>
     <param name="gmapping/base_frame" value="$(arg base_frame)"/>
@@ -65,7 +67,7 @@
     <param name="Octomap/downproject_erode_iters" value="4" />
     <param name="Octomap/downsample_factor" value="4" />                       <!-- maximum range to integrate (speedup!) --> 
 
-    <param name="RoomTypeMapper/CONFIDENCE" value="0.05" />              
+    <param name="RoomTypeMapper/CONFIDENCE" value="$(arg roomtype_confidence)" />              
     <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.8" />             
     <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
     <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="4.0" />

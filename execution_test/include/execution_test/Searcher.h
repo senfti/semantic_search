@@ -17,6 +17,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <std_msgs/Float64MultiArray.h>
+#include <geometry_msgs/PoseArray.h>
+#include <sensor_msgs/PointCloud.h>
 
 #include <vision/VisionMsg.h>
 
@@ -41,6 +43,7 @@ class Searcher{
     float POINTCLOUD_MAX_Z = 1.8f;
 
     float OBJECT_FOUND_THRESH = 0.7;
+    float IMAGE_FOUND_THRESH = 0.9;
 
     int VIEW_ANGLE_STEPS = 12;
     int SEEN_MAP_STEPS = 36;
@@ -53,6 +56,7 @@ class Searcher{
     float TURN_SPEED = 0.5;
     float MOVE_SPEED = 0.01;
     float VIEW_TIME = 0.2;
+    float BAD_ACCESSIBLE_PENALTY = 0.2;
 
     int BORDER_SEEN_THRESH = 1;
     float BORDER_SEEN_SIGMA = 25.f*M_PI/180.0;
@@ -68,29 +72,28 @@ class Searcher{
   private:
     ros::Subscriber map_sub_;
     ros::Subscriber vision_sub_;
-    ros::Subscriber search_query_sub_;
     tf::TransformListener* tf_listener_;
 
     ros::Publisher octomap_pub_;
-    std::vector<ros::Publisher> obj_pub_;
-    std::vector<ros::Publisher> full_pub_;
+    ros::Publisher obj_pub_;
+    ros::Publisher full_pub_;
     ros::Publisher count_pub_;
+    ros::Publisher count2_pub_;
     ros::Publisher next_pose_pub_;
-    ros::Publisher obj_found_pub_;
+    std::vector<ros::Publisher> obj_found_pub_;
     ros::Publisher prior_pub_;
-
-    std::vector<ros::Publisher> found_pubs_;
 
     ros::ServiceClient obj_map_service_client_;
 
-    int searched_obj_ = 0;
+    int searched_obj_ = -100;
+    int searched_room_ = -100;
     std::vector<ObjectMap*> obj_map_;
-    std::vector<ObjectMap*> prior_prob_map_;
+    ObjectMap* prior_prob_map_ = nullptr;
     OctoMapper* octo_mapper_ = nullptr;
     std::vector<cv::Mat_<uchar>> seen_maps_;
     std::vector<cv::Mat_<uchar>> previous_pose_maps_;
     cv::Mat_<uchar> accessible_map_;
-    cv::Mat_<uchar> good_accessible_map_;
+    std::vector<cv::Mat_<uchar>> good_accessible_map_;
     cv::Mat_<uchar> border_map_;
     cv::Mat_<float> border_dir_map_;
     cv::Mat_<uchar> not_fully_viewed_border_;
@@ -102,13 +105,12 @@ class Searcher{
     bool got_map_ = false;
     bool got_vision_ = false;
     bool finished_ = false;
+    int finished_count_ = 0;
     bool running_ = false;
-    bool obj_found_ = false;
-    bool is_quick_search_ = false;
-    int quick_search_step_ = 0;
-    bool quick_search_step_viewed_ = true;
-    geometry_msgs::Pose quick_search_target_;
-    geometry_msgs::PoseStamped found_pose_;
+    std::vector<bool> obj_found_;
+    bool search_step_viewed_ = true;
+    bool search_goal_reached_ = false;
+    std::vector<pcl::PointCloud<pcl::PointXYZ>> found_pose_;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
     std::vector<std::vector<float>> seen_kernel_points_value_;
@@ -116,9 +118,9 @@ class Searcher{
     cv::Point getNearestFree(const cv::Mat_<uchar>& valid_cells, int x, int y) const;
     cv::Mat_<float> getProbMap(cv::Point& origin);
     cv::Mat_<uchar> getViewKernel(float angle, float max_dist, float resolution) const;
-    float calcMoveTime(const cv::Point& pos, float angle, const cv::Point& curr_pos, float curr_angle);
+    float calcMoveTime(const cv::Point& pos, float angle, const cv::Point2f& curr_pos, float curr_angle);
     bool insertIntoSeenMaps(const tf::Transform& curr_pose);
-    float calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float>& prob_map, const cv::Point& curr_pos, float curr_angle);
+    float calcViewpointGain(const cv::Point& pos, int angle_step, const cv::Mat_<float>& prob_map, const cv::Point2f& curr_pos, float curr_angle);
     void calcSeenKernels();
 
     void resize(float x1, float x2, float y1, float y2);
@@ -132,9 +134,9 @@ class Searcher{
     bool haveViewPose() const { return have_curr_view_; }
     bool finished() const { return finished_; }
     bool running() const { return running_; }
-    bool objectFound() const { return obj_found_; }
+    bool objectFound() const { return obj_found_[0]; }
 
-    void start(int searched_obj, bool quick_search, geometry_msgs::Pose& target_pose);
+    void start(int searched_obj, int searched_room);
     void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
@@ -142,19 +144,14 @@ class Searcher{
     void insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg);
     void insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const tf::Point& sensorOriginTf);
 
-    bool objFound(int obj = -1);
+    bool objFound();
 
     bool calcNextViewpoint(const tf::Transform& curr_pose);
-    bool calcNextQuickSearchViewpoint(const geometry_msgs::Pose& target_pose);
 
-    void doCalculations();
+    bool doCalculations(bool force_new);
 
     bool did_abort_ = false;
-
-    void searchQueryCb(const geometry_msgs::QuaternionConstPtr& msg);
-
-
-    void testrun(float vh, float vm);
+    void setSearchGoalReached() { search_goal_reached_ = true; }
 };
 
 

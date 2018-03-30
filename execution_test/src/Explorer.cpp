@@ -10,11 +10,11 @@
 Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)
 {
-  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
-  door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
-  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
-  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
-  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+//  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
+//  door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
+//  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
+//  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
+//  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);
@@ -50,6 +50,7 @@ void Explorer::start(int searched_obj){
   searched_obj_ = searched_obj;
   obj_found_stopped_ = false;
   finished_ = false;
+  finished_count_ = 0;
   curr_frontier_.position.x = -99999999999.9;
   curr_frontier_.orientation.z = 0.0;
   curr_frontier_.orientation.w = 1.0;
@@ -114,7 +115,7 @@ void Explorer::doorFoundCb(const std_msgs::Int8& msg){
 
 
 void Explorer::objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg){
-  if(searched_obj_ >= int(msg->poses.size()) || searched_obj_ < 0)
+  if(searched_obj_ >= int(msg->poses.size()) || searched_obj_ < 0 || !running_)
     return;
   std::cout << "Max Obj Prob: " << msg->probs[searched_obj_] << " / " << OBJECT_FOUND_THRESH << std::endl;
   if(msg->probs[searched_obj_] > OBJECT_FOUND_THRESH){
@@ -166,14 +167,6 @@ void Explorer::calcFrontier(){
   cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
 
-  nav_msgs::OccupancyGrid map = last_map_;
-  for(int x=0; x<last_map_.info.width; x++){
-    for(int y=0; y<last_map_.info.height; y++){
-      map.data[y * last_map_.info.width + x] = (not_forbidden(y,x) ? 0 : 100);
-    }
-  }
-  map_pub_.publish(map);
-
   tf::StampedTransform transform;
   try{
     tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
@@ -210,12 +203,20 @@ void Explorer::calcFrontier(){
   for(int i=1; i<good_accessibles.size(); i++){
     cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
   }
+  nav_msgs::OccupancyGrid map = last_map_;
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 0 : -1);
+    }
+  }
+  map_pub_.publish(map);
 
 //  cv::imshow("explore_accessible", accessible);
 //  cv::imshow("good_frontiers", good_frontiers_mask);
 //  cv::waitKey(1);
 
   cv::Point best_pos(-1,-1);
+  double best_dir = 0.0;
   double best_dist = 999999999999999.9;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
@@ -229,6 +230,7 @@ void Explorer::calcFrontier(){
           if(dist < best_dist){
             best_dist = dist;
             best_pos = cv::Point(p);
+            best_dir = std::atan2(-cp.y,-cp.x);
           }
         }
       }
@@ -236,8 +238,11 @@ void Explorer::calcFrontier(){
   }
 
   if(best_pos.x < 0){
-    finished_ = true;
-    std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
+    if(finished_count_ > 3){
+      finished_ = true;
+      std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now() - t).toSec() << std::endl;
+    }
+    finished_count_++;
     return;
   }
 
@@ -249,6 +254,7 @@ void Explorer::calcFrontier(){
       if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && good_accessibles[3](p)){
         best_pos = p;
         pos_found = true;
+        best_dir = std::atan2(-offset.y,-offset.x);
         break;
       }
     }
@@ -258,27 +264,30 @@ void Explorer::calcFrontier(){
         if(p.x >= 0 && p.y >= 0 && p.x < accessible.cols && p.y < accessible.rows && accessible(p)){
           best_pos = p;
           pos_found = true;
+          best_dir = std::atan2(-offset.y,-offset.x);
           break;
         }
       }
     }
     if(!pos_found){
-      finished_ = true;
-      std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now()-t).toSec() << std::endl;
+      if(finished_count_ > 3){
+        finished_ = true;
+        std::cout << "EXPLORATION FINISHED FOUND in" << (ros::Time::now() - t).toSec() << std::endl;
+      }
+      finished_count_++;
       return;
     }
-    inside = true;
   }
 
   tf::Transform old_frontier;
   tf::poseMsgToTF(curr_frontier_, old_frontier);
-  tf::Transform tf_t(tf::createQuaternionFromYaw(std::atan2(best_pos.y-pos.y, best_pos.x-pos.x)+(inside ? M_PI : 0.0)),
+  tf::Transform tf_t(tf::createQuaternionFromYaw(best_dir),
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
   tf::Transform diff = old_frontier.inverseTimes(tf_t);
   static ros::Time last_frontier_change = ros::Time(0);
   static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
-  if(diff.getOrigin().length() > 0.1 || std::abs(tf::getYaw(diff.getRotation())) > 0.1
+  if(diff.getOrigin().length() > 0.2 || std::abs(tf::getYaw(diff.getRotation())) > 0.1
      || (ros::Time::now()-last_frontier_change > ros::Duration(5.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3)){
     frontier_changed_ = true;
     last_frontier_calc_pos = transform.getOrigin();
@@ -287,6 +296,7 @@ void Explorer::calcFrontier(){
     std::cout << "NEW FRONTIER in " << (ros::Time::now()-t).toSec() << std::endl;
   }
   std::cout << "No frontier change in " << (ros::Time::now()-t).toSec() << std::endl;
+  finished_count_ = 0;
 }
 
 

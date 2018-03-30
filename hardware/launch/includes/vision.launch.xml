@@ -1,6 +1,6 @@
  <launch>
   <arg name="result_topic" default="vision_result" />
-  <node pkg="vision" type="vision" name="vision" output="screen" >
+  <node pkg="vision" type="vision" name="vision" output="screen" launch-prefix="xterm -e" >
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16.caffemodel"/>
     <param name="vision/PLACE_MEAN_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/places205_mean.exr"/>
@@ -21,8 +21,8 @@
     <param name="vision/OBJ_LABEL_FILE" value="/home/thomas/darknet/data/coco.names"/>
     <param name="vision/YOLO_CFG" value="/home/thomas/darknet/cfg/yolov3.cfg"/>
     <param name="vision/YOLO_WEIGHTS" value="/home/thomas/darknet/data/yolov3.weights"/>
-    <param name="vision/OBJ_THRESH" value="0.01"/>
-    <param name="vision/OBJ_NMS" value="0.8"/>
+    <param name="vision/OBJ_THRESH" value="0.001"/>
+    <param name="vision/OBJ_NMS" value="0.5"/>
     <param name="vision/RESULT_TOPIC" value="$(arg result_topic)"/>
 
     <param name="vision/MIN_Z" value="0.55"/>
@@ -36,7 +36,7 @@
     <param name="vision/MIN_DIST_DIFF" value="0.3"/>
     <param name="vision/MAX_ROT_VELOCITY" value="1.0"/>
 
-    <param name="vision/DEBUG_IMAGES" value="0"/>    
-    <param name="vision/IMAGE_SAVE" value="0"/>    
+    <param name="vision/DEBUG_IMAGES" value="1"/>    
+    <param name="vision/IMAGE_SAVE" value="1"/>    
   </node>
 </launch>

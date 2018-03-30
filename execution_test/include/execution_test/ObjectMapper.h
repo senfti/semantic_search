@@ -30,7 +30,7 @@ class ObjectMap{
   public:
     ObjectMap(float resolution, float start_size, float max_height, float initial_value);
     ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, float initial_value);
-    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap, ObjectMap* count_map = nullptr);
+    ObjectMap(float resolution, int base_size, int width, int height, const cv::Point& origin, float max_height, OctoMapper& octomap);
     ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::Mat_<float> obj_from_room);
     ObjectMap(const semantic_mapping_v2::ObjectMapMsg& msg);
 
@@ -88,6 +88,7 @@ class ObjectMap{
 
     visualization_msgs::MarkerArray getProbMsg(int id=0, float thresh = -1.f) const;
     visualization_msgs::MarkerArray getProbMsg(float scale) const;
+    visualization_msgs::MarkerArray getCountMsg(float scale) const;
 
     float getObjectProb(const ObjectMap& occupancy_map, float prior, float expected_room_size) const;
     float getObjectProb(const cv::Mat_<float>& behind_door_mask, float prior, float expected_room_size) const;
@@ -95,7 +96,7 @@ class ObjectMap{
 
     semantic_mapping_v2::ObjectMapMsg getObjMapMsg() const;
     cv::Mat_<float> get2D(const cv::Mat_<float>& behind_door_mask, const ObjectMap& occ_map) const;
-    cv::Mat_<float> get2D(ObjectMap occ_map, ObjectMap prior_map, ObjectMap count_map, int count_thresh, cv::Point& origin) const;
+    cv::Mat_<float> get2D(ObjectMap occ_map, ObjectMap prior_map, int count_thresh, cv::Point& origin) const;
 
 };
 

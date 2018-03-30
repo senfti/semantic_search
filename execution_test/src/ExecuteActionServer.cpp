@@ -2,8 +2,8 @@
 // Created by thomas on 17.12.17.
 //
 
+#include "execution_test/ExecuteActionServer.h"
 #include <std_msgs/Int8.h>
-#include <execution_test/ExecuteActionServer.h>
 
 ExecuteActionServer::ExecuteActionServer()
       : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_), searcher_(&tf_listener_)
@@ -318,12 +318,17 @@ void ExecuteActionServer::doExplore(){
 
 void ExecuteActionServer::doSearch(){
   if(!searcher_.running()){
-    searcher_.start(goal_.target_obj, goal_.action == 3, goal_.pose);
+    searcher_.start(goal_.target_obj, goal_.target_room);
   }
-  static int i = 0;
-  if(i%SEARCHER_CALCULATION_SKIPS == 0)
-    searcher_.doCalculations();
-  i++;
+  if(searcher_.doCalculations(false)){
+    geometry_msgs::PoseStamped pose;
+    pose.pose = searcher_.getNextViewPose();
+    pose.header.frame_id = "map";
+    pose.header.stamp = ros::Time::now();
+    frontier_pub_.publish(pose);
+    sendMoveBaseGoal(pose.pose);
+  }
+
   if(searcher_.finished()){
     ROS_INFO("Finished search");
     if(move_base_state_ == MoveBaseState::WAITING) {
@@ -349,43 +354,20 @@ void ExecuteActionServer::doSearch(){
   }
 
   if(move_base_state_ == MoveBaseState::WAITING) {
-    geometry_msgs::PoseStamped pose;
-    pose.pose = searcher_.getNextViewPose();
-    pose.header.frame_id = "map";
-    pose.header.stamp = ros::Time::now();
-    static unsigned seq = 0;
-    pose.header.seq = seq++;
-    frontier_pub_.publish(pose);
-    sendMoveBaseGoal(pose.pose);
+    ;
   }
   else if(move_base_state_ == MoveBaseState::GOAL_SENT){
     ;
   }
   else if(move_base_state_ == MoveBaseState::RUNNING){
-    if(searcher_.hasViewPoseChanged()){
-      geometry_msgs::PoseStamped pose;
-      pose.pose = searcher_.getNextViewPose();
-      pose.header.frame_id = "map";
-      pose.header.stamp = ros::Time::now();
-      static unsigned seq = 0;
-      pose.header.seq = seq++;
-      frontier_pub_.publish(pose);
-      sendMoveBaseGoal(pose.pose);
-    }
+    ;
   }
   else if(move_base_state_ == MoveBaseState::STOPPED){
     ;
   }
   else if(move_base_state_ == MoveBaseState::FINISHED){
     if(action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-      geometry_msgs::PoseStamped pose;
-      pose.pose = searcher_.getNextViewPose();
-      pose.header.frame_id = "map";
-      pose.header.stamp = ros::Time::now();
-      static unsigned seq = 0;
-      pose.header.seq = seq++;
-      frontier_pub_.publish(pose);
-      sendMoveBaseGoal(pose.pose);
+      searcher_.setSearchGoalReached();
     }
     else if(action_client_.getState() == actionlib::SimpleClientGoalState::PREEMPTED){
       ;
@@ -407,15 +389,15 @@ void ExecuteActionServer::doSearch(){
         vel_pub_.publish(cmd_vel);
         ros::Rate r(0.5);
         r.sleep();
+        searcher_.did_abort_ = true;
+        searcher_.doCalculations(true);
+
         geometry_msgs::PoseStamped pose;
         pose.pose = searcher_.getNextViewPose();
         pose.header.frame_id = "map";
         pose.header.stamp = ros::Time::now();
-        static unsigned seq = 0;
-        pose.header.seq = seq++;
         frontier_pub_.publish(pose);
         sendMoveBaseGoal(pose.pose);
-        searcher_.did_abort_ = true;
       }
     }
   }
@@ -446,7 +428,7 @@ void ExecuteActionServer::doStartRotation(){
     goal_.action = -1;
   }
   old_transform = transform;
-  if(ros::Time::now()-start_time > ros::Duration(10.0)){
+  if(ros::Time::now()-start_time > ros::Duration(15.0)){
     started = false;
     execution::ExecuteResult result;
     result.result_number = -11;
@@ -456,7 +438,7 @@ void ExecuteActionServer::doStartRotation(){
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
-  cmd_vel.angular.z = 1.0;
+  cmd_vel.angular.z = 0.5;
   vel_pub_.publish(cmd_vel);
 }
 

@@ -29,6 +29,7 @@ class Explorer{
     cv::Point curr_point_;
     geometry_msgs::Pose curr_frontier_;
     bool frontier_changed_;
+    int finished_count_ = 0;
     bool finished_ = false;
     bool door_found_stopped_ = false;
     bool obj_found_stopped_ = false;

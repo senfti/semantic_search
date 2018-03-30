@@ -35,7 +35,7 @@ generate_messages(
   std_msgs
 )
 
-add_definitions(-std=c++11 -g)
+add_definitions(-std=c++11 -O3)
 add_definitions(${Caffe_DEFINITIONS} )
 
 find_package( OpenCV REQUIRED )

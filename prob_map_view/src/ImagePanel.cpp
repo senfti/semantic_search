@@ -25,12 +25,8 @@ void ImagePanel::setImage(const cv::Mat& image){
   wxFrame* frame = dynamic_cast<wxFrame*>(m_parent);
   if(frame->IsActive()){
     SetMinClientSize(wxSize(image.cols, image.rows));
-    Refresh();
   }
-  else if(image.cols > bitmap_.GetWidth() || image.rows > bitmap_.GetHeight()){
-    SetSize(wxSize(image.cols+100, image.rows+100));
-    Refresh();
-  }
+  Refresh();
 }
 
 void ImagePanel::paint(wxPaintEvent& event){

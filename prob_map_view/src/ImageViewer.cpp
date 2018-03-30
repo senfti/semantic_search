@@ -12,8 +12,10 @@ ImageViewer::ImageViewer(const wxString &win_name)
 void ImageViewer::updateImage(const cv::Mat& img){
   img.copyTo(img_);
   image_panel_->setImage(img);
-  Fit();
-  Refresh();
+  if(IsActive()){
+    Fit();
+    Refresh();
+  }
 }
 
 void ImageViewer::save(const std::string& folder, const std::string& postfix){

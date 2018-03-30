@@ -8,6 +8,8 @@
   <arg name="object_miss" default="0.0005" />
   <arg name="object_samples" default="8000" />
 
+  <arg name="roomtype_confidence" default="0.05" />
+
   <param name="use_sim_time" value="true" />
 
   <include file="$(find hardware)/launch/includes/robot.launch.xml">
@@ -30,6 +32,8 @@
     <arg name="object_hit" value="$(arg object_hit)" />
     <arg name="object_miss" value="$(arg object_miss)" />
     <arg name="object_samples" value="$(arg object_samples)" />
+
+    <arg name="roomtype_confidence" default="$(arg roomtype_confidence)" />
   </include>
 
   <node pkg="odom_to_tf" type="odom_to_tf" name="odom_to_tf" args="odom" /> 

@@ -126,10 +126,12 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
   if(similarity.empty()){
     ros::NodeHandle private_nh("~");
     std::string sim_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat";
+    std::string sim2_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread_real.dat";
     double confidence = 0.1;
     private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
     private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
     std::ifstream f(sim_file);
+    std::ofstream f2(sim2_file);
     if(!f.good()){
       ROS_WARN("CANNOT OPEN SIMILARITY FILE %s", sim_file.c_str());
       return 1.f;
@@ -156,6 +158,12 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
         if(c!=r)
           similarity[r][c] = similarity[r][c]*(1.0-confidence)/sum;
       }
+    }
+    for(int r=0; r<n; r++){
+      for(int c=0; c<n; c++){
+        f2 << similarity[r][c] << " ";
+      }
+      f2 << std::endl;
     }
 
 //    std::ofstream o("/home/thomas/sdfsdfsdfsdf.csv");

@@ -84,10 +84,10 @@ void ProbViewer::setCurrent(){
     cv::cvtColor(out, out, CV_HSV2RGB);
 
     image_panel_->setImage(out);
-    SetClientSize(wxSize(out.cols+5, out.rows+5));
-    Refresh();
-    Fit();
-    Refresh();
+    if(IsActive()){
+      Fit();
+      Refresh();
+    }
   }
 }
 

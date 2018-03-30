@@ -9,7 +9,11 @@ project(execution_test)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   actionlib
+  execution
   geometry_msgs
+  message_generation
+  actionlib_msgs
+  move_base_msgs
   semantic_mapping_v2
   vision
   nav_msgs
@@ -40,7 +44,6 @@ add_definitions(-DOCTOMAP_NODEBUGOUT -std=c++11 -O3 -Wreturn-type)
 #   Service2.srv
 # )
 
-## Generate actions in the 'action' folder
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
