@@ -30,7 +30,6 @@ HierarchyMapper::HierarchyMapper()
   door_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("mapper_door_poses", 1, true);
   particle_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particle_poses", 1, true);
   door_found_pub_ = nh_.advertise<std_msgs::Int8>("door_found", 1);
-  obj_found_pub_ = nh_.advertise<semantic_mapping_v2::ObjFoundMsg>("obj_found", 1);
   obj_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("obj_prob_map_view", 1);
   room_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("room_prob_map_view", 1);
   base_obj_prob_map_view_pub_ = nh_.advertise<prob_map_view::ProbMapMsg>("base_obj_prob_map_view", 1);
@@ -269,16 +268,6 @@ void HierarchyMapper::downprojecAndPublish(){
     marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
-
-  semantic_mapping_v2::ObjFoundMsg obj_found_msg;
-  std::vector<std::pair<geometry_msgs::Pose, float>> tmp = room_mapper_[current_mapper_]->getObjectMax();
-  obj_found_msg.poses.resize(tmp.size());
-  obj_found_msg.probs.resize(tmp.size());
-  for(int i=0; i<tmp.size(); i++){
-    obj_found_msg.poses[i] = tmp[i].first;
-    obj_found_msg.probs[i] = tmp[i].second;
-  }
-  obj_found_pub_.publish(obj_found_msg);
 
 //  static int counter=0;
 //  if((counter%debug_publish_interval_) == debug_publish_interval_-1){

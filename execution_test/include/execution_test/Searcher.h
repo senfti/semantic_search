@@ -20,6 +20,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <sensor_msgs/PointCloud.h>
 
+#include <vision/ObjectFoundMsg.h>
 #include <vision/VisionMsg.h>
 
 class Searcher{
@@ -28,21 +29,21 @@ class Searcher{
     float SEARCH_MAX_TRANS_VEL = 0.3;
     int ROBOT_SIZE = 0.35/0.05;
 
-    float OBJ_PRIOR_PROB = 0.003f;
-    float OBJ_MIN_PROB = 0.00001f;
+    float OBJ_PRIOR_PROB = 0.004f;
+    float OBJ_MIN_PROB = 0.004f;
     float OBJ_MAX_PROB = 0.9f;
 
     float RESOLUTION = 10.f;
     float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
     float ROOM_EXPECTED_SIZE = 24.f;
 
-    float V_H = 0.08;
-    float V_M = 0.0003;
+    float V_H = 0.1;
+    float V_M = 0.0005;
 
     float POINTCLOUD_MIN_Z = 0.0f;
     float POINTCLOUD_MAX_Z = 1.8f;
 
-    float OBJECT_FOUND_THRESH = 0.7;
+    float OBJECT_FOUND_THRESH = 0.99;
     float IMAGE_FOUND_THRESH = 0.9;
 
     int VIEW_ANGLE_STEPS = 12;
@@ -72,6 +73,7 @@ class Searcher{
   private:
     ros::Subscriber map_sub_;
     ros::Subscriber vision_sub_;
+    ros::Subscriber obj_found_sub_;
     tf::TransformListener* tf_listener_;
 
     ros::Publisher octomap_pub_;
@@ -143,6 +145,7 @@ class Searcher{
     void visionCb(const vision::VisionMsgConstPtr& msg);
     void insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg);
     void insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const tf::Point& sensorOriginTf);
+    void objFoundCb(const vision::ObjectFoundMsgConstPtr& msg);
 
     bool objFound();
 

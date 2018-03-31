@@ -46,7 +46,6 @@ class HierarchyMapper{
     ros::Publisher marker_pub_;
     ros::Publisher door_pose_pub_;
     ros::Publisher door_found_pub_;
-    ros::Publisher obj_found_pub_;
     ros::Publisher obj_prob_map_view_pub_;
     ros::Publisher room_prob_map_view_pub_;
     ros::Publisher base_obj_prob_map_view_pub_;

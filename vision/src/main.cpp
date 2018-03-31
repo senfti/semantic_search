@@ -28,6 +28,9 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   private_nh.param("vision/MIN_Z", MIN_Z, MIN_Z);
   private_nh.param("vision/MAX_Z", MAX_Z, MAX_Z);
 
+  private_nh.param("vision/FOUND_MIN_VALID_FRACTION", FOUND_MIN_VALID_FRACTION, FOUND_MIN_VALID_FRACTION);
+  private_nh.param("vision/FOUND_MIN_PROB", FOUND_MIN_PROB, FOUND_MIN_PROB);
+
   private_nh.param("vision/DETECTION_SAMPLE_NUM", DETECTION_SAMPLE_NUM, DETECTION_SAMPLE_NUM);
   private_nh.param("vision/MIN_OBJECT_PROB", MIN_OBJECT_PROB, MIN_OBJECT_PROB);
 
@@ -77,6 +80,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   //depth_image_sub_ = it_.subscribe("/camera/depth_registered/image_raw", 1, &VisionApp::depthImageCb, this);
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &VisionApp::cloudCb, this);
   result_pub_ = nh_.advertise<vision::VisionMsg>(RESULT_TOPIC, 10);
+  found_pub_ = nh_.advertise<vision::ObjectFoundMsg>("obj_found_in_image", 10);
 
   is_ok_ = true;
   std::srand(ros::Time::now().nsec);
@@ -236,12 +240,36 @@ std::vector<CaffeRecognition> VisionApp::fillPlaceGuesses(const cv::Mat& img, vi
 }
 
 
+void VisionApp::addObjectFound(vision::ObjectFoundMsg &msg, int o, const YoloDetection &det, const pcl::PointCloud<pcl::PointXYZ>& cloud){
+  std::vector<float> depths;
+  depths.reserve(det.area());
+  for(int x=det.x1_; x<=det.x2_; x++){
+    for(int y=det.y1_; y<=det.y2_; y++){
+      if(cloud.at(x,y).z >= MIN_Z && cloud.at(x,y).z <= MAX_Z)
+        depths.push_back(cloud.at(x,y).z);
+    }
+  }
+  std::cout << "FOUND " << depths.size() << " " << det.area() << std::endl;
+  if(depths.size() < det.area()*FOUND_MIN_VALID_FRACTION)
+    return;
+
+  std::sort(depths.begin(), depths.end());
+  float z = depths[depths.size()/2];
+
+  msg.object_type.push_back(o);
+  msg.positions.push_back(geometry_msgs::Point());
+  msg.positions.back().z = z;
+  msg.positions.back().x = (det.centerX()-cloud.width/2)/cloud.width*2*X_SPREAD*z;
+  msg.positions.back().y = (det.centerY()-cloud.height/2)/cloud.height*2*Y_SPREAD*z;
+}
+
+
 inline bool isSampleInDetection(int x, int y, const YoloDetection& detection){
   return (x>detection.x1_ && x<detection.x2_ && y>detection.y1_ && y<detection.y2_);
 }
 
 
-std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const{
+std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg){
   auto begin = std::chrono::steady_clock::now();
   std::vector<YoloDetection> detections = detector_->detect(img, OBJ_THRESH, 0.5, OBJ_NMS);
 
@@ -249,11 +277,18 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, c
   vision_msg.objects.num_objects = NUM_USED_OBJECT_TYPES;
   vision_msg.objects.num_boxes = detections.size();
   vision_msg.objects.probs.resize(NUM_USED_OBJECT_TYPES*detections.size());
+  vision::ObjectFoundMsg obj_found_msg;
+  obj_found_msg.header.stamp = vision_msg.header.stamp;
+  obj_found_msg.header.frame_id = "camera_rgb_optical_frame";
   for(int d=0; d<detections.size(); d++){
     for(int o=0; o<NUM_USED_OBJECT_TYPES; o++){
       vision_msg.objects.probs[d*NUM_USED_OBJECT_TYPES+o] = detections[d].prob_[o];
+      if(detections[d].prob_[o] >= FOUND_MIN_PROB)
+        addObjectFound(obj_found_msg, o, detections[d], cloud);
     }
   }
+  if(!obj_found_msg.object_type.empty())
+    found_pub_.publish(obj_found_msg);
 
   int i = 0;
   for(int c=0; i<DETECTION_SAMPLE_NUM && c < 5*DETECTION_SAMPLE_NUM; c++){

@@ -12,7 +12,7 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
 {
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
   door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
-  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Explorer::objFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
   obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
@@ -114,17 +114,37 @@ void Explorer::doorFoundCb(const std_msgs::Int8& msg){
 }
 
 
-void Explorer::objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg){
-  if(searched_obj_ >= int(msg->poses.size()) || searched_obj_ < 0 || !running_)
-    return;
-  std::cout << "Max Obj Prob: " << msg->probs[searched_obj_] << " / " << OBJECT_FOUND_THRESH << std::endl;
-  if(msg->probs[searched_obj_] > OBJECT_FOUND_THRESH){
-    found_pose_.header.stamp = ros::Time::now();
-    found_pose_.header.frame_id = "map";
-    found_pose_.pose = msg->poses[searched_obj_];
-    obj_found_pub_.publish(found_pose_);
-    obj_found_stopped_ = true;
-    finished_ = true;
+void Explorer::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
+  for(int i=0; i<msg->object_type.size(); i++){
+    if(msg->object_type[i] == searched_obj_){
+      tf::StampedTransform transform;
+      try{
+        tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
+      }
+      catch (tf::TransformException ex){
+        try{
+          tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", ros::Time(0), transform);
+        }
+        catch (tf::TransformException ex){
+          ROS_ERROR("%s",ex.what());
+          return;
+        }
+      }
+      tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
+      p = transform*p;
+      found_pose_.header.stamp = ros::Time::now();
+      found_pose_.header.frame_id = "map";
+      found_pose_.pose.position.x = p.x();
+      found_pose_.pose.position.y = p.y();
+      found_pose_.pose.position.z = p.z();
+      found_pose_.pose.orientation.w = 1.0;
+      found_pose_.pose.orientation.x = 0.0;
+      found_pose_.pose.orientation.y = 0.0;
+      found_pose_.pose.orientation.z = 0.0;
+      obj_found_pub_.publish(found_pose_);
+      obj_found_stopped_ = true;
+      finished_ = true;
+    }
   }
 }
 

@@ -9,7 +9,7 @@
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/PoseArray.h>
 #include <pcl_ros/point_cloud.h>
-
+#include <tf_conversions/tf_eigen.h>
 
 const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
                                              "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
@@ -119,6 +119,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
 
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
   vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Searcher::objFoundCb, this);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
@@ -294,7 +295,7 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
 void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
-  if(!running_)
+  if(!running_ || obj_map_.empty())
     return;
 
   ros::Time t = ros::Time::now();
@@ -542,24 +543,18 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
   float min_z = std::max(POINTCLOUD_MIN_Z, 0.f);
   float max_z = std::min(POINTCLOUD_MAX_Z, obj_map_[0]->getMaxHeight()-0.001f);
 
-  float maxxx = 0.0;
   for(int o=0; o<61; o++){
     ObjectMap tmp(ObjectMap(obj_map_[o]->getResolution(), obj_map_[o]->getBaseSize(), obj_map_[o]->getWidth(), obj_map_[o]->getHeight(), obj_map_[o]->getOrigin(), obj_map_[o]->getMaxHeight(), -1.f));
 
-    std::vector<pcl::PointXYZ> found_points;
     for(int i = 0; i < cloud.size(); i++){
       if(cloud[i].z >= min_z && cloud[i].z <= max_z){
         int x = obj_map_[o]->getXPixel(cloud[i].x);
         int y = obj_map_[o]->getYPixel(cloud[i].y);
         int z = obj_map_[o]->getZPixel(cloud[i].z);
         tmp.insertMax(x, y, z, OBJ_MIN_PROB);
-        bool found = false;
         for(const auto &b : msg.samples[i].boxes){
           tmp.insertMax(x, y, z, msg.probs[b * msg.num_objects + o]);
-          found = msg.probs[b * msg.num_objects + o] > IMAGE_FOUND_THRESH || found;
         }
-        if(found)
-          found_points.push_back(cloud[i]);
       }
     }
 
@@ -571,19 +566,6 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
           }
         }
       }
-    }
-    if(!found_points.empty()){
-      pcl::PointXYZ found_pos = calcGeometricMedian(found_points);
-      found_pose_[o].push_back(found_pos);
-      found_pose_[o].header.frame_id = "map";
-      found_pose_[o].header.stamp = ros::Time::now().toSec();
-      obj_found_pub_[o].publish(found_pose_[o]);
-      found_pose_[61].push_back(found_pos);
-      found_pose_[61].header.frame_id = "map";
-      found_pose_[61].header.stamp = ros::Time::now().toSec();
-      obj_found_pub_[61].publish(found_pose_[61]);
-      obj_found_[o] = true;
-      std::cout << "IMAGE OBJ FOUND " << o << " " << obj_names[o] << " " << found_pos.x << " " << found_pos.y << " " << found_pos.z << std::endl;
     }
   }
 }
@@ -604,6 +586,54 @@ void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, con
 
 
   octo_mapper_->insertCloud(pc, pc_ground, sensorOriginTf);
+}
+
+template<typename Transform>
+void tf2Eigen(const tf::Transform &t, Transform & e)
+{
+  for(int i=0; i<3; i++)
+  {
+    e.matrix()(i,3) = t.getOrigin().m_floats[i];
+    for(int j=0; j<3; j++)
+    {
+      e.matrix()(i,j) = t.getBasis().getColumn(i).m_floats[j];
+    }
+  }
+  // Fill in identity in last row
+  for (int col = 0 ; col < 3; col ++)
+    e.matrix()(3, col) = 0;
+  e.matrix()(3,3) = 1;
+}
+
+
+void Searcher::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
+  }
+  catch (tf::TransformException ex){
+    try{
+      tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return;
+    }
+  }
+  for(int i=0; i<msg->object_type.size(); i++){
+    tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
+    p = transform*p;
+    found_pose_[msg->object_type[i]].push_back(pcl::PointXYZ(p.x(), p.y(), p.z()));
+    found_pose_[msg->object_type[i]].header.frame_id = "map";
+    found_pose_[msg->object_type[i]].header.stamp = ros::Time::now().toSec();
+    obj_found_pub_[msg->object_type[i]].publish(found_pose_[msg->object_type[i]]);
+    found_pose_[61].push_back(pcl::PointXYZ(p.x(), p.y(), p.z()));
+    found_pose_[61].header.frame_id = "map";
+    found_pose_[61].header.stamp = ros::Time::now().toSec();
+    obj_found_pub_[61].publish(found_pose_[61]);
+    obj_found_[msg->object_type[i]] = true;
+    std::cout << "IMAGE OBJ FOUND " << msg->object_type[i] << " " << obj_names[msg->object_type[i]] << " " << p.x() << " " << p.y() << " " << p.z() << std::endl;
+  }
 }
 
 

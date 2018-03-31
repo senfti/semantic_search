@@ -1,6 +1,6 @@
  <launch>
   <arg name="result_topic" default="vision_result" />
-  <node pkg="vision" type="vision" name="vision" output="screen" launch-prefix="xterm -e" >
+  <node pkg="vision" type="vision" name="vision" output="screen" >
     <param name="vision/PLACE_MODEL_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16_deploy.prototxt"/>
     <param name="vision/PLACE_TRAINED_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/siat_scene_vgg_16.caffemodel"/>
     <param name="vision/PLACE_MEAN_FILE" value="/home/thomas/BVLCcaffe/models/Places205-VGGNet-master/places205_mean.exr"/>
@@ -28,6 +28,9 @@
     <param name="vision/MIN_Z" value="0.55"/>
     <param name="vision/MAX_Z" value="3.5"/>
 
+    <param name="vision/FOUND_MIN_VALID_FRACTION" value="0.6"/>
+    <param name="vision/FOUND_MIN_PROB" value="0.9"/>
+
     <param name="vision/DETECTION_SAMPLE_NUM" value="20000"/>
     <param name="vision/MIN_OBJECT_PROB" value="0.00001"/>
 
@@ -36,7 +39,7 @@
     <param name="vision/MIN_DIST_DIFF" value="0.3"/>
     <param name="vision/MAX_ROT_VELOCITY" value="1.0"/>
 
-    <param name="vision/DEBUG_IMAGES" value="1"/>    
-    <param name="vision/IMAGE_SAVE" value="1"/>    
+    <param name="vision/DEBUG_IMAGES" value="0"/>    
+    <param name="vision/IMAGE_SAVE" value="0"/>    
   </node>
 </launch>

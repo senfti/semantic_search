@@ -23,6 +23,7 @@
 #include <thread>
 #include <opencv2/opencv.hpp>
 #include "vision/VisionMsg.h"
+#include "vision/ObjectFoundMsg.h"
 
 class VisionApp{
   public:
@@ -41,6 +42,9 @@ class VisionApp{
     float MIN_Z = 0.8;
     float MAX_Z = 3.5;
 
+    float FOUND_MIN_VALID_FRACTION = 0.6f;
+    float FOUND_MIN_PROB = 0.9f;
+
     int DETECTION_SAMPLE_NUM = 2000;
     float MIN_OBJECT_PROB = 0.001f;
 
@@ -52,12 +56,16 @@ class VisionApp{
     int DEBUG_IMAGES = 1;
     int IMAGE_SAVE = 0;
 
+    const float X_SPREAD = 0.554;
+    const float Y_SPREAD = 0.414;
+
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     //image_transport::Subscriber depth_image_sub_;
     ros::Subscriber cloud_sub_;
     ros::Publisher result_pub_;
+    ros::Publisher found_pub_;
 
     std::thread* nn_thread_ = nullptr;
 
@@ -88,7 +96,8 @@ class VisionApp{
 
     bool useImage(const cv::Mat& img, ros::Time stamp);
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
-    std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg) const;
+    std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg);
+    void addObjectFound(vision::ObjectFoundMsg& msg, int o, const YoloDetection& det, const pcl::PointCloud<pcl::PointXYZ>& cloud);
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
 };
 

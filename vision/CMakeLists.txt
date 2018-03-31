@@ -17,8 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   tf
-  message_generation
   pcl_ros
+  message_generation
 )
 
 add_message_files(
@@ -27,6 +27,7 @@ add_message_files(
   PlaceRecognitionMsg.msg
   VisionMsg.msg
   DetectionSample.msg
+  ObjectFoundMsg.msg
 )
 generate_messages(
   DEPENDENCIES

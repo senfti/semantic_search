@@ -33,6 +33,9 @@ class YoloDetection{
     YoloDetection(const std::string& label, int id, float* prob, float x1, float x2, float y1, float y2, float z, const std::vector<bool>& used_classes);
     void draw(cv::Mat& img, cv::Scalar border_color, int border_thickness, cv::Scalar text_color, float text_size, int text_thickness);
     void scale(float factor);
+    int area() const { return (x2_-x1_+1)*(y2_-y1_+1); }
+    float centerX() const { return (x1_+x2_)/2; }
+    float centerY() const { return (y1_+y2_)/2; }
 };
 
 class YoloDetector{

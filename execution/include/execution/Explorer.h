@@ -12,7 +12,7 @@
 #include <tf/transform_listener.h>
 #include <opencv2/opencv.hpp>
 #include <std_msgs/Int8.h>
-#include <semantic_mapping_v2/ObjFoundMsg.h>
+#include <vision/ObjectFoundMsg.h>
 
 class Explorer{
   public:
@@ -53,7 +53,7 @@ class Explorer{
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
     void doorFoundCb(const std_msgs::Int8& msg);
-    void objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg);
+    void objFoundCb(const vision::ObjectFoundMsgConstPtr& msg);
 
     geometry_msgs::Pose getNextFrontier();
     bool hasFrontierChanged() const { return frontier_changed_; }
