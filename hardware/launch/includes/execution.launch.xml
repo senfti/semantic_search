@@ -13,20 +13,20 @@
     <param name="SEARCH_MAX_ROT_VEL" value="0.5" />
     <param name="SEARCH_MAX_TRANS_VEL" value="0.3" />
 
-    <param name="OBJ_PRIOR_PROB" value="0.003" />
-    <param name="OBJ_MIN_PROB" value="0.003" />
+    <param name="OBJ_PRIOR_PROB" value="0.004" />
+    <param name="OBJ_MIN_PROB" value="0.004" />
     <param name="OBJ_MAX_PROB" value="0.9" />
 
     <param name="RESOLUTION" value="5.0" />
     <param name="OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />
 
-    <param name="V_H" value="0.0035" />
-    <param name="V_M" value="0.0025" />
+    <param name="V_H" value="0.1" />
+    <param name="V_M" value="0.0005" />
 
     <param name="POINTCLOUD_MIN_Z" value="0.3" />
     <param name="POINTCLOUD_MAX_Z" value="1.6" />
 
-    <param name="OBJECT_FOUND_THRESH" value="0.5" />
+    <param name="OBJECT_FOUND_THRESH" value="0.8" />
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
     <param name="SEEN_MAP_STEPS" value="36" />

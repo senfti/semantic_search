@@ -4,9 +4,18 @@
 
 #include <execution/Searcher.h>
 #include <pcl/common/common.h>
+#include <pcl/common/geometry.h>
 #include <semantic_mapping_v2/ObjectMapSrv.h>
 #include <tf/transform_datatypes.h>
+#include <geometry_msgs/PoseArray.h>
+#include <pcl_ros/point_cloud.h>
+#include <tf_conversions/tf_eigen.h>
 
+const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
+                                             "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
+                                             "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hotdog","pizza","donut","cake",
+                                             "chair","sofa","potplant","bed","table","toilet","monitor","laptop","mouse","remote","keyboard","cellphone",
+                                             "microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissor","teddybear","hairdryer","toothbrush","all"};
 
 inline float angleDist(float angle1, float angle2){
   float angle = angle1-angle2;
@@ -62,15 +71,6 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::moveWindow(name, 1600,0);
 }
 
-std::vector<std::string> obj_name = {"person",  "bicycle",  "car",  "motorbike",  "aeroplane",  "bus",  "train",  "truck",  "boat",  "trafficlight",
-                                     "firehydrant",  "stopsign",  "parkmeter",  "bench",  "bird",  "cat",  "dog",  "horse",  "sheep",  "cow",  "elephant",
-                                     "bear",  "zebra",  "giraffe",  "backpack",  "umbrella",  "handbag",  "tie",  "suitcase",  "frisbee",  "ski",
-                                     "snowboard",  "sportball",  "kite",  "baseballbat",  "glove",  "skateboard",  "surfboard",  "racket",
-                                     "bottle",  "wineglass",  "cup",  "fork",  "knife",  "spoon",  "bowl",  "banana",  "apple",  "sandwich",  "orange",
-                                     "broccoli",  "carrot",  "hotdog",  "pizza",  "donut",  "cake",  "chair",  "sofa",  "potplant",  "bed",  "table",
-                                     "toilet",  "monitor",  "laptop",  "mouse",  "remote",  "keyboard",  "cellphone",  "microwave",  "oven",  "toaster",
-                                     "sink",  "refrigerator",  "book",  "clock",  "vase",  "scissor",  "teddybear",  "hairdryer",  "toothbrush"};
-
 Searcher::Searcher(tf::TransformListener *tf_listener)
   : tf_listener_(tf_listener), obj_map_service_client_(ros::NodeHandle().serviceClient<semantic_mapping_v2::ObjectMapSrv>("obj_map_srv"))
 {
@@ -119,6 +119,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
 
   map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
   vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Searcher::objFoundCb, this);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
@@ -283,7 +284,7 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
 void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
-  if(!running_)
+  if(!running_ || obj_map_==nullptr)
     return;
 
   ros::Time t = ros::Time::now();
@@ -466,7 +467,6 @@ bool Searcher::doCalculations(bool force_new){
 
   if(objFound()){
     finished_ = true;
-    std::cout << "OBJECT FOUND: " << found_pose_.pose.position.x << " " << found_pose_.pose.position.y << " " << found_pose_.pose.position.z << std::endl;
     return false;
   }
 
@@ -557,10 +557,37 @@ void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, con
   pass_z.setInputCloud(cloud);
   pass_z.filter(pc_ground);
 
-  std::cout << pc.size() << " " << pc_ground.size() << std::endl;
-
   octo_mapper_->insertCloud(pc, pc_ground, sensorOriginTf);
-  std::cout << "Cloud inserted" << std::endl;
+}
+
+
+void Searcher::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
+  }
+  catch (tf::TransformException ex){
+    try{
+      tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return;
+    }
+  }
+  for(int i=0; i<msg->object_type.size(); i++){
+    if(msg->object_type[i] == searched_obj_)
+      continue;
+
+    tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
+    p = transform*p;
+    found_pose_.push_back(pcl::PointXYZ(p.x(), p.y(), p.z()));
+    found_pose_.header.frame_id = "map";
+    found_pose_.header.stamp = ros::Time::now().toSec();
+    obj_found_pub_.publish(found_pose_);
+    obj_found_ = true;
+    std::cout << "IMAGE OBJ FOUND " << msg->object_type[i] << " " << obj_names[msg->object_type[i]] << " " << p.x() << " " << p.y() << " " << p.z() << std::endl;
+  }
 }
 
 
@@ -574,13 +601,6 @@ bool Searcher::objFound(){
       for(int z=0; z<obj_map_->getZSteps(); z++){
         if(obj_map_->getCount(x,y,z) > 0){
           float prob = obj_map_->getProb(x,y,z)*octo_mapper_->getOccupancy(obj_map_->getXWorld(x), obj_map_->getYWorld(y), obj_map_->getZWorld(z));
-//          for(int xk=std::max(0,x-1); xk<std::min(x+2, obj_map_->getWidth()); xk++){
-//            for(int yk=std::max(0,y-1); yk<std::min(y+2, obj_map_->getHeight()); yk++){
-//              for(int zk=std::max(0,z-1); zk<std::min(z+2, obj_map_->getZSteps()); zk++){
-//                prob *= (1.f-multiplied.getProb(xk,yk,zk));
-//              }
-//            }
-//          }
           if(prob > max_prob){
             max_prob = prob;
             found_pose.pose.position.x = x;
@@ -591,23 +611,22 @@ bool Searcher::objFound(){
       }
     }
   }
-  //octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
-  //count_pub_.publish(octo_mapper_->getCountMsg(ros::Time::now(), 0.1f));
+    //octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
+    //count_pub_.publish(octo_mapper_->getCountMsg(ros::Time::now(), 0.1f));
   if(max_prob > OBJECT_FOUND_THRESH){
-    found_pose_.header.stamp = ros::Time::now();
+    pcl::PointXYZ found_pos(obj_map_->getXWorld(found_pose.pose.position.x), obj_map_->getYWorld(found_pose.pose.position.y), obj_map_->getZWorld(found_pose.pose.position.z));
+
+    found_pose_.push_back(found_pos);
     found_pose_.header.frame_id = "map";
-    found_pose_.pose.position.x = obj_map_->getXWorld(found_pose.pose.position.x);
-    found_pose_.pose.position.y = obj_map_->getYWorld(found_pose.pose.position.y);
-    found_pose_.pose.position.z = obj_map_->getZWorld(found_pose.pose.position.z);
-    found_pose_.pose.orientation.x = found_pose_.pose.orientation.y = found_pose_.pose.orientation.z = 0.0;
-    found_pose_.pose.orientation.w = 1.0;
+    found_pose_.header.stamp = ros::Time::now().toSec();
     obj_found_pub_.publish(found_pose_);
     obj_found_ = true;
+    std::cout << "OBJ FOUND " << " " << found_pos.x << " " << found_pos.y << " " << found_pos.z << std::endl;
   }
-  std::cout << "Max Obj Prob " << obj_name[searched_obj_] << ":" << max_prob
-            << (max_prob > OBJECT_FOUND_THRESH ? (std::to_string(found_pose_.pose.position.x) + " " +
-              std::to_string(found_pose_.pose.position.y) + " " +
-              std::to_string(found_pose_.pose.position.z)) : "") << std::endl;
+  std::cout << "Max Obj Prob " << obj_names[searched_obj_] << ":" << max_prob
+            << (max_prob > OBJECT_FOUND_THRESH ? (std::to_string(found_pose_[0].x) + " " +
+              std::to_string(found_pose_[0].y) + " " +
+              std::to_string(found_pose_[0].z)) : "") << std::endl;
   return obj_found_;
 }
 
