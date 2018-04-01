@@ -13,9 +13,13 @@ int main(int argc, char** argv){
   geometry_msgs::Pose p;
   s.start(22, 0);
   ros::Rate ra(5.0);
+  int bla = 1;
   while(ros::ok()){
     ros::spinOnce();
-//    s.objFound();
+    s.objFound();
+    if(bla%16 == 0)
+      s.publishMaps();
+    bla++;
 //    s.doCalculations();
   }
 

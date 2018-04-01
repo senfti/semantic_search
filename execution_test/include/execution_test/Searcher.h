@@ -31,7 +31,7 @@ class Searcher{
 
     float OBJ_PRIOR_PROB = 0.004f;
     float OBJ_MIN_PROB = 0.004f;
-    float OBJ_MAX_PROB = 0.9f;
+    float OBJ_MAX_PROB = 0.99f;
 
     float RESOLUTION = 10.f;
     float OBJ_DEFUALT_MAX_HEIGHT = 1.6f;
@@ -40,10 +40,10 @@ class Searcher{
     float V_H = 0.1;
     float V_M = 0.0005;
 
-    float POINTCLOUD_MIN_Z = 0.0f;
+    float POINTCLOUD_MIN_Z = 0.2f;
     float POINTCLOUD_MAX_Z = 1.8f;
 
-    float OBJECT_FOUND_THRESH = 0.99;
+    float OBJECT_FOUND_THRESH = 0.8;
     float IMAGE_FOUND_THRESH = 0.9;
 
     int VIEW_ANGLE_STEPS = 12;
@@ -65,11 +65,6 @@ class Searcher{
 
     float INTERESTING_BORDER_SEEN_REWARD = 0.01f;
 
-    float QUICK_SEARCH_MIN_DIST = 0.8;
-    float QUICK_SEARCH_MAX_DIST = 2.0;
-    float QUICK_SEARCH_ANGLE_AREA = M_PI/45.f;
-    int QUICK_SEARCH_VIEWS = 5;
-
   private:
     ros::Subscriber map_sub_;
     ros::Subscriber vision_sub_;
@@ -78,11 +73,12 @@ class Searcher{
 
     ros::Publisher octomap_pub_;
     ros::Publisher obj_pub_;
-    ros::Publisher full_pub_;
+    std::vector<ros::Publisher> full_pub_;
     ros::Publisher count_pub_;
     ros::Publisher count2_pub_;
     ros::Publisher next_pose_pub_;
     std::vector<ros::Publisher> obj_found_pub_;
+    std::vector<ros::Publisher> obj_found_map_pub_;
     ros::Publisher prior_pub_;
 
     ros::ServiceClient obj_map_service_client_;
@@ -113,6 +109,7 @@ class Searcher{
     bool search_step_viewed_ = true;
     bool search_goal_reached_ = false;
     std::vector<pcl::PointCloud<pcl::PointXYZ>> found_pose_;
+    std::vector<pcl::PointCloud<pcl::PointXYZ>> found_pose_map_;
 
     std::vector<std::vector<cv::Point>> seen_kernel_points_;
     std::vector<std::vector<float>> seen_kernel_points_value_;
@@ -155,6 +152,8 @@ class Searcher{
 
     bool did_abort_ = false;
     void setSearchGoalReached() { search_goal_reached_ = true; }
+
+    void publishMaps();
 };
 
 

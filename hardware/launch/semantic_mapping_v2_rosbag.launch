@@ -42,10 +42,10 @@
   </include> 
 
 -->
-<!--  
   <include file="$(find hardware)/launch/includes/vision.launch.xml" >
     <arg name="result_topic" value="vision_result" />
   </include> 
+<!--  
   <include file="$(find hardware)/launch/includes/move_base.launch.xml"  >
     <arg name="laser_topic" value="scan_costmap" />
   </include>
