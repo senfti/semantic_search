@@ -39,7 +39,7 @@ bool Door::didDriveThrough(const tf::Transform &robot_pose) const{
           && robot_door.getBasis().getColumn(0).x() > 0.5 && std::abs(robot_door.getOrigin().y()) < 0.5);
 }
 
-void Door::updatePose(const tf::Transform &pose){
+bool Door::updatePose(const tf::Transform &pose){
   if(pose_array_.size() < MAX_CONFIDENCE)
     pose_array_.push_back(pose);
   else
@@ -57,6 +57,8 @@ void Door::updatePose(const tf::Transform &pose){
     pos += p.getBasis().getColumn(0);
   }
   pose_.setRotation(tf::createQuaternionFromYaw(std::atan2(pos.y(), pos.x())));
+
+  return (pose_array_.size() == 2);
 }
 
 void Door::flipPose(){
@@ -131,14 +133,13 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
   int best_door = isDoorNearPose(pose);
   if(best_door >= 0){
     boost::lock_guard<boost::mutex> lock(doors_mutex_);
-    doors_[best_door].updatePose(pose);
-    return false;
+    std::cout << "NEW DOOR INSERTED" << std::endl;
+    return doors_[best_door].updatePose(pose);
   }
 
   boost::lock_guard<boost::mutex> lock(doors_mutex_);
   doors_.push_back(Door(this_room_, pose, -1, new_id, -1, 1));
-  std::cout << "NEW DOOR INSERTED" << std::endl;
-  return true;
+  return false;
 }
 
 

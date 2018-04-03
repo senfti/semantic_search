@@ -199,7 +199,10 @@ void Planner::run(int obj){
       return;
 
     if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
-      sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
+      if(state_.num_rooms_ < 2)
+        sendGoal(Action(Action::START_ROTATE, obj, hierarchy.curr_room));
+      else
+        sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
       continue;
     }
 
@@ -309,14 +312,11 @@ void Planner::exploreAll(){
   }
 }
 
-std::vector<std::string> obj_name = {"person",  "_bicycle",  "_car",  "_motorbike",  "_aeroplane",  "_bus",  "_train",  "_truck",  "boat",  "_trafficlight",
-                                     "_firehydrant",  "_stopsign",  "_parkmeter",  "bench",  "_bird",  "cat",  "dog",  "_horse",  "_sheep",  "_cow",  "_elephant",
-                                     "_bear",  "_zebra",  "_giraffe",  "backpack",  "umbrella",  "handbag",  "tie",  "suitcase",  "_frisbee",  "_ski",
-                                     "_snowboard",  "_sportball",  "_kite",  "_baseballbat",  "_glove",  "_skateboard",  "_surfboard",  "_racket",
-                                     "bottle",  "wineglass",  "cup",  "fork",  "knife",  "spoon",  "bowl",  "banana",  "apple",  "sandwich",  "orange",
-                                     "_broccoli",  "carrot",  "_hotdog",  "_pizza",  "_donut",  "cake",  "chair",  "sofa",  "potplant",  "bed",  "table",
-                                     "toilet",  "monitor",  "laptop",  "mouse",  "remote",  "keyboard",  "cellphone",  "microwave",  "oven",  "toaster",
-                                     "sink",  "refrigerator",  "book",  "clock",  "vase",  "_scissor",  "_teddybear",  "_hairdryer",  "_toothbrush"};
+const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
+                                             "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
+                                             "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hotdog","pizza","donut","cake",
+                                             "chair","sofa","potplant","bed","table","toilet","monitor","laptop","mouse","remote","keyboard","cellphone",
+                                             "microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissor","teddybear","hairdryer","toothbrush"};
 
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res){
   os << "current room: " << res.curr_room << std::endl;

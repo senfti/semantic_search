@@ -181,8 +181,8 @@ void Explorer::calcFrontier(){
   int robot_kernel_size = ROBOT_SIZE*2+1;
   cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_not(occupied_dilate, not_forbidden);
-  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
-  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+//  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+//  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::bitwise_and(not_forbidden, free, not_forbidden);
 
   tf::StampedTransform transform;
@@ -222,24 +222,12 @@ void Explorer::calcFrontier(){
     cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
   }
   nav_msgs::OccupancyGrid map = last_map_;
-//  for(int x=0; x<last_map_.info.width; x++){
-//    for(int y=0; y<last_map_.info.height; y++){
-////      map.data[y * last_map_.info.width + x] = 100;
-////      for(int i=0; i<good_accessibles.size(); i++){
-////        map.data[y * last_map_.info.width + x] -= (good_accessibles[i](y,x) ? 100/good_accessibles.size() : 0);
-////      }
-//
-//      cv::Point p = cv::Point(x,y);
-//      double dist = std::sqrt((p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y));
-//      dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
-//      for(const auto& m : good_accessibles)
-//        dist += (m(p) ? 0.0 : 10.0);
-//      if(!accessible(p))
-//        dist = 100;
-//      map.data[y * last_map_.info.width + x] = dist;
-//    }
-//  }
-//  map_pub_.publish(map);
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 100 : (accessible(y,x) ? 0 : -1));
+    }
+  }
+  map_pub_.publish(map);
 
 //  cv::imshow("explore_accessible", accessible);
 //  cv::imshow("good_frontiers", good_frontiers_mask);
@@ -277,7 +265,7 @@ void Explorer::calcFrontier(){
   }
 
   bool inside = false;
-  if((pos-best_pos).ddot(pos-best_pos) < ROBOT_SIZE*ROBOT_SIZE*1.5){
+  if(std::sqrt((pos-best_pos).ddot(pos-best_pos)) < ROBOT_SIZE*1.25){
     bool pos_found = false;
     for(const auto& offset : circle_points_){
       cv::Point p = best_pos+offset;

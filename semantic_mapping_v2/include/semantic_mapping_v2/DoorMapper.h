@@ -51,7 +51,7 @@ class Door{
 
     void setCounterpart(int counterpart_id, int other_room) { counterpart_id_ = counterpart_id; other_room_ = other_room; }
     void flipPose();
-    void updatePose(const tf::Transform &pose);
+    bool updatePose(const tf::Transform &pose);
 
     static int getID() { static int id=0; return id++; }
 };

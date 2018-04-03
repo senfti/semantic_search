@@ -56,6 +56,7 @@ class ExecuteActionServer{
     void doMoveTo();
     void doExplore();
     void doSearch();
+    void doEnterRoomRotation();
     void doStartRotation();
 
   public:

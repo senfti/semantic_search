@@ -19,7 +19,7 @@ class SearchAction{
 
 class Action{
   public:
-    enum Type{ MOVE_TO, EXPLORE, SEARCH, QUICK_SEARCH, ROTATE };
+    enum Type{ MOVE_TO, EXPLORE, SEARCH, QUICK_SEARCH, ROTATE, START_ROTATE };
 
     Type type_;
     int target_obj_;

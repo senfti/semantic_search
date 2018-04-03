@@ -411,7 +411,7 @@ void ExecuteActionServer::doSearch(){
 }
 
 
-void ExecuteActionServer::doStartRotation(){
+void ExecuteActionServer::doEnterRoomRotation(){
   static tf::StampedTransform old_transform;
   static bool started = false;
   static int state = 0;
@@ -450,11 +450,49 @@ void ExecuteActionServer::doStartRotation(){
     action_server_.setAborted(result, "ABORTED");
     goal_.action = -1;
   }
-  std::cout << angle << "_____________________-" << state << std::endl;
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
   cmd_vel.angular.z = (started ? (state == 1 ? PEEK_TURN_SPEED : -PEEK_TURN_SPEED) : 0.0);
+  vel_pub_.publish(cmd_vel);
+}
+
+
+void ExecuteActionServer::doStartRotation(){
+  static tf::StampedTransform old_transform;
+  static bool started = false;
+  static float angle = 0.f;
+  static ros::Time start_time;
+  if(!started){
+    start_time = ros::Time::now();
+    tf_listener_.lookupTransform("map", "base_link", ros::Time(0), old_transform);
+    started = true;
+    angle = 0.f;
+  }
+
+  tf::StampedTransform transform;
+  tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
+  tf::Transform diff = transform.inverse()*old_transform;
+  angle += tf::getYaw(diff.getRotation());
+  if(angle > 2*M_PI || angle < -2*M_PI){
+    started = false;
+    execution::ExecuteResult result;
+    result.result_number = 0;
+    action_server_.setSucceeded(result, "SUCCESS");
+    goal_.action = -1;
+  }
+  old_transform = transform;
+  if(ros::Time::now()-start_time > ros::Duration(25.0)){
+    started = false;
+    execution::ExecuteResult result;
+    result.result_number = -11;
+    action_server_.setAborted(result, "ABORTED");
+    goal_.action = -1;
+  }
+  geometry_msgs::Twist cmd_vel;
+  cmd_vel.linear.x = 0.0;
+  cmd_vel.linear.y = 0.0;
+  cmd_vel.angular.z = PEEK_TURN_SPEED;
   vel_pub_.publish(cmd_vel);
 }
 
@@ -480,6 +518,11 @@ void ExecuteActionServer::run(){
       start_rotation_state_machine_.reset();
     }
     else if(goal_.action == 4){
+      doEnterRoomRotation();
+      explorer_.stop();
+      searcher_.stop();
+    }
+    else if(goal_.action == 5){
       doStartRotation();
       explorer_.stop();
       searcher_.stop();
