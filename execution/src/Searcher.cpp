@@ -125,7 +125,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
   full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
-  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1);
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
   count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
@@ -576,7 +576,7 @@ void Searcher::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
     }
   }
   for(int i=0; i<msg->object_type.size(); i++){
-    if(msg->object_type[i] == searched_obj_)
+    if(msg->object_type[i] != searched_obj_)
       continue;
 
     tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
@@ -739,7 +739,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   }
   prob = 1-prob;
   std::cout << "Remaining prob: " << prob << std::endl;
-  showProbImage("probabilities", tmp, 2, 255-accessible_map_*0.3);
+  showProbImage("probabilities", tmp, 1, 255-accessible_map_*0.3);
   cv::waitKey(1);
 
   cv::Point2f curr_pos = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
@@ -759,7 +759,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
         if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
-                ((std::abs(curr_point.x-x)>1 || std::abs(curr_point.y-y)>1 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
+                ((std::abs(curr_point.x-x)>3 || std::abs(curr_point.y-y)>3 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_pos, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
           if(prob > max){
@@ -870,8 +870,8 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
       }
     }
   }
-  for(int x=std::max(pos.x-1, 0); x<=std::min(pos.x+1,previous_pose_maps_[0].cols-1); x++){
-    for(int y=std::max(pos.y-1, 0); y<=std::min(pos.y+1,previous_pose_maps_[0].rows-1); y++){
+  for(int x=std::max(pos.x-3, 0); x<=std::min(pos.x+3,previous_pose_maps_[0].cols-1); x++){
+    for(int y=std::max(pos.y-3, 0); y<=std::min(pos.y+3,previous_pose_maps_[0].rows-1); y++){
       previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](y,x) = 255;
     }
   }
@@ -880,7 +880,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::bitwise_or(tmp, not_fully_viewed_border_, tmp);
   cv::threshold(kernel, kernel, 48, 48, cv::THRESH_TRUNC);
   cv::bitwise_or(not_fully_viewed_border_(cv::Rect(x1,y1,kernel.cols,kernel.rows)), kernel, tmp(cv::Rect(x1,y1,kernel.cols,kernel.rows)));
-  cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
+  //cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);
   cv::moveWindow("not_fully_viewed_border_", 1600,300);

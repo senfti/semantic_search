@@ -144,7 +144,7 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
 
 Door DoorMapper::droveThroughDoor(const tf::Transform &robot_pose) const{
   for(int i=0; i<doors_.size(); i++){
-    if(doors_[i].didDriveThrough(robot_pose)){
+    if(doors_[i].isSure() && doors_[i].didDriveThrough(robot_pose)){
       return doors_[i];
     }
   }
@@ -170,7 +170,8 @@ geometry_msgs::PoseArray DoorMapper::getDoorPoseMsg() const{
   msg.header.stamp = ros::Time::now();
   msg.poses.resize(doors_.size());
   for(int i=0; i<doors_.size(); i++){
-    tf::poseTFToMsg(doors_[i].getPose(), msg.poses[i]);
+    if(doors_[i].isSure())
+      tf::poseTFToMsg(doors_[i].getPose(), msg.poses[i]);
   }
 
   return msg;

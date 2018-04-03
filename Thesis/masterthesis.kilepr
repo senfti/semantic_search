@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/ObjectProbDistr.tex
+lastDocument=Introduction.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -324,10 +324,10 @@ order=0
 
 [item:Concept/LLPlanner.tex]
 archive=true
-column=271
+column=258
 encoding=UTF-8
 highlight=LaTeX
-line=26
+line=6
 mode=LaTeX
 open=true
 order=22
@@ -424,10 +424,10 @@ order=-1
 
 [item:Introduction.tex]
 archive=true
-column=256
+column=574
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=2
 mode=LaTeX
 open=true
 order=20
@@ -567,7 +567,7 @@ archive=true
 column=30
 encoding=UTF-8
 highlight=LaTeX
-line=191
+line=47
 mode=LaTeX
 open=true
 order=8
@@ -635,8 +635,8 @@ JumpList=
 ViMarks=.,27,440,[,27,436,],27,440
 
 [view-settings,view=0,item:Concept/LLPlanner.tex]
-CursorColumn=271
-CursorLine=26
+CursorColumn=258
+CursorLine=6
 JumpList=
 ViMarks=.,26,270,[,26,257,],26,270
 
@@ -695,10 +695,10 @@ JumpList=
 ViMarks=.,0,22,[,0,9,],0,22
 
 [view-settings,view=0,item:Introduction.tex]
-CursorColumn=256
-CursorLine=6
+CursorColumn=574
+CursorLine=2
 JumpList=
-ViMarks=.,10,858,[,10,814,],10,858
+ViMarks=.,2,517,[,2,506,],2,517
 
 [view-settings,view=0,item:Prerequisites.tex]
 CursorColumn=45
@@ -780,9 +780,9 @@ ViMarks=
 
 [view-settings,view=0,item:main.tex]
 CursorColumn=30
-CursorLine=191
+CursorLine=47
 JumpList=
-ViMarks=.,191,0,[,191,0,],191,40
+ViMarks=.,47,29,[,47,28,],47,29
 
 [view-settings,view=0,item:template/preamble.tex]
 CursorColumn=44

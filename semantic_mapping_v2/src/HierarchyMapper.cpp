@@ -16,7 +16,7 @@ HierarchyMapper::HierarchyMapper()
 
   laser_sub_ = nh_.subscribe("scan_filtered", 1, &HierarchyMapper::laserCallback, this);
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &HierarchyMapper::cloudCb, this);
-  door_pose_sub_ = nh_.subscribe("door_poses2345", 1, &HierarchyMapper::doorPoseCb, this);
+  door_pose_sub_ = nh_.subscribe("door_poses", 1, &HierarchyMapper::doorPoseCb, this);
   vision_sub_ = nh_.subscribe("vision_result", 1, &HierarchyMapper::visionCb, this);
   curr_action_sub_ = nh_.subscribe("current_action", 1, &HierarchyMapper::currActionCb, this);
   explored_sub_ = nh_.subscribe("room_explored", 1, &HierarchyMapper::exploredCb, this);

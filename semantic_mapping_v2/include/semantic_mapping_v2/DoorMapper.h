@@ -32,6 +32,7 @@ class Door{
     Door() {}
     Door(int this_room, const tf::Transform& pose, int other_room, int id, int counterpart_id, int confidence);
 
+    bool isSure() const { return pose_array_.size() > 1; }
     bool isValid() const { return id_ >= 0; }
     bool hasOtherRoom() const { return other_room_ >= 0; }
 
@@ -77,7 +78,12 @@ class DoorMapper{
 
     std::vector<Door> getDoors() {
       boost::lock_guard<boost::mutex> lock(doors_mutex_);
-      return doors_;
+      std::vector<Door> doors;
+      for(const auto& d : doors_){
+        if(d.isSure())
+          doors.push_back(d);
+      }
+      return doors;
     }
     Door getDoor(int id) const;
     geometry_msgs::PoseArray getDoorPoseMsg() const;

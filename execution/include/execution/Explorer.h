@@ -13,6 +13,8 @@
 #include <opencv2/opencv.hpp>
 #include <std_msgs/Int8.h>
 #include <vision/ObjectFoundMsg.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 class Explorer{
   public:
@@ -33,7 +35,7 @@ class Explorer{
     bool finished_ = false;
     bool door_found_stopped_ = false;
     bool obj_found_stopped_ = false;
-    geometry_msgs::PoseStamped found_pose_;
+    pcl::PointCloud<pcl::PointXYZ> found_pose_;
     int searched_obj_ = -1;
     bool running_ = false;
     nav_msgs::OccupancyGrid last_map_;

@@ -11,6 +11,7 @@ ExecuteActionServer::ExecuteActionServer()
   ros::NodeHandle("~").param("MOVE_MAX_ROT_VEL", MOVE_MAX_ROT_VEL, MOVE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("MOVE_MAX_TRANS_VEL", MOVE_MAX_TRANS_VEL, MOVE_MAX_TRANS_VEL);
   ros::NodeHandle("~").param("SEARCHER_CALCULATION_SKIPS", SEARCHER_CALCULATION_SKIPS, SEARCHER_CALCULATION_SKIPS);
+  ros::NodeHandle("~").param("PEEK_TURN_SPEED", PEEK_TURN_SPEED, PEEK_TURN_SPEED);
 
   goal_.action = -1;
   action_server_.registerGoalCallback(boost::bind(&ExecuteActionServer::goalCb, this));
@@ -319,6 +320,12 @@ void ExecuteActionServer::doExplore(){
 void ExecuteActionServer::doSearch(){
   if(!searcher_.running()){
     searcher_.start(goal_.target_obj, goal_.target_room);
+    geometry_msgs::PoseStamped pose;
+    pose.pose = searcher_.getNextViewPose();
+    pose.header.frame_id = "map";
+    pose.header.stamp = ros::Time::now();
+    frontier_pub_.publish(pose);
+    sendMoveBaseGoal(pose.pose);
   }
   if(searcher_.doCalculations(false)){
     geometry_msgs::PoseStamped pose;
@@ -407,12 +414,14 @@ void ExecuteActionServer::doSearch(){
 void ExecuteActionServer::doStartRotation(){
   static tf::StampedTransform old_transform;
   static bool started = false;
+  static int state = 0;
   static float angle = 0.f;
   static ros::Time start_time;
   if(!started){
     start_time = ros::Time::now();
     tf_listener_.lookupTransform("map", "base_link", ros::Time(0), old_transform);
     started = true;
+    state = 0;
     angle = 0.f;
   }
 
@@ -420,25 +429,32 @@ void ExecuteActionServer::doStartRotation(){
   tf_listener_.lookupTransform("map", "base_link", ros::Time(0), transform);
   tf::Transform diff = transform.inverse()*old_transform;
   angle += tf::getYaw(diff.getRotation());
-  if(angle > 2*M_PI || angle < -2*M_PI){
+  if(state == 2 && angle > -0.1){
     started = false;
     execution::ExecuteResult result;
     result.result_number = 0;
     action_server_.setSucceeded(result, "SUCCESS");
     goal_.action = -1;
   }
+  else if(state == 0 && angle > M_PI_2){
+    state = 1;
+  }
+  else if(state == 1 && angle < -M_PI_2){
+    state = 2;
+  }
   old_transform = transform;
-  if(ros::Time::now()-start_time > ros::Duration(15.0)){
+  if(ros::Time::now()-start_time > ros::Duration(25.0)){
     started = false;
     execution::ExecuteResult result;
     result.result_number = -11;
     action_server_.setAborted(result, "ABORTED");
     goal_.action = -1;
   }
+  std::cout << angle << "_____________________-" << state << std::endl;
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
-  cmd_vel.angular.z = 0.5;
+  cmd_vel.angular.z = (started ? (state == 1 ? PEEK_TURN_SPEED : -PEEK_TURN_SPEED) : 0.0);
   vel_pub_.publish(cmd_vel);
 }
 

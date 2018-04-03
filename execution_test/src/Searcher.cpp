@@ -47,7 +47,7 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::merge(std::vector<cv::Mat>({tmp, o, o}), tmp);
   cv::cvtColor(tmp, tmp, CV_HSV2BGR);
   cv::imshow(name, tmp);
-  cv::moveWindow(name, 1600,0);
+  cv::moveWindow(name, 1300,0);
   cv::waitKey(1);
 }
 
@@ -68,7 +68,7 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::merge(std::vector<cv::Mat>({tmp, o, mask_t}), tmp);
   cv::cvtColor(tmp, tmp, CV_HSV2BGR);
   cv::imshow(name, tmp);
-  cv::moveWindow(name, 1600,0);
+  cv::moveWindow(name, 1300,0);
 }
 
 Searcher::Searcher(tf::TransformListener *tf_listener)
@@ -811,6 +811,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   for(int x=0; x<prob_map.cols; x++){
     for(int y=0; y<prob_map.rows; y++){
       prob *= (1.0-prob_map(y,x));
+      tmp(y,x) = std::log10(tmp(y,x))*0.35+1;
     }
   }
   prob = 1-prob;
@@ -959,7 +960,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);
-  cv::moveWindow("not_fully_viewed_border_", 1600,300);
+  cv::moveWindow("not_fully_viewed_border_", 1300,600);
   cv::waitKey(1);
 
 //  showProbImage("not_fully_viewed_border_dir", border_dir_map_/(2*M_PI), 4, not_fully_viewed_border_);

@@ -3,9 +3,11 @@
 //
 
 #include <execution/Explorer.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <deque>
 #include <set>
 #include <std_msgs/Int8.h>
+#include <pcl_ros/point_cloud.h>
 
 Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)
@@ -14,7 +16,7 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
   door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
   obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Explorer::objFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
-  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);
@@ -30,9 +32,9 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
         circle_points_.push_back(cv::Point(x-2*VIEW_DIST,y-2*VIEW_DIST));
     }
   }
-  for(int x=-2;x<=2;x++){
-    for(int y=-2; y<=2; y++){
-      if(x==-2 || x==2 || y==-2 || y==2)
+  for(int x=-5;x<=5;x++){
+    for(int y=-5; y<=5; y++){
+      if(std::sqrt(x*x+y*y) > 4 && std::sqrt(x*x+y*y) <= 5)
         near_circle_points_.push_back(cv::Point(x,y));
     }
   }
@@ -115,36 +117,32 @@ void Explorer::doorFoundCb(const std_msgs::Int8& msg){
 
 
 void Explorer::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
-  for(int i=0; i<msg->object_type.size(); i++){
-    if(msg->object_type[i] == searched_obj_){
-      tf::StampedTransform transform;
-      try{
-        tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
-      }
-      catch (tf::TransformException ex){
-        try{
-          tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", ros::Time(0), transform);
-        }
-        catch (tf::TransformException ex){
-          ROS_ERROR("%s",ex.what());
-          return;
-        }
-      }
-      tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
-      p = transform*p;
-      found_pose_.header.stamp = ros::Time::now();
-      found_pose_.header.frame_id = "map";
-      found_pose_.pose.position.x = p.x();
-      found_pose_.pose.position.y = p.y();
-      found_pose_.pose.position.z = p.z();
-      found_pose_.pose.orientation.w = 1.0;
-      found_pose_.pose.orientation.x = 0.0;
-      found_pose_.pose.orientation.y = 0.0;
-      found_pose_.pose.orientation.z = 0.0;
-      obj_found_pub_.publish(found_pose_);
-      obj_found_stopped_ = true;
-      finished_ = true;
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
+  }
+  catch (tf::TransformException ex){
+    try{
+      tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", ros::Time(0), transform);
     }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return;
+    }
+  }
+  for(int i=0; i<msg->object_type.size(); i++){
+    if(msg->object_type[i] != searched_obj_)
+      continue;
+
+    tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
+    p = transform*p;
+    found_pose_.push_back(pcl::PointXYZ(p.x(), p.y(), p.z()));
+    found_pose_.header.frame_id = "map";
+    found_pose_.header.stamp = ros::Time::now().toSec();
+    obj_found_pub_.publish(found_pose_);
+    obj_found_stopped_ = true;
+    finished_ = true;
+    std::cout << "IMAGE OBJ FOUND " << msg->object_type[i] << " " << p.x() << " " << p.y() << " " << p.z() << std::endl;
   }
 }
 
@@ -224,12 +222,24 @@ void Explorer::calcFrontier(){
     cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
   }
   nav_msgs::OccupancyGrid map = last_map_;
-  for(int x=0; x<last_map_.info.width; x++){
-    for(int y=0; y<last_map_.info.height; y++){
-      map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 0 : -1);
-    }
-  }
-  map_pub_.publish(map);
+//  for(int x=0; x<last_map_.info.width; x++){
+//    for(int y=0; y<last_map_.info.height; y++){
+////      map.data[y * last_map_.info.width + x] = 100;
+////      for(int i=0; i<good_accessibles.size(); i++){
+////        map.data[y * last_map_.info.width + x] -= (good_accessibles[i](y,x) ? 100/good_accessibles.size() : 0);
+////      }
+//
+//      cv::Point p = cv::Point(x,y);
+//      double dist = std::sqrt((p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y));
+//      dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
+//      for(const auto& m : good_accessibles)
+//        dist += (m(p) ? 0.0 : 10.0);
+//      if(!accessible(p))
+//        dist = 100;
+//      map.data[y * last_map_.info.width + x] = dist;
+//    }
+//  }
+//  map_pub_.publish(map);
 
 //  cv::imshow("explore_accessible", accessible);
 //  cv::imshow("good_frontiers", good_frontiers_mask);

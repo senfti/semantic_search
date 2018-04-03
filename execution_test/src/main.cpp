@@ -11,7 +11,7 @@ int main(int argc, char** argv){
   r.sleep();
   Searcher s(&l);
   geometry_msgs::Pose p;
-  s.start(22, 0);
+  s.start(25, 0);
   ros::Rate ra(5.0);
   int bla = 1;
   while(ros::ok()){
@@ -20,7 +20,7 @@ int main(int argc, char** argv){
     if(bla%16 == 0)
       s.publishMaps();
     bla++;
-//    s.doCalculations();
+    s.doCalculations(true);
   }
 
   return 0;

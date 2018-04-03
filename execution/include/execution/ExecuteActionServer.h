@@ -24,6 +24,7 @@ class ExecuteActionServer{
     const int START_ROTATION_STEPS = 8;
     float MOVE_MAX_ROT_VEL = 5.0;
     float MOVE_MAX_TRANS_VEL = 0.5;
+    float PEEK_TURN_SPEED = 0.3;
     int SEARCHER_CALCULATION_SKIPS = 10;
 
   protected:
