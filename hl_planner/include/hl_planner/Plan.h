@@ -34,7 +34,7 @@ class SearchPlan{
       return end_state_;
     }
 
-    std::string getPlanString() {
+    std::string getPlanString() const {
       std::string s;
       for(const auto& a : actions_)
          s = s + (a.type_ == SearchAction::SEARCH ? "F" : "Q") + std::to_string(a.target_) + " ";

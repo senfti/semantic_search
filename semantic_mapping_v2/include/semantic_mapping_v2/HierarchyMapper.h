@@ -18,6 +18,7 @@
 #include <semantic_mapping_v2/DoorPoseSrv.h>
 #include <semantic_mapping_v2/HierarchyTestMsg.h>
 #include <prob_map_view/ProbMapMsg.h>
+#include <nav_msgs/Path.h>
 
 #include <std_msgs/Int8.h>
 
@@ -51,6 +52,7 @@ class HierarchyMapper{
     ros::Publisher base_obj_prob_map_view_pub_;
     ros::Publisher base_room_prob_map_view_pub_;
     ros::Publisher sdf_prob_map_view_pub_;
+    ros::Publisher path_pub_;
     std::vector<ros::Publisher> obj_prob_pub_;
     std::vector<ros::Publisher> room_prob_pub_;
     ros::Publisher particle_pose_pub_;
@@ -75,6 +77,7 @@ class HierarchyMapper{
     ros::ServiceServer door_pose_srv_;
     std::vector<semantic_mapping_v2::RoomMsg> last_room_msgs_;
     std::vector<bool> room_changed_;
+    nav_msgs::Path path_;
 
     tf::TransformListener tf_listener_;
     tf::TransformBroadcaster* tfB_;
@@ -101,7 +104,7 @@ class HierarchyMapper{
     float SEARCH_TIME_PER_GRID_CELL = 0.05f;
     int PUBLISH_DEBUG_IMAGES = 1;
     int DEBUG_OUTPUT = 1;
-    int ONLY_ROOM_TYPE = 0;
+    int USE_OBJ_MAP = 1;
 
     int OBJ_TO_ROOM = 1;
     int ROOM_TO_OBJ = 1;

@@ -38,6 +38,7 @@ HierarchyMapper::HierarchyMapper()
   hierarchy_pub_ = nh_.advertise<semantic_mapping_v2::HierarchySrvResponse>("hierarchy", 1);
   debug_output_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("debug_output_map", 1);
   debug_output_marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("debug_output_occupied_cells", 1);
+  path_pub_ = nh_.advertise<nav_msgs::Path>("robot_path", 1, true);
 
   ros::NodeHandle service_nh;
   service_nh.setCallbackQueue(&service_queue_);
@@ -70,13 +71,16 @@ HierarchyMapper::HierarchyMapper()
   ros::NodeHandle("~").param("SEARCH_TIME_PER_GRID_CELL", SEARCH_TIME_PER_GRID_CELL, SEARCH_TIME_PER_GRID_CELL);
   ros::NodeHandle("~").param("PUBLISH_DEBUG_IMAGES", PUBLISH_DEBUG_IMAGES,PUBLISH_DEBUG_IMAGES);
   ros::NodeHandle("~").param("DEBUG_OUTPUT", DEBUG_OUTPUT, DEBUG_OUTPUT);
-  ros::NodeHandle("~").param("ONLY_ROOM_TYPE", ONLY_ROOM_TYPE, ONLY_ROOM_TYPE);
+  ros::NodeHandle("~").param("USE_OBJ_MAP", USE_OBJ_MAP, USE_OBJ_MAP);
   ros::NodeHandle("~").param("OBJ_TO_ROOM", OBJ_TO_ROOM, OBJ_TO_ROOM);
   ros::NodeHandle("~").param("ROOM_TO_OBJ", ROOM_TO_OBJ, ROOM_TO_OBJ);
 
   tfB_ = new tf::TransformBroadcaster();
   transform_thread_ = new boost::thread(boost::bind(&HierarchyMapper::transformPublishLoop, this, transform_publish_period_));
   service_spinner_.start();
+
+  path_.header.frame_id = "map";
+  path_.header.seq = 0;
 
   std::cout << "HierarchyMapping started" << std::endl;
 }
@@ -268,6 +272,13 @@ void HierarchyMapper::downprojecAndPublish(){
     marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
+  path_.header.seq++;
+  path_.header.stamp = ros::Time::now();
+  geometry_msgs::PoseStamped pose;
+  tf::poseTFToMsg(room_mapper_[current_mapper_]->getBestParticlePose3D(ros::Time(0)), pose.pose);
+  pose.header = path_.header;
+  path_.poses.push_back(pose);
+  path_pub_.publish(path_);
 
 //  static int counter=0;
 //  if((counter%debug_publish_interval_) == debug_publish_interval_-1){
@@ -673,7 +684,7 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
     room_type_maps_filtered[i] = room_type_maps_filtered[i](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
   }
 
-  if(ONLY_ROOM_TYPE){
+  if(!USE_OBJ_MAP && ROOM_TO_OBJ){
     std::vector<ObjectMap> complete_obj_map;
     ObjectMap flat(obj_map[0], 0.002);
     ObjectMap occ_flat(flat.getResolution(), flat.getBaseSize(), flat.getWidth(), flat.getHeight(), flat.getOrigin(), flat.getMaxHeight(), 1.f, 0);
@@ -687,8 +698,19 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
     }
     return complete_obj_map;
   }
-
-  if(ROOM_TO_OBJ){
+  else if(USE_OBJ_MAP && ROOM_TO_OBJ){
+    std::vector<ObjectMap> complete_obj_map;
+    if(obj >= 0){
+      complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[0], only_laser_points, room_type_maps_filtered, obj, occ_2d));
+    }
+    else{
+      for(int o=0; o<obj_map.size(); o++){
+        complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, room_base_obj_maps[o], only_laser_points, room_type_maps_filtered, o, occ_2d));
+      }
+    }
+    return complete_obj_map;
+  }
+  else if(USE_OBJ_MAP && !ROOM_TO_OBJ){
     std::vector<ObjectMap> complete_obj_map;
     cv::Mat_<float> flat(room_base_obj_maps[0].rows, room_base_obj_maps[0].cols, 0.5f);
     if(obj >= 0){
@@ -701,17 +723,21 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
     }
     return complete_obj_map;
   }
-
-  std::vector<ObjectMap> complete_obj_map;
-  if(obj >= 0){
-    complete_obj_map.push_back(ObjectMap(obj_map[obj], occ_map, room_base_obj_maps[0], only_laser_points, room_type_maps_filtered, obj, occ_2d));
-  }
   else{
-    for(int o=0; o<obj_map.size(); o++){
-      complete_obj_map.push_back(ObjectMap(obj_map[o], occ_map, room_base_obj_maps[o], only_laser_points, room_type_maps_filtered, o, occ_2d));
+    std::vector<ObjectMap> complete_obj_map;
+    ObjectMap flat(obj_map[0], 0.002);
+    ObjectMap occ_flat(flat.getResolution(), flat.getBaseSize(), flat.getWidth(), flat.getHeight(), flat.getOrigin(), flat.getMaxHeight(), 1.f, 0);
+    cv::Mat_<float> flatr(room_base_obj_maps[0].rows, room_base_obj_maps[0].cols, 0.5f);
+    if(obj >= 0){
+      complete_obj_map.push_back(ObjectMap(flat, occ_flat, flatr, only_laser_points, room_type_maps_filtered, obj, occ_2d));
     }
+    else{
+      for(int o=0; o<obj_map.size(); o++){
+        complete_obj_map.push_back(ObjectMap(flat, occ_flat, flatr, only_laser_points, room_type_maps_filtered, o, occ_2d));
+      }
+    }
+    return complete_obj_map;
   }
-  return complete_obj_map;
 }
 
 
@@ -915,11 +941,14 @@ int HierarchyMapper::estimateUnseen2dCells(const nav_msgs::OccupancyGrid& map, c
   }
   int estimate = ROOM_ESTIMATED_OCCUPIED_AREA * obj_map.getResolution() * obj_map.getResolution();
   int min_unseen = ROOM_MIN_UNEXPLORED_AREA * obj_map.getResolution() * obj_map.getResolution();
+  if(explored){
+    search_cells = seen;
+    ROS_ERROR("UNSEEN val %d est %d min_unseen %d only_laser %d seen %d", std::max(estimate - seen, min_unseen), estimate, min_unseen, only_laser, seen);
+    return 0;
+  }
+
   ROS_ERROR("UNSEEN val %d est %d min_unseen %d only_laser %d seen %d", std::max(estimate - seen, min_unseen), estimate, min_unseen, only_laser, seen);
   search_cells = std::max(estimate, min_unseen + seen);
-  if(explored)
-    return 0;
-
   return std::max(estimate - seen, min_unseen);
 }
 

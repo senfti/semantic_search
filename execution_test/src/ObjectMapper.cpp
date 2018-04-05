@@ -198,7 +198,7 @@ void ObjectMap::resample(const ObjectMap &target, float prior){
 
 void ObjectMap::insertMax(int x, int y, int z, float prob){
   prob_maps_[z](y,x) = std::max(prob, prob_maps_[z](y,x));
-  count_maps_[z](y,x) = count_maps_[z](y,x) == uchar(255) ? uchar(255) : count_maps_[z](y,x)+uchar(1);
+  //count_maps_[z](y,x) = count_maps_[z](y,x) == uchar(255) ? uchar(255) : count_maps_[z](y,x)+uchar(1);
 }
 
 

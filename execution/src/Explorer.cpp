@@ -16,7 +16,7 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
   door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
   obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Explorer::objFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
-  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1);
+  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1, true);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);

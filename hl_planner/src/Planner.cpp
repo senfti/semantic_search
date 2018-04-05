@@ -107,6 +107,7 @@ SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cu
 
   std::deque<SearchAction> search_actions_ = old_plan.end_state_.getPossibleFullSearchActions();
   if(search_actions_.empty()){
+    std::cout << old_plan.getPlanString() << std::endl;
     return old_plan;
   }
 
@@ -114,8 +115,10 @@ SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cu
   for(const auto& a : search_actions_){
     SearchPlan new_plan = old_plan;
     new_plan.addAction(a, graph, old_plan.end_state_.current_room_);
-    if(new_plan.expected_search_time_ >= cutoff_time)
+    if(new_plan.expected_search_time_ >= cutoff_time){
+      std::cout << old_plan.getPlanString() << std::endl;
       continue;
+    }
 
     new_plan = plan(graph, new_plan, cutoff_time, cutoff_prob, level+1);
     if(new_plan.expected_search_time_ < best_plan.expected_search_time_){
@@ -327,7 +330,7 @@ std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchyS
   for(int i=0; i<res.rooms.size(); i++){
     os << "room " << i << ": " << res.rooms[i].search_time << " " << std::endl;
     for(int j=0; j<res.rooms[i].obj_probs.size(); j++){
-      os << obj_name[j] << ": " << res.rooms[i].obj_probs[j] << " " << res.rooms[i].expected_search_time[j] << " " << res.rooms[i].obj_probs[j]/res.rooms[i].expected_search_time[j] << std::endl;
+      os << obj_names[j] << ": " << res.rooms[i].obj_probs[j] << " " << res.rooms[i].expected_search_time[j] << " " << res.rooms[i].obj_probs[j]/res.rooms[i].expected_search_time[j] << std::endl;
     }
     os << std::endl;
   }

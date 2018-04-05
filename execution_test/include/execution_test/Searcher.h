@@ -28,6 +28,7 @@ class Searcher{
     float SEARCH_MAX_ROT_VEL = 1.0;
     float SEARCH_MAX_TRANS_VEL = 0.3;
     int ROBOT_SIZE = 0.35/0.05;
+    int OBJ_SETS = 0;
 
     float OBJ_PRIOR_PROB = 0.004f;
     float OBJ_MIN_PROB = 0.004f;
@@ -64,6 +65,8 @@ class Searcher{
     int SEEN_MAP_MAX_DIST = 2.5;
 
     float INTERESTING_BORDER_SEEN_REWARD = 0.01f;
+
+    std::ofstream output_file_;
 
   private:
     ros::Subscriber map_sub_;

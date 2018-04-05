@@ -78,6 +78,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("SEARCH_MAX_ROT_VEL", SEARCH_MAX_ROT_VEL, SEARCH_MAX_ROT_VEL);
   private_nh.param("SEARCH_MAX_TRANS_VEL", SEARCH_MAX_TRANS_VEL, SEARCH_MAX_TRANS_VEL);
   private_nh.param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
+  private_nh.param("OBJ_SETS", OBJ_SETS, OBJ_SETS);
 
   private_nh.param("OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
   private_nh.param("OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
@@ -136,6 +137,10 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
   count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
+
+  std::cout << "OBJ_SETS " << OBJ_SETS << std::endl;
+
+  output_file_.open(std::string("/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/search_output_string"+std::to_string(OBJ_SETS)+".txt"));
 
   calcSeenKernels();
 }
@@ -549,8 +554,8 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
   float min_z = std::max(POINTCLOUD_MIN_Z, 0.f);
   float max_z = std::min(POINTCLOUD_MAX_Z, obj_map_[0]->getMaxHeight()-0.001f);
 
-  for(int o=0; o<61; o++){
-    if(o==58 || o==59 || o==60 || o==61 || o==56 || o==37 || o==36 || o==35 || o==34 || o==33 || o==32 || o==31 || o==30 || o==28 || o==20 || o==18 || o==17 || o==16 || o==14 || o==13 || o==12 || o==11 || o==9 || o==3 || o==4 || o==5)
+  for(int o=0; o<60; o++){
+    if(o/6 != OBJ_SETS)
       continue;
 
     ObjectMap tmp(ObjectMap(obj_map_[o]->getResolution(), obj_map_[o]->getBaseSize(), obj_map_[o]->getWidth(), obj_map_[o]->getHeight(), obj_map_[o]->getOrigin(), obj_map_[o]->getMaxHeight(), -1.f));
@@ -649,7 +654,15 @@ void Searcher::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
 bool Searcher::objFound(){
 //  ObjectMap multiplied = *obj_map_*ObjectMap(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
 //                                                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
-  for(int o=0; o<61; o++){
+//  ObjectMap occ_map(obj_map_[0]->getResolution(), obj_map_[0]->getBaseSize(), obj_map_[0]->getWidth(), obj_map_[0]->getHeight(),
+//                    obj_map_[0]->getOrigin(), obj_map_[0]->getMaxHeight(), *octo_mapper_);
+
+  static std::set<unsigned> already_found_set;
+
+  for(int o=0; o<60; o++){
+    if(o/6 != OBJ_SETS)
+      continue;
+
     float max_prob = 0.f;
     geometry_msgs::PoseStamped found_pose;
     for(int x = 0; x < obj_map_[o]->getWidth(); x++){
@@ -670,34 +683,31 @@ bool Searcher::objFound(){
               found_pose.pose.position.y = y;
               found_pose.pose.position.z = z;
             }
+            if(prob > OBJECT_FOUND_THRESH){
+              pcl::PointXYZ found_pos(obj_map_[o]->getXWorld(found_pose.pose.position.x), obj_map_[o]->getYWorld(found_pose.pose.position.y), obj_map_[o]->getZWorld(found_pose.pose.position.z));
+              unsigned hash = ((unsigned(found_pos.x*10+320) << 20) | (unsigned(found_pos.y*10+320) << 10) | (unsigned(found_pos.z*10+320)));
+              if(already_found_set.find(hash) == already_found_set.end()){
+                already_found_set.insert(hash);
+                found_pose_map_[o].push_back(found_pos);
+                found_pose_map_[o].header.frame_id = "map";
+                found_pose_map_[o].header.stamp = ros::Time::now().toSec();
+                obj_found_map_pub_[o].publish(found_pose_map_[o]);
+                found_pose_map_[61].push_back(found_pos);
+                found_pose_map_[61].header.frame_id = "map";
+                found_pose_map_[61].header.stamp = found_pose_map_[o].header.stamp;
+                obj_found_map_pub_[61].publish(found_pose_map_[61]);
+                obj_found_[o] = true;
+                output_file_ << "OBJ FOUND " << o << " " << obj_names[o] << " prob: " << prob << " at: " << found_pos.x << " " << found_pos.y << " " << found_pos.z << std::endl;
+                std::cout << "OBJ FOUND " << o << " " << obj_names[o] << " prob: " << prob << " at: " << found_pos.x << " " << found_pos.y << " " << found_pos.z << std::endl;
+              }
+            }
           }
         }
       }
     }
     //octomap_pub_.publish(octo_mapper_->getOccupiedCellMsg(ros::Time::now()));
     //count_pub_.publish(octo_mapper_->getCountMsg(ros::Time::now(), 0.1f));
-    if(max_prob > OBJECT_FOUND_THRESH){
-      pcl::PointXYZ found_pos(obj_map_[o]->getXWorld(found_pose.pose.position.x), obj_map_[o]->getYWorld(found_pose.pose.position.y), obj_map_[o]->getZWorld(found_pose.pose.position.z));
-      bool found = false;
-      for(const auto& p : found_pose_map_[o]){
-        if(std::abs(p.x-found_pos.x) < 0.1 && std::abs(p.y-found_pos.y) < 0.1 && std::abs(p.z-found_pos.z) < 0.1){
-          found = true;
-          break;
-        }
-      }
-      if(!found){
-        found_pose_map_[o].push_back(found_pos);
-        found_pose_map_[o].header.frame_id = "map";
-        found_pose_map_[o].header.stamp = ros::Time::now().toSec();
-        obj_found_map_pub_[o].publish(found_pose_map_[o]);
-        found_pose_map_[61].push_back(found_pos);
-        found_pose_map_[61].header.frame_id = "map";
-        found_pose_map_[61].header.stamp = ros::Time::now().toSec();
-        obj_found_map_pub_[61].publish(found_pose_map_[61]);
-        obj_found_[o] = true;
-        std::cout << "OBJ FOUND " <<o << " " << obj_names[o] << " " << found_pos.x << " " << found_pos.y << " " << found_pos.z << std::endl;
-      }
-    }
+
 //    std::cout << "Max Obj Prob " << obj_name[searched_obj_] << ":" << max_prob
 //              << (max_prob > OBJECT_FOUND_THRESH ? (std::to_string(found_pose_.pose.position.x) + " " +
 //                                                    std::to_string(found_pose_.pose.position.y) + " " +
@@ -897,7 +907,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
 
 
 bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
-  if(!got_map_)
+  if(!got_map_ || 1)
     return false;
 
   double angle = tf::getYaw(curr_pose.getRotation());

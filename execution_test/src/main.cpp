@@ -15,12 +15,16 @@ int main(int argc, char** argv){
   ros::Rate ra(5.0);
   int bla = 1;
   while(ros::ok()){
+    ros::Time sdf = ros::Time::now();
     ros::spinOnce();
+    ros::Time sdf1 = ros::Time::now();
     s.objFound();
-    if(bla%16 == 0)
-      s.publishMaps();
+    ros::Time sdf2 = ros::Time::now();
+//    if(bla%16 == 0)
+//      s.publishMaps();
+    ros::Time sdf3 = ros::Time::now();
     bla++;
-    s.doCalculations(true);
+    //s.doCalculations(true);
   }
 
   return 0;

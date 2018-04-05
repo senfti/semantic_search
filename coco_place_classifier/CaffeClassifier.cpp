@@ -1,4 +1,4 @@
-#include "vision/CaffeClassifier.h"
+#include "CaffeClassifier.h"
 
 CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::string& trained_file,
                                  const std::string& mean_file, const std::string& label_file){

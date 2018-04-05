@@ -49,13 +49,13 @@ def callback(data):
         print
 
 
-    obj = int(input("Object: "))
-    print data.curr_room
-    for i in range(len(data.rooms)):
-        print '{:6.4f}'.format(data.rooms[i].obj_probs[obj]),
-        print '{:9.4f}'.format(data.rooms[i].search_time)
-    print '{:6.4f}'.format(data.unknown_room.obj_probs[obj]),
-    print '{:9.4f}'.format(data.unknown_room.search_time)
+    # obj = int(input("Object: "))
+    # print data.curr_room
+    # for i in range(len(data.rooms)):
+    #     print '{:6.4f}'.format(data.rooms[i].obj_probs[obj]),
+    #     print '{:9.4f}'.format(data.rooms[i].search_time)
+    # print '{:6.4f}'.format(data.unknown_room.obj_probs[obj]),
+    # print '{:9.4f}'.format(data.unknown_room.search_time)
 
     for i in range(len(data.links)):
         print data.links[i].room1, data.links[i].room2

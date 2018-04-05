@@ -125,7 +125,7 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
   //cv::Mat_<float> obj_from_room_new = obj_from_room*ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE + (1.f-obj_from_room)*(1.f-ObjectMapper::OBJ_FROM_ROOM_CONFIDENCE);
   for(int z=0; z<getZSteps(); z++){
     prob_maps_[z] = prob_maps_[z].mul(occ_map.prob_maps_[z]);
-    prob_maps_[z] = cv::max(prob_maps_[z], RoomMapper::getObjProbGivenRoomObjPriorPerCell(obj)/6/4);
+    prob_maps_[z] = cv::max(prob_maps_[z], RoomMapper::getObjProbGivenRoomObjPriorPerCell(obj)/6/2);
     cv::Mat_<float> tmp = 1.f - prob_maps_[z];
     prob_maps_[z] = prob_maps_[z].mul(obj_from_room);
     tmp = tmp.mul(1.f-obj_from_room);
@@ -140,7 +140,7 @@ ObjectMap::ObjectMap(const ObjectMap& object_map, const ObjectMap& occ_map, cv::
       prob += RoomMapper::getObjProbGivenRoomPerCell(obj,r)*room_type_probs_maps[r](p);
     }
     for(int z=0; z<getZSteps(); z++){
-      prob_maps_[z](p) = prob;
+      prob_maps_[z](p) = prob*0.1667f;
       count_maps_[z](p) = 1;
     }
   }

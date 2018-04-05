@@ -125,7 +125,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   obj_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_obj", 1, true);
   full_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_full_obj", 1, true);
   next_pose_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("searcher_pose", 1, true);
-  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1);
+  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1, true);
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
   count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
@@ -231,6 +231,7 @@ void Searcher::stop(){
 
 
 void Searcher::calcSeenKernels(){
+  std::cout << "a";
   seen_kernel_points_.resize(VIEW_ANGLE_STEPS);
   seen_kernel_points_value_.resize(VIEW_ANGLE_STEPS);
   for(int i=0;i<VIEW_ANGLE_STEPS; i++){
@@ -264,6 +265,7 @@ void Searcher::calcSeenKernels(){
 
 
 void Searcher::resize(float x1, float x2, float y1, float y2){
+  std::cout << "b";
   std::vector<int> border = obj_map_->expandUntilFitting(x1, x2, y1, y2, OBJ_PRIOR_PROB);
   if(!border.empty()){
     prior_prob_map_->resize(border[2], border[3], border[0], border[1], 0.f);
@@ -287,6 +289,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   if(!running_ || obj_map_==nullptr)
     return;
 
+  std::cout << "c";
   ros::Time t = ros::Time::now();
   cv::Mat_<uchar> free(msg->info.height, msg->info.width, uchar(0));
   cv::Mat_<uchar> occupied(msg->info.height, msg->info.width, uchar(0));
@@ -317,6 +320,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
                 int((transform.getOrigin().y()-msg->info.origin.position.y)/msg->info.resolution));
   cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
 
+  std::cout << "d";
   cv::Mat_<uchar> accessible_mat = cv::Mat_<uchar>(msg->info.height, msg->info.width, uchar(0));
   std::deque<cv::Point> next[2];
   cv::Mat_<uchar> already_inserted;
@@ -344,6 +348,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::distanceTransform(255-accessible_dil, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
   cv::Mat grad_x, grad_y, mag, dir;
 
+  std::cout << "e";
   double factor = obj_map_->getResolution()*msg->info.resolution;
   good_accessible_map_.clear();
   for(int i=1; i<=5; i++){
@@ -415,6 +420,7 @@ void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
   if(!running_)
     return;
 
+  std::cout << "f";
   ros::Time t = ros::Time::now();
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>(msg->objects.samples.size(), 1));
   for(int i=0; i<cloud->size(); i++){
@@ -465,6 +471,7 @@ bool Searcher::doCalculations(bool force_new){
   if(!running_ || !got_map_ || !got_vision_)
     return false;
 
+  std::cout << "g";
   if(objFound()){
     finished_ = true;
     return false;
@@ -511,6 +518,7 @@ bool Searcher::doCalculations(bool force_new){
 
 
 void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg){
+  std::cout << "h";
   float min_z = std::max(POINTCLOUD_MIN_Z, 0.f);
   float max_z = std::min(POINTCLOUD_MAX_Z, obj_map_->getMaxHeight()-0.001f);
 
@@ -545,6 +553,7 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
 
 
 void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const tf::Point& sensorOriginTf){
+  std::cout << "i";
   pcl::PointCloud<pcl::PointXYZ> pc, pc_ground;
   pcl::PassThrough<OctoMapper::PCLPoint> pass_z;
   pass_z.setFilterFieldName("z");
@@ -562,6 +571,7 @@ void Searcher::insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, con
 
 
 void Searcher::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
+  std::cout << "j";
   tf::StampedTransform transform;
   try{
     tf_listener_->lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
@@ -594,6 +604,7 @@ void Searcher::objFoundCb(const vision::ObjectFoundMsgConstPtr& msg){
 bool Searcher::objFound(){
 //  ObjectMap multiplied = *obj_map_*ObjectMap(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
 //                                                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
+  std::cout << "k";
   float max_prob = 0.f;
   geometry_msgs::PoseStamped found_pose;
   for(int x=0; x<obj_map_->getWidth(); x++){
@@ -623,15 +634,13 @@ bool Searcher::objFound(){
     obj_found_ = true;
     std::cout << "OBJ FOUND " << " " << found_pos.x << " " << found_pos.y << " " << found_pos.z << std::endl;
   }
-  std::cout << "Max Obj Prob " << obj_names[searched_obj_] << ":" << max_prob
-            << (max_prob > OBJECT_FOUND_THRESH ? (std::to_string(found_pose_[0].x) + " " +
-              std::to_string(found_pose_[0].y) + " " +
-              std::to_string(found_pose_[0].z)) : "") << std::endl;
+  std::cout << "Max Obj Prob " << obj_names[searched_obj_] << ":" << max_prob << std::endl;
   return obj_found_;
 }
 
 
 cv::Mat_<float> Searcher::getProbMap(cv::Point& origin){
+  std::cout << "l";
   ObjectMap occ_map(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
 
@@ -729,6 +738,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   cv::Point new_origin;
   cv::Mat_<float> prob_map = getProbMap(new_origin);
 
+  std::cout << "m";
   cv::Mat_<float> tmp;
   prob_map.copyTo(tmp);
   double prob = 1.0;
@@ -823,6 +833,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   if(!got_map_)
     return false;
 
+  std::cout << "n";
   double angle = tf::getYaw(curr_pose.getRotation());
   while(angle < 0)
     angle += 2*M_PI;
