@@ -78,8 +78,9 @@ rospy.init_node('mapping_test_script', anonymous=True)
 rospy.Subscriber("/clock", Clock, callback, queue_size=1)
 pub = rospy.Publisher('/clock', Clock, queue_size=1)
 
-i=3
-while i < 10:
+params = [4,7]
+for p in params:
+    i=p
     print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch'
     proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
     time.sleep(10)

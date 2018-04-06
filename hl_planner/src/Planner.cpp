@@ -273,14 +273,19 @@ void Planner::justPlan(int obj){
 
 
 void Planner::exploreAll(){
-  state_ = State();
+  ros::Time start_time = ros::Time::now();
+  state_.resetState();
   while(ros::ok()){
+    ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
     if(hierarchy.rooms.empty())
       return;
 
     if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
-      sendGoal(Action(Action::ROTATE, -1, hierarchy.curr_room));
+      if(state_.num_rooms_ < 2)
+        sendGoal(Action(Action::START_ROTATE, -1, hierarchy.curr_room));
+      else
+        sendGoal(Action(Action::ROTATE, -1, hierarchy.curr_room));
       continue;
     }
 

@@ -745,6 +745,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   for(int x=0; x<prob_map.cols; x++){
     for(int y=0; y<prob_map.rows; y++){
       prob *= (1.0-prob_map(y,x));
+      tmp(y,x) = std::max(1.f+std::log10(tmp(y,x))*0.25f,0.f);
     }
   }
   prob = 1-prob;

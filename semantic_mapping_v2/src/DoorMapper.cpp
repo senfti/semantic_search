@@ -133,7 +133,6 @@ bool DoorMapper::addDoorProposal(const tf::Transform &pose, int new_id){
   int best_door = isDoorNearPose(pose);
   if(best_door >= 0){
     boost::lock_guard<boost::mutex> lock(doors_mutex_);
-    std::cout << "NEW DOOR INSERTED" << std::endl;
     return doors_[best_door].updatePose(pose);
   }
 

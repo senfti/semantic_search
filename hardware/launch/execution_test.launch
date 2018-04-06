@@ -38,7 +38,7 @@
 
     <param name="VIEW_MIN_DIST" value="0.55" />
     <param name="VIEW_MAX_DIST" value="3.2" />
-    <param name="VIEW_ANGLE" value="0.8727" />
+    <param name="VIEW_ANGLE" value="0.8" />
 
     <param name="TURN_SPEED" value="0.5" />
     <param name="MOVE_SPEED" value="0.3" />
@@ -48,7 +48,7 @@
     <param name="BORDER_SEEN_THRESH" value="3" />
     <param name="BORDER_SEEN_SIGMA" value="0.35" />
     <param name="SEEN_MAP_MAX_DIST" value="2.2" />
-    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.01" />
+    <param name="INTERESTING_BORDER_SEEN_REWARD" value="0.001" />
 
     <param name="Octomap/resolution" value="0.1" />    
     <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    

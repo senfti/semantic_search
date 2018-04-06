@@ -1,5 +1,5 @@
 <launch>
-  <node name="set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver z_scaling 1.05" />
+  <node name="set_z_scaling" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver z_scaling 1.07" />
   <node name="set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /camera/driver data_skip 6" />
 
   <include file="$(find hardware)/launch/includes/move_base.launch.xml"  >

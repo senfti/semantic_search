@@ -233,6 +233,12 @@ void Explorer::calcFrontier(){
 //  cv::imshow("good_frontiers", good_frontiers_mask);
 //  cv::waitKey(1);
 
+  static ros::Time last_frontier_change = ros::Time(0);
+  static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
+  tf::Transform old_frontier;
+  tf::poseMsgToTF(curr_frontier_, old_frontier);
+  bool need_new_frontier = (ros::Time::now()-last_frontier_change > ros::Duration(5.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3);
+
   cv::Point best_pos(-1,-1);
   double best_dir = 0.0;
   double best_dist = 999999999999999.9;
@@ -245,6 +251,10 @@ void Explorer::calcFrontier(){
           dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
           for(const auto& m : good_accessibles)
             dist += (m(p) ? 0.0 : 20.0);
+          if(need_new_frontier){
+            if((old_frontier.getOrigin() - tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x, best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0)).length() < 0.2)
+              dist += 1000.0;
+          }
           if(dist < best_dist){
             best_dist = dist;
             best_pos = cv::Point(p);
@@ -265,10 +275,10 @@ void Explorer::calcFrontier(){
   }
 
   bool inside = false;
-  if(std::sqrt((pos-best_pos).ddot(pos-best_pos)) < ROBOT_SIZE*1.25){
+  if(std::sqrt((pos-best_pos).ddot(pos-best_pos)) < ROBOT_SIZE*1.5){
     bool pos_found = false;
     for(const auto& offset : circle_points_){
-      cv::Point p = best_pos+offset;
+      cv::Point p = pos+offset;
       if(p.x>=0 && p.y>=0 && p.x<accessible.cols && p.y<accessible.rows && good_accessibles[3](p)){
         best_pos = p;
         pos_found = true;
@@ -278,7 +288,7 @@ void Explorer::calcFrontier(){
     }
     if(!pos_found){
       for(const auto &offset : circle_points_){
-        cv::Point p = best_pos + offset;
+        cv::Point p = pos + offset;
         if(p.x >= 0 && p.y >= 0 && p.x < accessible.cols && p.y < accessible.rows && accessible(p)){
           best_pos = p;
           pos_found = true;
@@ -297,16 +307,11 @@ void Explorer::calcFrontier(){
     }
   }
 
-  tf::Transform old_frontier;
-  tf::poseMsgToTF(curr_frontier_, old_frontier);
   tf::Transform tf_t(tf::createQuaternionFromYaw(best_dir),
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
   tf::Transform diff = old_frontier.inverseTimes(tf_t);
-  static ros::Time last_frontier_change = ros::Time(0);
-  static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
-  if(diff.getOrigin().length() > 0.2 || std::abs(tf::getYaw(diff.getRotation())) > 0.1
-     || (ros::Time::now()-last_frontier_change > ros::Duration(5.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3)){
+  if(diff.getOrigin().length() > 0.2 || std::abs(tf::getYaw(diff.getRotation())) > 0.1 || need_new_frontier){
     frontier_changed_ = true;
     last_frontier_calc_pos = transform.getOrigin();
     last_frontier_change = ros::Time::now();
