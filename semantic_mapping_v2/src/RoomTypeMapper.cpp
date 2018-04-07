@@ -129,6 +129,8 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
     std::string sim2_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread_real.dat";
     double confidence = 0.1;
     private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
+    bool flat = confidence < 0;
+    confidence = std::abs(confidence);
     private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
     std::ifstream f(sim_file);
     std::ofstream f2(sim2_file);
@@ -148,7 +150,11 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
       similarity[r].resize(n);
       double sum = 0.0;
       for(int c=0; c<n; c++){
-        similarity[r][c] = tmp[r*n+c];
+        if(flat)
+          similarity[r][c] = 1;
+        else
+          similarity[r][c] = tmp[r*n+c];
+
         if(c!=r)
           sum += similarity[r][c];
         else

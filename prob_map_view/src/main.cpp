@@ -272,11 +272,13 @@ void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
 }
 
 void ProbViewApp::saveAllCb(const std_msgs::StringConstPtr &msg){
-  saveAll(msg->data);
+  saveAll("",msg->data);
 }
 
-void ProbViewApp::saveAll(const std::string& postfix){
-  std::string folder = "/home/thomas/Masterarbeit/output/images"+std::to_string(ros::Time::now().toSec())+"/";
+void ProbViewApp::saveAll(const std::string& postfix, std::string folder){
+  if(folder.empty())
+    folder = "/home/thomas/Masterarbeit/output/images"+std::to_string(ros::Time::now().toSec())+"/";
+  std::cout << "SAVE TO: " << folder << std::endl;
   wxMkdir(folder);
   if(place_viewer_ != nullptr)
     place_viewer_->save(folder, postfix);

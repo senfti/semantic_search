@@ -490,7 +490,7 @@ bool Searcher::doCalculations(bool force_new){
   }
 
   static ros::Time last_calc_time(0);
-  if(!force_new && finished_count_==0 && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(5.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2))
+  if(!force_new && finished_count_==0 && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(10.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2))
     return false;
 
   last_calc_time = ros::Time::now();

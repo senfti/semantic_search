@@ -118,8 +118,8 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
     ros::spinOnce();
   }
 
-  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
-  vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
+  //map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  //vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
   obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Searcher::objFoundCb, this);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);

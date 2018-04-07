@@ -18,7 +18,7 @@ int main(int argc, char** argv){
     ros::Time sdf = ros::Time::now();
     ros::spinOnce();
     ros::Time sdf1 = ros::Time::now();
-    s.objFound();
+    //s.objFound();
     ros::Time sdf2 = ros::Time::now();
 //    if(bla%16 == 0)
 //      s.publishMaps();

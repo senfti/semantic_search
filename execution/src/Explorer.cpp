@@ -237,7 +237,7 @@ void Explorer::calcFrontier(){
   static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
   tf::Transform old_frontier;
   tf::poseMsgToTF(curr_frontier_, old_frontier);
-  bool need_new_frontier = (ros::Time::now()-last_frontier_change > ros::Duration(5.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3);
+  bool need_new_frontier = (ros::Time::now()-last_frontier_change > ros::Duration(10.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3);
 
   cv::Point best_pos(-1,-1);
   double best_dir = 0.0;

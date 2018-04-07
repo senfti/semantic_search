@@ -186,12 +186,29 @@ Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
 }
 
 
+const std::vector<std::string> room_names = { "art gallery","art studio","assembly line","attic","auditorium","ballroom","banquette hall",
+                                              "bar","basement","beauty salon","bedroom","bookstore","bowling alley","butcher shop","bakery",
+                                              "cafeteria","candy store","classroom","closet","clothe store","coffee shop","conference center",
+                                              "conference room","corridor","dining room","dorm room","dinette","engine room","food court",
+                                              "galley","game room","gift shop","home office","hospital room","hotel room","ice cream parlor",
+                                              "jail cell","kindergarden classroom","kitchen","kitchenette","laundromat","livingroom","lobby",
+                                              "locker room","martial arts gym","music studio","nursery","office","pantry","parlor","reception",
+                                              "restaurant","restaurant kitchen","shoe shop","shower","staircase","supermarket",
+                                              "television studio","veranda","waiting room"};
+
+const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
+                                             "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
+                                             "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hotdog","pizza","donut","cake",
+                                             "chair","sofa","potplant","bed","table","toilet","monitor","laptop","mouse","remote","keyboard","cellphone",
+                                             "microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissor","teddybear","hairdryer","toothbrush"};
+
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res);
 
 void Planner::run(int obj){
   std::ofstream output_file("/home/thomas/output/" + std::to_string(ros::Time::now().toSec()) + ".txt");
   ros::Time start_time = ros::Time::now();
   state_.resetState();
+  output_file << obj << " " << obj_names[obj] << std::endl;
   while(ros::ok()){
     ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
@@ -320,12 +337,6 @@ void Planner::exploreAll(){
   }
 }
 
-const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
-                                             "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
-                                             "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hotdog","pizza","donut","cake",
-                                             "chair","sofa","potplant","bed","table","toilet","monitor","laptop","mouse","remote","keyboard","cellphone",
-                                             "microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissor","teddybear","hairdryer","toothbrush"};
-
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res){
   os << "current room: " << res.curr_room << std::endl;
   for(int i=0; i<res.links.size(); i++){
@@ -336,6 +347,9 @@ std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchyS
     os << "room " << i << ": " << res.rooms[i].search_time << " " << std::endl;
     for(int j=0; j<res.rooms[i].obj_probs.size(); j++){
       os << obj_names[j] << ": " << res.rooms[i].obj_probs[j] << " " << res.rooms[i].expected_search_time[j] << " " << res.rooms[i].obj_probs[j]/res.rooms[i].expected_search_time[j] << std::endl;
+    }
+    for(int j=0; j<res.rooms[i].room_type_probs.size(); j++){
+      os << room_names[j] << ": " << res.rooms[i].room_type_probs[j] << std::endl;
     }
     os << std::endl;
   }

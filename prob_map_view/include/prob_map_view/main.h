@@ -50,7 +50,7 @@ class ProbViewApp : public wxApp{
     void sdfProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void saveAllCb(const std_msgs::StringConstPtr& msg);
 
-    void saveAll(const std::string& postfix = std::string(""));
+    void saveAll(const std::string& postfix = std::string(""), std::string folder = std::string());
 };
 
 extern ProbViewApp* prob_view_app;

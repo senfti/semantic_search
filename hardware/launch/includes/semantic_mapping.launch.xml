@@ -9,9 +9,9 @@
   <arg name="octomap_downproj_thresh" default="0.7" />
 
   <arg name="object_prior" default="0.004" />
-  <arg name="object_hit" default="0.1" />
+  <arg name="object_hit" default="0.05" />
   <arg name="object_miss" default="0.0005" />
-  <arg name="object_samples" default="8000" />
+  <arg name="object_samples" default="6000" />
 
   <arg name="roomtype_confidence" default="0.05" />
 
