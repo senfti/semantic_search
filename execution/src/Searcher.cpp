@@ -254,7 +254,7 @@ void Searcher::calcSeenKernels(){
           seen_kernel_points_[i].push_back(diff);
           float va = std::min(1.5f-2.f*angleDist(std::atan2(float(diff.y),float(diff.x)), angle), 1.f);
           float r = std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION);
-          float vr = (r > 1.5f ? 1.0f-0.45f*(r-2.f) : (r < 1.5f ? 1.0f-0.3f*(1.5f-r) : 1.f));
+          float vr = std::max(std::min(1.f, 1.f-(r-1.f)/2.5f),0.f);
           seen_kernel_points_value_[i].push_back(va*vr);
           //sdf(y,x) = va*vr;
         }
@@ -723,7 +723,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
       std::cout << "out" << std::endl;
       continue;
     }
-    if(not_fully_viewed_border_(pos+p) == 255){
+    if(not_fully_viewed_border_(pos+p) == 255 && std::sqrt(p.x*p.x+p.y*p.y) < SEEN_MAP_MAX_DIST*RESOLUTION){
       float val = gaussian(angleDist(angle, border_dir_map_(pos+p)), BORDER_SEEN_SIGMA/2);
       interesting_border_seen += seen_kernel_points_value_[angle_step][idx]*val;
     }
@@ -786,15 +786,18 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_p
   double max = -1.0;
   int max_i;
   cv::Point max_loc;
-  cv::Mat_<uchar> seen_mat(prob_map.rows, prob_map.cols, uchar(0));
+  //cv::Mat_<uchar> seen_mat(prob_map.rows, prob_map.cols, uchar(0));
   std::vector<cv::Mat_<float>> prob_mats;
+  cv::Mat_<uchar> accessible = accessible_map_;
+  if(need_new_pose)
+    cv::erode(accessible, accessible, cv::Mat_<uchar>::ones(3,3));
   for(int i=0; i<VIEW_ANGLE_STEPS; i++){
     std::cout << std::endl;
     prob_mats.push_back(cv::Mat_<float>(prob_map.rows, prob_map.cols,0.f));
     //cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
-        if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) && (!need_new_pose || (std::abs(old_pos.x-x) > 1 || std::abs(old_pos.y-y) > 1)) &&
+        if(accessible(y,x) && !previous_pose_maps_[i](y,x) && (!need_new_pose || (std::abs(old_pos.x-x) > 1 || std::abs(old_pos.y-y) > 1)) &&
                 ((std::abs(curr_point.x-x)>3 || std::abs(curr_point.y-y)>3 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_pos, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
@@ -802,12 +805,12 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_p
             max = prob;
             max_loc = cv::Point(x,y);
             max_i = i;
-            seen_mat = cv::Mat_<uchar>(prob_map.rows, prob_map.cols, uchar(0));
-            for(const auto& p : seen_kernel_points_[i]){
-              if(!(cv::Point(x,y)+p).inside(cv::Rect(0,0,prob_map.cols,prob_map.rows)))
-                continue;
-              seen_mat(cv::Point(x,y)+p) = 255;
-            }
+//            seen_mat = cv::Mat_<uchar>(prob_map.rows, prob_map.cols, uchar(0));
+//            for(const auto& p : seen_kernel_points_[i]){
+//              if(!(cv::Point(x,y)+p).inside(cv::Rect(0,0,prob_map.cols,prob_map.rows)))
+//                continue;
+//              seen_mat(cv::Point(x,y)+p) = 255;
+//            }
           }
           prob_mats[i](y,x) = prob;
           if(prob < 0 || prob > 1)

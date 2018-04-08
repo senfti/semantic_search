@@ -1,4 +1,7 @@
 <launch>
+  <arg name="RUN_NAME"  default="" />
+
   <include file="$(find hardware)/launch/includes/hl_planner.launch.xml" >
+    <arg name="RUN_NAME" value="$(arg RUN_NAME)" />
   </include>
 </launch>

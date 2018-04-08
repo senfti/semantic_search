@@ -34,7 +34,7 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
   }
   for(int x=-5;x<=5;x++){
     for(int y=-5; y<=5; y++){
-      if(std::sqrt(x*x+y*y) > 4 && std::sqrt(x*x+y*y) <= 5)
+      if(std::sqrt(x*x+y*y) > 3 && std::sqrt(x*x+y*y) <= 5)
         near_circle_points_.push_back(cv::Point(x,y));
     }
   }
@@ -252,7 +252,7 @@ void Explorer::calcFrontier(){
       if(good_frontiers_mask(y,x)){
         for(const auto& cp : near_circle_points_){
           cv::Point p = cv::Point(x,y)+cp;
-          if(!accessible(y,x))
+          if(!accessible(p))
             continue;
           double dist = std::sqrt((p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y));
           dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);

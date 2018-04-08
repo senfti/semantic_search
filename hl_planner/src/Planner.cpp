@@ -204,11 +204,14 @@ const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","do
 
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res);
 
-void Planner::run(int obj){
-  std::ofstream output_file("/home/thomas/output/" + std::to_string(ros::Time::now().toSec()) + ".txt");
+void Planner::run(int obj, std::string run_name){
+  if(run_name.empty())
+    run_name = std::to_string(ros::Time::now().toSec());
+
+  std::ofstream output_file("/home/thomas/output/" + run_name + ".txt");
   ros::Time start_time = ros::Time::now();
   state_.resetState();
-  output_file << obj << " " << obj_names[obj] << std::endl;
+  output_file << run_name << " " << std::endl << obj << " " << obj_names[obj] << std::endl;
   while(ros::ok()){
     ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);

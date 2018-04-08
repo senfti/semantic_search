@@ -1,5 +1,8 @@
 <launch>
+  <arg name="RUN_NAME"  default="" />
+
   <node pkg="hl_planner" type="hl_planner" name="hl_planner" output="screen">
     <param name="DOOR_DRIVE_TIME_LOSS" value="5.0"/>
+    <param name="RUN_NAME" value="$(arg RUN_NAME)"/>
   </node>
 </launch>

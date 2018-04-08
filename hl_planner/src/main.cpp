@@ -66,6 +66,10 @@ int main(int argc, char** argv){
 //  State s(m, res.curr_room);
 //  p.generatePlan(m,s);
 
+  std::string run_name;
+  ros::NodeHandle("~").param("RUN_NAME", run_name, run_name);
+  std::cout << "RUN_NAME" << run_name << std::endl;
+
   Planner p;
   while(ros::ok()){
     std::cout << "-1:explore all | ";
@@ -76,7 +80,7 @@ int main(int argc, char** argv){
     int n=-1;
     std::cin >> n;
     if(n>=0 && n<obj_names.size())
-      p.run(n);
+      p.run(n, run_name);
     if(n==-1)
       p.exploreAll();
   }

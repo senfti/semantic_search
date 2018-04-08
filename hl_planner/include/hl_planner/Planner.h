@@ -35,7 +35,7 @@ class Planner{
     Plan generatePlan(const HierarchyMap& graph, const State& state);
 
     //bool exploreRoom(semantic_mapping_v2::HierarchyLinkMsg link);
-    void run(int obj);
+    void run(int obj, std::string run_name = std::string());
     void justPlan(int obj);
     void exploreAll();
 
