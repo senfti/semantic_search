@@ -330,6 +330,69 @@ void Explorer::calcFrontier(){
 }
 
 
+bool Explorer::isFullyExplored() const{
+  cv::Mat_<uchar> unknown(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> free(last_map_.info.height, last_map_.info.width, uchar(0));
+  cv::Mat_<uchar> occupied(last_map_.info.height, last_map_.info.width, uchar(0));
+  for(int x=0; x<last_map_.info.width; x++){
+    for(int y=0; y<last_map_.info.height; y++){
+      if(last_map_.data[y * last_map_.info.width + x] == 0)
+        free(y,x) = 255;
+      else if(last_map_.data[y * last_map_.info.width + x] < 0)
+        unknown(y,x) = 255;
+      else
+        occupied(y,x) = 255;
+    }
+  }
+  cv::Mat_<uchar> unknown_dilate;
+  cv::dilate(unknown, unknown_dilate, cv::Mat_<uchar>::ones(3,3));
+  cv::Mat_<uchar> frontiers_mask;
+  cv::bitwise_and(unknown_dilate, free, frontiers_mask);
+
+  cv::Mat_<uchar> occupied_dilate, not_forbidden;
+  int robot_kernel_size = ROBOT_SIZE*2+1;
+  cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_not(occupied_dilate, not_forbidden);
+//  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+//  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_and(not_forbidden, free, not_forbidden);
+
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
+  cv::Point pos(int((transform.getOrigin().x()-last_map_.info.origin.position.x)/last_map_.info.resolution),
+                int((transform.getOrigin().y()-last_map_.info.origin.position.y)/last_map_.info.resolution));
+  cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
+
+  cv::Mat_<uchar> accessible(last_map_.info.height, last_map_.info.width, uchar(0));
+  std::deque<cv::Point> next[2];
+  cv::Mat_<uchar> already_inserted;
+  cv::bitwise_not(not_forbidden, already_inserted);
+  already_inserted(start) = 255;
+  int i=0;
+  next[i].push_back(start);
+  while(!next[i&1].empty()){
+    for(const auto& p : next[i&1]){
+      if(not_forbidden(p)){
+        accessible(p) = 255;
+      }
+      insertNeighbors(p, already_inserted, next[(i+1)&1]);
+    }
+    next[i&1].clear();
+    i++;
+  }
+
+  cv::Mat_<uchar> good_frontiers_mask;
+  cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
+
+  return (cv::countNonZero(good_frontiers_mask) == 0);
+}
+
+
 cv::Point Explorer::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) const{
   if(valid(y,x))
     return cv::Point(x,y);

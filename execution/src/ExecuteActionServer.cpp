@@ -233,6 +233,12 @@ void ExecuteActionServer::doExplore(){
     }
     execution::ExecuteResult result;
     result.result_number = (explorer_.objFoundStopped() ? 100 : (explorer_.doorFoundStopped() ? 1 : 0));
+    if(explorer_.doorFoundStopped()){
+      ros::Rate(0.5).sleep();
+      ros::spinOnce();
+      if(explorer_.isFullyExplored())
+        result.result_number = 0;
+    }
     if(result.result_number == 0){
       std_msgs::Int8 tmp;
       tmp.data = goal_.target_room;

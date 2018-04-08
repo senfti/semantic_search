@@ -78,7 +78,6 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("SEARCH_MAX_ROT_VEL", SEARCH_MAX_ROT_VEL, SEARCH_MAX_ROT_VEL);
   private_nh.param("SEARCH_MAX_TRANS_VEL", SEARCH_MAX_TRANS_VEL, SEARCH_MAX_TRANS_VEL);
   private_nh.param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
-  ROBOT_SIZE++;
 
   private_nh.param("OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
   private_nh.param("OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
@@ -795,7 +794,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_p
     //cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
-        if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) && (!need_new_pose || (std::abs(old_pos.x-x) > 3 || std::abs(old_pos.y-y) > 3)) &&
+        if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) && (!need_new_pose || (std::abs(old_pos.x-x) > 1 || std::abs(old_pos.y-y) > 1)) &&
                 ((std::abs(curr_point.x-x)>3 || std::abs(curr_point.y-y)>3 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_pos, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));

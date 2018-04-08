@@ -63,6 +63,7 @@ class Explorer{
     bool doorFoundStopped() const { return door_found_stopped_; }
     bool objFoundStopped() const { return obj_found_stopped_; }
     bool running() const { return running_; }
+    bool isFullyExplored() const;
 
     void start(int searched_obj);
     void stop();
