@@ -32,6 +32,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   private_nh.param("vision/FOUND_MIN_PROB", FOUND_MIN_PROB, FOUND_MIN_PROB);
 
   private_nh.param("vision/DETECTION_SAMPLE_NUM", DETECTION_SAMPLE_NUM, DETECTION_SAMPLE_NUM);
+  private_nh.param("vision/VISIBLE_SAMPLE_NUM", VISIBLE_SAMPLE_NUM, VISIBLE_SAMPLE_NUM);
   private_nh.param("vision/MIN_OBJECT_PROB", MIN_OBJECT_PROB, MIN_OBJECT_PROB);
 
   private_nh.param("vision/MAX_DISCARD_TIME", MAX_DISCARD_TIME, MAX_DISCARD_TIME);
@@ -126,6 +127,7 @@ void VisionApp::nnThreadRun(){
 
       std::vector<CaffeRecognition> predictions = fillPlaceGuesses(img, result_msg);
       std::vector<YoloDetection> detections = fillObjectDetections(img, cloud, result_msg);
+      fillVisible(cloud, result_msg);
       result_pub_.publish(result_msg);
       if(DEBUG_IMAGES)
         showDebugImage(img, predictions, detections);
@@ -316,6 +318,26 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, c
 
   return detections;
 }
+
+
+void VisionApp::fillVisible(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg){
+  int i = 0;
+  for(int c=0; i<VISIBLE_SAMPLE_NUM && c < 5*VISIBLE_SAMPLE_NUM; c++){
+    int x=std::rand()%cloud.width;
+    int y=std::rand()%cloud.height;
+
+    if(!(cloud.at(x,y).z >= MIN_Z && cloud.at(x,y).z <= MAX_Z))
+      continue;
+
+    geometry_msgs::Point sample;
+    sample.x = cloud.at(x,y).x;
+    sample.y = cloud.at(x,y).y;
+    sample.z = cloud.at(x,y).z;
+    vision_msg.visible_points.push_back(sample);
+    i++;
+  }
+}
+
 
 void visualizeProbMap(cv::Mat_<double> map, const std::string& win_name, cv::Mat_<uchar> mask = cv::Mat_<uchar>()){
   cv::Mat out;

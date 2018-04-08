@@ -5,6 +5,7 @@
 #include "semantic_mapping_v2/RoomTypeMapper.h"
 #include <ros/ros.h>
 #include <fstream>
+#include <pcl/common/common.h>
 
 
 RoomTypeMap::RoomTypeMap(float resolution, float start_size, float initial_value, const std::string& name)
@@ -242,7 +243,7 @@ RoomTypeMapper::RoomTypeMapper(const std::vector<cv::Mat_<float>> &prob_maps, co
 }
 
 
-bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
+bool RoomTypeMapper::resizeUntilFitting(const std::vector<cv::Point>& points){
   int x1 = points[0].x;
   int x2 = points[0].x;
   int y1 = points[0].y;
@@ -272,10 +273,6 @@ bool RoomTypeMapper::resizeUntilFitting(std::vector<cv::Point>& points){
     map.resize(left, right, top, bottom, ROOM_PRIOR_PROB);
   lock.unlock();
 
-  for(int i=0; i<points.size(); i++){
-    points[i].x += left;
-    points[i].y += top;
-  }
   return true;
 }
 
@@ -385,7 +382,7 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
 }
 
 
-void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose){
+void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const pcl::PointCloud<pcl::PointXYZ> &cloud, const GMapping::OrientedPoint& pose){
   if(NUM_CLASSES == 0){
     NUM_CLASSES = msg->place_guesses.size();
     ROOM_PRIOR_PROB = 1.f/NUM_CLASSES;
@@ -405,11 +402,17 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMap
   points[1] = cv::Point2d(MAX_DIST*std::cos(pose.theta+ASUS_FOV)+pose.x, MAX_DIST*std::sin(pose.theta+ASUS_FOV)+pose.y) * prob_maps_[0].getResolution() + orig;
   points[2] = cv::Point2d(MAX_DIST*std::cos(pose.theta-ASUS_FOV)+pose.x, MAX_DIST*std::sin(pose.theta-ASUS_FOV)+pose.y) * prob_maps_[0].getResolution() + orig;
   points[3] = cv::Point2d(MIN_DIST*std::cos(pose.theta-ASUS_FOV)+pose.x, MIN_DIST*std::sin(pose.theta-ASUS_FOV)+pose.y) * prob_maps_[0].getResolution() + orig;
-
   resizeUntilFitting(points);
-  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+
   cv::Mat_<uchar> mask(prob_maps_[0].getHeight(), prob_maps_[0].getWidth(), uchar(0));
-  cv::fillConvexPoly(mask, points, cv::Scalar(255));
+  boost::lock_guard<boost::mutex> lock(maps_mutex_);
+  for(int i=0; i<cloud.size(); i++){
+    int x = prob_maps_[0].getXPixel(cloud[i].x);
+    int y = prob_maps_[0].getYPixel(cloud[i].y);
+    if(x>=0 && x<mask.cols && y>=0 && y<mask.rows)
+      mask(y,x) = 255;
+  }
+
   for(int x=0; x<mask.cols; x++){
     for(int y=0; y<mask.rows; y++){
       if(mask(y,x))

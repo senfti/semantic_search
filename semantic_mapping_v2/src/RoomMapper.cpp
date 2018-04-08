@@ -367,8 +367,20 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     return;
 
   ros::Time start = ros::Time::now();
+
+  pcl::PointCloud<pcl::PointXYZ> cloud_place(msg->visible_points.size(), 1);
+  for(int i=0; i<cloud_place.size(); i++){
+    cloud_place[i] = pcl::PointXYZ(msg->visible_points[i].x, msg->visible_points[i].y, msg->visible_points[i].z);
+  }
+  Eigen::Matrix4f cam_to_base;
+  pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
+  pcl::transformPointCloud(cloud_place, cloud_place, cam_to_base);
   for(int i=0; i<particles_; i++){
-    room_type_mappers_[i]->processMsg(msg, getParticlePose2D(i, msg->header.stamp));
+    pcl::PointCloud<pcl::PointXYZ> cloud_trans;
+    Eigen::Matrix4f sensorToWorld;
+    pcl_ros::transformAsMatrix(getParticlePose3D(i, msg->header.stamp), sensorToWorld);
+    pcl::transformPointCloud(cloud_place, cloud_trans, sensorToWorld);
+    room_type_mappers_[i]->processMsg(msg, cloud_trans, getParticlePose2D(i, msg->header.stamp));
   }
   //std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
   ros::Time mid = ros::Time::now();
@@ -377,8 +389,6 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
   for(int i=0; i<cloud.size(); i++){
     cloud[i] = pcl::PointXYZ(msg->objects.samples[i].point.x, msg->objects.samples[i].point.y, msg->objects.samples[i].point.z);
   }
-  Eigen::Matrix4f cam_to_base;
-  pcl_ros::transformAsMatrix(camera_to_base_transform_, cam_to_base);
   pcl::transformPointCloud(cloud, cloud, cam_to_base);
 
   for(int i=0; i<particles_; i++){

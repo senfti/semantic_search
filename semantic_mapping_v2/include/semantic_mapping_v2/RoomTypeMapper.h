@@ -14,6 +14,8 @@
 #include <semantic_mapping_v2/RoomTypeMapMsg.h>
 #include <boost/thread.hpp>
 #include <boost/thread/lock_guard.hpp>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 const int NUM_ROOM_TYPES = 60;
 
@@ -86,7 +88,7 @@ class RoomTypeMapper{
     boost::mutex maps_mutex_;
     std::vector<std::string> names_;
 
-    bool resizeUntilFitting(std::vector<cv::Point>& points);
+    bool resizeUntilFitting(const std::vector<cv::Point>& points);
     void updateProbs(const vision::VisionMsgConstPtr& msg, int x, int y);
 
   public:
@@ -94,7 +96,7 @@ class RoomTypeMapper{
     RoomTypeMapper(const RoomTypeMapper& rhs);
     RoomTypeMapper(const std::vector<cv::Mat_<float>>& prob_maps, const cv::Mat_<uchar>& seen_map, const cv::Point& origin, float resolution, int base_size);
 
-    void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
+    void processMsg(const vision::VisionMsgConstPtr& msg, const pcl::PointCloud<pcl::PointXYZ> &cloud, const GMapping::OrientedPoint& pose);
     void resizeToObjMap(const cv::Point& origin, const cv::Size& size);
 
     //std::vector<double> getProbs() const { return probs_; }

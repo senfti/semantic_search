@@ -46,6 +46,7 @@ class VisionApp{
     float FOUND_MIN_PROB = 0.9f;
 
     int DETECTION_SAMPLE_NUM = 2000;
+    int VISIBLE_SAMPLE_NUM = 10000;
     float MIN_OBJECT_PROB = 0.001f;
 
     float MAX_DISCARD_TIME = 5.0;
@@ -97,6 +98,7 @@ class VisionApp{
     bool useImage(const cv::Mat& img, ros::Time stamp);
     std::vector<CaffeRecognition> fillPlaceGuesses(const cv::Mat& img, vision::VisionMsg& vision_msg) const;
     std::vector<YoloDetection> fillObjectDetections(const cv::Mat& img, const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg);
+    void fillVisible(const pcl::PointCloud<pcl::PointXYZ>& cloud, vision::VisionMsg& vision_msg);
     void addObjectFound(vision::ObjectFoundMsg& msg, int o, const YoloDetection& det, const pcl::PointCloud<pcl::PointXYZ>& cloud);
     void showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predictions, std::vector<YoloDetection>& detections);
 };
