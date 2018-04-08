@@ -6,7 +6,7 @@
 
   <arg name="octomap_hit" default="0.65" />
   <arg name="octomap_miss" default="0.38" />
-  <arg name="octomap_downproj_thresh" default="0.7" />
+  <arg name="octomap_downproj_thresh" default="0.65" />
 
   <arg name="object_prior" default="0.004" />
   <arg name="object_hit" default="0.05" />

@@ -237,7 +237,12 @@ void Explorer::calcFrontier(){
   static tf::Vector3 last_frontier_calc_pos = tf::Vector3(-999999999999.9,0.0,0.0);
   tf::Transform old_frontier;
   tf::poseMsgToTF(curr_frontier_, old_frontier);
-  bool need_new_frontier = (ros::Time::now()-last_frontier_change > ros::Duration(10.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3);
+  static ros::Time need_new_frontier_time(0);
+  static tf::Transform bad_frontier;
+  if(ros::Time::now()-last_frontier_change > ros::Duration(10.0) && (transform.getOrigin()-last_frontier_calc_pos).length() < 0.3){
+    need_new_frontier_time = ros::Time::now();
+    bad_frontier = old_frontier;
+  }
 
   cv::Point best_pos(-1,-1);
   double best_dir = 0.0;
@@ -247,12 +252,14 @@ void Explorer::calcFrontier(){
       if(good_frontiers_mask(y,x)){
         for(const auto& cp : near_circle_points_){
           cv::Point p = cv::Point(x,y)+cp;
+          if(!accessible(y,x))
+            continue;
           double dist = std::sqrt((p.x-pos.x)*(p.x-pos.x) + (p.y-pos.y)*(p.y-pos.y));
           dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
           for(const auto& m : good_accessibles)
             dist += (m(p) ? 0.0 : 20.0);
-          if(need_new_frontier){
-            if((old_frontier.getOrigin() - tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x, best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0)).length() < 0.2)
+          if(ros::Time::now()-need_new_frontier_time < ros::Duration(3.0)){
+            if((bad_frontier.getOrigin() - tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x, best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0)).length() < 0.2)
               dist += 1000.0;
           }
           if(dist < best_dist){
@@ -311,7 +318,7 @@ void Explorer::calcFrontier(){
                            tf::Vector3(best_pos.x*last_map_.info.resolution+last_map_.info.origin.position.x,
                                        best_pos.y*last_map_.info.resolution+last_map_.info.origin.position.y, 0.0));
   tf::Transform diff = old_frontier.inverseTimes(tf_t);
-  if(diff.getOrigin().length() > 0.2 || std::abs(tf::getYaw(diff.getRotation())) > 0.1 || need_new_frontier){
+  if(diff.getOrigin().length() > 0.2 || std::abs(tf::getYaw(diff.getRotation())) > 0.1 || ros::Time::now()-need_new_frontier_time < ros::Duration(3.0)){
     frontier_changed_ = true;
     last_frontier_calc_pos = transform.getOrigin();
     last_frontier_change = ros::Time::now();

@@ -678,21 +678,27 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
 {
   std::vector<cv::Mat_<float>> room_type_maps_filtered;
   for(int i=0; i<room_type_probs_maps.size(); i++){
-    room_type_maps_filtered.push_back(cv::Mat_<float>(room_type_probs_maps[i].rows, room_type_probs_maps[i].cols, room_type_probs[i]));
-    room_type_probs_maps[i].copyTo(room_type_maps_filtered[i], room_seen_map);
-    cv::GaussianBlur(room_type_maps_filtered[i], room_type_maps_filtered[i], cv::Size(13,13), 4.0, 4.0);
-    room_type_maps_filtered[i] = room_type_maps_filtered[i](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
+    if(ROOM_TO_OBJ){
+      room_type_maps_filtered.push_back(cv::Mat_<float>(room_type_probs_maps[i].rows, room_type_probs_maps[i].cols, room_type_probs[i]));
+      room_type_probs_maps[i].copyTo(room_type_maps_filtered[i], room_seen_map);
+      cv::GaussianBlur(room_type_maps_filtered[i], room_type_maps_filtered[i], cv::Size(13, 13), 4.0, 4.0);
+      room_type_maps_filtered[i] = room_type_maps_filtered[i](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
+    }
+    else{
+      room_type_maps_filtered.push_back(cv::Mat_<float>(room_type_probs_maps[i].rows, room_type_probs_maps[i].cols, 1.f/room_type_probs_maps.size()));
+    }
   }
 
   if(!USE_OBJ_MAP && ROOM_TO_OBJ){
     std::vector<ObjectMap> complete_obj_map;
-    ObjectMap flat(obj_map[0], 0.002);
-    ObjectMap occ_flat(flat.getResolution(), flat.getBaseSize(), flat.getWidth(), flat.getHeight(), flat.getOrigin(), flat.getMaxHeight(), 1.f, 0);
+    ObjectMap occ_flat(obj_map[0].getResolution(), obj_map[0].getBaseSize(), obj_map[0].getWidth(), obj_map[0].getHeight(), obj_map[0].getOrigin(), obj_map[0].getMaxHeight(), 1.f, 0);
     if(obj >= 0){
+      ObjectMap flat(obj_map[0], RoomMapper::getObjProbGivenRoomObjPriorPerCell(obj)/6);
       complete_obj_map.push_back(ObjectMap(flat, occ_flat, room_base_obj_maps[0], only_laser_points, room_type_maps_filtered, obj, occ_2d));
     }
     else{
       for(int o=0; o<obj_map.size(); o++){
+        ObjectMap flat(obj_map[0], RoomMapper::getObjProbGivenRoomObjPriorPerCell(o)/6);
         complete_obj_map.push_back(ObjectMap(flat, occ_flat, room_base_obj_maps[o], only_laser_points, room_type_maps_filtered, o, occ_2d));
       }
     }
@@ -725,14 +731,15 @@ std::vector<ObjectMap> HierarchyMapper::getCompleteObjMap(const std::vector<cv::
   }
   else{
     std::vector<ObjectMap> complete_obj_map;
-    ObjectMap flat(obj_map[0], 0.002);
-    ObjectMap occ_flat(flat.getResolution(), flat.getBaseSize(), flat.getWidth(), flat.getHeight(), flat.getOrigin(), flat.getMaxHeight(), 1.f, 0);
+    ObjectMap occ_flat(obj_map[0].getResolution(), obj_map[0].getBaseSize(), obj_map[0].getWidth(), obj_map[0].getHeight(), obj_map[0].getOrigin(), obj_map[0].getMaxHeight(), 1.f, 0);
     cv::Mat_<float> flatr(room_base_obj_maps[0].rows, room_base_obj_maps[0].cols, 0.5f);
     if(obj >= 0){
+      ObjectMap flat(obj_map[0], RoomMapper::getObjProbGivenRoomObjPriorPerCell(obj)/6);
       complete_obj_map.push_back(ObjectMap(flat, occ_flat, flatr, only_laser_points, room_type_maps_filtered, obj, occ_2d));
     }
     else{
       for(int o=0; o<obj_map.size(); o++){
+        ObjectMap flat(obj_map[0], RoomMapper::getObjProbGivenRoomObjPriorPerCell(o)/6);
         complete_obj_map.push_back(ObjectMap(flat, occ_flat, flatr, only_laser_points, room_type_maps_filtered, o, occ_2d));
       }
     }

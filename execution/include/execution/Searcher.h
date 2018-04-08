@@ -64,6 +64,7 @@ class Searcher{
     int SEEN_MAP_MAX_DIST = 2.5;
 
     float INTERESTING_BORDER_SEEN_REWARD = 0.01f;
+    int OBJECT_PROB_UPDATE_INTERVAL = 5;
 
   private:
     ros::Subscriber map_sub_;
@@ -144,7 +145,7 @@ class Searcher{
 
     bool objFound();
 
-    bool calcNextViewpoint(const tf::Transform& curr_pose);
+    bool calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_pose);
 
     bool doCalculations(bool force_new);
 

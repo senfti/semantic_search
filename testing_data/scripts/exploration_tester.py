@@ -42,7 +42,7 @@ def terminate_ros_node(s):
 
 files = ["h1e.bag", "h1e.bag", "h2e.bag", "h2e.bag", "h3e.bag", "h3e.bag", "h5e.bag", "h5e.bag", "h6e.bag", "h6e.bag", "h7e.bag", "h7e.bag"]
 
-for i in range(len(files)):
+for i in range(8,len(files)):
     filename = files[i]
     folder = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
     bag = rosbag.Bag(folder+filename)
@@ -148,10 +148,10 @@ for i in range(len(files)):
 
         save_string = String()
         if action==0:
-            save_string.data = "/home/thomas/Masterarbeit/output/images/" + "filename" + "_peek" + str(peek_nr) + "_" + str(i%2)
+            save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_peek" + str(peek_nr) + "_" + str(i%2)
             pub_img_save.publish(save_string)
         else:
-            save_string.data = "/home/thomas/Masterarbeit/output/images/" + "filename" + "_explore" + str(explore_nr) + "_" + str(i%2)
+            save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_explore" + str(explore_nr) + "_" + str(i%2)
             pub_img_save.publish(save_string)
 
         time.sleep(7)

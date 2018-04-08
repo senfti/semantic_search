@@ -78,6 +78,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("SEARCH_MAX_ROT_VEL", SEARCH_MAX_ROT_VEL, SEARCH_MAX_ROT_VEL);
   private_nh.param("SEARCH_MAX_TRANS_VEL", SEARCH_MAX_TRANS_VEL, SEARCH_MAX_TRANS_VEL);
   private_nh.param("ROBOT_SIZE", ROBOT_SIZE, ROBOT_SIZE);
+  ROBOT_SIZE++;
 
   private_nh.param("OBJ_PRIOR_PROB", OBJ_PRIOR_PROB, OBJ_PRIOR_PROB);
   private_nh.param("OBJ_MIN_PROB", OBJ_MIN_PROB, OBJ_MIN_PROB);
@@ -111,6 +112,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("BORDER_SEEN_SIGMA", BORDER_SEEN_SIGMA, BORDER_SEEN_SIGMA);
   private_nh.param("SEEN_MAP_MAX_DIST", SEEN_MAP_MAX_DIST, SEEN_MAP_MAX_DIST);
   private_nh.param("INTERESTING_BORDER_SEEN_REWARD", INTERESTING_BORDER_SEEN_REWARD, INTERESTING_BORDER_SEEN_REWARD);
+  private_nh.param("OBJECT_PROB_UPDATE_INTERVAL", OBJECT_PROB_UPDATE_INTERVAL, OBJECT_PROB_UPDATE_INTERVAL);
 
   while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
     ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
@@ -207,6 +209,7 @@ void Searcher::start(int searched_obj, int searched_room){
       map = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
   }
 
+  prior_pub_.publish(prior_prob_map_->getProbMsg(0.00001f));
   prior_prob_map_->resample(*obj_map_, 0.0);
   tf::StampedTransform transform;
   try{
@@ -351,7 +354,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   std::cout << "e";
   double factor = obj_map_->getResolution()*msg->info.resolution;
   good_accessible_map_.clear();
-  for(int i=1; i<=5; i++){
+  for(int i=1; i<=1; i++){
     good_accessible_map_.push_back(cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f));
     cv::Mat_<uchar> tmp;
     cv::erode(accessible_mat, tmp, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), i+1);
@@ -490,7 +493,8 @@ bool Searcher::doCalculations(bool force_new){
   }
 
   static ros::Time last_calc_time(0);
-  if(!force_new && finished_count_==0 && !search_step_viewed_ && !(ros::Time::now() - last_calc_time > ros::Duration(10.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2))
+  bool need_new_pose = (ros::Time::now() - last_calc_time > ros::Duration(10.0) && transform.getOrigin().length() < 0.2 && angleDist(tf::getYaw(transform.getRotation()),0.0) < 0.2);
+  if(!force_new && finished_count_==0 && !search_step_viewed_ && !need_new_pose)
     return false;
 
   last_calc_time = ros::Time::now();
@@ -503,7 +507,7 @@ bool Searcher::doCalculations(bool force_new){
     ROS_ERROR("%s",ex.what());
     return false;
   }
-  if(calcNextViewpoint(transform)){
+  if(calcNextViewpoint(transform, need_new_pose)){
     if(finished_count_ > 0){
       finished_ = true;
       std::cout << "FINISHED, NO POSSIBLE POSITIONS LEFT" << std::endl;
@@ -644,7 +648,26 @@ cv::Mat_<float> Searcher::getProbMap(cv::Point& origin){
   ObjectMap occ_map(obj_map_->getResolution(), obj_map_->getBaseSize(), obj_map_->getWidth(), obj_map_->getHeight(),
                     obj_map_->getOrigin(), obj_map_->getMaxHeight(), *octo_mapper_);
 
-  full_pub_.publish((*obj_map_*occ_map).getProbMsg());
+  static int i=1;
+  if(i%OBJECT_PROB_UPDATE_INTERVAL == 0){
+    semantic_mapping_v2::ObjectMapSrvRequest req;
+    req.id = searched_obj_;
+    req.room_id = -1;
+    semantic_mapping_v2::ObjectMapSrvResponse res;
+    if(!obj_map_service_client_.call(req, res)){
+      ROS_WARN("SEMANTIC MAP CALL FAILED");
+    }
+    else{
+      delete prior_prob_map_;
+      prior_prob_map_ = nullptr;
+      prior_prob_map_ = new ObjectMap(res.maps[0]);
+      prior_pub_.publish(prior_prob_map_->getProbMsg(0.00001f));
+      prior_prob_map_->resample(*obj_map_, 0.0);
+    }
+  }
+  i++;
+
+  //full_pub_.publish((*obj_map_*occ_map).getProbMsg());
   //count2_pub_.publish(occ_map.getCountMsg(0.1f));
 
   return obj_map_->get2D(occ_map, *prior_prob_map_, SAMPLE_COUNT_THRESH, origin);
@@ -702,7 +725,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
       continue;
     }
     if(not_fully_viewed_border_(pos+p) == 255){
-      float val = gaussian(angleDist(angle, border_dir_map_(pos+p)), BORDER_SEEN_SIGMA);
+      float val = gaussian(angleDist(angle, border_dir_map_(pos+p)), BORDER_SEEN_SIGMA/2);
       interesting_border_seen += seen_kernel_points_value_[angle_step][idx]*val;
     }
 
@@ -734,7 +757,7 @@ float Searcher::calcViewpointGain(const cv::Point& pos, int angle_step, const cv
 }
 
 
-bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
+bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_pose){
   cv::Point new_origin;
   cv::Mat_<float> prob_map = getProbMap(new_origin);
 
@@ -754,6 +777,9 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
   cv::waitKey(1);
 
   cv::Point2f curr_pos = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
+  tf::Transform old_pose_tf;
+  tf::poseMsgToTF(old_view_pose_, old_pose_tf);
+  cv::Point2f old_pos = poseToPoint(old_pose_tf, obj_map_->getOrigin(), obj_map_->getResolution());
   cv::Point curr_point(curr_pos);
   float curr_angle = tf::getYaw(curr_pose.getRotation());
   int curr_step = int(curr_angle/(2*M_PI)*VIEW_ANGLE_STEPS+VIEW_ANGLE_STEPS)%VIEW_ANGLE_STEPS;
@@ -769,7 +795,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose){
     //cv::Mat_<float> sdf(prob_map.rows, prob_map.rows, 0.f);
     for(int x=0; x<prob_map.cols; x++){
       for(int y=0; y<prob_map.rows; y++){
-        if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) &&
+        if(accessible_map_(y,x) && !previous_pose_maps_[i](y,x) && (!need_new_pose || (std::abs(old_pos.x-x) > 3 || std::abs(old_pos.y-y) > 3)) &&
                 ((std::abs(curr_point.x-x)>3 || std::abs(curr_point.y-y)>3 || (std::abs(curr_step-i)>1 && std::abs(curr_step-i) < VIEW_ANGLE_STEPS-2)))){
           float prob = calcViewpointGain(cv::Point(x,y), i, prob_map, curr_pos, curr_angle);
           //sdf(y,x) = prob;//*calcMoveTime(cv::Point(x,y), float(i)/VIEW_ANGLE_STEPS*M_PI*2, poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution()), tf::getYaw(curr_pose.getRotation()));
