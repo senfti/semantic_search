@@ -8,27 +8,39 @@ import math
 files = ["wzs3_fSpoonUnexp.bag", "wzs4_fSpoonUnexp.bag", "wzs5_fSpoonUnexp.bag", "wzs6_sSpoonUnexp.bag", "wzs8_sSpoonUnexp.bag", "wzs9_sSpoonUnexp.bag", "wzs10_sSpoonUnexp.bag",
          "wzs11_sSpoonUnexp.bag", "wzs12_fSpoonUnexp.bag", "wzs13_fSpoonUnexp.bag", "wzs14_RemoteUnexp.bag"]
 
+explore_times = []
+search_times = []
+search_dists = []
+explore_dists = []
+search_ang_dists = []
+explore_ang_dists = []
+
 for filename in files:
     folder = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
     bag = rosbag.Bag(folder+filename)
+    print folder+filename
 
     path_msgs = bag.read_messages(topics="/robot_path")
-    start_t = 0
     for topic, msg, t in path_msgs:
-        if start_t==0:
-            start_t = t
         path = msg
 
     action_msgs = bag.read_messages(topics="/current_action")
     old_data = -1
+    start = 0.0
+    explore_end = 0.0
+    search_end = 0.0
     for topic, msg, t in action_msgs:
-        print msg.data
-        if old_data==1 and msg.data!=1:
+        if start==0 and (msg.data==5 or msg.data==1):
+            start = t
+        if explore_end==0 and old_data==1 and msg.data!=1:
             explore_end = t
-            break
+        if search_end==0 and old_data==2 and msg.data!=2:
+            search_end = t
+
         old_data = msg.data
 
-    print t.to_sec()-start_t.to_sec(), explore_end.to_sec()-start_t.to_sec()
+    explore_times.append(explore_end.to_sec()-start.to_sec())
+    search_times.append(search_end.to_sec()-start.to_sec())
 
     explore_dist = 0.0
     explore_ang_dist = 0.0
@@ -48,7 +60,20 @@ for filename in files:
             explore_dist += math.sqrt(x * x + y * y)
             explore_ang_dist += math.fabs(euler[2])
 
-    print filename
-    print dist, ang_dist
-    print explore_dist, explore_ang_dist
-    print
+    search_dists.append(dist)
+    search_ang_dists.append(ang_dist)
+    explore_dists.append(explore_dist)
+    explore_ang_dists.append(explore_ang_dist)
+
+
+for i in range(len(search_dists)):
+    print search_times[i], explore_times[i]
+print
+
+for i in range(len(search_dists)):
+    print search_dists[i], explore_dists[i]
+print
+
+for i in range(len(search_dists)):
+    print search_ang_dists[i], explore_ang_dists[i]
+print
