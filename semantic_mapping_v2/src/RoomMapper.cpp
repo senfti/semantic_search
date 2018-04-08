@@ -175,7 +175,7 @@ GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
 
 RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoint initial_pose, const tf::Transform& initial_map_to_odom, const Door& door)
       : SlamGMapping(tf, initial_pose, initial_map_to_odom), idx_(idx),
-        octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), room_type_mappers_(particles_, nullptr)
+        octo_maps_(particles_, nullptr), door_mappers_(particles_, nullptr), obj_mappers_(particles_, nullptr), room_type_mappers_(particles_, nullptr), room_type_mappers_flat_(particles_, nullptr)
 {
   try{
     for(auto &map : octo_maps_)
@@ -185,6 +185,8 @@ RoomMapper::RoomMapper(int idx, tf::TransformListener* tf, GMapping::OrientedPoi
     for(auto &map : obj_mappers_)
       map = new ObjectMapper();
     for(auto &map : room_type_mappers_)
+      map = new RoomTypeMapper();
+    for(auto &map : room_type_mappers_flat_)
       map = new RoomTypeMapper();
   }
   catch(std::exception& e){
@@ -236,6 +238,8 @@ RoomMapper::~RoomMapper(){
   for(auto& map : obj_mappers_)
     delete map;
   for(auto& map : room_type_mappers_)
+    delete map;
+  for(auto& map : room_type_mappers_flat_)
     delete map;
 }
 
@@ -317,6 +321,8 @@ void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
           obj_mappers_[i] = new ObjectMapper(*obj_mappers_[indices[i]]);
           delete room_type_mappers_[i];
           room_type_mappers_[i] = new RoomTypeMapper(*room_type_mappers_[indices[i]]);
+          delete room_type_mappers_flat_[i];
+          room_type_mappers_flat_[i] = new RoomTypeMapper(*room_type_mappers_flat_[indices[i]]);
         }
       }
     }
@@ -368,7 +374,8 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
 
   ros::Time start = ros::Time::now();
   for(int i=0; i<particles_; i++){
-    room_type_mappers_[i]->processMsg(msg, getParticlePose2D(i, msg->header.stamp));
+    room_type_mappers_[i]->processMsg(msg, getParticlePose2D(i, msg->header.stamp), false);
+    room_type_mappers_flat_[i]->processMsg(msg, getParticlePose2D(i, msg->header.stamp), true);
   }
   //std::cout << "Room " << idx_ << " Type: " << room_type_mapper_.getBestName() << std::endl;
   ros::Time mid = ros::Time::now();
@@ -388,6 +395,7 @@ void RoomMapper::visionCb(const vision::VisionMsgConstPtr &msg){
     pcl::transformPointCloud(cloud, cloud_trans, sensorToWorld);
     std::pair<cv::Point, cv::Size> obj_size = obj_mappers_[i]->addCloud(cloud_trans, msg->objects, m_pointcloudMinZ, m_pointcloudMaxZ);
     room_type_mappers_[i]->resizeToObjMap(obj_size.first, obj_size.second);
+    room_type_mappers_flat_[i]->resizeToObjMap(obj_size.first, obj_size.second);
   }
 
   ROS_INFO("VISION CALLBACK IN %.6lf / %.6lf s", (mid-start).toSec(), (ros::Time::now() - mid).toSec());
@@ -526,12 +534,14 @@ void RoomMapper::activate(){
     door_mappers_.resize(particles_, nullptr);
     obj_mappers_.resize(particles_, nullptr);
     room_type_mappers_.resize(particles_, nullptr);
+    room_type_mappers_flat_.resize(particles_, nullptr);
     try{
       for(int i=1; i<octo_maps_.size(); i++){
         octo_maps_[i] = new OctoMapper(*octo_maps_[0]);
         door_mappers_[i] = new DoorMapper(*door_mappers_[0]);
         obj_mappers_[i] = new ObjectMapper(*obj_mappers_[0]);
         room_type_mappers_[i] = new RoomTypeMapper(*room_type_mappers_[0]);
+        room_type_mappers_flat_[i] = new RoomTypeMapper(*room_type_mappers_[0]);
       }
     }
     catch(std::exception& e){
@@ -589,6 +599,8 @@ void RoomMapper::deactivate(){
     obj_mappers_[0] = obj_mappers_[best_particle];
     delete room_type_mappers_[0];
     room_type_mappers_[0] = room_type_mappers_[best_particle];
+    delete room_type_mappers_flat_[0];
+    room_type_mappers_flat_[0] = room_type_mappers_flat_[best_particle];
   }
   for(int i=1; i<octo_maps_.size(); i++){
     if(i != best_particle){
@@ -600,12 +612,14 @@ void RoomMapper::deactivate(){
       obj_mappers_[i] = nullptr;
       delete room_type_mappers_[i];
       room_type_mappers_[i] = nullptr;
+      delete room_type_mappers_flat_[i];
+      room_type_mappers_flat_[i] = nullptr;
     }
   }
   octo_maps_.resize(1);
   door_mappers_.resize(1);
   obj_mappers_.resize(1);
-  room_type_mappers_.resize(1);
+  room_type_mappers_flat_.resize(1);
   //obj_mappers_[0]->applyObjAppearVanish();
 }
 

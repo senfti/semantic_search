@@ -1314,6 +1314,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
   std::vector<std::vector<Door>> doors;
   std::vector<std::vector<ObjectMap>> obj_maps;
   std::vector<std::vector<RoomTypeMap>> room_type_maps;
+  std::vector<std::vector<RoomTypeMap>> room_type_maps_flat;
   std::vector<std::vector<float>> base_obj_probs(ObjectMapper::getObjNames().size());
   std::vector<bool> room_changed;
   std::vector<bool> explored;
@@ -1334,6 +1335,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     doors.push_back(room_mapper_[i]->getDoors());
     obj_maps.push_back(room_mapper_[i]->getObjMaps());
     room_type_maps.push_back(room_mapper_[i]->getRoomTypeMaps());
+    room_type_maps_flat.push_back(room_mapper_[i]->getRoomTypeMapsFlat());
     std::vector<size_t> order;
     if(DEBUG_OUTPUT)
       base_obj_probs.push_back(room_mapper_[i]->getObjectProbs(order));
@@ -1360,6 +1362,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
                                                                      room_type_maps[i][0].getWidth(), room_type_maps[i][0].getHeight(), ROOM_CELL_OBJ_KERNEL_SIZE);
     std::vector<cv::Mat_<float>> obj_based_room_type_map = getObjBasedRoomTypeMap(obj_prob_2d_area, room_type_maps[i].size());
     std::vector<cv::Mat_<float>> complete_room_type_map = getCompleteRoomTypeMap(room_type_maps[i], obj_based_room_type_map);
+
     std::vector<float> room_type_cell_number = getRoomTypeCellNumberEstimate(complete_room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
                                                                    grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
     std::vector<cv::Mat_<float>> room_based_obj_map = getRoomBasedObjMap(complete_room_type_map, room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin(),
@@ -1382,7 +1385,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
                               obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), 1.f, 1);
       if(PUBLISH_DEBUG_IMAGES && req.debug_room == i){
         publishDebug(behind_door_mask, occ_map, obj_prob_2d_area, obj_based_room_type_map, complete_room_type_map, room_based_obj_map, room_type_cell_number,
-                     complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i);
+                     complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps_flat, octomaps[i], only_laser_points, i);
       }
     }
 
@@ -1392,8 +1395,12 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     std::vector<size_t> order;
     room.obj_probs = complete_obj_probs;
     room.room_type_probs = room_type_cell_number;
-//    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(room_type_maps[i],get, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
-//                                                           grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
+    std::vector<cv::Mat_<float>> complete_room_type_map_flat;
+    for(int j = 0; j < room_type_maps_flat[i].size(); j++){
+      complete_room_type_map_flat.push_back(room_type_maps_flat[i][j].getMap());
+    }
+    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(complete_room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+                                                                             grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
     room.obj_probs_2 = base_obj_probs[i];
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
     room.search_time = getSearchTime(search_cells)+20.f;

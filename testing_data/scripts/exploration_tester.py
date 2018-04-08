@@ -40,7 +40,7 @@ def terminate_ros_node(s):
         if (str.startswith(s)):
             os.system("rosnode kill " + str)
 
-files = ["h1e.bag", "h1e.bag", "h2e.bag", "h2e.bag", "h3e.bag", "h3e.bag", "h5e.bag", "h5e.bag", "h6e.bag", "h6e.bag", "h7e.bag", "h7e.bag"]
+files = ["h1e.bag", "h2e.bag", "h3e.bag", "h5e.bag", "h6e.bag", "h7e.bag"]
 
 for i in range(8,len(files)):
     filename = files[i]
@@ -141,7 +141,8 @@ for i in range(8,len(files)):
         pub.publish(last_clock)
         time.sleep(5)
 
-        proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: ' + str(curr_room) +'"', shell=True)
+        proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: ' + str(curr_room) +'"', shell=True, stdout=subprocess.PIPE)
+        text = subprocess.pipe.communicate()[0]
         proc_hierarchy.wait()
         time.sleep(7)
         terminate_ros_node("/record")
@@ -149,9 +150,15 @@ for i in range(8,len(files)):
         save_string = String()
         if action==0:
             save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_peek" + str(peek_nr) + "_" + str(i%2)
+            text_file = open("/home/thomas/Masterarbeit/output/text/" + filename + "_peek" + str(peek_nr) + "_" + str(i%2) + ".txt", "w")
+            text_file.write(text)
+            text_file.close()
             pub_img_save.publish(save_string)
         else:
             save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_explore" + str(explore_nr) + "_" + str(i%2)
+            text_file = open("/home/thomas/Masterarbeit/output/text/" + filename + "_explore" + str(explore_nr) + "_" + str(i%2) + ".txt", "w")
+            text_file.write(text)
+            text_file.close()
             pub_img_save.publish(save_string)
 
         time.sleep(7)

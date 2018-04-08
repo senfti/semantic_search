@@ -121,7 +121,7 @@ semantic_mapping_v2::RoomTypeMapMsg RoomTypeMap::getRoomTypeMapMsg() const{
 
 
 
-float RoomTypeMapper::getRoomSimilarity(int i, int j){
+float RoomTypeMapper::getRoomSimilarity(int i, int j, bool flat){
   static std::vector<std::vector<float>> similarity;
   if(similarity.empty()){
     ros::NodeHandle private_nh("~");
@@ -129,7 +129,6 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j){
     std::string sim2_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread_real.dat";
     double confidence = 0.1;
     private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
-    bool flat = confidence < 0;
     confidence = std::abs(confidence);
     private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
     std::ifstream f(sim_file);
@@ -351,13 +350,13 @@ void applyMinAndMax(std::vector<double>& probs, double min, double max){
 }
 
 
-void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, int y){
+void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, int y, bool flat){
   std::vector<double> probs(prob_maps_.size());
   double sum = 0.0;
   for(int i=0; i<prob_maps_.size(); i++){
     double update_prob = 0.0;
     for(int j=0; j<prob_maps_.size(); j++){
-      update_prob += msg->place_guesses[j].prob*getRoomSimilarity(i,j);
+      update_prob += msg->place_guesses[j].prob*getRoomSimilarity(i,j, flat);
     }
     probs[i] = update_prob*prob_maps_[i].getProb(x,y);
     sum += probs[i];
@@ -385,7 +384,7 @@ void RoomTypeMapper::updateProbs(const vision::VisionMsgConstPtr &msg, int x, in
 }
 
 
-void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose){
+void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose, bool flat){
   if(NUM_CLASSES == 0){
     NUM_CLASSES = msg->place_guesses.size();
     ROOM_PRIOR_PROB = 1.f/NUM_CLASSES;
@@ -413,7 +412,7 @@ void RoomTypeMapper::processMsg(const vision::VisionMsgConstPtr& msg, const GMap
   for(int x=0; x<mask.cols; x++){
     for(int y=0; y<mask.rows; y++){
       if(mask(y,x))
-        updateProbs(msg, x, y);
+        updateProbs(msg, x, y, flat);
     }
   }
 }
@@ -427,7 +426,7 @@ std::vector<size_t> ordered(std::vector<T> const& values) {
   return indices;
 }
 
-std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order){
+std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order, bool flat){
   if(prob_maps_.empty() || map.data.size() == 0)
     return std::vector<float>();
 
@@ -465,7 +464,7 @@ std::vector<float> RoomTypeMapper::getRoomProb(const nav_msgs::OccupancyGrid& ma
             for(int i = 0; i < probs.size(); i++){
               double prob = 0.0;
               for(int j = 0; j < probs.size(); j++){
-                prob += getRoomSimilarity(i, j) * prob_maps_[j].getProb(x, y);
+                prob += getRoomSimilarity(i, j, flat) * prob_maps_[j].getProb(x, y);
               }
               probs[i] += std::log(prob) - v;
             }

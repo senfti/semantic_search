@@ -32,6 +32,7 @@ class RoomMapper : public SlamGMapping{
     std::vector<DoorMapper*> door_mappers_;
     std::vector<ObjectMapper*> obj_mappers_;
     std::vector<RoomTypeMapper*> room_type_mappers_;
+    std::vector<RoomTypeMapper*> room_type_mappers_flat_;
     boost::mutex maps_mutex_;
 
     nav_msgs::OccupancyGrid obstacle_map_;
@@ -129,9 +130,17 @@ class RoomMapper : public SlamGMapping{
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return room_type_mappers_[getBestParticleIdx()]->getRoomTypeMapMsg(obj_id);
     }
+    semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapFlatMsg(int obj_id) {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_flat_[getBestParticleIdx()]->getRoomTypeMapMsg(obj_id);
+    }
     std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapMsgs() {
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return room_type_mappers_[getBestParticleIdx()]->getAllRoomTypeMapMsgs();
+    }
+    std::vector<semantic_mapping_v2::RoomTypeMapMsg> getAllRoomTypeMapFlatMsgs() {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_flat_[getBestParticleIdx()]->getAllRoomTypeMapMsgs();
     }
 
     std::vector<float> getObjectProbs(std::vector<size_t>& order) {
@@ -144,7 +153,11 @@ class RoomMapper : public SlamGMapping{
     }
     std::vector<float> getRoomTypeProbs(std::vector<size_t>& order) {
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
-      return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order);
+      return room_type_mappers_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order, false);
+    }
+    std::vector<float> getRoomTypeProbsFlat(std::vector<size_t>& order) {
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_flat_[getBestParticleIdx()]->getRoomProb(getMap(), door_mappers_[getBestParticleIdx()]->getDoors(), order, true);
     }
     //std::vector<float> getObjectProbsComplete(std::vector<float>& room_probs, std::vector<size_t>& order);
 
@@ -169,6 +182,10 @@ class RoomMapper : public SlamGMapping{
     std::vector<RoomTypeMap> getRoomTypeMaps(){
       boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
       return room_type_mappers_[getBestParticleIdx()]->getMaps();
+    }
+    std::vector<RoomTypeMap> getRoomTypeMapsFlat(){
+      boost::lock_guard<boost::mutex> maps_lock(maps_mutex_);
+      return room_type_mappers_flat_[getBestParticleIdx()]->getMaps();
     }
 };
 

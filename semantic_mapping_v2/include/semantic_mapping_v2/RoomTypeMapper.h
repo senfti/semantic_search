@@ -79,7 +79,7 @@ class RoomTypeMapper{
     int NUM_CLASSES = 0;
     float ROOM_PRIOR_PROB = 1.f/NUM_ROOM_TYPES;
 
-    static float getRoomSimilarity(int i, int j);
+    static float getRoomSimilarity(int i, int j, bool flat);
 
   private:
     std::vector<RoomTypeMap> prob_maps_;
@@ -87,14 +87,14 @@ class RoomTypeMapper{
     std::vector<std::string> names_;
 
     bool resizeUntilFitting(std::vector<cv::Point>& points);
-    void updateProbs(const vision::VisionMsgConstPtr& msg, int x, int y);
+    void updateProbs(const vision::VisionMsgConstPtr& msg, int x, int y, bool flat);
 
   public:
     RoomTypeMapper();
     RoomTypeMapper(const RoomTypeMapper& rhs);
     RoomTypeMapper(const std::vector<cv::Mat_<float>>& prob_maps, const cv::Mat_<uchar>& seen_map, const cv::Point& origin, float resolution, int base_size);
 
-    void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose);
+    void processMsg(const vision::VisionMsgConstPtr& msg, const GMapping::OrientedPoint& pose, bool flat);
     void resizeToObjMap(const cv::Point& origin, const cv::Size& size);
 
     //std::vector<double> getProbs() const { return probs_; }
@@ -110,7 +110,7 @@ class RoomTypeMapper{
       return prob_maps_[id].getProbMsg(id);
     }
 
-    std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order);
+    std::vector<float> getRoomProb(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors, std::vector<size_t>& order, bool flat);
     std::vector<float> getTypeCellNumberEstimate(const nav_msgs::OccupancyGrid& map, const std::vector<Door>& doors);
 
     semantic_mapping_v2::RoomTypeMapMsg getRoomTypeMapMsg(int room_type_id) {
