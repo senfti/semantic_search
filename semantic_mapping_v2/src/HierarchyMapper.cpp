@@ -1399,7 +1399,7 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     for(int j = 0; j < room_type_maps_flat[i].size(); j++){
       complete_room_type_map_flat.push_back(room_type_maps_flat[i][j].getMap());
     }
-    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(complete_room_type_map, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+    room.room_type_probs_2 = getRoomTypeCellNumberEstimate(complete_room_type_map_flat, room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
                                                                              grid_maps[i], doors[i], room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize());
     room.obj_probs_2 = base_obj_probs[i];
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);

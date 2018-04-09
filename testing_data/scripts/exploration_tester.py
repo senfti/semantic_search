@@ -7,6 +7,7 @@ from rosgraph_msgs.msg import Clock
 from subprocess import check_output
 import rosbag
 from std_msgs.msg import String
+from semantic_mapping_v2.srv import HierarchySrv
 
 last_clock = Clock()
 
@@ -40,9 +41,26 @@ def terminate_ros_node(s):
         if (str.startswith(s)):
             os.system("rosnode kill " + str)
 
+room_name = ["art gallery", "art studio", "assembly line", "attic", "auditorium", "ballroom",
+             "banquette hall",
+             "bar", "basement", "beauty salon", "bedroom", "bookstore", "bowling alley", "butcher shop",
+             "bakery",
+             "cafeteria", "candy store", "classroom", "closet", "clothe store", "coffee shop",
+             "conference center",
+             "conference room", "corridor", "dining room", "dorm room", "dinette", "engine room",
+             "food court",
+             "galley", "game room", "gift shop", "home office", "hospital room", "hotel room",
+             "ice cream parlor",
+             "jail cell", "kindergarden classroom", "kitchen", "kitchenette", "laundromat", "livingroom",
+             "lobby",
+             "locker room", "martial arts gym", "music studio", "nursery", "office", "pantry", "parlor",
+             "reception",
+             "restaurant", "restaurant kitchen", "shoe shop", "shower", "staircase", "supermarket",
+             "television studio", "veranda", "waiting room"]
+
 files = ["h1e.bag", "h2e.bag", "h3e.bag", "h5e.bag", "h6e.bag", "h7e.bag"]
 
-for i in range(8,len(files)):
+for i in range(len(files)):
     filename = files[i]
     folder = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
     bag = rosbag.Bag(folder+filename)
@@ -88,12 +106,9 @@ for i in range(8,len(files)):
 
     last_clock.clock = rospy.Time(0)
 
-    if (i%2)==1:
-        print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch'
-        proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
-    else:
-        print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch roomtype_confidence:="-0.05"'
-        proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch roomtype_confidence:="-0.05"', shell=True)
+    print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch'
+    proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
+
     time.sleep(10)
     proc_exec = subprocess.Popen('xterm -e roslaunch hardware execution_test.launch', shell=True)
     time.sleep(1)
@@ -129,35 +144,41 @@ for i in range(8,len(files)):
 
         if action==0:
             peek_nr = peek_nr+1
-            print 'xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_peek" + str(peek_nr) + "_" + str(i%2) + '.bag'
-            proc_save = subprocess.Popen('xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_peek" + str(peek_nr) + "_" + str(i%2) + '.bag', shell=True)
+            print 'xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_peek" + str(peek_nr) + '.bag'
+            proc_save = subprocess.Popen('xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_peek" + str(peek_nr) + '.bag', shell=True)
         else:
             explore_nr = explore_nr+1
-            print 'xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_explore" + str(explore_nr) + "_" + str(i%2) + '.bag'
-            proc_save = subprocess.Popen('xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_explore" + str(explore_nr) + "_" + str(i%2) + '.bag', shell=True)
+            print 'xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_explore" + str(explore_nr) + '.bag'
+            proc_save = subprocess.Popen('xterm -e rosbag record -a -O /media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/' + filename + "_explore" + str(explore_nr) + '.bag', shell=True)
 
         time.sleep(5)
         last_clock.clock = last_clock.clock + rospy.Duration(0.1)
         pub.publish(last_clock)
         time.sleep(5)
 
-        proc_hierarchy = subprocess.Popen('xterm -e rosservice call /hierarchy_srv "debug_room: ' + str(curr_room) +'"', shell=True, stdout=subprocess.PIPE)
-        text = subprocess.pipe.communicate()[0]
-        proc_hierarchy.wait()
-        time.sleep(7)
+        rospy.wait_for_service('hierarchy_srv')
+        hierarchy_srv = rospy.ServiceProxy('hierarchy_srv', HierarchySrv)
+        resp1 = hierarchy_srv(curr_room)
+        time.sleep(5)
         terminate_ros_node("/record")
 
         save_string = String()
         if action==0:
-            save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_peek" + str(peek_nr) + "_" + str(i%2)
-            text_file = open("/home/thomas/Masterarbeit/output/text/" + filename + "_peek" + str(peek_nr) + "_" + str(i%2) + ".txt", "w")
-            text_file.write(text)
+            save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_peek" + str(peek_nr)
+            text_file = open("/home/thomas/Masterarbeit/output/text/" + filename + "_peek" + str(peek_nr) + ".txt", "w")
+            sorted_idx = sorted(range(len(resp1.rooms[curr_room].room_type_probs)), key=lambda x: resp1.rooms[curr_room].room_type_probs[x], reverse=True)
+            text_file.write("Name - RoomRoom - Flat\n")
+            for idx in sorted_idx:
+                text_file.write('{:22}'.format(room_name[idx]) + "   " + '{:6.4f}'.format(resp1.rooms[curr_room].room_type_probs[idx]) + "    " + '{:6.4f}'.format(resp1.rooms[curr_room].room_type_probs_2[idx]) + "\n")
             text_file.close()
             pub_img_save.publish(save_string)
         else:
-            save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_explore" + str(explore_nr) + "_" + str(i%2)
-            text_file = open("/home/thomas/Masterarbeit/output/text/" + filename + "_explore" + str(explore_nr) + "_" + str(i%2) + ".txt", "w")
-            text_file.write(text)
+            save_string.data = "/home/thomas/Masterarbeit/output/images/" + filename + "_explore" + str(explore_nr)
+            text_file = open("/home/thomas/Masterarbeit/output/text/" + filename + "_explore" + str(explore_nr) + ".txt", "w")
+            sorted_idx = sorted(range(len(resp1.rooms[curr_room].room_type_probs)), key=lambda x: resp1.rooms[curr_room].room_type_probs[x], reverse=True)
+            text_file.write("Name - RoomRoom - Flat\n")
+            for idx in sorted_idx:
+                text_file.write('{:22}'.format(room_name[idx]) + "   " + '{:6.4f}'.format(resp1.rooms[curr_room].room_type_probs[idx]) + "    " + '{:6.4f}'.format(resp1.rooms[curr_room].room_type_probs_2[idx]) + "\n")
             text_file.close()
             pub_img_save.publish(save_string)
 

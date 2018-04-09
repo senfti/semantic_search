@@ -122,54 +122,55 @@ semantic_mapping_v2::RoomTypeMapMsg RoomTypeMap::getRoomTypeMapMsg() const{
 
 
 float RoomTypeMapper::getRoomSimilarity(int i, int j, bool flat){
-  static std::vector<std::vector<float>> similarity;
-  if(similarity.empty()){
-    ros::NodeHandle private_nh("~");
-    std::string sim_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat";
-    std::string sim2_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread_real.dat";
-    double confidence = 0.1;
-    private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
-    confidence = std::abs(confidence);
-    private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
-    std::ifstream f(sim_file);
-    std::ofstream f2(sim2_file);
-    if(!f.good()){
-      ROS_WARN("CANNOT OPEN SIMILARITY FILE %s", sim_file.c_str());
-      return 1.f;
-    }
-    std::vector<float> tmp;
-    while(!f.eof()){
-      float v;
-      f >> v;
-      tmp.push_back(v);
-    }
-    int n = std::sqrt(tmp.size());
-    similarity.resize(n);
-    for(int r=0; r<n; r++){
-      similarity[r].resize(n);
-      double sum = 0.0;
-      for(int c=0; c<n; c++){
-        if(flat)
-          similarity[r][c] = 1;
-        else
-          similarity[r][c] = tmp[r*n+c];
+  if(flat){
+    static std::vector<std::vector<float>> similarity;
+    if(similarity.empty()){
+      ros::NodeHandle private_nh("~");
+      std::string sim_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat";
+      std::string sim2_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread_real.dat";
+      double confidence = 0.1;
+      private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
+      confidence = std::abs(confidence);
+      private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
+      std::ifstream f(sim_file);
+      std::ofstream f2(sim2_file);
+      if(!f.good()){
+        ROS_WARN("CANNOT OPEN SIMILARITY FILE %s", sim_file.c_str());
+        return 1.f;
+      }
+      std::vector<float> tmp;
+      while(!f.eof()){
+        float v;
+        f >> v;
+        tmp.push_back(v);
+      }
+      int n = std::sqrt(tmp.size());
+      similarity.resize(n);
+      for(int r = 0; r < n; r++){
+        similarity[r].resize(n);
+        double sum = 0.0;
+        for(int c = 0; c < n; c++){
+          if(flat)
+            similarity[r][c] = 1;
+          else
+            similarity[r][c] = tmp[r * n + c];
 
-        if(c!=r)
-          sum += similarity[r][c];
-        else
-          similarity[r][c] = confidence;
+          if(c != r)
+            sum += similarity[r][c];
+          else
+            similarity[r][c] = confidence;
+        }
+        for(int c = 0; c < n; c++){
+          if(c != r)
+            similarity[r][c] = similarity[r][c] * (1.0 - confidence) / sum;
+        }
       }
-      for(int c=0; c<n; c++){
-        if(c!=r)
-          similarity[r][c] = similarity[r][c]*(1.0-confidence)/sum;
+      for(int r = 0; r < n; r++){
+        for(int c = 0; c < n; c++){
+          f2 << similarity[r][c] << " ";
+        }
+        f2 << std::endl;
       }
-    }
-    for(int r=0; r<n; r++){
-      for(int c=0; c<n; c++){
-        f2 << similarity[r][c] << " ";
-      }
-      f2 << std::endl;
-    }
 
 //    std::ofstream o("/home/thomas/sdfsdfsdfsdf.csv");
 //    for(int c=0; c<n; c++){
@@ -181,8 +182,72 @@ float RoomTypeMapper::getRoomSimilarity(int i, int j, bool flat){
 //      }
 //      o << std::endl;
 //    }
+    }
+    return similarity[i][j];
   }
-  return similarity[i][j];
+  else{
+    static std::vector<std::vector<float>> similarity;
+    if(similarity.empty()){
+      ros::NodeHandle private_nh("~");
+      std::string sim_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat";
+      std::string sim2_file = "/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread_real.dat";
+      double confidence = 0.1;
+      private_nh.param("RoomTypeMapper/CONFIDENCE", confidence, confidence);
+      confidence = std::abs(confidence);
+      private_nh.param("RoomTypeMapper/SIMILARITY_FILE", sim_file, sim_file);
+      std::ifstream f(sim_file);
+      std::ofstream f2(sim2_file);
+      if(!f.good()){
+        ROS_WARN("CANNOT OPEN SIMILARITY FILE %s", sim_file.c_str());
+        return 1.f;
+      }
+      std::vector<float> tmp;
+      while(!f.eof()){
+        float v;
+        f >> v;
+        tmp.push_back(v);
+      }
+      int n = std::sqrt(tmp.size());
+      similarity.resize(n);
+      for(int r = 0; r < n; r++){
+        similarity[r].resize(n);
+        double sum = 0.0;
+        for(int c = 0; c < n; c++){
+          if(flat)
+            similarity[r][c] = 1;
+          else
+            similarity[r][c] = tmp[r * n + c];
+
+          if(c != r)
+            sum += similarity[r][c];
+          else
+            similarity[r][c] = confidence;
+        }
+        for(int c = 0; c < n; c++){
+          if(c != r)
+            similarity[r][c] = similarity[r][c] * (1.0 - confidence) / sum;
+        }
+      }
+      for(int r = 0; r < n; r++){
+        for(int c = 0; c < n; c++){
+          f2 << similarity[r][c] << " ";
+        }
+        f2 << std::endl;
+      }
+
+//    std::ofstream o("/home/thomas/sdfsdfsdfsdf.csv");
+//    for(int c=0; c<n; c++){
+//      for(int r=0; r<n; r++){
+//        if(similarity[c][r] > 1.0){
+//          std::cout << r << " " << c << " " << similarity[c][r] << std::endl;
+//        }
+//        o << similarity[c][r] << ",";
+//      }
+//      o << std::endl;
+//    }
+    }
+    return similarity[i][j];
+  }
 }
 
 float RoomTypeMapper::CELL_MIN_PROB = 0.0005;

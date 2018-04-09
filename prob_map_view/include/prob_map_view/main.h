@@ -29,6 +29,7 @@ class ProbViewApp : public wxApp{
     ProbViewer* base_obj_viewer_ = nullptr;
     ProbViewer* base_room_viewer_ = nullptr;
     ImageViewer* room_type_viewer_ = nullptr;
+    ImageViewer* base_room_type_viewer_ = nullptr;
     std::vector<ProbViewer*> sdf_viewer_;
 
     wxTimer* input_timer_ = nullptr;
@@ -41,7 +42,7 @@ class ProbViewApp : public wxApp{
     virtual int OnExit();
     void input(wxTimerEvent &event);
 
-    void showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>& occ, const std::vector<std::string>& names);
+    void showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>& occ, const std::vector<std::string>& names, bool base);
 
     void placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);

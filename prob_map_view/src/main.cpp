@@ -46,9 +46,12 @@ void ProbViewApp::input(wxTimerEvent &event){
     for(auto & v : sdf_viewer_){
       if(v != nullptr)
         v->Close();
+    }
     if(room_type_viewer_ != nullptr)
       room_type_viewer_->Close();
-    }
+    if(base_room_type_viewer_ != nullptr)
+      base_room_type_viewer_->Close();
+
     wxExit();
   }
 }
@@ -72,7 +75,7 @@ uchar colorFromNum(uchar num){
 }
 
 const int MIN_PER_CLASS = 1;
-void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>& occ, const std::vector<std::string>& names){
+void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>& occ, const std::vector<std::string>& names, bool base){
   std::vector<uchar> color_nr(names.size(),0);
   std::vector<int> color_times(names.size(),0);
   cv::Mat_<uchar> color_mat(max_idx_mat.rows, max_idx_mat.cols, uchar(0));
@@ -140,7 +143,10 @@ void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>&
     cv::putText(out, names[c], cv::Point(color_mat.cols+30, y+10), cv::FONT_HERSHEY_COMPLEX, 0.35, cv::Scalar(color(0,0)[0],color(0,0)[1],color(0,0)[2]), 1);
     y+=20;
   }
-  room_type_viewer_->updateImage(out);
+  if(base)
+    base_room_type_viewer_->updateImage(out);
+  else
+    room_type_viewer_->updateImage(out);
 }
 
 void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
@@ -178,7 +184,7 @@ void ProbViewApp::placeProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   imgs.push_back(ent_mat);
   cv::Mat_<uchar> occ;
   cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
-  showMaxClassMat(max_idx_mat, occ, msg->names);
+  showMaxClassMat(max_idx_mat, occ, msg->names, false);
 
   place_viewer_->updateImages(imgs, occ);
 }
@@ -230,19 +236,38 @@ void ProbViewApp::baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   if(msg->images.empty())
     return;
 
-  std::cout << "loc" << std::endl;
   if(base_room_viewer_ == nullptr){
-    base_room_viewer_ = new ProbViewer("Base Room Prob Viewer", msg->names, msg->img_are_log);
+    std::vector<std::string> names = msg->names;
+    names.push_back("max");
+    names.push_back("entropy");
+    base_room_viewer_ = new ProbViewer("Base Place Prob Viewer", names, msg->img_are_log);
     base_room_viewer_->Show(true);
+    base_room_type_viewer_ = new ImageViewer("BaseRoomTypeClassViewer");
+    base_room_type_viewer_->Show(true);
   }
 
   std::vector<cv::Mat_<float>> imgs(msg->images.size());
+  cv::Mat_<float> max_mat(msg->images[0].rows, msg->images[0].cols, 1/60.f);
+  cv::Mat_<float> ent_mat(msg->images[0].rows, msg->images[0].cols, 0.f);
+  cv::Mat_<uchar> max_idx_mat(max_mat.rows, max_mat.cols, uchar(255));
   std::cout << "baseRoom " << msg->images[0].cols << " "  << msg->images[0].rows << std::endl;
   for(int i=0; i<imgs.size(); i++){
     cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
+    for(int x=0; x<imgs[i].cols; x++){
+      for(int y=0; y<imgs[i].rows; y++){
+        if(imgs[i](y,x) > max_mat(y,x)){
+          max_mat(y,x) = imgs[i](y,x);
+          max_idx_mat(y,x) = uchar(i);
+        }
+        ent_mat(y,x)-=imgs[i](y,x)*std::log2(imgs[i](y,x))/6.f;
+      }
+    }
   }
+  imgs.push_back(max_mat);
+  imgs.push_back(ent_mat);
   cv::Mat_<uchar> occ;
   cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
+  showMaxClassMat(max_idx_mat, occ, msg->names, true);
 
   base_room_viewer_->updateImages(imgs, occ);
 }
@@ -294,4 +319,6 @@ void ProbViewApp::saveAll(const std::string& postfix, std::string folder){
   }
   if(room_type_viewer_ != nullptr)
     room_type_viewer_->save(folder, postfix);
+  if(base_room_type_viewer_ != nullptr)
+    base_room_type_viewer_->save(folder, postfix);
 }
