@@ -297,7 +297,7 @@ void RoomMapper::doOctomapping(){
 }
 
 void RoomMapper::cloudCb(const sensor_msgs::PointCloud2::ConstPtr &cloud){
-  if(!isInitialized() || cloud->header.stamp < activate_time_ || !processed_scan_)
+  if(!isInitialized() || cloud->header.stamp < activate_time_ || !processed_scan_ || num_scans_ < num_settle_scans_)
     return;
   processed_scan_ = false;
 

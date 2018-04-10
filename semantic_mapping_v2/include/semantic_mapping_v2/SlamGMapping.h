@@ -89,7 +89,7 @@ class SlamGMapping
     bool got_first_scan_;
     bool processed_scan_ = false;
     ros::Time activate_time_ = ros::TIME_MAX;
-    double settle_time_ = 1.0;
+    int num_scans_ = 10;
     GMapping::OrientedPoint initial_pose_;
 
     bool got_map_;
@@ -147,6 +147,8 @@ class SlamGMapping
     double llsamplestep_;
     double lasamplerange_;
     double lasamplestep_;
+    int num_settle_scans_ = 10;
+    double settle_time_ = 1.0;
 
     ros::NodeHandle private_nh_;
 

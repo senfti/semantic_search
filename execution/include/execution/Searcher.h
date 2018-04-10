@@ -80,6 +80,7 @@ class Searcher{
     ros::Publisher next_pose_pub_;
     ros::Publisher obj_found_pub_;
     ros::Publisher prior_pub_;
+    ros::Publisher prob_map_pub_;
 
     ros::ServiceClient obj_map_service_client_;
 

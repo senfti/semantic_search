@@ -274,7 +274,7 @@ void SlamGMapping::init(){
   if(!private_nh_.getParam("gmapping/tf_delay", tf_delay_))
     tf_delay_ = transform_publish_period_;
 
-  private_nh_.param("gmapping/settle_time", settle_time_, settle_time_);
+  private_nh_.param("gmapping/num_settle_scans", num_settle_scans_, num_settle_scans_);
 
   map_.map.info.resolution = delta_;
   map_.map.info.origin.position.x = 0.0;
@@ -472,6 +472,7 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
     if(!initMapper(*scan))
       return;
     got_first_scan_ = true;
+    num_scans_ = 0;
     activate_time_ = ros::Time::now() + ros::Duration(settle_time_);
   }
 
@@ -479,6 +480,7 @@ void SlamGMapping::laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan) {
 
   if(addScan(*scan, odom_pose)) {
     processed_scan_ = true;
+    num_scans_++;
     ROS_DEBUG("scan processed");
 
     boost::unique_lock<boost::mutex> lock(gsp_mutex_);

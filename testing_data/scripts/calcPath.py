@@ -5,8 +5,8 @@ from nav_msgs.msg import Path
 import tf
 import math
 
-files = ["wzs3_fSpoonUnexp.bag", "wzs4_fSpoonUnexp.bag", "wzs5_fSpoonUnexp.bag", "wzs6_sSpoonUnexp.bag", "wzs8_sSpoonUnexp.bag", "wzs9_sSpoonUnexp.bag", "wzs10_sSpoonUnexp.bag",
-         "wzs11_sSpoonUnexp.bag", "wzs12_fSpoonUnexp.bag", "wzs13_fSpoonUnexp.bag", "wzs14_RemoteUnexp.bag"]
+files = ["wzs30_Remote_Table_full_unexplored.bag","wzs31_Remote_Table_full_unexplored.bag","wzs32_Remote_Table_full_unexplored.bag",
+         "wzs33_Remote_Table_stupid_unexplored.bag", "wzs34_Remote_Table_stupid_unexplored.bag", "wzs36_Remote_Table_stupid_unexplored.bag"]
 
 explore_times = []
 search_times = []

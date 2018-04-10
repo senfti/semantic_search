@@ -41,6 +41,7 @@
     <param name="gmapping/resampleThreshold" value="0.5"/>
     <param name="gmapping/particles" value="5"/>
     <param name="gmapping/occ_thresh" value="0.2"/>
+    <param name="gmapping/num_settle_scans" value="10"/>
 
     <param name="gmapping/xmin" value="-1.0"/>
     <param name="gmapping/ymin" value="-1.0"/>
@@ -104,8 +105,8 @@
     <param name="ROOM_MAX_PROB" value="0.8" />
     <param name="PUBLISH_DEBUG_IMAGES" value="1" />
     <param name="DEBUG_OUTPUT" value="1" />
-    <param name="USE_OBJ_MAP" value="1" />
+    <param name="USE_OBJ_MAP" value="0" />
     <param name="OBJ_TO_ROOM" value="0" />
-    <param name="ROOM_TO_OBJ" value="1" />
+    <param name="ROOM_TO_OBJ" value="0" />
   </node>
 </launch>

@@ -17,6 +17,7 @@ if [ $# -gt 1 ]
     xterm -hold -e roslaunch hardware 3_cam2_laser_filter.launch &
 fi
 sleep 3
+xterm -e rviz &
 xterm -hold -e roslaunch hardware 4_cam1_settings_move_base.launch &
 sleep 3
 xterm -hold -e roslaunch hardware 5_cam2_settings_footprint.launch &
@@ -28,6 +29,11 @@ sleep 4
 xterm -hold -e roslaunch hardware 8_mapping.launch &
 sleep 1
 xterm -hold -e roslaunch hardware 9_execution.launch &
-sleep 1
+sleep 5
 xterm -hold -e roslaunch hardware 10_hl_planner.launch RUN_NAME:="$1" &
+sleep 5
+if [ $# -gt 0 ]
+  then
+    source /home/thomas/Desktop/rosbag_record5.sh $1
+fi
 

@@ -10,6 +10,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <pcl_ros/point_cloud.h>
 #include <tf_conversions/tf_eigen.h>
+#include <prob_map_view/ProbMapMsg.h>
 
 const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
                                              "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
@@ -130,6 +131,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
   count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
+  prob_map_pub_ = ros::NodeHandle().advertise<prob_map_view::ProbMapMsg>("searcher_prob_map", 1, true);
 
   calcSeenKernels();
 }
@@ -669,7 +671,26 @@ cv::Mat_<float> Searcher::getProbMap(cv::Point& origin){
   //full_pub_.publish((*obj_map_*occ_map).getProbMsg());
   //count2_pub_.publish(occ_map.getCountMsg(0.1f));
 
-  return obj_map_->get2D(occ_map, *prior_prob_map_, SAMPLE_COUNT_THRESH, origin);
+  cv::Mat_<float> prob_maps = obj_map_->get2D(occ_map, *prior_prob_map_, SAMPLE_COUNT_THRESH, origin);
+  cv::Mat_<uchar> occupancy_map_obj(prob_maps.rows, prob_maps.cols, uchar(255));
+  prob_map_view::ProbMapMsg msg;
+  msg.names.push_back("ProbMap");
+  msg.img_are_log = 0;
+  msg.occupancy.rows = occupancy_map_obj.rows;
+  msg.occupancy.cols = occupancy_map_obj.cols;
+  msg.occupancy.type = occupancy_map_obj.type();
+  msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
+  msg.images.resize(msg.names.size());
+  for(int j=0; j<msg.images.size(); j++){
+    msg.images[j].rows = prob_maps.rows;
+    msg.images[j].cols = prob_maps.cols;
+    msg.images[j].type = prob_maps.type();
+    msg.images[j].data.assign(prob_maps.datastart, prob_maps.dataend);
+  }
+  prob_map_pub_.publish(msg);
+
+  return prob_maps;
+
 //  cv::Mat_<float> tmp = obj_map_->get2D(occ_map, *prior_prob_map_, count_map, 1000);
 //  float factor = 1.f/(VIEW_POS_RESOLUTION*obj_map_->getResolution();
 //  cv::resize(tmp, tmp, cv::Size(factor*obj_map_->getWidth(),factor*obj_map_->getHeight()));
@@ -889,7 +910,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
     for(int y=0; y<border_dir_map_.rows; y++){
       if(border_map_(y,x) > 0){
         int border_idx = border_dir_map_(y,x)/(2*M_PI)*SEEN_MAP_STEPS;
-        if(seen_maps_[border_idx](y,x)+seen_maps_[(border_idx+1)%SEEN_MAP_STEPS](y,x)+seen_maps_[(border_idx+SEEN_MAP_STEPS-1)%SEEN_MAP_STEPS](y,x) >= BORDER_SEEN_THRESH)
+        if(seen_maps_[border_idx](y,x) >= BORDER_SEEN_THRESH)
           tmp(y,x) = 0;
       }
     }

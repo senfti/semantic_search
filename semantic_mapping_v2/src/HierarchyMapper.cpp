@@ -965,54 +965,55 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
                                    const std::vector<cv::Mat_<float>>& room_based_obj_map, const std::vector<float>& room_type_cell_number,
                                    const std::vector<ObjectMap>& complete_obj_map, const ObjectMap& dummy_occ_map, const std::vector<nav_msgs::OccupancyGrid>& grid_maps,
                                    const std::vector<std::vector<ObjectMap>>& obj_maps, const std::vector<std::vector<RoomTypeMap>>& room_type_maps,
-                                   OctoMapper& octomaps, std::vector<cv::Point>& only_laser_points, int i)
-{
-  for(int j = 0; j < complete_obj_map.size(); j++){
-    publishObjProbMap(complete_obj_map[j], j);
-  }
-  for(int j = 0; j < complete_room_type_map.size(); j++){
-    publishRoomTypeProbMap(RoomTypeMap(complete_room_type_map[j], room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
-                                       room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize()),j);
-  }
-
-  if(base_obj_prob_pub_.empty()){
-    base_obj_prob_pub_.resize(ObjectMapper::getObjNames().size());
-    for(int j=0; j<ObjectMapper::getObjNames().size(); j++){
-      std::string s = "base_obj_" + ObjectMapper::getObjName(j);
-      std::replace( s.begin(), s.end(), ' ', '_');
-      base_obj_prob_pub_[j] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+                                   OctoMapper& octomaps, std::vector<cv::Point>& only_laser_points, int i, bool minimal){
+  if(!minimal){
+    for(int j = 0; j < complete_obj_map.size(); j++){
+      publishObjProbMap(complete_obj_map[j], j);
     }
-  }
-  for(int j=0; j<ObjectMapper::getObjNames().size(); j++)
-    base_obj_prob_pub_[j].publish((obj_maps[i][j]*occ_map).getProbMsg(0, 0.0));
-
-  if(base_room_prob_pub_.empty() && !room_mapper_[0]->getRoomName(1).empty()){
-    int num = room_mapper_[0]->getRoomNames().size();
-    base_room_prob_pub_.resize(num);
-    for(int j=0; j<num; j++){
-      std::string s = "base_room_" + room_mapper_[0]->getRoomName(j);
-      std::replace( s.begin(), s.end(), ' ', '_');
-      base_room_prob_pub_[j] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+    for(int j = 0; j < complete_room_type_map.size(); j++){
+      publishRoomTypeProbMap(RoomTypeMap(complete_room_type_map[j], room_type_maps[i][0].getSeenMap(), room_type_maps[i][0].getOrigin(),
+                                         room_type_maps[i][0].getResolution(), room_type_maps[i][0].getBaseSize()), j);
     }
-  }
-  if(!base_room_prob_pub_.empty())
-    for(int j=0; j<room_mapper_[0]->getRoomNames().size(); j++)
-      base_room_prob_pub_[j].publish(room_type_maps[i][j].getProbMsg(j));
 
-  std::vector<size_t> order;
-  std::vector<float> probs = room_mapper_[0]->getRoomTypeProbs(order);
-  if(!probs.empty()){
-    for(int j = 0; j < probs.size(); j++){
-      std::cout << room_mapper_[0]->getRoomName(order[j]) << ": " << probs[order[j]] << std::endl;
+    if(base_obj_prob_pub_.empty()){
+      base_obj_prob_pub_.resize(ObjectMapper::getObjNames().size());
+      for(int j = 0; j < ObjectMapper::getObjNames().size(); j++){
+        std::string s = "base_obj_" + ObjectMapper::getObjName(j);
+        std::replace(s.begin(), s.end(), ' ', '_');
+        base_obj_prob_pub_[j] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+      }
     }
-  }
-  std::cout << std::endl;
-  probs = room_mapper_[0]->getObjectProbs(order);
-  for(int j=0; j<probs.size(); j++)
-    std::cout << ObjectMapper::getObjName(order[j]) << ": " << probs[order[j]] << std::endl;
+    for(int j = 0; j < ObjectMapper::getObjNames().size(); j++)
+      base_obj_prob_pub_[j].publish((obj_maps[i][j] * occ_map).getProbMsg(0, 0.0));
 
-  debug_output_map_pub_.publish(grid_maps[i]);
-  debug_output_marker_pub_.publish(octomaps.getOccupiedCellMsg(ros::Time::now()));
+    if(base_room_prob_pub_.empty() && !room_mapper_[0]->getRoomName(1).empty()){
+      int num = room_mapper_[0]->getRoomNames().size();
+      base_room_prob_pub_.resize(num);
+      for(int j = 0; j < num; j++){
+        std::string s = "base_room_" + room_mapper_[0]->getRoomName(j);
+        std::replace(s.begin(), s.end(), ' ', '_');
+        base_room_prob_pub_[j] = nh_.advertise<visualization_msgs::MarkerArray>(s, 1, true);
+      }
+    }
+    if(!base_room_prob_pub_.empty())
+      for(int j = 0; j < room_mapper_[0]->getRoomNames().size(); j++)
+        base_room_prob_pub_[j].publish(room_type_maps[i][j].getProbMsg(j));
+
+    std::vector<size_t> order;
+    std::vector<float> probs = room_mapper_[0]->getRoomTypeProbs(order);
+    if(!probs.empty()){
+      for(int j = 0; j < probs.size(); j++){
+        std::cout << room_mapper_[0]->getRoomName(order[j]) << ": " << probs[order[j]] << std::endl;
+      }
+    }
+    std::cout << std::endl;
+    probs = room_mapper_[0]->getObjectProbs(order);
+    for(int j = 0; j < probs.size(); j++)
+      std::cout << ObjectMapper::getObjName(order[j]) << ": " << probs[order[j]] << std::endl;
+
+    debug_output_map_pub_.publish(grid_maps[i]);
+    debug_output_marker_pub_.publish(octomaps.getOccupiedCellMsg(ros::Time::now()));
+  }
 
   std::vector<cv::Mat_<float>> debug_maps = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
                                                                  complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 0);
@@ -1040,33 +1041,35 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
 //      cv::dilate(occ_dil, occ_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(dil_size,dil_size)), cv::Point(-1,-1), 3);
 //      cv::erode(occ_dil, occ_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(dil_size,dil_size)), cv::Point(-1,-1), 2);
 //      cv::bitwise_and(255-occupancy_map_obj*64, occ_dil(cv::Rect(3*dil_size,3*dil_size,occupancy_map_obj.cols,occupancy_map_obj.rows))*255, occupancy_map_obj);
-  cv::Mat_<uchar> occupancy_map_obj(debug_maps[0].rows*4, debug_maps[0].cols*4, uchar(0));
-  float factor = 1.f/(complete_obj_map[0].getResolution()*grid_maps[i].info.resolution);
-  for(int x=0; x<occupancy_map_obj.cols; x++){
-    for(int y=0; y<occupancy_map_obj.rows; y++){
-      if(behind_door_mask(y/4,x/4)){
-        occupancy_map_obj(y,x) = 0;
+  cv::Mat_<uchar> occupancy_map_obj(debug_maps[0].rows * 4, debug_maps[0].cols * 4, uchar(0));
+  float factor = 1.f / (complete_obj_map[0].getResolution() * grid_maps[i].info.resolution);
+  for(int x = 0; x < occupancy_map_obj.cols; x++){
+    for(int y = 0; y < occupancy_map_obj.rows; y++){
+      if(behind_door_mask(y / 4, x / 4)){
+        occupancy_map_obj(y, x) = 0;
         continue;
       }
 
-      float xw=complete_obj_map[0].getXWorld(x/4.0), yw=complete_obj_map[0].getYWorld(y/4.0);
-      int xo = (xw-grid_maps[i].info.origin.position.x) / grid_maps[i].info.resolution;
-      int yo = (yw-grid_maps[i].info.origin.position.y) / grid_maps[i].info.resolution;
+      float xw = complete_obj_map[0].getXWorld(x / 4.0), yw = complete_obj_map[0].getYWorld(y / 4.0);
+      int xo = (xw - grid_maps[i].info.origin.position.x) / grid_maps[i].info.resolution;
+      int yo = (yw - grid_maps[i].info.origin.position.y) / grid_maps[i].info.resolution;
       if(xo < 0 || yo < 0 || xo >= grid_maps[i].info.width || yo >= grid_maps[i].info.height)
         continue;
       int val = (grid_maps[i].data[yo * grid_maps[i].info.width + xo]);
-      occupancy_map_obj(y,x) = (val > 0 ? 196 : (val < 0 ? 0 : 255));
-      if(factor > 2 && grid_maps[i].info.width > xo+1 && grid_maps[i].info.height > yo+1){
-        occupancy_map_obj(y, x) = ((grid_maps[i].data[(yo + 1) * grid_maps[i].info.width + xo]) > 0 ? 196: occupancy_map_obj(y, x));
-        occupancy_map_obj(y,x) = ((grid_maps[i].data[(yo) * grid_maps[i].info.width + xo+1]) > 0 ? 196 : occupancy_map_obj(y,x));
-        occupancy_map_obj(y,x) = ((grid_maps[i].data[(yo+1) * grid_maps[i].info.width + xo+1]) > 0 ? 196 : occupancy_map_obj(y,x));
+      occupancy_map_obj(y, x) = (val > 0 ? 196 : (val < 0 ? 0 : 255));
+      if(factor > 2 && grid_maps[i].info.width > xo + 1 && grid_maps[i].info.height > yo + 1){
+        occupancy_map_obj(y, x) = ((grid_maps[i].data[(yo + 1) * grid_maps[i].info.width + xo]) > 0 ? 196 : occupancy_map_obj(y, x));
+        occupancy_map_obj(y, x) = ((grid_maps[i].data[(yo) * grid_maps[i].info.width + xo + 1]) > 0 ? 196 : occupancy_map_obj(y, x));
+        occupancy_map_obj(y, x) = ((grid_maps[i].data[(yo + 1) * grid_maps[i].info.width + xo + 1]) > 0 ? 196 : occupancy_map_obj(y, x));
       }
     }
   }
 
   cv::Mat_<uchar> only_laser_map(debug_maps[0].rows, debug_maps[0].cols, uchar(0));
-  for(const auto& p : only_laser_points)
-    only_laser_map(p) = 1.0;
+  if(!minimal){
+    for(const auto &p : only_laser_points)
+      only_laser_map(p) = 1.0;
+  }
 
   cv::Mat_<uchar> occupancy_map_room;
   occupancy_map_obj.copyTo(occupancy_map_room);
@@ -1092,35 +1095,37 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   }
   obj_prob_map_view_pub_.publish(msg);
 
-  debug_maps = get2dAreaObjProbMaps(obj_maps[i], behind_door_mask, occ_map, obj_maps[i][0].getOrigin(),
-                                    obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(), 0);
-  msg.img_are_log = 0;
-  msg.images.resize(msg.names.size());
-  msg.occupancy.rows = occupancy_map_obj.rows;
-  msg.occupancy.cols = occupancy_map_obj.cols;
-  msg.occupancy.type = occupancy_map_obj.type();
-  msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = debug_maps[j].rows;
-    msg.images[j].cols = debug_maps[j].cols;
-    msg.images[j].type = debug_maps[j].type();
-    msg.images[j].data.assign(debug_maps[j].datastart, debug_maps[j].dataend);
-  }
-  base_obj_prob_map_view_pub_.publish(msg);
+  if(!minimal){
+    debug_maps = get2dAreaObjProbMaps(obj_maps[i], behind_door_mask, occ_map, obj_maps[i][0].getOrigin(),
+                                      obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(), 0);
+    msg.img_are_log = 0;
+    msg.images.resize(msg.names.size());
+    msg.occupancy.rows = occupancy_map_obj.rows;
+    msg.occupancy.cols = occupancy_map_obj.cols;
+    msg.occupancy.type = occupancy_map_obj.type();
+    msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
+    for(int j = 0; j < msg.images.size(); j++){
+      msg.images[j].rows = debug_maps[j].rows;
+      msg.images[j].cols = debug_maps[j].cols;
+      msg.images[j].type = debug_maps[j].type();
+      msg.images[j].data.assign(debug_maps[j].datastart, debug_maps[j].dataend);
+    }
+    base_obj_prob_map_view_pub_.publish(msg);
 
-  msg.occupancy.rows = occupancy_map_room.rows;
-  msg.occupancy.cols = occupancy_map_room.cols;
-  msg.occupancy.type = occupancy_map_room.type();
-  msg.occupancy.data.assign(occupancy_map_room.datastart, occupancy_map_room.dataend);
-  msg.img_are_log = 0;
-  msg.images.resize(msg.names.size());
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = obj_prob_2d_area[j].rows;
-    msg.images[j].cols = obj_prob_2d_area[j].cols;
-    msg.images[j].type = obj_prob_2d_area[j].type();
-    msg.images[j].data.assign(obj_prob_2d_area[j].datastart,obj_prob_2d_area[j].dataend);
+    msg.occupancy.rows = occupancy_map_room.rows;
+    msg.occupancy.cols = occupancy_map_room.cols;
+    msg.occupancy.type = occupancy_map_room.type();
+    msg.occupancy.data.assign(occupancy_map_room.datastart, occupancy_map_room.dataend);
+    msg.img_are_log = 0;
+    msg.images.resize(msg.names.size());
+    for(int j=0; j<msg.images.size(); j++){
+      msg.images[j].rows = obj_prob_2d_area[j].rows;
+      msg.images[j].cols = obj_prob_2d_area[j].cols;
+      msg.images[j].type = obj_prob_2d_area[j].type();
+      msg.images[j].data.assign(obj_prob_2d_area[j].datastart,obj_prob_2d_area[j].dataend);
+    }
+    sdf_prob_map_view_pub_.publish(msg);
   }
-  sdf_prob_map_view_pub_.publish(msg);
 
   msg.occupancy.rows = occupancy_map_obj.rows;
   msg.occupancy.cols = occupancy_map_obj.cols;
@@ -1136,35 +1141,37 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   }
   sdf_prob_map_view_pub_.publish(msg);
 
-  msg.occupancy.rows = occupancy_map_obj.rows;
-  msg.occupancy.cols = occupancy_map_obj.cols;
-  msg.occupancy.type = occupancy_map_obj.type();
-  msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
-  msg.img_are_log = 5;
-  msg.images.resize(msg.names.size());
-  std::vector<cv::Mat_<float>> debug_maps2 = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
-                                                                 complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 3);
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = debug_maps2[j].rows;
-    msg.images[j].cols = debug_maps2[j].cols;
-    msg.images[j].type = debug_maps2[j].type();
-    msg.images[j].data.assign(debug_maps2[j].datastart,debug_maps2[j].dataend);
-  }
-  sdf_prob_map_view_pub_.publish(msg);
+  if(!minimal){
+    msg.occupancy.rows = occupancy_map_obj.rows;
+    msg.occupancy.cols = occupancy_map_obj.cols;
+    msg.occupancy.type = occupancy_map_obj.type();
+    msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
+    msg.img_are_log = 5;
+    msg.images.resize(msg.names.size());
+    std::vector<cv::Mat_<float>> debug_maps2 = get2dAreaObjProbMaps(complete_obj_map, behind_door_mask, dummy_occ_map, complete_obj_map[0].getOrigin(),
+                                                                    complete_obj_map[0].getWidth(), complete_obj_map[0].getHeight(), 3);
+    for(int j = 0; j < msg.images.size(); j++){
+      msg.images[j].rows = debug_maps2[j].rows;
+      msg.images[j].cols = debug_maps2[j].cols;
+      msg.images[j].type = debug_maps2[j].type();
+      msg.images[j].data.assign(debug_maps2[j].datastart, debug_maps2[j].dataend);
+    }
+    sdf_prob_map_view_pub_.publish(msg);
 
-  msg.occupancy.rows = occupancy_map_obj.rows;
-  msg.occupancy.cols = occupancy_map_obj.cols;
-  msg.occupancy.type = occupancy_map_obj.type();
-  msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
-  msg.img_are_log = 3;
-  msg.images.resize(msg.names.size());
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = only_laser_map.rows;
-    msg.images[j].cols = only_laser_map.cols;
-    msg.images[j].type = only_laser_map.type();
-    msg.images[j].data.assign(only_laser_map.datastart,only_laser_map.dataend);
+    msg.occupancy.rows = occupancy_map_obj.rows;
+    msg.occupancy.cols = occupancy_map_obj.cols;
+    msg.occupancy.type = occupancy_map_obj.type();
+    msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
+    msg.img_are_log = 3;
+    msg.images.resize(msg.names.size());
+    for(int j=0; j<msg.images.size(); j++){
+      msg.images[j].rows = only_laser_map.rows;
+      msg.images[j].cols = only_laser_map.cols;
+      msg.images[j].type = only_laser_map.type();
+      msg.images[j].data.assign(only_laser_map.datastart,only_laser_map.dataend);
+    }
+    sdf_prob_map_view_pub_.publish(msg);
   }
-  sdf_prob_map_view_pub_.publish(msg);
 
   msg.occupancy.rows = occupancy_map_room.rows;
   msg.occupancy.cols = occupancy_map_room.cols;
@@ -1181,57 +1188,59 @@ void HierarchyMapper::publishDebug(const cv::Mat_<float>& behind_door_mask, cons
   }
   room_prob_map_view_pub_.publish(msg);
 
-  msg.img_are_log = 0;
-  msg.images.resize(msg.names.size());
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = room_type_maps[i][j].getMap().rows;
-    msg.images[j].cols = room_type_maps[i][j].getMap().cols;
-    msg.images[j].type = room_type_maps[i][j].getMap().type();
-    msg.images[j].data.assign(room_type_maps[i][j].getMap().datastart,room_type_maps[i][j].getMap().dataend);
-  }
-  base_room_prob_map_view_pub_.publish(msg);
+  if(!minimal){
+    msg.img_are_log = 0;
+    msg.images.resize(msg.names.size());
+    for(int j = 0; j < msg.images.size(); j++){
+      msg.images[j].rows = room_type_maps[i][j].getMap().rows;
+      msg.images[j].cols = room_type_maps[i][j].getMap().cols;
+      msg.images[j].type = room_type_maps[i][j].getMap().type();
+      msg.images[j].data.assign(room_type_maps[i][j].getMap().datastart, room_type_maps[i][j].getMap().dataend);
+    }
+    base_room_prob_map_view_pub_.publish(msg);
 
-  msg.img_are_log = 1;
-  msg.images.resize(msg.names.size());
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = obj_based_room_type_map[j].rows;
-    msg.images[j].cols = obj_based_room_type_map[j].cols;
-    msg.images[j].type = obj_based_room_type_map[j].type();
-    msg.images[j].data.assign(obj_based_room_type_map[j].datastart,obj_based_room_type_map[j].dataend);
-  }
-  sdf_prob_map_view_pub_.publish(msg);
+    msg.img_are_log = 1;
+    msg.images.resize(msg.names.size());
+    for(int j = 0; j < msg.images.size(); j++){
+      msg.images[j].rows = obj_based_room_type_map[j].rows;
+      msg.images[j].cols = obj_based_room_type_map[j].cols;
+      msg.images[j].type = obj_based_room_type_map[j].type();
+      msg.images[j].data.assign(obj_based_room_type_map[j].datastart, obj_based_room_type_map[j].dataend);
+    }
+    sdf_prob_map_view_pub_.publish(msg);
 
-  std::vector<cv::Mat_<float>> room_type_maps_filtered;
-  cv::Point new_orig = room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin();
-  cv::Size new_size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight());
-  for(int j=0; j<complete_room_type_map.size(); j++){
-    room_type_maps_filtered.push_back(cv::Mat_<float>());
-    complete_room_type_map[j].copyTo(room_type_maps_filtered[j], room_type_maps[i][j].getSeenMap());
-    cv::GaussianBlur(room_type_maps_filtered[j], room_type_maps_filtered[j], cv::Size(11,11), 3.0, 3.0);
-    room_type_maps_filtered[j] = room_type_maps_filtered[j](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
-  }
+    std::vector<cv::Mat_<float>> room_type_maps_filtered;
+    cv::Point new_orig = room_type_maps[i][0].getOrigin() - obj_maps[i][0].getOrigin();
+    cv::Size new_size(obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight());
+    for(int j=0; j<complete_room_type_map.size(); j++){
+      room_type_maps_filtered.push_back(cv::Mat_<float>());
+      complete_room_type_map[j].copyTo(room_type_maps_filtered[j], room_type_maps[i][j].getSeenMap());
+      cv::GaussianBlur(room_type_maps_filtered[j], room_type_maps_filtered[j], cv::Size(11,11), 3.0, 3.0);
+      room_type_maps_filtered[j] = room_type_maps_filtered[j](cv::Rect(new_orig.x, new_orig.y, new_size.width, new_size.height));
+    }
 
-  std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
-  std::cout << room_based_obj_map[0].rows << " "  << room_based_obj_map[0].cols << " " << room_based_obj_map[0].type() << " "
-            << debug_maps[0].rows << " "  << debug_maps[0].cols << " " << debug_maps[0].type() << " "
-            << room_type_maps[i][0].getMap().rows << " "  << room_type_maps[i][0].getMap().cols << " " << room_type_maps[i][0].getMap().type() << " "
-            << room_type_maps[i][0].getHeight() << " "  << room_type_maps[i][0].getWidth() << " "
-            << complete_room_type_map[0].rows << " "  << complete_room_type_map[0].cols << " " << complete_room_type_map[0].type() << " "
-            << room_type_maps_filtered[0].rows << " "  << room_type_maps_filtered[0].cols << " " << room_type_maps_filtered[0].type() << " " << std::endl;
+    std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+    std::cout << room_based_obj_map[0].rows << " "  << room_based_obj_map[0].cols << " " << room_based_obj_map[0].type() << " "
+              << debug_maps[0].rows << " "  << debug_maps[0].cols << " " << debug_maps[0].type() << " "
+              << room_type_maps[i][0].getMap().rows << " "  << room_type_maps[i][0].getMap().cols << " " << room_type_maps[i][0].getMap().type() << " "
+              << room_type_maps[i][0].getHeight() << " "  << room_type_maps[i][0].getWidth() << " "
+              << complete_room_type_map[0].rows << " "  << complete_room_type_map[0].cols << " " << complete_room_type_map[0].type() << " "
+              << room_type_maps_filtered[0].rows << " "  << room_type_maps_filtered[0].cols << " " << room_type_maps_filtered[0].type() << " " << std::endl;
 
-  msg.occupancy.rows = occupancy_map_obj.rows;
-  msg.occupancy.cols = occupancy_map_obj.cols;
-  msg.occupancy.type = occupancy_map_obj.type();
-  msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
-  msg.img_are_log = 6;
-  msg.images.resize(msg.names.size());
-  for(int j=0; j<msg.images.size(); j++){
-    msg.images[j].rows = room_type_maps_filtered[j].rows;
-    msg.images[j].cols = room_type_maps_filtered[j].cols;
-    msg.images[j].type = room_type_maps_filtered[j].type();
-    msg.images[j].data.assign(room_type_maps_filtered[j].datastart,room_type_maps_filtered[j].dataend);
+    msg.occupancy.rows = occupancy_map_obj.rows;
+    msg.occupancy.cols = occupancy_map_obj.cols;
+    msg.occupancy.type = occupancy_map_obj.type();
+    msg.occupancy.data.assign(occupancy_map_obj.datastart, occupancy_map_obj.dataend);
+    msg.img_are_log = 6;
+    msg.images.resize(msg.names.size());
+    for(int j=0; j<msg.images.size(); j++){
+      msg.images[j].rows = room_type_maps_filtered[j].rows;
+      msg.images[j].cols = room_type_maps_filtered[j].cols;
+      msg.images[j].type = room_type_maps_filtered[j].type();
+      msg.images[j].data.assign(room_type_maps_filtered[j].datastart,room_type_maps_filtered[j].dataend);
+    }
+    sdf_prob_map_view_pub_.publish(msg);
   }
-  sdf_prob_map_view_pub_.publish(msg);
 
 //      debug_maps = get2dAreaObjProbMaps(std::vector<ObjectMap>({occ_map}), behind_door_mask, dummy_occ_map, obj_maps[i][0].getOrigin(),
 //                                        obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(), 0);
@@ -1380,9 +1389,9 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
 
       ObjectMap dummy_occ_map = ObjectMap(obj_maps[i][0].getResolution(), obj_maps[i][0].getBaseSize(), obj_maps[i][0].getWidth(), obj_maps[i][0].getHeight(),
                               obj_maps[i][0].getOrigin(), obj_maps[i][0].getMaxHeight(), 1.f, 1);
-      if(PUBLISH_DEBUG_IMAGES && req.debug_room == i){
+      if(PUBLISH_DEBUG_IMAGES && (req.debug_room == i || (req.debug_room==-1 && current_mapper_==i))){
         publishDebug(behind_door_mask, occ_map, obj_prob_2d_area, obj_based_room_type_map, complete_room_type_map, room_based_obj_map, room_type_cell_number,
-                     complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i);
+                     complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i, req.debug_room==-1);
       }
     }
 
@@ -1609,7 +1618,7 @@ void HierarchyMapper::hierarchyTestCb(const semantic_mapping_v2::HierarchyTestMs
 
     if(PUBLISH_DEBUG_IMAGES && msg->output_room == i){
       publishDebug(behind_door_mask, occ_map, obj_prob_2d_area, obj_based_room_type_map, complete_room_type_map, room_based_obj_map, room_type_cell_number,
-                   complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i);
+                   complete_obj_map, dummy_occ_map, grid_maps, obj_maps, room_type_maps, octomaps[i], only_laser_points, i, false);
     }
 
     semantic_mapping_v2::RoomMsg room;
