@@ -12,6 +12,7 @@
 ros::Publisher filtered_pub;
 float min_angle = -1.95, max_angle = 1.95, min_z=0.1, max_z=1.0, max_range=4.01;
 float true_angle_min = -1.f, true_angle_max = -1.f, true_increment = -1.f;
+float front_worse_param = 0.0;
 
 std::vector<float> cloud_ranges;
 bool got_cloud = false;
@@ -51,7 +52,7 @@ void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
   for(int i=0; i<num_ranges; i++){
     bool neighbor_in = (i>0 && msg->ranges[i+min_cutoff-1] < 4.0) || (i<num_ranges-1 && msg->ranges[i+1+min_cutoff] < 4.0) || i==0 || i==num_ranges-1;
     filtered.ranges[i] = (msg->ranges[i+min_cutoff] < 3.97 || neighbor_in ? msg->ranges[i+min_cutoff]+0.03 : 4.0);
-    filtered.ranges[i] += (std::abs(i-num_ranges/2.0)/double(num_ranges)-0.25)*0.3;
+    filtered.ranges[i] += (std::abs(i-num_ranges/2.0)/double(num_ranges)-0.25)*front_worse_param;
   }
   if(!msg->intensities.empty()){
     for(int i = 0; i < num_ranges; i++){
@@ -119,12 +120,13 @@ int main(int argc, char** argv){
   tf2_buffer = &buffer;
   tf2_ros::TransformListener listener(buffer);
   tf2_listener = &listener;
-  if(argc >= 6){
+  if(argc >= 7){
     min_angle = std::stof(argv[1]);
     max_angle = std::stof(argv[2]);
     min_z = std::stof(argv[3]);
     max_z = std::stof(argv[4]);
     max_range = std::stof(argv[5]);
+    front_worse_param = std::stof(argv[6]);
   }
   std::cout << "filter between " << min_angle << " and " << max_angle << std::endl;
   std::cout << "filter z between " << min_z << " and " << max_z << std::endl;

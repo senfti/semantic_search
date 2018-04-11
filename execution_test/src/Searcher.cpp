@@ -118,8 +118,8 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
     ros::spinOnce();
   }
 
-  //map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
-  //vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
+  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
   obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Searcher::objFoundCb, this);
 
   octomap_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_occ", 1, true);
@@ -555,7 +555,7 @@ void Searcher::insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const v
   float max_z = std::min(POINTCLOUD_MAX_Z, obj_map_[0]->getMaxHeight()-0.001f);
 
   for(int o=0; o<60; o++){
-    if(o/6 != OBJ_SETS)
+    if(o/5 != OBJ_SETS)
       continue;
 
     ObjectMap tmp(ObjectMap(obj_map_[o]->getResolution(), obj_map_[o]->getBaseSize(), obj_map_[o]->getWidth(), obj_map_[o]->getHeight(), obj_map_[o]->getOrigin(), obj_map_[o]->getMaxHeight(), -1.f));
@@ -659,8 +659,11 @@ bool Searcher::objFound(){
 
   static std::set<unsigned> already_found_set;
 
+  if(!got_map_ || !got_vision_)
+    return false;
+
   for(int o=0; o<60; o++){
-    if(o/6 != OBJ_SETS)
+    if(o/5 != OBJ_SETS)
       continue;
 
     float max_prob = 0.f;

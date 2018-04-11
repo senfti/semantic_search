@@ -39,7 +39,7 @@
     <param name="vision/MIN_DIST_DIFF" value="0.3"/>
     <param name="vision/MAX_ROT_VELOCITY" value="0.5"/>
 
-    <param name="vision/DEBUG_IMAGES" value="1"/>    
+    <param name="vision/DEBUG_IMAGES" value="0"/>    
     <param name="vision/IMAGE_SAVE" value="0"/>    
   </node>
 </launch>

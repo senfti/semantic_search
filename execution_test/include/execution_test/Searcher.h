@@ -41,10 +41,10 @@ class Searcher{
     float V_H = 0.1;
     float V_M = 0.0005;
 
-    float POINTCLOUD_MIN_Z = 0.2f;
-    float POINTCLOUD_MAX_Z = 1.8f;
+    float POINTCLOUD_MIN_Z = 0.3f;
+    float POINTCLOUD_MAX_Z = 1.6f;
 
-    float OBJECT_FOUND_THRESH = 0.8;
+    float OBJECT_FOUND_THRESH = 0.9;
     float IMAGE_FOUND_THRESH = 0.9;
 
     int VIEW_ANGLE_STEPS = 12;
