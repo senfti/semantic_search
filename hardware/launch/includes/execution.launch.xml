@@ -27,13 +27,13 @@
     <param name="POINTCLOUD_MIN_Z" value="0.3" />
     <param name="POINTCLOUD_MAX_Z" value="1.6" />
 
-    <param name="OBJECT_FOUND_THRESH" value="0.9" />
+    <param name="OBJECT_FOUND_THRESH" value="0.95" />
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
     <param name="SEEN_MAP_STEPS" value="36" />
     <param name="SAMPLE_COUNT_THRESH" value="20" />
 
-    <param name="VIEW_MIN_DIST" value="0.55" />
+    <param name="VIEW_MIN_DIST" value="0.49" />
     <param name="VIEW_MAX_DIST" value="3.2" />
     <param name="VIEW_ANGLE" value="0.8" />
 

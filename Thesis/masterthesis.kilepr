@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/Knowledge.tex
+lastDocument=Concept/Sensing.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -304,10 +304,10 @@ order=14
 
 [item:Concept/Hardware.tex]
 archive=true
-column=121
+column=12
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=15
 mode=LaTeX
 open=true
 order=3
@@ -384,10 +384,10 @@ order=17
 
 [item:Concept/Sensing.tex]
 archive=true
-column=49
+column=18
 encoding=UTF-8
 highlight=LaTeX
-line=67
+line=69
 mode=LaTeX
 open=true
 order=4
@@ -623,8 +623,8 @@ JumpList=
 ViMarks=.,98,394,[,98,394,],98,394
 
 [view-settings,view=0,item:Concept/Hardware.tex]
-CursorColumn=121
-CursorLine=2
+CursorColumn=12
+CursorLine=15
 JumpList=
 ViMarks=.,7,84,[,7,84,],7,84
 
@@ -671,10 +671,10 @@ JumpList=
 ViMarks=.,2,686,[,2,686,],2,686
 
 [view-settings,view=0,item:Concept/Sensing.tex]
-CursorColumn=49
-CursorLine=67
+CursorColumn=18
+CursorLine=69
 JumpList=
-ViMarks=.,66,49,[,66,49,],66,49
+ViMarks=.,87,118,[,87,102,],87,118
 
 [view-settings,view=0,item:Conclusion.tex]
 CursorColumn=19

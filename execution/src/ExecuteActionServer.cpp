@@ -30,6 +30,10 @@ ExecuteActionServer::ExecuteActionServer()
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
   curr_action_pub_ = nh_.advertise<std_msgs::Int8>("current_action", 1);
   room_explored_pub_ = ros::NodeHandle().advertise<std_msgs::Int8>("room_explored", 1);
+
+  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/local_costmap robot_radius " + std::to_string(0.25)).c_str());
+  std::system("rosrun dynamic_reconfigure dynparam set /move_base/local_costmap footprint []");
+
   ROS_INFO("INITIALIZATION FINISHED");
 }
 
@@ -199,7 +203,7 @@ void ExecuteActionServer::doMoveTo(){
       cmd_vel.linear.y = 0.0;
       cmd_vel.angular.z = 0.0;
       vel_pub_.publish(cmd_vel);
-      ros::Rate r(0.5);
+      ros::Rate r(1.0);
       r.sleep();
       result.result_number = -2;
       action_server_.setAborted(result, "ABORTED");
@@ -306,7 +310,7 @@ void ExecuteActionServer::doExplore(){
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         vel_pub_.publish(cmd_vel);
-        ros::Rate r(0.5);
+        ros::Rate r(1.0);
         r.sleep();
         geometry_msgs::PoseStamped pose;
         pose.pose = explorer_.getNextFrontier();
@@ -316,7 +320,7 @@ void ExecuteActionServer::doExplore(){
         pose.header.seq = seq++;
         frontier_pub_.publish(pose);
         sendMoveBaseGoal(pose.pose);
-        explorer_.did_abort_ = true;
+        //explorer_.did_abort_ = true;
       }
     }
   }
@@ -400,9 +404,9 @@ void ExecuteActionServer::doSearch(){
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         vel_pub_.publish(cmd_vel);
-        ros::Rate r(0.5);
+        ros::Rate r(1.0);
         r.sleep();
-        searcher_.did_abort_ = true;
+        //searcher_.did_abort_ = true;
         searcher_.doCalculations(true);
 
         geometry_msgs::PoseStamped pose;

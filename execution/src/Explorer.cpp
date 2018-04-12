@@ -194,7 +194,6 @@ void Explorer::calcFrontier(){
   }
   cv::Point pos(int((transform.getOrigin().x()-last_map_.info.origin.position.x)/last_map_.info.resolution),
                 int((transform.getOrigin().y()-last_map_.info.origin.position.y)/last_map_.info.resolution));
-  cv::Point2f dir(std::cos(tf::getYaw(transform.getRotation())), std::sin(tf::getYaw(transform.getRotation())));
   cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
 
   cv::Mat_<uchar> accessible(last_map_.info.height, last_map_.info.width, uchar(0));
@@ -257,7 +256,6 @@ void Explorer::calcFrontier(){
             continue;
           cv::Point2f diff = p-pos;
           double dist = std::sqrt((diff.x)*(diff.x) + (diff.y)*(diff.y));
-          dist += 5-diff.dot(dir)/(dist)*5;
           dist += (dist < ROBOT_SIZE ? 40.0 : 0.0);
           for(const auto& m : good_accessibles)
             dist += (m(p) ? 0.0 : 20.0);

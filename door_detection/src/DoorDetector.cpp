@@ -8,6 +8,7 @@
 #include <pcl_ros/transforms.h>
 #include <geometry_msgs/PoseArray.h>
 #include <pcl/filters/passthrough.h>
+#include <opencv2/imgproc/imgproc.hpp>
 
 const float PI_180 = M_PI/180.0;
 
@@ -157,7 +158,7 @@ geometry_msgs::Pose DoorDetector::rectToPose(const cv::RotatedRect& rect) const{
 }
 
 #ifdef DEBUG_OUTPUT
-cv::Mat_<cv::Vec3b> tmp(4*50, 3*50, cv::Vec3b(0,0,0));
+cv::Mat_<cv::Vec3b> tmp(4*50*4, 3*50*4, cv::Vec3b(255,255,255));
 #endif
 cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contour, const pcl::PointCloud<pcl::PointXYZ>& laser_cloud) const{
   cv::RotatedRect rect = cv::minAreaRect(contour);
@@ -179,15 +180,17 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
   int contour_pixels = cv::countNonZero(contour_img);
 
 #ifdef DEBUG_OUTPUT
-  for(const auto& p : contour)
-    tmp(p.y, p.x) = cv::Vec3b(255,255,255);
-  cv::drawContours(tmp, std::vector<std::vector<cv::Point>>({contour}), 0, cv::Scalar(255,255,255), -1);
+  cv::Mat_<cv::Vec3b> tmp2(4*50,3*50,cv::Vec3b(255,255,255));
+//  for(const auto& p : contour)
+//    tmp2(p.y, p.x) = cv::Vec3b(0,0,0);
+//  cv::drawContours(tmp2, std::vector<std::vector<cv::Point>>({contour}), 0, cv::Scalar(0,0,0), -1);
+//  cv::resize(tmp2,tmp,cv::Size(tmp.cols,tmp.rows),0,0,cv::INTER_NEAREST);
   cv::Point2f rect_points[4]; rect.points(rect_points);
   for(int j = 0; j < 4; j++)
-    cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
+    cv::line(tmp, rect_points[j]*4, rect_points[(j+1)%4]*4, cv::Scalar(255,0,0), 3, 8);
 
   if(w >= MIN_WIDTH && h >= MIN_DEPTH && h <= MAX_DEPTH && contour_pixels/(w*h) >= FILL_THRESH){
-    tmp(rect.center.y, rect.center.x) = cv::Vec3b(255,0,0);
+    tmp(rect.center.y*4, rect.center.x*4) = cv::Vec3b(255,0,0);
   }
 #endif
 
@@ -198,7 +201,7 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
 #ifdef DEBUG_OUTPUT
   laser_check_rect.points(rect_points);
   for(int j = 0; j < 4; j++)
-    cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
+    cv::line(tmp, rect_points[j]*4, rect_points[(j+1)%4]*4, cv::Scalar(0,0,255), 2, 8);
 #endif
 
   for(const auto& p : laser_cloud)
@@ -211,7 +214,7 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
 #ifdef DEBUG_OUTPUT
   laser_check_rect.points(rect_points);
   for(int j = 0; j < 4; j++)
-    cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
+    cv::line(tmp, rect_points[j]*4, rect_points[(j+1)%4]*4, cv::Scalar(0,0,255), 2, 8);
 #endif
 
   int at_doorframe = 0;
@@ -225,11 +228,11 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
 #ifdef DEBUG_OUTPUT
   laser_check_rect.points(rect_points);
   for(int j = 0; j < 4; j++)
-    cv::line(tmp, rect_points[j], rect_points[(j+1)%4], cv::Scalar(0,0,255), 1, 8);
+    cv::line(tmp, rect_points[j]*4, rect_points[(j+1)%4]*4, cv::Scalar(0,255,0), 2, 8);
 
   std::cout << in_zone << "____________________" << at_doorframe << "____________________" << contour_pixels << "____________________" << w*h << std::endl;
   if(in_zone <= MAX_LASER_IN_ZONE && at_doorframe >= MIN_LASER_IN_DOORFRAME)
-    tmp(rect.center.y, rect.center.x) = cv::Vec3b(0,255,0);
+    tmp(rect.center.y*4, rect.center.x*4) = cv::Vec3b(0,255,0);
 #endif
 
   if(w >= MIN_WIDTH && h >= MIN_DEPTH && h <= MAX_DEPTH && contour_pixels/(w*h) >= FILL_THRESH && in_zone <= MAX_LASER_IN_ZONE && at_doorframe >= MIN_LASER_IN_DOORFRAME){
@@ -278,9 +281,17 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
 #ifdef DEBUG_OUTPUT
   cv::imshow("occ_under", occupancy_under);
   cv::imshow("occ", occupancy);
-  tmp = cv::Mat_<cv::Vec3b>(4*50, 3*50, cv::Vec3b(0,0,0));
-  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,0,0)), pointToPixel(pcl::PointXYZ(1,0,0)), cv::Scalar(100,100,100));
-  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,-1,0)), pointToPixel(pcl::PointXYZ(0,1,0)), cv::Scalar(100,100,100));
+  tmp = cv::Mat_<cv::Vec3b>(4*50, 3*50, cv::Vec3b(255,255,255));
+//  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,0,0))*4, pointToPixel(pcl::PointXYZ(1,0,0))*4, cv::Scalar(100,100,100));
+//  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,-1,0))*4, pointToPixel(pcl::PointXYZ(0,1,0))*4, cv::Scalar(100,100,100));
+  for(int sdf=0; sdf<tmp.cols; sdf++){
+    for(int asd=0; asd<tmp.rows; asd++){
+      if(occupancy(asd,sdf))
+        tmp(asd,sdf) = cv::Vec3b(0,0,0);
+    }
+  }
+  tmp(pointToPixel(pcl::PointXYZ(0,0,0))) = cv::Vec3b(100,100,100);
+  cv::resize(tmp, tmp, cv::Size(3*50*4, 4*50*4),0,0,cv::INTER_NEAREST);
 #endif
 
   cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
@@ -326,9 +337,10 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   for(const auto& p : laser_cloud_){
     cv::Point pi = pointToPixel(p);
     if(cv::Rect(cv::Point(0,0), IMG_SIZE).contains(pi))
-      tmp(pi.y, pi.x) = cv::Vec3b(0,255,255);
+      cv::rectangle(tmp,cv::Point(pi.x*4-1,pi.y*4-1), cv::Point(pi.x*4+1, pi.y*4+1), cv::Scalar(0,200,200),-1);
+      //tmp(pi.y*4, pi.x*4) = cv::Vec3b(0,255,255);
   }
-  cv::resize(tmp, tmp, cv::Size(tmp.cols*4, tmp.rows*4), 0, 0, cv::INTER_NEAREST);
+  //cv::resize(tmp, tmp, cv::Size(tmp.cols*4, tmp.rows*4), 0, 0, cv::INTER_NEAREST);
   cv::imshow("rects", tmp);
   cv::waitKey(1);
 #endif

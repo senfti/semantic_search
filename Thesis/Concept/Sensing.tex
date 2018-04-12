@@ -1,24 +1,21 @@
 \section{Sensing}
 
-This section describes the processing of the sensor information to get it into the form needed by the other parts of the system. The data from the laser scanner and the depth information from the RGBD-cameras can be used without significant preprocessing. Therefore this section focuses on the object detection, the room type classification and the doorway detection.
+This section describes the extraction of information needed in later stages of the system from the input sensor data. The data from the laser scanner and the depth information from the RGBD-cameras can be used without mentionable preprocessing. Therefore this section focuses on the object detection, the room type classification and the doorway detection.
 
 \subsection{Object detection}
 
-The basic idea of this thesis was to create an intelligent system which uses available data to perform the search. Therefore a general object detection system was preferred instead of a specialized one. This is different to most research in this area, where an object detector trained on a few specific objects was used. 
+The object detection takes the images from the main RGBD-camera and its task is to find objects visible in the image and also to estimate their positions in space. In this work the goal is to find objects of a given type, so a general object detection system is needed. Visual object detection is the way to go at the moment. On the one hand visual features are probably the most descriptive features for object detection. On the other hand a lot of research was done on visual object detection and huge datasets containing labeled images are available to train the proposed object detectors. This resulted in the idea to use an object detector working on $2D$ images and then projecting the object detections into $3D$ space using the depth image. 
 
-General purpose object detection is a very difficult problem and only the recent success of CNNs in computer vision combined with huge training datasets lead to reasonable solutions. Many of these CNNs including the trained weights are publicly available as they were submitted to computer vision challenges. One of those had to be chosen based on hardware requirements, detectable objects and accuracy.
+Convolutional Neural Networks(CNNs) are the best performing systems for visual object detection at the moment. The data used to train those CNNs is very important for the accuracy of the trained CNN and also defines the objects types the CNN can detect. The COCO-dataset is the best choice at the moment as the number of object types is sufficiently high for this work, but still low enough to not overwhelm an object detector. Table \ref{detectable objects} shows a list of the object types in the COCO-dataset. It also contains enough images, so there is enough variation in the objects to achieve a good generality. The drawback is that objects are not labeled per pixel, but only bounding boxes are given. As no suitable dataset with objects labeled per pixel is available the object detection and the later stages of the system have to cope with this problem.
 
-YOLO was chosen because
-\begin{itemize}
- \item there is a version available trained on the COCO dataset and therefore can detect a reasonable number of different object classes. Table \ref{detectable objects} lists the detectable object classes. Some of those object classes are ignored in further processing for efficiency reasons as they are not reasonable to be in indoor environments.
- \item it is fast, running with more than 2 frames per second on the used mid-class CPU
- \item it is nearly as accurate as the best solutions and the best of all solutions which run at a reasonable framerate on the used hardware
-\end{itemize}
+In a next step a suitable CNN for object detection had to be chosen and the decision was to use YOLO (you only look once). Many CNNs had to be ruled out for being to computational expensive for the used hardware or for being too inaccurate. At the time of this work YOLOv3, the third version of YOLO, had the best trade-off between speed (processing one image in less than 200 ms) and accuracy (being more accurate than all other object detectors trained on COCO with comparable runtime). It also is publicly available and free to use. 
+%The result of YOLO is a fixed number of proposed object locations, given by bounding boxes. An objectness value, specifying the probability of an detectable object being represented by the bounding box, is attached to every bounding box. Further the probabilities for all object classes are also attached to the bounding boxes. The sum of those probabilities equals the objectness value. To improve the result non-maximum-suppression is applied, to remove duplicated bounding boxes, and also thresholding is done to discard very unlikely bounding boxes.
+The result of YOLO is a set of proposed object locations, given by bounding boxes. Every bounding box has probabilities for all detectable object types attached.
 
 Figure \ref{obj detection} shows a typical result of the object detection, only showing the most likely detections. As one can see the result is far from perfect, especially the confidence is low. This has to be taken into account in the design of the object mapping system, as accumulation of information from multiple images is needed for more reliable results.
 
 \begin{table}
-\caption{Detectable object classes, strikethrough classes are ignored}
+\caption{Detectable object classes grouped in categories, strikethrough classes are ignored}
 \begin{tabular}{|l|l|}
 \hline
 Categories & Classes\\ \hline
@@ -30,7 +27,7 @@ Outdoor Objects & \sout{Traffic light}, \sout{Fire hydrant}, \sout{Stop sign}, \
 Sports & Frisbee, Skis, Snowboard, Sports Ball, Kite, \\ &  Baseball Bat, Baseball Glove, Skateboard, Surfboard, \\ & Tennis Racket \\ \hline
 Kitchenware & Bottle, Wine glass, cup, fork, knife, spoon, bowl\\ \hline
 Food & Banana, apple, sandwich, orange, broccoli, carrot, \\ &  hot dog, pizza, donut, cake\\ \hline
-Furniture & chair, sofa, potted plant, bed, dinig table, toilet\\ \hline
+Furniture & chair, sofa, potted plant, bed, dining table, toilet\\ \hline
 Appliance & Microwave, oven, toaster, sink, refrigerator\\ \hline
 Electronics & TV, laptop, mouse, remote, keyboard, cell phone\\ \hline
 Indoor Objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toothbrush \\ \hline
@@ -39,20 +36,17 @@ Indoor Objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toot
 \end{table}
 
 \begin{figure}[h]
-  \includegraphics[width=1.0\textwidth]{figures/obj_detection.png}
-  \caption{A typical result of the object detection and the place recognition; The bounding boxes together with the most likely class and its probability of the most likely detections are inserted into the image; in the upper left corner of the image the top 5 classification of the place classifier are shown}
+  \includegraphics[width=1.0\textwidth]{figures/vision_still.png}
+  \caption{A typical result of the object detection and the place recognition; Detection with a probability greater than $0.1$ are shown with bounding box, most likely class and its probability; in the upper left corner of the image the top classifications of the place classifier and their probabilities are shown}
   \label{obj detection}
 \end{figure}
 
-The problem with this approach is that the result of YOLO is two dimensional bounding boxes whereas in the further processing three dimensional probability distributions of object locations are needed. The RGBD-camera also takes depth images, which contain depth values for every pixel. Due to range limitations and occlusions some pixels may have invalid depth values. Using the depth image every pixel with a valid depth value can be projected into 3D space. However projecting a object detection, represented as a bounding box in 2D, into 3D is much more difficult. A 3D bounding box is not meaningful in many cases, as stray points can be much nearer or further away than the actual object. Fitting a parametric representation is also problematic as they are either not suitable (like a Gaussian) or to costly to compute. 
-
-Therefore a sample-based representation is used. Sample pixels are randomly drawn from the image and projected into 3D. Also information about the enclosing bounding boxes is added to every sample. Samples are drawn from the whole image as also parts of the image without an object have to be represented. Random sampling is used as invalid depth values can be handled easily and regular sampling only makes sense if it is regular in 3D, which is difficult to achieve. The result of the object detection system are a list of all bounding boxes with the corresponding object probabilities and a list of 3D points with additional information about enclosing bounding boxes. 
+Together with the RGB-image the depth values for every pixel are measured. Due to technical limitations these need not be valid for all pixels. Every pixel with a valid depth value can be projected into $3D$ space using the intrinsic parameters of the camera. For further processing a sufficient number of pixels with valid depth values are drawn randomly from the image and object probabilities for every object class are assigned to the drawn pixels. Assigning probabilities to pixels based on the bounding boxes of the detections is not possible without further information or assumptions, as the bounding boxes in general contain pixels not belonging to the object and also overlapping bounding boxes are possible. Segmentation of the pixels in a bounding box into object and background would be possible. However this was not done as this would be quiet time consuming for large numbers of bounding boxes and wrong segmentations are possible, especially with overlapping bounding boxes. Therefore simply the maximum probability of all bounding boxes overlapping a pixel for an object type is used. The idea behind this is the assumption that all bounding boxes with lower probabilities are just accidentally overlapping. The unreliability of this approach is then taken into account in the inverse sensor model of the object mapping. The final result of the object detection is a set of $3D$ points, where every point also hold a probability value for all object types.
 
 \subsection{Room type classification}
 
-There are various features which can be used to classify rooms into categories used by humans. Visual features are very expressive for room classification. Another advantage of using images for room type classification is the existence of CNNs trained for place classification due to various computer vision challenges for this task. Therefore such a CNN is used for room type classification. The used classifier is a GoogLeNet CNN trained with 2.5 million images classified into 205 place categories. The network achieves a Top1 accuracy of 0.555 and a Top5 accuracy of 0.857. 
+There are various features which can be used to classify rooms into categories used by humans. In this work this is done solely using visual input. Visual features are very expressive for room classification and also image datasets containing lots of labeled images exist. Other features like shape of a room are not used because of their limited expressiveness and the limited data available. The MIT Places-205 Dataset contains about 2.5 million images categorized into 205 place categories and CNNs trained on this dataset are publicly available. Ignoring outdoor place categories this leaves 60 indoor room types, which are listed in table \ref{room types}. The result of the CNN is a probability distribution over the 205 place categories. The exclude the outdoor categories their probabilities are set to zero and the remaining probabilities are normalized to one, resulting in a probability distribution over the 60 indoor categories for the room type seen in the input image.
 
-Many of the detectable categories are outdoor place categories. Setting the probabilities of those categories to 0 and renormalizing the other probabilities results in a probability distribution over 60 indoor categories. 
 
 \begin{table}
 \caption{indoor room categories}
@@ -76,16 +70,23 @@ butcher shop &  galley &  martial arts gym &  waiting room \\ \hline
 \label{room types}
 \end{table}
 
-Other features like shape of a room are not used because of their limited expressiveness and the lack of out-of-the-box classifiers. 
+
 
 \subsection{Doorway detection}
 
-The detection of doorways is important for the segmentation of the environment into rooms. As there is usually few stuff at the ceiling and the standard height of a doorway is 2 meters, doorways are easy and reliable to detect in a depth image from a upward looking camera. A passable doorway is detected if 
+The detection of doorways is important for the segmentation of the environment into rooms. As there is usually few stuff at the ceiling and the standard height of a doorway is 2 meters, doorways are easily and reliably detected in a depth image of an upward looking RGBD-camera. A passable doorway is detected if 
 \begin{itemize}
- \item there is a rectangular surface at about 2 meters height
- \item the length and width of this surface are within a range based on typical door sizes
+ \item there is a rectangular surface at about 2 meters height 
+ \item this surface has a typical width and height for a door frame
  \item the area beside the door is occupied, as there has to be a wall
- \item the area in front and behind is free from obstacles, so the robot can drive through
+ \item the area in front and behind is free of obstacles, so the robot can drive through
 \end{itemize}
+These requirements are visualized in Figure \ref{door detection}.
+
+\begin{figure}
+  \includegraphics[width=0.9\textwidth,trim=20 180 50 125,clip]{figures/door_detection.pdf}
+  \caption{A successfully detected door marked by the purple arrow and the coordinate frame of the robot is also marked, black dots are points at about 2 meters height detected by the RGBD-camera, the yellow points are range measurements from the LIDAR, the detected door frame is marked with the blue rectangle, the red rectangles have to be free of LIDAR range measurements and the green rectangle has to contain LIDAR range measurements }
+  \label{door detection}
+\end{figure}
 
 The position of the detected doorway is set to the center of the rectangle. As can be seen in the hardware section, the camera can only detect doorways in front of the robot. Therefore the orientation of detected doorways is along the smaller axis of the rectangle and pointing away from the robot, so that doorways are always oriented in the direction for leaving the room.

@@ -182,7 +182,7 @@ bool VisionApp::useImage(const cv::Mat& img, ros::Time stamp){
   if(!point_cloud_){
     std::cout << "No depth image" << std::endl;
     return false;
-  }
+  }return true;
 
   tf::StampedTransform transform;
   try{
@@ -338,12 +338,12 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
   cv::resize(img, debug_img, cv::Size(img.cols*scale_factor, img.rows*scale_factor));
   for (size_t i = 0; i < predictions.size() && predictions[i].prob_ > 0.05; ++i)
     cv::putText(debug_img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
-                cv::Point(0, 20 + 20*i), cv::FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar(0,255,0), 1);
+                cv::Point(0, 40 + 40*i), cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(0,255,0), 2);
 
   for(int i=0; i<detections.size(); i++){
     if(*std::max_element(detections[i].prob_.begin(), detections[i].prob_.end()) > 0.1){
       detections[i].scale(2.f);
-      detections[i].draw(debug_img, cv::Scalar(255, 255, 255), 1, cv::Scalar(0, 0, 255), 0.5, 1);
+      detections[i].draw(debug_img, cv::Scalar(255, 255, 255), 1, cv::Scalar(0, 0, 255), 0.8, 2);
     }
   }
   cv::imshow("img", debug_img);
