@@ -101,13 +101,14 @@ SearchPlan finishGreedy(const HierarchyMap &graph, SearchPlan search_plan, float
 }
 
 
-SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cutoff_time, float cutoff_prob, int level){
+SearchPlan Planner::plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cutoff_time, float cutoff_prob, int level){
   if(level >= cutoff_prob)
     return finishGreedy(graph, old_plan, cutoff_time);
 
   std::deque<SearchAction> search_actions_ = old_plan.end_state_.getPossibleFullSearchActions();
   if(search_actions_.empty()){
     std::cout << old_plan.getPlanString() << std::endl;
+    output_file_ << old_plan.getPlanString() << std::endl;
     return old_plan;
   }
 
@@ -117,6 +118,7 @@ SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cu
     new_plan.addAction(a, graph, old_plan.end_state_.current_room_);
     if(new_plan.expected_search_time_ >= cutoff_time){
       std::cout << old_plan.getPlanString() << std::endl;
+      output_file_ << old_plan.getPlanString() << std::endl;
       continue;
     }
 
@@ -208,16 +210,17 @@ void Planner::run(int obj, std::string run_name){
   if(run_name.empty())
     run_name = std::to_string(ros::Time::now().toSec());
 
-  std::ofstream output_file("/home/thomas/output/" + run_name + ".txt");
+  if(!output_file_.is_open())
+    output_file_.open("/home/thomas/output/" + run_name + ".txt");
   ros::Time start_time = ros::Time::now();
   state_.resetState();
-  output_file << run_name << " " << std::endl << obj << " " << obj_names[obj] << std::endl;
+  output_file_ << run_name << " " << std::endl << obj << " " << obj_names[obj] << std::endl;
   while(ros::ok()){
     ros::Duration(2.0).sleep();
     semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
-    output_file << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
-    output_file << (ros::Time::now() - start_time).toSec() << std::endl;
-    output_file << hierarchy;
+    output_file_ << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+    output_file_ << (ros::Time::now() - start_time).toSec() << std::endl;
+    output_file_ << hierarchy;
     if(hierarchy.rooms.empty())
       return;
 
@@ -226,21 +229,23 @@ void Planner::run(int obj, std::string run_name){
         sendGoal(Action(Action::START_ROTATE, obj, hierarchy.curr_room));
       else
         sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
+      output_file_ << "GOAL " << (state_.num_rooms_ < 2 ? "START_ROTATE" : "ROTATE") << std::endl;
       continue;
     }
 
     HierarchyMap graph_map(hierarchy, obj);
     std::cout << graph_map;
-    output_file << graph_map;
+    output_file_ << graph_map;
     state_.updateState(graph_map, hierarchy.curr_room);
     std::cout << state_;
-    output_file << state_;
+    output_file_ << state_;
 
     Plan plan = generatePlan(graph_map, state_);
     if(plan.finished())
       std::cout << "OBJECT NOT FOUND!" << std::endl;
 
     actionlib::SimpleClientGoalState execution_state = sendGoal(plan.actions_.front());
+    output_file_ << plan.actions_.front().getActionString() << std::endl;
     if(execution_state != actionlib::SimpleClientGoalState::SUCCEEDED){
       ROS_ERROR("EXECUTION FAILED!");
 //      std::cout << "Stop trying [y]: ";
@@ -257,16 +262,18 @@ void Planner::run(int obj, std::string run_name){
         state_.changeState(plan.actions_.front());
         if(plan.actions_.front().type_ == Action::EXPLORE)
           explored_rooms_.push_back(plan.actions_.front().target_room_);
-        if(plan.actions_.front().type_ == Action::MOVE_TO && graph_map.not_visited_[plan.actions_.front().target_room_])
+        if(plan.actions_.front().type_ == Action::MOVE_TO && graph_map.not_visited_[plan.actions_.front().target_room_]){
           sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
+          output_file_ << "GOAL " << "ROTATE" << std::endl;
+        }
       }
       else if(result->result_number == 100){
-        output_file << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT FOUND" << std::endl;
+        output_file_ << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT FOUND" << std::endl;
         std::cout << "OBJECT FOUND" << std::endl;
         return;
       }
       if(state_.searchable_.empty() && state_.not_explored_.empty()){
-        output_file << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT NOT FOUND" << std::endl;
+        output_file_ << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT NOT FOUND" << std::endl;
         std::cout << "OBJECT NOT FOUND!" << std::endl;
         return;
       }
@@ -339,6 +346,16 @@ void Planner::exploreAll(){
     }
   }
 }
+
+
+void Planner::justSearch(int obj){
+  ros::Time start_time = ros::Time::now();
+  state_.resetState();
+
+  sendGoal(Action(Action::ROTATE, -1, 0));
+  sendGoal(Action(Action::SEARCH, obj, 0));
+}
+
 
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res){
   os << "current room: " << res.curr_room << std::endl;

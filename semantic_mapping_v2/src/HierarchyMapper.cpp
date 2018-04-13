@@ -1309,6 +1309,19 @@ void HierarchyMapper::insertUnknowRoom(semantic_mapping_v2::RoomMsg& msg, const 
 }
 
 
+void HierarchyMapper::estimateUndiscoveredRoom(std::vector<float>& probs, const std::vector<float>& room_type_probs, int num_doors){
+  float undiscovered_rooms = room_type_probs[23]*6.f+(1.f-room_type_probs[23])*1.2f - num_doors;
+  if(undiscovered_rooms > 0){
+    std::cout << "UNDISCOVERED" << std::endl;
+    for(int o=0; o<probs.size(); o++){
+      std::cout << probs[o] << ", ";
+      probs[o] = 1.f-(1.f-probs[o])*std::pow(1.0-RoomMapper::getObjProbGivenRoomObjPriorPerCell(o),undiscovered_rooms*ROOM_ESTIMATED_OCCUPIED_AREA*ObjectMapper::OBJ_DEFAULT_RESOLUTION*ObjectMapper::OBJ_DEFAULT_RESOLUTION);
+      std::cout << probs[o] << std::endl;
+    }
+  }
+}
+
+
 bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request& req, semantic_mapping_v2::HierarchySrv::Response& res){
   ROS_INFO("SERVICE HIERARCHY");
   ros::Time start = ros::Time::now();
@@ -1408,6 +1421,8 @@ bool HierarchyMapper::hierarchySrvCb(semantic_mapping_v2::HierarchySrv::Request&
     room.to_link_travel_times = getToLinkTravelTime(i, doors[i], grid_maps[i]);
     room.search_time = getSearchTime(search_cells)+20.f;
     room.expected_search_time = getExpectedSearchTime(room.search_time, complete_obj_probs, complete_obj_map, behind_door_mask);
+    if(!explored[i])
+      estimateUndiscoveredRoom(room.obj_probs, room.room_type_probs, doors[i].size());
     last_room_msgs[i] = room;
     res.rooms.push_back(room);
   }

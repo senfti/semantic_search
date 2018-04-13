@@ -21,6 +21,7 @@ class ProbViewApp : public wxApp{
     ros::Subscriber obj_sub_;
     ros::Subscriber base_obj_sub_;
     ros::Subscriber base_room_sub_;
+    ros::Subscriber search_sub_;
     ros::Subscriber sdf_sub_;
     ros::Subscriber save_all_sub_;
 
@@ -28,6 +29,7 @@ class ProbViewApp : public wxApp{
     ProbViewer* obj_viewer_ = nullptr;
     ProbViewer* base_obj_viewer_ = nullptr;
     ProbViewer* base_room_viewer_ = nullptr;
+    ProbViewer* search_prob_viewer_ = nullptr;
     ImageViewer* room_type_viewer_ = nullptr;
     std::vector<ProbViewer*> sdf_viewer_;
 
@@ -47,6 +49,7 @@ class ProbViewApp : public wxApp{
     void objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
+    void searchProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void sdfProbCb(const prob_map_view::ProbMapMsgConstPtr& msg);
     void saveAllCb(const std_msgs::StringConstPtr& msg);
 

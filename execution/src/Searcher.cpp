@@ -784,13 +784,16 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_p
   std::cout << "m";
   cv::Mat_<float> tmp;
   prob_map.copyTo(tmp);
+  double min_val, max_val;
+  cv::minMaxLoc(tmp, &min_val, &max_val);
   double prob = 1.0;
   for(int x=0; x<prob_map.cols; x++){
     for(int y=0; y<prob_map.rows; y++){
       prob *= (1.0-prob_map(y,x));
-      tmp(y,x) = std::max(1.f+std::log10(tmp(y,x))*0.25f,0.f);
+      tmp(y,x) = tmp(y,x)/max_val;
     }
   }
+  cv::putText(tmp, std::to_string(max_val).substr(0,5), cv::Point(0,20), cv::FONT_HERSHEY_PLAIN, 0.5, cv::Scalar(1.0));
   prob = 1-prob;
   std::cout << "Remaining prob: " << prob << std::endl;
   showProbImage("probabilities", tmp, 1, 255-accessible_map_*0.3);

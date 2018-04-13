@@ -79,9 +79,12 @@ int main(int argc, char** argv){
     std::cout << std::endl << "Object Number: ";
     int n=-1;
     std::cin >> n;
-    if(n>=0 && n<obj_names.size())
+    if(n >= 100 && n<100+obj_names.size()){
+      p.justSearch(n-100);
+    }
+    else if(n>=0 && n<obj_names.size())
       p.run(n, run_name);
-    if(n==-1)
+    else if(n==-1)
       p.exploreAll();
   }
 

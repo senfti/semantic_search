@@ -18,6 +18,7 @@ bool ProbViewApp::OnInit(){
   obj_sub_ = node_handle_->subscribe("obj_prob_map_view", 1, &ProbViewApp::objProbCb, this);
   base_obj_sub_ = node_handle_->subscribe("base_obj_prob_map_view", 1, &ProbViewApp::baseObjProbCb, this);
   base_room_sub_ = node_handle_->subscribe("base_room_prob_map_view", 1, &ProbViewApp::baseRoomProbCb, this);
+  search_sub_ = node_handle_->subscribe("searcher_prob_map", 1, &ProbViewApp::searchProbCb, this);
   sdf_sub_ = node_handle_->subscribe("sdf", 10, &ProbViewApp::sdfProbCb, this);
   save_all_sub_ = node_handle_->subscribe("save_all", 1, &ProbViewApp::saveAllCb, this);
 
@@ -43,6 +44,8 @@ void ProbViewApp::input(wxTimerEvent &event){
       base_obj_viewer_->Close();
     if(base_room_viewer_ != nullptr)
       base_room_viewer_->Close();
+    if(search_prob_viewer_ != nullptr)
+      search_prob_viewer_->Close();
     for(auto & v : sdf_viewer_){
       if(v != nullptr)
         v->Close();
@@ -245,6 +248,26 @@ void ProbViewApp::baseRoomProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
   cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
 
   base_room_viewer_->updateImages(imgs, occ);
+}
+
+void ProbViewApp::searchProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){
+  if(msg->images.empty())
+    return;
+
+  std::cout << "search_prob" << std::endl;
+  if(search_prob_viewer_ == nullptr){
+    search_prob_viewer_ = new ProbViewer("Search Prob Viewer", msg->names, msg->img_are_log);
+    search_prob_viewer_->Show(true);
+  }
+
+  std::vector<cv::Mat_<float>> imgs(msg->images.size());
+  for(int i=0; i<imgs.size(); i++){
+    cv::Mat(msg->images[i].rows, msg->images[i].cols, msg->images[i].type, (void*)(msg->images[i].data.data())).copyTo(imgs[i]);
+  }
+  cv::Mat_<uchar> occ;
+  cv::Mat(msg->occupancy.rows, msg->occupancy.cols, msg->occupancy.type, (void*)(msg->occupancy.data.data())).copyTo(occ);
+
+  search_prob_viewer_->updateImages(imgs, occ);
 }
 
 void ProbViewApp::sdfProbCb(const prob_map_view::ProbMapMsgConstPtr &msg){

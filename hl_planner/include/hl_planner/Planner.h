@@ -12,6 +12,7 @@
 #include <hl_planner/Plan.h>
 #include <hl_planner/State.h>
 #include <hl_planner/HierarchyMap.h>
+#include <fstream>
 
 class Planner{
   public:
@@ -27,6 +28,8 @@ class Planner{
 
     semantic_mapping_v2::HierarchySrvResponse getHierarchy(int max_tries);
 
+    std::ofstream output_file_;
+
   public:
     Planner();
 
@@ -34,10 +37,13 @@ class Planner{
     Plan generateFullPlan(const SearchPlan &search_plan, State state, const HierarchyMap& graph);
     Plan generatePlan(const HierarchyMap& graph, const State& state);
 
+    SearchPlan plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cutoff_time, float cutoff_prob, int level);
+
     //bool exploreRoom(semantic_mapping_v2::HierarchyLinkMsg link);
     void run(int obj, std::string run_name = std::string());
     void justPlan(int obj);
     void exploreAll();
+    void justSearch(int obj);
 
     actionlib::SimpleClientGoalState sendGoal(const Action& action);
 };

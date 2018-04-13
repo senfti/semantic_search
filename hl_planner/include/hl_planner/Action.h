@@ -33,6 +33,20 @@ class Action{
       return type_ == rhs.type_ && target_obj_ == rhs.target_obj_ && target_room_ == rhs.target_room_
              && pose_.position.x == rhs.pose_.position.x && pose_.position.y == rhs.pose_.position.y && pose_.orientation.w == pose_.orientation.w;
     }
+
+    std::string getActionString() const {
+      std::string s;
+      switch(type_){
+        case MOVE_TO:           s = "MOVE_TO ";
+        case EXPLORE:           s = "EXPLORE ";
+        case SEARCH:            s = "SEARCH ";
+        case QUICK_SEARCH:      s = "QUICK_SEARCH ";
+        case ROTATE:            s = "ROTATE ";
+        case START_ROTATE:      s = "START_ROTATE ";
+      }
+      s += "OBJ " + std::to_string(target_obj_) + " ROOM " + std::to_string(target_room_);
+      return s;
+    }
 };
 
 #endif //HL_PLANNER_ACTION_H

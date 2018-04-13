@@ -172,6 +172,7 @@ class HierarchyMapper{
                       OctoMapper& octomaps, std::vector<cv::Point>& only_laser_points, int i, bool minimal);
 
     void insertUnknowRoom(semantic_mapping_v2::RoomMsg& msg, const std::vector<std::vector<Door>>& doors);
+    void estimateUndiscoveredRoom(std::vector<float>& probs, const std::vector<float>& room_type_probs, int num_doors);
 };
 
 #endif //SEMANTIC_MAPPING_V2_HIERARCHYMAPPER_H
