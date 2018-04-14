@@ -85,18 +85,45 @@ The doorway mapping is responsible for adding doorway locations and orientations
 
 \subsection{Object Probability Map Estimation}
 
-This subsection describes how the information in the different types of maps of a room are put together to obtain a estimation of the object probability at all locations in the room. This includes the estimation of the object probabilities based on the room type map, the estimation of the object probability in location only seen by the LIDAR and the combination of those estimates with the object maps. 
+This subsection describes how the information in the different types of maps of a room are put together to obtain a estimation of the object probability at all locations in the room. This includes the estimation of the object probabilities based on the room type map, the combination of those estimates with the object maps and the estimation of the object probability in location only seen by the LIDAR.
 
-\subsubsection{Object Probabilities based on the Room Type Map}
+\subsubsection{Object probabilities based on the room type map}
 
-As already described there exists a correlation between the room type of an area and the objects located in this area. This correlation is captured in the matrix M, which contains the probability of an object $o$ being in an image of an area of a room type $r$. In a first step this probability has to be adapted to be the probability of an object of type $o$ in a grid cell of room type of type $r$. 
+As already described there exists a correlation between the room type of an area and the objects located in this area. This correlation is captured in the matrix M, which contains the probability of an object $o$ being in an image of an area of a room type $r$. In a first step this probability has to be adapted to be the probability of an object of type $o$ being in a grid cell of room type of type $r$. To do this correctly information about the number of cells usually seen in an image and the number of cells being occupied by an object would be needed. As these are difficult to estimate the probabilities are simply multiplied by a parameter $V_corr$ empirically found, resulting in the per cell correlation matrix being:
+\begin{equation}
+ C_{r,o}=V_{corr} M_{r,o}
+\end{equation}
+
+The probability of an object being in a cell based on the probability distribution of the room type of the cell $P(O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})$ can be calculated with: 
+\begin{equation}
+ P(O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})= \sum_{R_{c}}P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})P(O_{R,c}^{o}|R_c)=\sum_{R_{c}}P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})C_{R_{c},o}
+\end{equation}
+
+\subsubsection{Object probabilities based on all information}
+
+The information in the object map has to be combined with the information from the room type map. This is done with the following formula:
+\begin{equation}
+ P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})=\frac{1}{Z}P(O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})
+\end{equation}
+
+$Z$ is a normalization term, as the $P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}) + P(\neg Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}) = 1$ and can be calculated with:
+\begin{equation}
+ Z=P(O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})+P(\neg O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(\neg O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})
+\end{equation}
+
+\subsubsection{Object probabilities in locations only seen by the LIDAR}
+
+The LIDAR has a field of view of 120°, while the RGBD-camera has only a horizontal field of view of 58°. This can lead to areas, which were only seen by the LIDAR. Only the occupied ones of these cells are of interest, as free cells are assumed to contain no objects. The estimation is done in two steps. In a first step the room type of these cells is estimated. Therefore the probability distribution over the room type of cells never seen with the RGBD-camera are set to the average probability distribution in the room. To also consider the neighborhood of the cell a Gaussian filter with the kernel $G(\Delta x, \Delta y)$ is applied:
+\begin{equation}
+ P(R_{c,filtered}|I_{1:t}, \mathbf{x}_{1:t})= \sum_{c_2 \in Cells}G(\Delta x, \Delta y)P(R_{c_2}|I_{1:t}, \mathbf{x}_{1:t})
+\end{equation}
+Using the correlation between room type of an area and objects in the area the object probability can be estimated.
 
 \subsection{Topological mapping and map switching}
 
-The topological map represents the room structure of the environment. Further it holds 
+The topological mapping has to create a graph representing the room structure and is also responsible for controlling a map switch. Everytime a new doorway is detected a 
 
-\input{Concept/DoorwayMapping.tex}
-\input{Concept/ObjectProbDistr.tex}
+\input{Concept
 
 % The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
 % 

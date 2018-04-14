@@ -463,7 +463,7 @@ cv::Mat_<float> ObjectMap::get2D(ObjectMap occ_map, ObjectMap prior_map, int cou
       for(int y=0; y<getHeight(); y++){
         int count = occ_map.getCount(x,y,z);
         if(count < count_thresh){
-          float s = float(count)/count_thresh;
+          float s = 1.f;//float(count)/count_thresh;
           float val = prior_map.getProb(x,y,z)*(1.f-s) + getProb(x,y,z)*occ_map.getProb(x,y,z)*s;
           map2D(y,x) = map2D(y,x) * (1.f-val);
         }

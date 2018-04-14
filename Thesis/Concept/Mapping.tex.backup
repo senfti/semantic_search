@@ -81,7 +81,7 @@ $P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the
 
 \subsection{Doorway Mapping}
 
-The doorway mapping is responsible for adding doorway locations and orientations into the map. Therefore the doorways found by the doorway detection are transformed into the map frames of the particles. For every detected doorway has to be decided, if it is a new doorway or another detection of a already found doorway. If the distance between a detection and an already found doorway is greater than a threshold distance, as new doorway is inserted into the map. Otherwise the doorway fitting best to the detection, based on distance and orientation, is updated. A running average filter is used to estimate the true doorway pose.
+The doorway mapping is responsible for adding doorway locations and orientations into the map. Therefore the doorways found by the doorway detection are transformed into the map frames of the particles. For every detected doorway has to be decided, if it is a new doorway or another detection of a already found doorway. If the distance between a detection and an already found doorway is greater than a threshold distance, as new doorway is inserted into the map. Otherwise the doorway fitting best to the detection, based on distance and orientation, is updated. A running average filter is used to estimate the true doorway pose. 
 
 \subsection{Object Probability Map Estimation}
 
@@ -89,7 +89,7 @@ This subsection describes how the information in the different types of maps of 
 
 \subsubsection{Object Probabilities based on the Room Type Map}
 
-As already describe there exists a correlation between the room type of an  and objects located in
+As already described there exists a correlation between the room type of an area and the objects located in this area. This correlation is captured in the matrix M, which contains the probability of an object $o$ being in an image of an area of a room type $r$. In a first step this probability has to be adapted to be the probability of an object of type $o$ being in a grid cell of room type of type $r$. To do this correctly information about the number of cells usually seen in an image and the number of cells being occupied by an object would be needed. As these are difficult to estimate the probabilities are simply multiplied by a parameter em
 
 \subsection{Topological mapping and map switching}
 
