@@ -267,7 +267,7 @@ highlight=LaTeX
 line=4
 mode=LaTeX
 open=true
-order=1
+order=18
 
 [item:Concept/2DHybridMapping.tex]
 archive=true
@@ -277,17 +277,17 @@ highlight=LaTeX
 line=2
 mode=LaTeX
 open=true
-order=25
+order=16
 
 [item:Concept/DoorwayMapping.tex]
 archive=true
-column=778
+column=791
 encoding=UTF-8
 highlight=LaTeX
 line=3
 mode=LaTeX
 open=true
-order=15
+order=6
 
 [item:Concept/GeneralDesignDecisions.tex]
 archive=true
@@ -296,7 +296,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=0
 mode=LaTeX
-open=true
+open=false
 order=2
 
 [item:Concept/GeneralMapping.tex]
@@ -307,7 +307,7 @@ highlight=LaTeX
 line=6
 mode=LaTeX
 open=true
-order=16
+order=7
 
 [item:Concept/HLPlanner.tex]
 archive=true
@@ -317,7 +317,7 @@ highlight=LaTeX
 line=98
 mode=LaTeX
 open=true
-order=14
+order=5
 
 [item:Concept/Hardware.tex]
 archive=true
@@ -326,7 +326,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=15
 mode=LaTeX
-open=true
+open=false
 order=3
 
 [item:Concept/Knowledge.tex]
@@ -336,7 +336,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=14
 mode=LaTeX
-open=true
+open=false
 order=0
 
 [item:Concept/LLPlanner.tex]
@@ -347,17 +347,17 @@ highlight=LaTeX
 line=6
 mode=LaTeX
 open=true
-order=22
+order=13
 
 [item:Concept/Mapping.tex]
 archive=true
-column=115
+column=140
 encoding=UTF-8
 highlight=LaTeX
-line=72
+line=36
 mode=LaTeX
 open=true
-order=9
+order=1
 
 [item:Concept/ObjectMapping.tex]
 archive=true
@@ -367,7 +367,7 @@ highlight=LaTeX
 line=49
 mode=LaTeX
 open=true
-order=18
+order=9
 
 [item:Concept/ObjectProbDistr.tex]
 archive=true
@@ -377,17 +377,17 @@ highlight=LaTeX
 line=44
 mode=LaTeX
 open=true
-order=19
+order=10
 
 [item:Concept/Overview.tex]
 archive=true
-column=15
+column=12
 encoding=UTF-8
 highlight=LaTeX
-line=9
+line=18
 mode=LaTeX
 open=true
-order=21
+order=12
 
 [item:Concept/RoomTypeMapping.tex]
 archive=true
@@ -397,17 +397,17 @@ highlight=LaTeX
 line=35
 mode=LaTeX
 open=true
-order=17
+order=8
 
 [item:Concept/Sensing.tex]
 archive=true
-column=308
+column=20
 encoding=UTF-8
 highlight=LaTeX
-line=39
+line=86
 mode=LaTeX
 open=true
-order=4
+order=17
 
 [item:Conclusion.tex]
 archive=true
@@ -447,7 +447,7 @@ highlight=LaTeX
 line=6
 mode=LaTeX
 open=true
-order=20
+order=11
 
 [item:Prerequisites.tex]
 archive=true
@@ -456,7 +456,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=9
 mode=LaTeX
-open=true
+open=false
 order=5
 
 [item:Prerequisites/CNN.tex]
@@ -466,7 +466,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=2
 mode=LaTeX
-open=true
+open=false
 order=6
 
 [item:Prerequisites/FrontierExploration.tex]
@@ -477,7 +477,7 @@ highlight=LaTeX
 line=0
 mode=LaTeX
 open=true
-order=24
+order=15
 
 [item:Prerequisites/GMapping.tex]
 archive=true
@@ -486,7 +486,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=2
 mode=LaTeX
-open=true
+open=false
 order=10
 
 [item:Prerequisites/MOVE_BASE.tex]
@@ -507,7 +507,7 @@ highlight=LaTeX
 line=20
 mode=LaTeX
 open=true
-order=11
+order=2
 
 [item:Prerequisites/Octomapping.tex]
 archive=true
@@ -517,7 +517,7 @@ highlight=LaTeX
 line=2
 mode=LaTeX
 open=true
-order=23
+order=14
 
 [item:Prerequisites/ROS.tex]
 archive=true
@@ -536,7 +536,7 @@ encoding=UTF-8
 highlight=LaTeX
 line=10
 mode=LaTeX
-open=true
+open=false
 order=7
 
 [item:ProblemFormulation.tex]
@@ -577,7 +577,7 @@ highlight=LaTeX
 line=0
 mode=LaTeX
 open=true
-order=13
+order=4
 
 [item:main.tex]
 archive=true
@@ -587,7 +587,7 @@ highlight=LaTeX
 line=47
 mode=LaTeX
 open=true
-order=8
+order=0
 
 [item:masterthesis.kilepr]
 archive=true
@@ -607,7 +607,7 @@ highlight=LaTeX
 line=9
 mode=LaTeX
 open=true
-order=12
+order=3
 
 [view-settings,view=0,item:Concept.tex]
 CursorColumn=1
@@ -622,7 +622,7 @@ JumpList=
 ViMarks=.,2,3,[,2,3,],2,3
 
 [view-settings,view=0,item:Concept/DoorwayMapping.tex]
-CursorColumn=778
+CursorColumn=791
 CursorLine=3
 JumpList=
 ViMarks=.,3,0,[,1,0,],3,790
@@ -664,10 +664,10 @@ JumpList=
 ViMarks=.,26,270,[,26,257,],26,270
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=115
-CursorLine=72
+CursorColumn=140
+CursorLine=36
 JumpList=
-ViMarks=.,74,0,[,75,0,],-1,-1
+ViMarks=.,79,608,[,79,608,],79,608
 
 [view-settings,view=0,item:Concept/ObjectMapping.tex]
 CursorColumn=588
@@ -682,8 +682,8 @@ JumpList=
 ViMarks=.,41,59,[,41,59,],41,59
 
 [view-settings,view=0,item:Concept/Overview.tex]
-CursorColumn=15
-CursorLine=9
+CursorColumn=12
+CursorLine=18
 JumpList=
 ViMarks=.,12,539,[,12,535,],12,539
 
@@ -694,8 +694,8 @@ JumpList=
 ViMarks=.,2,686,[,2,686,],2,686
 
 [view-settings,view=0,item:Concept/Sensing.tex]
-CursorColumn=308
-CursorLine=39
+CursorColumn=20
+CursorLine=86
 JumpList=
 ViMarks=.,39,308,[,39,308,],39,308
 

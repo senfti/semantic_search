@@ -182,7 +182,7 @@ bool VisionApp::useImage(const cv::Mat& img, ros::Time stamp){
   if(!point_cloud_){
     std::cout << "No depth image" << std::endl;
     return false;
-  }return true;
+  }
 
   tf::StampedTransform transform;
   try{

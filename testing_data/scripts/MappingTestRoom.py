@@ -6,8 +6,6 @@ import os
 from rosgraph_msgs.msg import Clock
 from subprocess import check_output
 
-import divisi2
-
 def createDat(param):
     assoc = divisi2.network.conceptnet_assoc('en')
     U, S, _ = assoc.svd(k=100)

@@ -232,6 +232,10 @@ void Planner::run(int obj, std::string run_name){
       output_file_ << "GOAL " << (state_.num_rooms_ < 2 ? "START_ROTATE" : "ROTATE") << std::endl;
       continue;
     }
+    else if(state_.num_rooms_<2 && !state_.not_explored_.empty()){
+      sendGoal(Action(Action::START_ROTATE, obj, hierarchy.curr_room));
+      output_file_ << "GOAL " << "ROTATE" << std::endl;
+    }
 
     HierarchyMap graph_map(hierarchy, obj);
     std::cout << graph_map;

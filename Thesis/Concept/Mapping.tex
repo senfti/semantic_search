@@ -57,30 +57,27 @@ The mapping procedure is similar to the object mapping and also assumes independ
  P(R_{c}|I_{1:t}, \mathbf{x}_{1:t}) = \\ \frac{P(R_{c}|I_{t}, \mathbf{x}_{t})P(I_{t}, \mathbf{x}_{t})P(R_{c}|I_{1:t-1}, \mathbf{x}_{1:t-1})}{P(R_{c})P(I_{t}, \mathbf{x}_{t}|I_{1:t-1}, \mathbf{x}_{1:t-1})} = \\ \frac{1}{Z} \frac{P(R_{c}|I_{t}, \mathbf{x}_{t})P(R_{c}|I_{1:t-1}, \mathbf{x}_{1:t-1})}{P(R_{c})}
 \end{multline}
 
-$P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})$ is the probability distribution over the detectable room types of cell $c$ given the RGBD-images $I_{1:t}$ and the poses these images were taken at $\mathbf{x}_{1:t}$. $P(R_{c}|I_{t}, \mathbf{x}_{t})$ is the inverse sensor model, $P(R_{c}|I_{1:t-1}, \mathbf{x}_{1:t-1})$ is the recursive term and $P(R_{c})$ is the prior. Presuming no prior knowledge the prior $P(R_{c})$ is set to $\frac{1}{|R_c|}$, with $|R_c|$ being the number of detectable room types. $Z$ is a normalization term, which can also be calculated by: 
+$P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})$ is the probability distribution over the detectable room types of cell $c$ given the RGBD-images $I_{1:t}$ and the poses these images were taken at $\mathbf{x}_{1:t}$. $P(R_{c}|I_{t}, \mathbf{x}_{t})$ is the inverse sensor model, $P(R_{c}|I_{1:t-1}, \mathbf{x}_{1:t-1})$ is the recursive term and $P(R_{c})$ is the prior. Presuming no prior knowledge the prior $P(R_{c})$ is set to $\frac{1}{|\mathbf{R}|}$, with $|\mathbf{R}|$ being the number of detectable room types. $Z$ is a normalization term, which can also be calculated by: 
 \begin{equation}
  Z=\sum_{R_c} \frac{P(R_{c}|I_{t}, \mathbf{x}_{t})P(R_{c}|I_{1:t-1}, \mathbf{x}_{1:t-1})}{P(R_{c})}
 \end{equation}
 as the probabilities have to sum to $1$. 
 
-The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }|I_t)$. It has also to take into account which cells are visible. A simple approach is used, assuming all cells with a cell center within the view cone of the camera, which are also within a certain range, are visible. This is illustrated in Figure (TODO FIGURE). A more complex estimation of the seen area is not used as it is difficult to estimate which cells are visible enough to contribute to the room type classification and how much each visible cell contributes to the classification. However the used simplistic estimation of the visible cells leads to invisible cells being updated. As these wrongly updated invisible cells are most of the time behind a wall and space outside the room is ignored in later stages of the system, the impact of wrongly updated cells should be small. 
+The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }|I_t)$. It has also to take into account which cells are visible. A simple approach is used, assuming all cells with a cell center within the view cone of the camera, which are also within a certain range, are visible. This is illustrated in Figure \ref{fig:room_type_update}. A more complex estimation of the seen area is not used as it is difficult to estimate which cells are visible enough to contribute to the room type classification and how much each visible cell contributes to the classification. However the used simplistic estimation of the visible cells leads to invisible cells being updated. As these wrongly updated invisible cells are most of the time behind a wall and space outside the room is ignored in later stages of the system, the impact of wrongly updated cells should be small. 
+
+\begin{figure}[h]
+\centering
+  \includegraphics[width=0.5\textwidth, trim = 100 100 70 80, clip]{figures/room_type_update.pdf}
+  \caption{The cells updated in the room type map using the image taken at the robot position marked with the arrow}
+  \label{fig:room_type_update}
+\end{figure}
 
 Also to be considered is that not all cells visible in an image have to be of the same room type. The connection between classification result and room type probability of the cell base on the classified image is given by the following formula: 
 \begin{equation}
 P(R_{c}|I_{t},\mathbf{x}_{t}) = \begin{cases}\sum_{R_{I_{t} }} P(R_{I_{t} }|I_t) \; P(R_{c}|R_{I_{t}})  & if \;cell \; c \; visible\\P(R_{c}) & else\end{cases}
 \end{equation}
 
-$P(R_{c}|R_{I_{t}})$ is the probability of a room type of a cell $c$ given the room type show mostly in the image. 
-
-
-and can be represented by a $|\mathbf{RT}|$x$|\mathbf{RT}|$ matrix. Two factors are considered in the creation process of this matrix. The diagonal elements, where $R_{Cj}=R_{I_{t}}$, have to have a relatively high probability. Further the other matrix elements have to depend on the likelihood of an area of type $R_{Cj}$ being near an area of type $R_{I_{t}}$ (e.g. being high for kitchen and dine room) and how similar two room types are (e.g. kitchen and kitchenette). The probability matrix is therefore calculated by
-\begin{equation}
- P(R_{Cj}=RT|R_{I_{t} }) = \begin{cases} V_{equal} & if \; R_{Cj}=R_{I_{t}}=RT \\ k\cdot M_{R_{Cj},RT|R_{I_{t}}} & else \end{cases}
-\end{equation}
-$V_{equal}$ is a parameter, which has to be estimated empirically, $M_{R_{Cj},RT|R_{I_{t}}}$ is from the room type co-occurrence matrix described in section \ref{ssec:num1} and $k$ is a factor, which is calculated based on the constraint
-\begin{equation}
- \sum_{RT \in \mathbf{RT}} P(R_{Cj}=RT|R_{I_{t}})=1 
-\end{equation}
+$P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2, a library for extraction of information from commonsense databases.
 
 \input{Concept/DoorwayMapping.tex}
 \input{Concept/ObjectProbDistr.tex}

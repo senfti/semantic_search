@@ -80,18 +80,30 @@ void ExecuteActionServer::preemptCb(){
 }
 
 
-tf::Transform offsetPose(tf::Transform pose, double dist){
-  pose.setOrigin(pose.getOrigin()+dist*tf::Vector3(pose.getBasis().getColumn(0).x(), pose.getBasis().getColumn(0).y(),0.0));
+tf::Transform offsetPose(tf::Transform pose, double dist, bool forward = true){
+  if(forward)
+    pose.setOrigin(pose.getOrigin()+dist*tf::Vector3(pose.getBasis().getColumn(0).x(), pose.getBasis().getColumn(0).y(),0.0));
+  else
+    pose.setOrigin(pose.getOrigin()+dist*tf::Vector3(pose.getBasis().getColumn(1).x(), pose.getBasis().getColumn(1).y(),0.0));
   return pose;
 }
 
 
-geometry_msgs::Pose offsetPose(const geometry_msgs::Pose& pose, double dist){
-  tf::Transform tf_pose;
-  tf::poseMsgToTF(pose, tf_pose);
-  geometry_msgs::Pose result;
-  tf::poseTFToMsg(offsetPose(tf_pose, dist), result);
-  return result;
+geometry_msgs::Pose offsetPose(const geometry_msgs::Pose& pose, double dist, bool forward = true){
+  if(forward){
+    tf::Transform tf_pose;
+    tf::poseMsgToTF(pose, tf_pose);
+    geometry_msgs::Pose result;
+    tf::poseTFToMsg(offsetPose(tf_pose, dist), result);
+    return result;
+  }
+  else{
+    tf::Transform tf_pose;
+    tf::poseMsgToTF(pose, tf_pose);
+    geometry_msgs::Pose result;
+    tf::poseTFToMsg(offsetPose(tf_pose, dist, false), result);
+    return result;
+  }
 }
 
 
@@ -197,6 +209,8 @@ void ExecuteActionServer::doMoveTo(){
       move_base_state_ = MoveBaseState::WAITING;
     }
     else{
+      static int fail_cound = 0;
+      fail_cound++;
       execution::ExecuteResult result;
       geometry_msgs::Twist cmd_vel;
       cmd_vel.linear.x = -0.1;
@@ -205,10 +219,7 @@ void ExecuteActionServer::doMoveTo(){
       vel_pub_.publish(cmd_vel);
       ros::Rate r(1.0);
       r.sleep();
-      result.result_number = -2;
-      action_server_.setAborted(result, "ABORTED");
-      goal_.action = -1;
-      move_base_state_ = MoveBaseState::WAITING;
+      sendMoveBaseGoal(offsetPose(offsetPose(goal_.pose, move_offset_dist_), ((fail_cound%2) ? 0.3: -0.3),false));
     }
   }
 }

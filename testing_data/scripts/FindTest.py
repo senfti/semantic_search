@@ -40,7 +40,7 @@ param = [
        #    ["object_prior:=0.004", "object_hit:=0.04", "object_miss:=0.0005"],
        #    ["object_prior:=0.004", "object_hit:=0.04", "object_miss:=0.002"],
        #   ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.0001"],
-          ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.0005"]
+          ["object_prior:=0.05", "object_hit:=0.9", "object_miss:=0.005"]
           # ["object_prior:=0.004", "object_hit:=0.1", "object_miss:=0.002"],
           # ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.0001"],
           # ["object_prior:=0.004", "object_hit:=0.2", "object_miss:=0.0005"],

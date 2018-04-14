@@ -37,12 +37,12 @@ class Action{
     std::string getActionString() const {
       std::string s;
       switch(type_){
-        case MOVE_TO:           s = "MOVE_TO ";
-        case EXPLORE:           s = "EXPLORE ";
-        case SEARCH:            s = "SEARCH ";
-        case QUICK_SEARCH:      s = "QUICK_SEARCH ";
-        case ROTATE:            s = "ROTATE ";
-        case START_ROTATE:      s = "START_ROTATE ";
+        case MOVE_TO:           s = "MOVE_TO ";       break;
+        case EXPLORE:           s = "EXPLORE ";       break;
+        case SEARCH:            s = "SEARCH ";        break;
+        case QUICK_SEARCH:      s = "QUICK_SEARCH ";  break;
+        case ROTATE:            s = "ROTATE ";        break;
+        case START_ROTATE:      s = "START_ROTATE ";  break;
       }
       s += "OBJ " + std::to_string(target_obj_) + " ROOM " + std::to_string(target_room_);
       return s;
