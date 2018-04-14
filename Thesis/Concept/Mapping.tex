@@ -6,7 +6,7 @@ One major design decision for the mapping was the use of a hybrid mapping approa
 
 The second major design decision is to use a $2$D SLAM system based on a Rao-Blackwellized particle filter. One major difficulty is to keep the maps for occupancy, object probabilities and room types and the locations of doorways consistent. The development of a completely new mapping system was out of the scope of this work. Therefore the uncertainty of the SLAM had to be taken into consideration in the mapping of the other information. This is most easily done with SLAM systems using Rao-Blackwellized particle filters, as the uncertainty is represented by particles and their weights and every particle itself has no uncertainty. Therefore all other maps can be created with known pose. The drawback of this approach is that every particle needs its own set of maps, making it only feasible for low particle numbers. However the use of sophisticated sampling techniques in SLAM systems like Gmapping allow for high-quality maps even with low particle numbers. $2D$ SLAM is used as tests with $3D$ SLAM systems showed mediocre results, probably because of the inaccuracy of the RGBD-camera compared to the LIDAR. 
 
-Ultimately the mapping structure is a 2D SLAM system using a Rao-Blackwellized particle filter creating 2D maps using the range measurements of the LIDAR. For every particle a 3D occupancy map (using the depth measurements of the RGBD-camera), a map of object probabilities (using the result of the object detection), a map of room types (using the result of the room type classifier) and a map of doorways (using the result of the door detection) is created. On top is a topological mapper keeping track of the discovered rooms, their connections and the current room of the robot. In the following the individual parts of the mapping system are described in more detail. Furthermore the estimation of the object probabilities in the room based on all available information is described at the end of this section.
+Ultimately the mapping structure is a 2D SLAM system using a Rao-Blackwellized particle filter creating 2D maps using the range measurements of the LIDAR. For every particle a 3D occupancy map (using the depth measurements of the RGBD-camera), a map of object probabilities (using the result of the object detection), a map of room types (using the result of the room type classifier) and a map of doorways (using the result of the door detection) is created. The set of maps of the most probably particle is then used further. On top is a topological mapper keeping track of the discovered rooms, their connections and the current room of the robot. In the following the individual parts of the mapping system are described in more detail. Furthermore the estimation of the object probabilities in the room based on all available information is described at the end of this section.
 
 \subsection{3D mapping and addition of 3D obstacles to the 2D occupancy map}
 
@@ -78,6 +78,22 @@ P(R_{c}|I_{t},\mathbf{x}_{t}) = \begin{cases}\sum_{R_{I_{t} }} P(R_{I_{t} }|I_t)
 \end{equation}
 
 $P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2, a library for extraction of information from commonsense databases.
+
+\subsection{Doorway Mapping}
+
+The doorway mapping is responsible for adding doorway locations and orientations into the map. Therefore the doorways found by the doorway detection are transformed into the map frames of the particles. For every detected doorway has to be decided, if it is a new doorway or another detection of a already found doorway. If the distance between a detection and an already found doorway is greater than a threshold distance, as new doorway is inserted into the map. Otherwise the doorway fitting best to the detection, based on distance and orientation, is updated. A running average filter is used to estimate the true doorway pose. 
+
+\subsection{Object Probability Map Estimation}
+
+This subsection describes how the information in the different types of maps of a room are put together to obtain a estimation of the object probability at all locations in the room. This includes the estimation of the object probabilities based on the room type map, the estimation of the object probability in location only seen by the LIDAR and the combination of those estimates with the object maps. 
+
+\subsubsection{Object Probabilities based on the Room Type Map}
+
+As already described there exists a correlation between the room type of an area and the objects located in this area. This correlation is captured in the matrix M, which contains the probability of an object $o$ being in an image of an area of a room type $r$. In a first step this probability has to be adapted to be the probability of an object of type $o$ in a grid cell of room type of type $r$. 
+
+\subsection{Topological mapping and map switching}
+
+The topological map represents the room structure of the environment. Further it holds 
 
 \input{Concept/DoorwayMapping.tex}
 \input{Concept/ObjectProbDistr.tex}
