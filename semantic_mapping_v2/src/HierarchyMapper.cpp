@@ -23,6 +23,7 @@ HierarchyMapper::HierarchyMapper()
 
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   gmap_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("gmap", 1, true);
+  seen_map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("seen_map", 1, true);
   map_switch_pub_ = nh_.advertise<semantic_mapping_v2::RoomSwitchMsg>("map_switch", 1);
   map_door_blocked_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map_door_blocked", 1, true);
   map_info_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
@@ -268,8 +269,11 @@ void HierarchyMapper::downprojecAndPublish(){
       map_door_blocked_pub_.publish(map_blocked);
     }
   }
-  if(DEBUG_OUTPUT)
+  if(DEBUG_OUTPUT){
     marker_pub_.publish(room_mapper_[current_mapper_]->getOccupiedCellMsg());
+    if(!room_mapper_[current_mapper_]->getRoomTypeMaps().empty())
+      seen_map_pub_.publish(room_mapper_[current_mapper_]->getRoomTypeMaps()[0].getSeenMapMsg());
+  }
   particle_pose_pub_.publish(room_mapper_[current_mapper_]->getParticlePoseMsg());
   door_pose_pub_.publish(room_mapper_[current_mapper_]->getDoorPoseMsg());
   path_.header.seq++;

@@ -63,6 +63,7 @@ class RoomTypeMap{
 
     cv::Mat_<float> getMap() const { return prob_map_; }
     cv::Mat_<uchar> getSeenMap() const { return seen_map_; }
+    nav_msgs::OccupancyGrid getSeenMapMsg() const;
 };
 
 class RoomTypeMapper{

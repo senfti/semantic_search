@@ -42,6 +42,7 @@ class HierarchyMapper{
     ros::Publisher map_pub_;
     ros::Publisher gmap_pub_;
     ros::Publisher map_door_blocked_pub_;
+    ros::Publisher seen_map_pub_;
     ros::Publisher map_switch_pub_;
     ros::Publisher map_info_pub_;
     ros::Publisher marker_pub_;

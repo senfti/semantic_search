@@ -120,6 +120,30 @@ semantic_mapping_v2::RoomTypeMapMsg RoomTypeMap::getRoomTypeMapMsg() const{
 }
 
 
+nav_msgs::OccupancyGrid RoomTypeMap::getSeenMapMsg() const{
+  nav_msgs::OccupancyGrid grid;
+  grid.header.stamp = ros::Time::now();
+  grid.header.frame_id = "/map";
+  grid.info.width = seen_map_.cols;
+  grid.info.height = seen_map_.rows;
+  grid.info.resolution = 1.f/resolution_;
+  grid.info.origin.orientation.x = 0.0;
+  grid.info.origin.orientation.y = 0.0;
+  grid.info.origin.orientation.z = 0.0;
+  grid.info.origin.orientation.w = 1.0;
+  grid.info.origin.position.x = -origin_.x*grid.info.resolution;
+  grid.info.origin.position.y = -origin_.y*grid.info.resolution;
+  grid.info.origin.position.z = -0.0;
+  int idx=0;
+  grid.data.resize(seen_map_.cols*seen_map_.rows);
+  for(int y=0; y<seen_map_.rows; y++){
+    for(int x=0; x<seen_map_.cols; x++){
+      grid.data[idx++] = (seen_map_(y,x) ? 100 : 0);
+    }
+  }
+  return grid;
+}
+
 
 float RoomTypeMapper::getRoomSimilarity(int i, int j){
   static std::vector<std::vector<float>> similarity;
