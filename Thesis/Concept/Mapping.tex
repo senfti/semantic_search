@@ -63,12 +63,12 @@ $P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})$ is the probability distribution over the de
 \end{equation}
 as the probabilities have to sum to $1$. 
 
-The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }|I_t)$. It has also to take into account which cells are visible. A simple approach is used, assuming all cells with a cell center within the view cone of the camera, which are also within a certain range, are visible. This is illustrated in Figure \ref{fig:room_type_update}. A more complex estimation of the seen area is not used as it is difficult to estimate which cells are visible enough to contribute to the room type classification and how much each visible cell contributes to the classification. However the used simplistic estimation of the visible cells leads to invisible cells being updated. As these wrongly updated invisible cells are most of the time behind a wall and space outside the room is ignored in later stages of the system, the impact of wrongly updated cells should be small. 
+The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }|I_t)$. It has also to take into account which cells are visible. A simple approach is used, assuming all cells with a cell center within the view cone of the camera, which are also within a certain range, are visible. This is illustrated in Figure \ref{fig:room_type_update}. A more complex estimation of the seen area is not used as it is difficult to estimate which cells are visible enough to contribute to the room type classification and how much each visible cell contributes to the classification. However the used simplistic estimation of the visible cells leads to invisible cells being updated. As these wrongly updated invisible cells are most of the time behind a wall and space outside the room is ignored in later stages of the system, the impact of wrongly updated cells should be small.
 
 \begin{figure}[h]
 \centering
   \includegraphics[width=0.5\textwidth, trim = 100 100 70 80, clip]{figures/room_type_update.pdf}
-  \caption{The cells updated in the room type map using the image taken at the robot position marked with the arrow}
+  \caption{The cells updated in the room type map using the image taken at the robot position marked with the arrow, light gray cells are later ignored for being behind a wall and outside the room}
   \label{fig:room_type_update}
 \end{figure}
 
@@ -122,8 +122,6 @@ Using the correlation between room type of an area and objects in the area the o
 \subsection{Topological mapping and map switching}
 
 The topological mapping has to create a graph representing the room structure and is also responsible for controlling a map switch. Everytime a new doorway is detected a 
-
-\input{Concept
 
 % The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
 % 
