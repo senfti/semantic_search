@@ -81,11 +81,33 @@ $P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the
 
 \subsection{Doorway Mapping}
 
-The doorway mapping is responsible for adding doorway locations and orientations into the map. Therefore the doorways found by the doorway detection are transformed into the map frames of the particles. For every detected doorway has to be decided, if it is a new doorway or another detection of a already found doorway. If the distance between a detection and an already found doorway is greater than a threshold distance, as new doorway is inserted into the map. Otherwise the doorway fitting best to the detection, based on distance and orientation, is updated. A running average filter is used to estimate the true doorway pose. 
+The doorway mapping is responsible for adding doorway locations and orientations into the map. Therefore the doorways found by the doorway detection are transformed into the map frames of the particles. For every detected doorway has to be decided, if it is a new doorway or another detection of a already found doorway. If the distance between a detection and an already found doorway is greater than a threshold distance, as new doorway is inserted into the map. Otherwise the doorway fitting best to the detection, based on distance and orientation, is updated. This is show in figure \ref{fig:door_mapping}. A running average filter is used to estimate the true doorway pose. 
+
+\begin{figure}[h]
+\centering
+  \includegraphics[width=0.5\textwidth, clip]{figures/door_mapping.png}
+  \caption{Door mapping example: The red arrow is the current robot pose, the green arrows are already found doorways and the yellow arrow is the result of the door detection, which is used to update the pose of the nearby doorway}
+  \label{fig:door_mapping}
+\end{figure}
 
 \subsection{Object Probability Map Estimation}
 
-This subsection describes how the information in the different types of maps of a room are put together to obtain a estimation of the object probability at all locations in the room. This includes the estimation of the object probabilities based on the room type map, the combination of those estimates with the object maps and the estimation of the object probability in location only seen by the LIDAR.
+This subsection describes how the information in the different types of maps of a room are put together to obtain a estimation of the object probability at all locations in the room. This includes the estimation of the room type in location only seen by the LIDAR, the estimation of the object probabilities based on the room type map and the combination of those estimates with the object maps.
+
+\subsubsection{Room types in locations only seen by the LIDAR}
+
+The LIDAR has a field of view of 120°, while the RGBD-camera has only a horizontal field of view of 58°. This can lead to areas, which were only seen by the LIDAR, which can be seen in Figure \ref{fig:seen}. 
+\begin{figure}[h]
+\centering
+  \includegraphics[width=0.8\textwidth, clip]{figures/seen.png}
+  \caption{An explored room, light areas were only seen by the LIDAR}
+  \label{fig:seen}
+\end{figure}
+Only the occupied ones of these cells are of interest, as free cells are assumed to contain no objects. The estimation is done in two steps. In a first step the room type of these cells is estimated. Therefore the probability distribution over the room type of cells never seen with the RGBD-camera are set to the average probability distribution in the room. To also consider the neighborhood of the cell a Gaussian filter with the kernel $G(\Delta x, \Delta y)$ is applied:
+\begin{equation}
+ P(R_{c,filtered}|I_{1:t}, \mathbf{x}_{1:t})= \sum_{c_2 \in Cells}G(\Delta x, \Delta y)P(R_{c_2}|I_{1:t}, \mathbf{x}_{1:t})
+\end{equation}
+Using the correlation between room type of an area and objects in the area the object probability can be estimated.
 
 \subsubsection{Object probabilities based on the room type map}
 
@@ -111,13 +133,6 @@ $Z$ is a normalization term, as the $P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}) + 
  Z=P(O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})+P(\neg O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(\neg O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})
 \end{equation}
 
-\subsubsection{Object probabilities in locations only seen by the LIDAR}
-
-The LIDAR has a field of view of 120°, while the RGBD-camera has only a horizontal field of view of 58°. This can lead to areas, which were only seen by the LIDAR. Only the occupied ones of these cells are of interest, as free cells are assumed to contain no objects. The estimation is done in two steps. In a first step the room type of these cells is estimated. Therefore the probability distribution over the room type of cells never seen with the RGBD-camera are set to the average probability distribution in the room. To also consider the neighborhood of the cell a Gaussian filter with the kernel $G(\Delta x, \Delta y)$ is applied:
-\begin{equation}
- P(R_{c,filtered}|I_{1:t}, \mathbf{x}_{1:t})= \sum_{c_2 \in Cells}G(\Delta x, \Delta y)P(R_{c_2}|I_{1:t}, \mathbf{x}_{1:t})
-\end{equation}
-Using the correlation between room type of an area and objects in the area the object probability can be estimated.
 
 \subsection{Topological mapping and map switching}
 
