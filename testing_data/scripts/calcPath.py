@@ -5,7 +5,7 @@ from nav_msgs.msg import Path
 import tf
 import math
 
-files = ["wzs35_Remote_Table_stupid_unexplored.bag","wzs37_Remote_Table_full_unexplored.bag","wzs38_Remote_Table_stupid_unexplored.bag","wzs39_Remote_Table_full_unexplored.bag"]
+files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/lab_9_bowl_kitchen_stupid_unexp_unexplored.bag"]
 
 explore_times = []
 search_times = []
@@ -15,7 +15,7 @@ search_ang_dists = []
 explore_ang_dists = []
 
 for filename in files:
-    folder = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
+    folder = ""#/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
     bag = rosbag.Bag(folder+filename)
     print folder+filename
 
@@ -29,7 +29,7 @@ for filename in files:
     explore_end = 0.0
     search_end = 0.0
     for topic, msg, t in action_msgs:
-        if start==0 and (msg.data==5 or msg.data==1):
+        if start==0 and (msg.data!=-1):
             start = t
         if explore_end==0 and old_data==1 and msg.data!=1:
             explore_end = t
@@ -38,6 +38,7 @@ for filename in files:
 
         old_data = msg.data
 
+    explore_end = start
     explore_times.append(explore_end.to_sec()-start.to_sec())
     search_times.append(search_end.to_sec()-start.to_sec())
 

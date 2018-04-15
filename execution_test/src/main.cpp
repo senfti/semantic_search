@@ -16,7 +16,7 @@ int main(int argc, char** argv){
   int bla = 1;
   while(ros::ok()){
     ros::spinOnce();
-    s.objFound();
+    //s.objFound();
 //    if(bla%16 == 0)
 //      s.publishMaps();
     //s.doCalculations(true);
