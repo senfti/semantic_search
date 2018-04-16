@@ -1,21 +1,44 @@
 \section{Overview}
 
-The main questions were what commonsense knowledge should be used to execute the object search intelligently, what sensor data is needed, how the knowledge about the environment should be represented and how the search planning should be done. 
+The main questions at the beginning of this thesis were what commonsense knowledge can be used to execute the object search intelligently, what information the robot should gather and what sensors are needed therefore, how the knowledge about the environment should be represented and how the search planning, using this knowledge, should be done. 
 
-Environments can be segmented into rooms and room areas, which serve specific purposes, like a kitchen is used for cooking. Therefore the objects located in an area correlate with the type of the area. This connection is used in this work to make the search intelligent and therefore more efficient. Further, knowledge to recognize objects of the searched type and to classify areas into room types is needed. Therefore neural networks trained on thousands of images are used, which contain this knowledge in the learned weights.
+Indoor environments can be segmented into rooms and room areas, which serve specific purposes, like a kitchen is used for cooking. Therefore the objects located in an area correlate with the type of the area. This connection is used in this work to make the search intelligent and therefore more efficient. Furthermore, knowledge to recognize objects of the searched type and to classify areas into room types is needed. Therefore neural networks trained on thousands of images are used, which contain this knowledge in their learned weights.
 
-To gather the images for the neural networks an RGBD-camera is used. The additional depth information is necessary to estimate the position of the detected objects in space and also for $3$D obstacle detection and mapping. To simplify the problem this camera is mounted fixed on the robot, so the positioning of the camera is only possible by the two dimensional movement of the robot. As the depth data of the RGBD-camera is not very accurate a light detection and ranging sensor (LIDAR) is also mounted on the robot. Together with the odometry data from the robot it is used for accurate $2$D simultaneous localization and mapping (SLAM). The robot is equipped with a second RGBD-camera, which is used for the detection of doorways.
+An RGBD-camera is used to gather the images for the neural networks. The additional depth information is helpful to estimate the positions of the detected objects in space, which would be difficult otherwise, and is also necessary for $3$D obstacle detection and mapping. The camera is mounted fixed on the robot to keep the setup simple, therefore the positioning of the camera is only possible by the two dimensional movement of the robot. As the depth data of the RGBD-camera is not very accurate a light detection and ranging sensor (LIDAR) is also mounted on the robot. Together with the odometry data from the robot it is used for $2$D simultaneous localization and mapping (SLAM). Finally, the robot is equipped with a second RGBD-camera, which is used for the detection of doorways. 
 
-To represent the environment a hybrid map is used. Each room has its own semantic metric map. This room map consists of multiple maps for the same space, each containing different information. 
+To represent the environment a hybrid map is used. In this hybrid map each room has its own semantic metric map. These room maps consists of multiple maps for the same space, each containing different information. These maps are
 \begin{itemize}
- \item A metric $2$D occupancy map for navigation
- \item A $3D$ occupancy map to insert obstacles not visible in the LIDAR scans into the $2D$ map and  for the estimation of the object probability distribution
- \item A $2D$ grid map containing the probability distribution over the detectable room types for every cell
- \item For every detectable object type a $3D$ grid map containing the probability of an object being seen in a grid cell
+ \item a metric $2$D occupancy map for navigation
+ \item a $3D$ occupancy map to insert obstacles not visible in the LIDAR scans into the $2D$ map and  for the estimation of the object probability distribution
+ \item a $2D$ grid map containing the probability distribution over the detectable room types for every grid cell
+ \item a $3D$ grid map for every detectable object type containing the probability that an object of the given type has been seen in a grid cell
 \end{itemize}
-Further locations of detected doorways are mapped. Based on the above mentioned maps a $3D$ grid map is created for every detectable object type containing the probability of an object of the given type being in a grid cell. On the other hand a topological map is created, with a node for every room. These nodes contain references to the corresponding room maps and also additional data
+Further locations of detected doorways are mapped. Based on the above mentioned maps and the commonsense knowledge a $3D$ grid map is created for every detectable object type containing the probability of an object of the given type being in a grid cell. On the other hand a topological map is created, with a node for every discovered room. These nodes contain references to the corresponding room maps and also additional data. This additional data is the estimated time to fully search the room, the probability of an object being in the room and the expected search time in the room for every object type and estimates for the time needed to traverse the room. If two rooms are connected by a doorway an edge exists between the corresponding nodes. The edges also contains information about which doorway mapped in the first room corresponds to which doorway in the second room. Figure \ref{fig:topological map} shows an example of a topological map. 
 
+\begin{figure} 
+  \centering
+    \includegraphics[width=0.8\textwidth]{figures/HybridMap.pdf} 
+  \caption{Example of a topological map with 5 rooms and 4 doorways}
+  \label{fig:topological map}
+\end{figure}
 
+The goal of the planning is to minimize the expected search time. As the generation of the optimal next search pose given the available information is infeasible a heuristic is needed. In this work the planning problem is split into two parts. The high-level planner selects the optimal next room to search. Further it generates high-level tasks, like move through a doorway, explore room or search room. Based on the pending high-level tasks the low level planner generates the best next goal pose for the robot. Figure \ref{fig:planning} shows a flowchart depicting the general planning procedure. This planner design fits perfectly to the hybrid map as the high-level planner does its planning on the topological map, while the low-level planner operates on the room map of the current room. 
+
+\begin{figure}
+  \centering
+    \includegraphics[width=0.4\textwidth]{figures/PlanningFlowChart.pdf} 
+  \caption{Flowchart of the planning procedure}
+  \label{fig:planning}
+\end{figure}
+
+Figure \ref{fig:Overview} gives an overview over the structure of this intelligent active object search system, showing the main components of the system and also the most important data exchanged by the components.
+
+\begin{figure}
+  \centering
+    \includegraphics[width=1.0\textwidth]{figures/Overview.pdf} 
+  \caption{Overview over the full system structure}
+  \label{fig:Overview}
+\end{figure}
 
 % The goal of this thesis is to find an object of a certain object type in an indoor environment. To improve the search strategy commonsense knowledge should be used. The most important thing to know about indoor environments is that they can be segmented into rooms. Rooms are of a certain type, e.g. living room, or an assambly of room types, e.g. a living room with a kitchenette. Rooms are seperated by walls and are usually only connected by narrow doorways. The other major chunk of commonsense knowledge used in this thesis is the information about the correlation between room types and objects located in this room. Therefore the selection of the correct room to search is the most important part of finding a good search path.
 % 

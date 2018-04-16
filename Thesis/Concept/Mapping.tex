@@ -10,7 +10,14 @@ Ultimately the mapping structure is a 2D SLAM system using a Rao-Blackwellized p
 
 \subsection{3D mapping and addition of 3D obstacles to the 2D occupancy map}
 
-3D mapping is done using the OctoMap library, which does 3D mapping with known pose using an octree representation. Each node in the octree represents a cube in space and contains a probability value for being occupied. These probabilities are later used in the creation of the object probability map. As some obstacles, like tables, are not sufficiently detectable by the LIDAR the 3D map is also needed for the navigation. The robot can only execute 2D movements, therefore a 2D map containing all obstacles is sufficient. To add the information about obstacles from the 3D map all voxels with an occupancy probability greater than a threshold value are classified as occupied and their projection onto the ground is set occupied in the 2D map for navigation.
+3D mapping is done using the OctoMap library, which does 3D mapping with known pose using an octree representation. Each node in the octree represents a cube in space and contains a probability value for being occupied. These probabilities are later used in the creation of the object probability map. As some obstacles, like tables, are not sufficiently detectable by the LIDAR the 3D map is also needed for the navigation. The robot can only execute 2D movements, therefore a 2D map containing all obstacles is sufficient. To add the information about obstacles from the 3D map all voxels with an occupancy probability greater than a threshold value are classified as occupied and their projection onto the ground is set occupied in the 2D map for navigation. This is visualized in Figure \ref{fig:downproj}
+
+\begin{figure}[h]
+\centering
+  \includegraphics[width=0.5\textwidth]{figures/downproj.png}
+  \caption{A snippet of a room showing a table and chairs, which are insufficiently detected by the LIDAR: 3D map (teal) and 2D map are shown; the light area is free, the black cells are obstacles in the 2D map and the dark gray cells are marked occupied by the downprojection procedure}
+  \label{fig:downproj}
+\end{figure}
 
 \subsection{Object Mapping}
 
@@ -167,13 +174,13 @@ For the high level planner to work the information in the room maps has to be co
  \item the time to leave the room
 \end{itemize}
 
-The time needed for exploration is ignored, as it is hard to estimate and this way an incentive for exploration over searching in unlikely rooms is added.
+The time needed for exploration is ignored, as it is hard to estimate and this way an incentive for exploration over searching in unlikely rooms is added. Another incentive for exploration is given by setting the object probabilities of unvisited rooms to very high values and the search times to very low values. This is done to encourage the robot to peek into rooms. This is a desirable behavior as peeking into a room takes relatively little time and gives the robot much more information about the environment.
 
-\subsubsection{Object probability in room r $\mathbf{P_r(O)}$}
+\subsubsection{Object probability in room r $\mathbf{P_r(o)}$}
 
 No object of the searched object type is in the room if no cell in the room contains an object of that type. The probability of a searched object being in the room is simply 1 minus this probability. The cells taken into account are all cells, where at least one sample of the object detection was in and are denoted by $\mathbf{C_{exp}}$. For not fully explored rooms also the number of not explored cells possibly containing the object $N_{unexp}$ and their object probability $P(Obj_{unexp}^o)$ have to be estimated. The object probability is therefore calculated with:
 \begin{multline}
- P(Obj^o|I_{1:t}, \mathbf{x}_{1:t})=\\1-\Big(\prod_{c \in \mathbf{C_{exp}}} (1-P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}))\Big) (1-P(Obj_{unexp}^o))^{N_{unexp}} 
+ P_r(o)=P(Obj^o|I_{1:t}, \mathbf{x}_{1:t})=\\1-\Big(\prod_{c \in \mathbf{C_{exp}}} (1-P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}))\Big) (1-P(Obj_{unexp}^o))^{N_{unexp}} 
 \end{multline}
 
 The estimation of the number of unexplored, occupied cells is done in a simplistic way, as meaningful complex models are hard to design with the limited amount of available test data. It is calculated with:
@@ -191,38 +198,38 @@ The time needed to search a room is difficult to estimate, as it depends on what
 
 The number of occupied cells in the 2D map has a high correlation with the search time. A high number means many possible object locations and also many obstacles, which can cause problems for the navigation. Therefore the time needed to completely search a room is the number of occupied cells in the 2D map in a room times a parameter found in test runs.
 
-\subsubsection{Estimated Search Time in room r $\mathbf{E_r}$}
+\subsubsection{Estimated Search Time in room r $\mathbf{E_r(o)}$}
 
 The estimated search time is the expected value for the time the robot is searching in a room calculated with
 \begin{equation}
- E_r(O) = \int_{0}^\infty f_r^O(t)\cdot t\cdot dt
+ E_r(o) = \int_{0}^\infty f_r^o(t)\cdot t\cdot dt
 \end{equation}
 
 The search ends if the object is found or the room is completely searched. Therefore the probability distribution of ending the search over time $f_r(t)$ is
 \begin{equation}
- f_r^O(t)=(1-P_r(O))\delta(T_r)+f_{find,r}^O(t)
+ f_r^o(t)=(1-P_r(o))\delta(T_r)+f_{find,r}^o(t)
 \end{equation}
-with $f_{find,r}^O(t)$ being the probability distribution over time for finding the object, which has to fulfill 
+with $f_{find,r}^o(t)$ being the probability distribution over time for finding the object, which has to fulfill 
 \begin{equation}
- \int_{0}^\infty f_{find,r}^O(t)\cdot dt = P_r(O)
+ \int_{0}^\infty f_{find,r}^o(t)\cdot dt = P_r(o)
 \end{equation}
 and
 \begin{equation}
- f_{find,r}^O(t) = 0 \;\; \forall \; t < 0, t > T_r
+ f_{find,r}^o(t) = 0 \;\; \forall \; t < 0, t > T_r
 \end{equation}
 
-The estimation of $f_{find,r}^O(t)$ is done by discretization of time. To calculate the probability of finding the object in a time step $[T_{i-1},T_i)$ the object probabilities of all cells in the room are sorted and assigned to the time steps in decreasing order. The probability of finding the object in a certain time step $[T_{i-1},T_i)$, $P_i$, is then calculated with
+The estimation of $f_{find,r}^o(t)$ is done by discretization of time. To calculate the probability of finding the object in a time step $[T_{i-1},T_i)$ the object probabilities of all cells in the room are sorted and assigned to the time steps in decreasing order. The probability of finding the object in a certain time step $[T_{i-1},T_i)$, $P_i$, is then calculated with
 \begin{equation}
  P_{i}=\prod_{j=1}^{i-1}(1-P_{j}) \cdot (1-\prod_{c \in \mathbf{C_i}}(1-P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}))
 \end{equation}
-This model was chosen as it takes into account the distribution of object probabilities in the room and the decreasing probability of finding an object due to the objective of the search planner. The estimated search time is then
+This model was chosen as it takes into account the distribution of object probabilities in the room and the decreasing probability of finding an object due to the objective of the search planner. The estimated search time is then 
 \begin{equation}
- E_r(O)=\sum_i P_iT_i+(1-P_r(O))T_r 
+ E_r(o)=\sum_i P_iT_i+(1-P_r(o))T_r 
 \end{equation}
 
 \subsubsection{Movement times}
 
-Tow types of movement can occur except for movements during exploration and search. These are the movements between doorways to traverse a room and the movement through a doorway when leaving a room. For the first case, traversing the room, the distance between the doorway the room is entered to the doorway the room is left is divided by an estimated average move speed. Obstacles are ignored to keep things simple. The time to leave a room depends on the location of the robot, which is not known when planning in the future. Therefore the assumption is that the robot is in the middle of the room, which is the center of mass of all free cells. The time needed to leave is then estimated by dividing the distance from this room center to the doorway.
+Tow types of movement can occur except for movements during exploration and search. These are the movements between doorways to traverse a room and the movement through a doorway when leaving a room. For the first case, traversing the room, the distance between the doorway the room is entered to the doorway the room is left is divided by an estimated average move speed. Obstacles are ignored to keep things simple. The time to leave a room depends on the location of the robot, which is not known when planning in the future. Therefore the assumption is that the robot is in the middle of the room, which is the center of mass of all free cells. The time needed to leave is then estimated by dividing the distance from this room center to the doorway. 
 
 % The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
 % 
