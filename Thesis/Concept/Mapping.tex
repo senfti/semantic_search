@@ -164,6 +164,7 @@ For the high level planner to work the information in the room maps has to be co
  \item the time needed to completely search the room
  \item the expected time the robot searches in the room until an object of searched type is found or the room is completely searched 
  \item the time to traverse the room for all doorway pairs
+ \item the time to leave the room
 \end{itemize}
 
 The time needed for exploration is ignored, as it is hard to estimate and this way an incentive for exploration over searching in unlikely rooms is added.
@@ -212,14 +213,16 @@ and
 
 The estimation of $f_{find,r}^O(t)$ is done by discretization of time. To calculate the probability of finding the object in a time step $[T_{i-1},T_i)$ the object probabilities of all cells in the room are sorted and assigned to the time steps in decreasing order. The probability of finding the object in a certain time step $[T_{i-1},T_i)$, $P_i$, is then calculated with
 \begin{equation}
- P_{i}=\prod_{j=1}^{i-1}(1-P_{j}) \cdot (1-\prod_{c \in \mathbf{C_i}}(1-P(O_{R,c}^{OT}|I_{1:t},\mathbf{x}_{1:t}))
+ P_{i}=\prod_{j=1}^{i-1}(1-P_{j}) \cdot (1-\prod_{c \in \mathbf{C_i}}(1-P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}))
 \end{equation}
 This model was chosen as it takes into account the distribution of object probabilities in the room and the decreasing probability of finding an object due to the objective of the search planner. The estimated search time is then
 \begin{equation}
  E_r(O)=\sum_i P_iT_i+(1-P_r(O))T_r 
 \end{equation}
 
-\subsubsection{Movement time between room r1 and r2 $\mathbf{M_{r1,r2}}$}
+\subsubsection{Time to traverse a room}
+
+Also here a simple heuristic was chose, for the same reasons already mentioned in the search time estimation.
 
 Movement time between rooms has to be further specified, as rooms are areas and not positions and the movement within a room is not neglectable. In this context the movement time is measured from the the doorway, where the room is left, to the doorway leading into the target room and an estimated time for the movement within the first room is added.
 

@@ -40,9 +40,9 @@ def terminate_ros_node(s):
         if (str.startswith(s)):
             os.system("rosnode kill " + str)
 
-files = ["h1e.bag", "h1e.bag", "h2e.bag", "h2e.bag", "h3e.bag", "h3e.bag", "h5e.bag", "h5e.bag", "h6e.bag", "h6e.bag", "h7e.bag", "h7e.bag"]
+files = ["explore_lab_1.bag","explore_lab_1.bag","h1e.bag", "h1e.bag", "h2e.bag", "h2e.bag", "h3e.bag", "h3e.bag", "h5e.bag", "h5e.bag", "h6e.bag", "h6e.bag", "h7e.bag", "h7e.bag"]
 
-for i in range(1,len(files),2):
+for i in range(0,1):
     filename = files[i]
     folder = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
     bag = rosbag.Bag(folder+filename)
@@ -90,7 +90,7 @@ for i in range(1,len(files),2):
 
     if (i%2)==1:
         print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch'
-        proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch object_prior:=0.05 object_hit:=0.5 object_miss:=0.005', shell=True)
+        proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch', shell=True)
     else:
         print 'xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch roomtype_confidence:="-0.05"'
         proc_map = subprocess.Popen('xterm -e roslaunch hardware semantic_mapping_v2_rosbag.launch roomtype_confidence:="-0.05"', shell=True)

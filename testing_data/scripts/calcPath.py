@@ -5,7 +5,20 @@ from nav_msgs.msg import Path
 import tf
 import math
 
-files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/lab_9_bowl_kitchen_stupid_unexp_unexplored.bag"]
+files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full21_Remote_wzTable_full_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full22_Remote_wzTable_full_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full24_Remote_wzTable_full_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full25_Spoon_Table_full_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full26_Spoon_Table_full_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full27_Remote_wzTable_stupid_search_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full28_Remote_wzTable_stupid_search_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full29_Remote_wzTable_stupid_search_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full30_Remote_wzTable_stupid_explore_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full31_Remote_wzTable_stupid_explore_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full33_Remote_wzTable_stupid_explore_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full34_Spoon_Table_stupid_explore_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full35_Spoon_Table_full_unexplored.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full37_Spoon_Table_stupid_search_unexplored.bag"]
 
 explore_times = []
 search_times = []
@@ -26,7 +39,7 @@ for filename in files:
     action_msgs = bag.read_messages(topics="/current_action")
     old_data = -1
     start = 0.0
-    explore_end = 0.0
+    explore_end = 0
     search_end = 0.0
     for topic, msg, t in action_msgs:
         if start==0 and (msg.data!=-1):
@@ -38,7 +51,8 @@ for filename in files:
 
         old_data = msg.data
 
-    explore_end = start
+    if explore_end==0:
+        explore_end = start
     explore_times.append(explore_end.to_sec()-start.to_sec())
     search_times.append(search_end.to_sec()-start.to_sec())
 

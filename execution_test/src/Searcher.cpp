@@ -168,7 +168,6 @@ void Searcher::start(int searched_obj, int searched_room){
   bool reset_searcher = (searched_obj != searched_obj_ || searched_room != searched_room_);
   searched_obj_ = searched_obj;
   searched_room_ = searched_room;
-  running_ = true;
   finished_ = false;
   finished_count_ = 0;
   obj_found_ = std::vector<bool>(61,false);
@@ -205,9 +204,8 @@ void Searcher::start(int searched_obj, int searched_room){
   req.id = searched_obj_;
   req.room_id = -1;
   semantic_mapping_v2::ObjectMapSrvResponse res;
-  if(!obj_map_service_client_.call(req, res)){
+  while(!obj_map_service_client_.call(req, res)){
     ROS_WARN("SEMANTIC MAP CALL FAILED");
-    return;
   }
   prior_prob_map_ = new ObjectMap(res.maps[0]);
 
@@ -237,6 +235,7 @@ void Searcher::start(int searched_obj, int searched_room){
   }
   transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
   tf::poseTFToMsg(transform, curr_view_pose_);
+  running_ = true;
 
   ROS_INFO("SEARCH STARTED");
 }
@@ -306,7 +305,7 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
 void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
-  if(!running_ || obj_map_.empty())
+  //if(!running_ || obj_map_.empty())
     return;
 
   ros::Time t = ros::Time::now();
@@ -434,7 +433,7 @@ cv::Point Searcher::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) c
 
 
 void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
-  if(!running_)
+  //if(!running_)
     return;
 
   ros::Time t = ros::Time::now();
