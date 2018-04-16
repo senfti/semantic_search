@@ -220,19 +220,9 @@ This model was chosen as it takes into account the distribution of object probab
  E_r(O)=\sum_i P_iT_i+(1-P_r(O))T_r 
 \end{equation}
 
-\subsubsection{Time to traverse a room}
+\subsubsection{Movement times}
 
-Also here a simple heuristic was chose, for the same reasons already mentioned in the search time estimation.
-
-Movement time between rooms has to be further specified, as rooms are areas and not positions and the movement within a room is not neglectable. In this context the movement time is measured from the the doorway, where the room is left, to the doorway leading into the target room and an estimated time for the movement within the first room is added.
-
-For the estimation of the movement time between two points a simple model is used, which calculates the time by multiplying the distance between the points with a empirically determined parameter. A more complex model using the length of a planned path is not used as the calculation is much more time-consuming. Further such a model does not take into account how fast the robot will drive on this path and how likely a recovery behavior will be executed.
-
-To calculate the movement times a graph is created with every doorway being a node and an edge between two nodes if the doorways are in one room. The weight of the edge is the movement time between the doorways estimated as described above. The Floyd-Warshall algorithm is applied on the graph resulting in a matrix containing the shortest paths between two doorways and also the nodes to traverse can be retrieved. 
-
-The time to leave the starting room through a certain doorway depends on the location of the robot. This location is not known in when planning ahead as it depends on where the robot ends a room search, which is not known in advance. So the location is assumed to be the center of mass of all accessible cells in the grid map. The time to leave the room through a doorway is then estimated based on the distance to the doorway as explained above. 
-
-The full movement time between to rooms is then the sum of the time calculated using the doorway graph and the time to move to the first doorway. As no loops are assumed there is no loss of optimality by not considering the leave-time in the shortest path calculation.
+Tow types of movement can occur except for movements during exploration and search. These are the movements between doorways to traverse a room and the movement through a doorway when leaving a room. For the first case, traversing the room, the distance between the doorway the room is entered to the doorway the room is left is divided by an estimated average move speed. Obstacles are ignored to keep things simple. The time to leave a room depends on the location of the robot, which is not known when planning in the future. Therefore the assumption is that the robot is in the middle of the room, which is the center of mass of all free cells. The time needed to leave is then estimated by dividing the distance from this room center to the doorway.
 
 % The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
 % 
