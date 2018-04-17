@@ -1,18 +1,40 @@
 \section{Low-Level Planner}
 
-The low-level planner is responsible for the generation of goal positions to execute the high level tasks, which are then sent to path planning. As mentioned above, the four high-level tasks are move through doorway, turn around, explore room and search room. This section gives an overview on how those tasks are executed.
+The low-level planner's main task is to generate the goal poses the robot should drive to to execute the current high-level task. With the exception of the move through doorway task all those tasks are executed within a single room. Therefore the low-level planner can ignore other rooms to make the planning easier. In addition the low-level planner also uses the results of the object detection to decide if an object of the searched type is found. This section gives an overview on how those tasks are planned and executed.
 
-\subsection{Move Through Door Task}
+\subsection{Move Through Doorway Task}
 
-This task is responsible for room switching. It is the only high-level task where a room switch happens as all other tasks are only operating in the current room. The goal pose is a short distance behind the doorway to ensure the triggering of a room switch.
+The goal of this task is to drive through a specified doorway into the next room. It is the only high-level task, where the robot can go into another room. The execution of this task is visualized in figure \ref{fig:move_trough_doorway}. In a first step the robot is sent to a position in front of the doorway facing towards the doorway. In this process the door pose becomes more accurate and possible obstacles behind the doorway are detected. In a second step the robot is sent to a goal behind the doorway. When the robot passes the doorway the map is switched. During the execution the low-level planner keeps track of the doorway pose and changes the goal pose accordingly. This is especially important when the map switch occurs as the doorway pose can be completely different in the new rooms map. 
 
-\subsection{Turn Around Task}
+\begin{figure}[h]
+\centering
+  \subfloat[align in front of doorway]{{\includegraphics[width=0.3\textwidth]{figures/move_trough_doorway1.png} }}%
+  \quad
+  \subfloat[set goal behind doorway]{{\includegraphics[width=0.3\textwidth]{figures/move_trough_doorway2.png} }}%
+  \quad
+  \subfloat[finish after map switch]{{\includegraphics[width=0.3\textwidth]{figures/move_trough_doorway3.png} }}%
+  \caption{Three steps in move through doorway task: The robot pose is in red, the current goal pose is in orange and the door pose is in green}
+  \label{fig:move_trough_doorway} 
+\end{figure}
 
-The purpose of this task is to get a first impression of the new room. As a single image is not enough for a reliable classification of the room type a 360° rotation is done to quickly get multiple views in the room.
+\subsection{Peek Task}
+
+The purpose of this task is to quickly get a first impression of a room never visited before. This is achieved by turning the robot left and right, so more of the room is seen by the camera.
 
 \subsection{Explore Room Task}
 
-A frontier-based approach is used for exploration, as described in section \ref{ssec:frontierexploration}. Only 2D exploration is done as the purpose of it is to get an overview over the room and the positions the robot can drive to. Also finding all doorways in the room is ensured as the robot will try to also explore the space behind a doorway until the doorway is detected. During the exploration objects can be detected. An object is found if there is a cell in the object map, where the probability of an object being in the cell is higher than a threshold value.
+The goals of the explore room task is to find all doorways in the room, detect likely object locations and also to find easy to spot target objects. 2D exploration is done to achieve these goals. After finished 2D exploration all doorways are guaranteed to be found as space behind an undiscovered doorway would be unexplored. Also most of the room is seen at least vague, though some areas might be completely unseen due to the smaller field of view of the camera compared to the LIDAR. 
+
+A frontier-based approach is used for exploration. A frontier is an accessible cell in the occupancy grid map adjacent to unexplored cell, as shown in figure \ref{fig: exploration}. Based on an objective function a frontier is selected and the robot is sent to this frontier. In this work the objective function is the distance between the robot and the frontier, where nearer frontiers are preferred. 
+
+\begin{figure}[h]
+ \centering
+   \includegraphics[width=0.8\textwidth]{figures/exploration.png} 
+ \caption{A map with accessible cells (purple) and frontiers (yellow)}
+ \label{fig: exploration}
+\end{figure}
+
+Only the current room should be explored. To prevent the robot from driving out of the room all detected doorways are blocked
 
 \subsection{Search Room Task}
 
@@ -22,7 +44,9 @@ The search room tasks is the actual search within the room. It is the most compl
 
 In course of the mapping an object map is created, which could be used here. However this is not the optimal solution as this map contains old information, which might be outdated, and due to efficiency reasons suboptimal parameters degrade the accuracy of this map. 
 
-For the detection of objects the same principle, a grid map with object probabilities is used. As for the search only one object map has to be created as only one object type is of interest and neglectable uncertainty of the robot pose can be assumed as the room was already explored and a map exists. Therefore more computational power can be invested into the creating 
+For the detection of objects the same principle, a grid map with object probabilities is used. As for the search only one object map has to be created as only one object type is of interest and neglectable uncertainty of the robot pose can be assumed as the room was already explored and a map exists. Therefore more computational power can be invested into the creation of this map leading to better results. 
+
+An object is said to be found if the object probability in a cell exceeds a threshold parameter. The drawback of this solution is that not the actual position of the object is found but only a cell containing the object. This is noticeable for large objects, like a sofa.
 
 \subsubsection{Generation of the best next robot pose}
 

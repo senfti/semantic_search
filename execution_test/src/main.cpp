@@ -19,8 +19,35 @@ int main(int argc, char** argv){
     //s.objFound();
 //    if(bla%16 == 0)
 //      s.publishMaps();
-    //s.doCalculations(true);
+    s.doCalculations(true);
   }
+
+//  Explorer ex(&l);
+//  ros::Rate ra(5.0);
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//  ros::spinOnce();
+//  ra.sleep();
+//
+//  ex.start(31);
+//  while(ros::ok()){
+//    ros::spinOnce();
+//    ra.sleep();
+//  }
 
   return 0;
 }

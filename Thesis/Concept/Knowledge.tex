@@ -4,7 +4,7 @@ Intelligent behavior is impossible without knowledge. As a learning system is ou
 
 The information about the correlation between room type and objects in the room is used in two ways. Firstly, it is used to improve the object probabilities at already seen locations. As the object probabilities might be still very uncertain at many locations after a short room exploration, this helps to guide the robot to more promising areas when searching. Secondly, it is used to estimate the object probabilities in parts of a room not seen yet. This makes it possible to make a reasonable estimate of the probability of a searched object being in a room after just peeking into the room. Therefore the search of unlikely rooms can be postponed and the robot can proceed in searching in more likely locations, which consequently reduces the expected search time. 
 
-Only correlations between the detectable object classes and detectable room types have to be known. These are the classes the neural networks are trained for. With $N_R$ room types and $N_O$ object classes this results in a $N_R$x$N_O$ matrix $M$, where the element $M_{r,o}$ represents the probability of an object of type $o$ being in a room of type $r$.
+Only correlations between the detectable object classes and detectable room types have to be known. These are the classes the neural networks are trained for. With $N_R$ room types and $N_O$ object classes this results in a $N_R$x$N_O$ matrix $K$, where the element $K_{r,o}$ represents the probability of an object of type $o$ being in a room of type $r$.
 
 % Multiple ways of estimating the matrix elements were tried. 
 % 
@@ -14,7 +14,7 @@ Only correlations between the detectable object classes and detectable room type
 
 The idea is to use the information of image datasets created for computer vision challenges. The dataset the object detection neural network was trained on was used as there already exists information about the objects in the images. To get also the place categories of the images the used place classification CNN was run on all images of the dataset and the probability distribution over all place classes was stored for every image. With this information the matrix elements were calculated with
 \begin{equation} \label{eq5_1}
-    M_{r,o}=\frac{\sum_{i=1}^{|Images|}P_i(r)P_i(o)}{\sum_{i=1}^{|Images|}P_i(r)}
+    K_{r,o}=\frac{\sum_{i=1}^{|Images|}P_i(r)P_i(o)}{\sum_{i=1}^{|Images|}P_i(r)}
 \end{equation}
 where $P_i(r)$ is the probability of the image $i$ showing a place $r$, which is the result of the place classification CNN, and 
 \begin{equation} \label{eq5_2}
@@ -23,7 +23,7 @@ P_i(o)=\begin{cases}1 & if\; object\; in\; image\\0 & else\end{cases}
 
 This approach is more promising than other approaches, like the estimation based on the number of search results in image search engines. One reason is that the images in computer vision challenge datasets are intended to be representative for the world. In contrast some uncommon scenes are highly overrepresented on the Internet, like the duck in the bath tube. The second benefit is that the actual name of an object or room type is not used, avoiding the problem of ambiguous terms. 
 
-With this approach the meaning of the matrix M is slightly different. The matrix element $M_{r,o}$ is now the probability of an object of type $o$ being in an image taken in a room of type $r$. So the size of the space usually seen in an image in the dataset has to be taken into consideration, as images covering more space are more likely to contain an object. On the other hand the size of the region of interest has also to be considered as smaller areas have lower object probabilities.
+With this approach the meaning of the matrix K is slightly different. The matrix element $K_{r,o}$ is now the probability of an object of type $o$ being in an image taken in a room of type $r$. So the size of the space usually seen in an image in the dataset has to be taken into consideration, as images covering more space are more likely to contain an object. On the other hand the size of the region of interest has also to be considered as smaller areas have lower object probabilities.
 
 % \subsection{Room type co-occurrence} \label{ssec:num1}
 % A crude estimate of the room type co-occurrence is sufficient in this thesis, as it is only used to improve the room type mapping by considering similar room types (like kitchen and kitchenette) and room types likely being side-by-side (like kitchen and dinner table). The estimation of this data is based on the similarity measure calculated from a commonsense knowledgebase. The conceptNet4 knowledgebase was used and the result is a 60x60 matrix, with values between 0 and 1.

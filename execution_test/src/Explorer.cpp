@@ -10,11 +10,11 @@
 Explorer::Explorer(tf::TransformListener* tf_listener)
   : tf_listener_(tf_listener)
 {
-//  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
-//  door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
-//  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
-//  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
-//  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
+  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Explorer::mapCb, this);
+  door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
+  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
+  obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
   ros::NodeHandle("~").param("EXPLORE_MAX_TRANS_VEL", EXPLORE_MAX_TRANS_VEL, EXPLORE_MAX_TRANS_VEL);
@@ -54,8 +54,8 @@ void Explorer::start(int searched_obj){
   curr_frontier_.position.x = -99999999999.9;
   curr_frontier_.orientation.z = 0.0;
   curr_frontier_.orientation.w = 1.0;
-  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(EXPLORE_MAX_ROT_VEL)).c_str());
-  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(EXPLORE_MAX_TRANS_VEL)).c_str());
+//  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_rot_vel " + std::to_string(EXPLORE_MAX_ROT_VEL)).c_str());
+//  std::system(("rosrun dynamic_reconfigure dynparam set /move_base/DWAPlannerROS max_trans_vel " + std::to_string(EXPLORE_MAX_TRANS_VEL)).c_str());
   calcFrontier();
   ROS_INFO("EXPLORATION STARTED");
 }
@@ -137,8 +137,8 @@ struct CompareFrontier{
 void Explorer::calcFrontier(){
   static ros::Time last_calculation(0.0);
   ros::Time t = ros::Time::now();
-  if(t-last_calculation < ros::Duration(0.5))
-    return;
+//  if(t-last_calculation < ros::Duration(0.5))
+//    return;
   last_calculation = t;
 
   cv::Mat_<uchar> unknown(last_map_.info.height, last_map_.info.width, uchar(0));
@@ -206,7 +206,13 @@ void Explorer::calcFrontier(){
   nav_msgs::OccupancyGrid map = last_map_;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
-      map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 0 : -1);
+      if(good_frontiers_mask(y,x))
+        map.data[y * last_map_.info.width + x] = 254;
+      else if(accessible(y,x))
+        map.data[y * last_map_.info.width + x] = 50;
+      else
+        map.data[y * last_map_.info.width + x] = -1;
+      //map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 0 : -1);
     }
   }
   map_pub_.publish(map);

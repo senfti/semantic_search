@@ -305,7 +305,7 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
 void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
-  //if(!running_ || obj_map_.empty())
+  if(!running_ || obj_map_.empty())
     return;
 
   ros::Time t = ros::Time::now();
@@ -433,7 +433,7 @@ cv::Point Searcher::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) c
 
 
 void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
-  //if(!running_)
+  if(!running_)
     return;
 
   ros::Time t = ros::Time::now();
@@ -485,11 +485,11 @@ bool Searcher::doCalculations(bool force_new){
   if(!running_ || !got_map_ || !got_vision_)
     return false;
 
-  if(objFound()){
-    finished_ = true;
-    //std::cout << "OBJECT FOUND: " << found_pose_.pose.position.x << " " << found_pose_.pose.position.y << " " << found_pose_.pose.position.z << std::endl;
-    return false;
-  }
+//  if(objFound()){
+//    finished_ = true;
+//    //std::cout << "OBJECT FOUND: " << found_pose_.pose.position.x << " " << found_pose_.pose.position.y << " " << found_pose_.pose.position.z << std::endl;
+//    return false;
+//  }
 
   tf::StampedTransform t1, t2;
   tf::StampedTransform transform;
