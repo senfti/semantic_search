@@ -16,10 +16,11 @@ int main(int argc, char** argv){
   int bla = 1;
   while(ros::ok()){
     ros::spinOnce();
+    ra.sleep();
     //s.objFound();
 //    if(bla%16 == 0)
 //      s.publishMaps();
-    s.doCalculations(true);
+    //s.doCalculations(true);
   }
 
 //  Explorer ex(&l);

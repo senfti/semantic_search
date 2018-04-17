@@ -374,7 +374,7 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::resize(grad_y, grad_y, cv::Size(accessible_mat.cols, accessible_mat.rows));
   cv::cartToPolar(grad_x, grad_y, mag, dir);
 
-  border_dir_map_ = cv::Mat_<uchar>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
+  border_dir_map_ = cv::Mat_<float>(obj_map_->getHeight(), obj_map_->getWidth(), 0.f);
   dir.copyTo(border_dir_map_(cv::Rect(obj_map_->getXPixel(msg->info.origin.position.x), obj_map_->getYPixel(msg->info.origin.position.y), dir.cols, dir.rows)));
 
   cv::Mat_<uchar> tmp, tmp2;

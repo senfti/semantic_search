@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Concept/HLPlanner.tex
+lastDocument=Concept/LLPlanner.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -311,10 +311,10 @@ order=7
 
 [item:Concept/HLPlanner.tex]
 archive=true
-column=12
+column=106
 encoding=UTF-8
 highlight=LaTeX
-line=25
+line=14
 mode=LaTeX
 open=true
 order=5
@@ -331,30 +331,30 @@ order=24
 
 [item:Concept/Knowledge.tex]
 archive=true
-column=491
+column=528
 encoding=UTF-8
 highlight=LaTeX
-line=25
+line=2
 mode=LaTeX
 open=true
 order=19
 
 [item:Concept/LLPlanner.tex]
 archive=true
-column=258
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=75
 mode=LaTeX
 open=true
 order=13
 
 [item:Concept/Mapping.tex]
 archive=true
-column=47
+column=12
 encoding=UTF-8
 highlight=LaTeX
-line=209
+line=162
 mode=LaTeX
 open=true
 order=1
@@ -401,10 +401,10 @@ order=8
 
 [item:Concept/Sensing.tex]
 archive=true
-column=104
+column=2029
 encoding=UTF-8
 highlight=LaTeX
-line=87
+line=43
 mode=LaTeX
 open=true
 order=17
@@ -451,10 +451,10 @@ order=11
 
 [item:Prerequisites.tex]
 archive=true
-column=45
+column=32
 encoding=UTF-8
 highlight=LaTeX
-line=9
+line=8
 mode=LaTeX
 open=true
 order=25
@@ -541,13 +541,13 @@ order=23
 
 [item:ProblemFormulation.tex]
 archive=true
-column=0
+column=208
 encoding=UTF-8
 highlight=LaTeX
-line=0
+line=8
 mode=LaTeX
-open=false
-order=1
+open=true
+order=26
 
 [item:RelatedResearch.tex]
 archive=true
@@ -581,10 +581,10 @@ order=4
 
 [item:main.tex]
 archive=true
-column=19
+column=41
 encoding=UTF-8
 highlight=LaTeX
-line=190
+line=193
 mode=LaTeX
 open=true
 order=0
@@ -640,10 +640,10 @@ JumpList=
 ViMarks=.,0,0,[,0,0,],0,0
 
 [view-settings,view=0,item:Concept/HLPlanner.tex]
-CursorColumn=12
-CursorLine=25
+CursorColumn=106
+CursorLine=14
 JumpList=
-ViMarks=.,25,12,[,25,12,],25,12
+ViMarks=.,33,156,[,33,156,],33,156
 
 [view-settings,view=0,item:Concept/Hardware.tex]
 CursorColumn=78
@@ -652,22 +652,22 @@ JumpList=
 ViMarks=.,8,78,[,8,78,],8,78
 
 [view-settings,view=0,item:Concept/Knowledge.tex]
-CursorColumn=491
-CursorLine=25
+CursorColumn=528
+CursorLine=2
 JumpList=
-ViMarks=.,25,490,[,25,477,],25,490
+ViMarks=.,25,90,[,25,90,],25,90
 
 [view-settings,view=0,item:Concept/LLPlanner.tex]
-CursorColumn=258
-CursorLine=6
+CursorColumn=0
+CursorLine=75
 JumpList=
-ViMarks=.,26,270,[,26,257,],26,270
+ViMarks=.,56,164,[,56,151,],56,164
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=47
-CursorLine=209
+CursorColumn=12
+CursorLine=162
 JumpList=
-ViMarks=.,224,229,[,224,229,],224,229
+ViMarks=.,193,64,[,193,63,],193,64
 
 [view-settings,view=0,item:Concept/ObjectMapping.tex]
 CursorColumn=588
@@ -694,10 +694,10 @@ JumpList=
 ViMarks=.,2,686,[,2,686,],2,686
 
 [view-settings,view=0,item:Concept/Sensing.tex]
-CursorColumn=104
-CursorLine=87
+CursorColumn=2029
+CursorLine=43
 JumpList=
-ViMarks=.,87,103,[,87,103,],87,103
+ViMarks=.,43,2028,[,43,2016,],43,2028
 
 [view-settings,view=0,item:Conclusion.tex]
 CursorColumn=19
@@ -724,8 +724,8 @@ JumpList=
 ViMarks=.,6,262,[,6,0,],6,262
 
 [view-settings,view=0,item:Prerequisites.tex]
-CursorColumn=45
-CursorLine=9
+CursorColumn=32
+CursorLine=8
 JumpList=
 ViMarks=.,9,44,[,9,7,],9,44
 
@@ -778,8 +778,8 @@ JumpList=
 ViMarks=.,11,0,[,10,400,],-1,-1
 
 [view-settings,view=0,item:ProblemFormulation.tex]
-CursorColumn=493
-CursorLine=16
+CursorColumn=208
+CursorLine=8
 JumpList=
 ViMarks=.,16,492,[,16,446,],16,492
 
@@ -802,10 +802,10 @@ JumpList=
 ViMarks=
 
 [view-settings,view=0,item:main.tex]
-CursorColumn=19
-CursorLine=190
+CursorColumn=41
+CursorLine=193
 JumpList=
-ViMarks=.,190,19,[,190,19,],190,19
+ViMarks=.,193,39,[,193,38,],193,39
 
 [view-settings,view=0,item:template/preamble.tex]
 CursorColumn=44

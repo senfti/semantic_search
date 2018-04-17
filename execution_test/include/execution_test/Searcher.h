@@ -84,6 +84,11 @@ class Searcher{
     std::vector<ros::Publisher> obj_found_map_pub_;
     ros::Publisher prior_pub_;
 
+    ros::Publisher dir_pub_;
+    ros::Publisher map_pub_;
+    ros::Publisher weight_map_pub_;
+    ros::Publisher view_pub_;
+
     ros::ServiceClient obj_map_service_client_;
 
     int searched_obj_ = -100;
@@ -142,6 +147,7 @@ class Searcher{
     void stop();
 
     void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
+    void outputmapCb(const nav_msgs::OccupancyGridConstPtr& msg);
     void visionCb(const vision::VisionMsgConstPtr& msg);
     void insertObject(const pcl::PointCloud<pcl::PointXYZ>& cloud, const vision::ObjectDetectionMsg& msg);
     void insertCloud(const pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, const tf::Point& sensorOriginTf);

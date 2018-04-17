@@ -10,6 +10,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <pcl_ros/point_cloud.h>
 #include <tf_conversions/tf_eigen.h>
+#include <geometry_msgs/PoseArray.h>
 
 const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
                                              "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
@@ -113,12 +114,12 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   private_nh.param("SEEN_MAP_MAX_DIST", SEEN_MAP_MAX_DIST, SEEN_MAP_MAX_DIST);
   private_nh.param("INTERESTING_BORDER_SEEN_REWARD", INTERESTING_BORDER_SEEN_REWARD, INTERESTING_BORDER_SEEN_REWARD);
 
-  while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
-    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
-    ros::spinOnce();
-  }
+//  while(!obj_map_service_client_.waitForExistence(ros::Duration(0.1))){
+//    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
+//    ros::spinOnce();
+//  }
 
-  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::mapCb, this);
+  map_sub_ = ros::NodeHandle().subscribe("map_door_blocked", 1, &Searcher::outputmapCb, this);
   vision_sub_ = ros::NodeHandle().subscribe("vision_result", 1, &Searcher::visionCb, this);
   obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &Searcher::objFoundCb, this);
 
@@ -137,6 +138,10 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
   count_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count_occ", 1, true);
   count2_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("count2_occ", 1, true);
   prior_pub_ = ros::NodeHandle().advertise<visualization_msgs::MarkerArray>("searcher_prior_map", 1, true);
+  dir_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseArray>("searcher_dirs", 1, true);
+  map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("searcher_map", 1, true);
+  weight_map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("weight_map", 1, true);
+  view_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("nice_view", 1, true);
 
   std::cout << "OBJ_SETS " << OBJ_SETS << std::endl;
 
@@ -198,46 +203,46 @@ void Searcher::start(int searched_obj, int searched_room){
     octo_mapper_ = nullptr;
   }
 
-  delete prior_prob_map_;
-  prior_prob_map_ = nullptr;
-  semantic_mapping_v2::ObjectMapSrvRequest req;
-  req.id = searched_obj_;
-  req.room_id = -1;
-  semantic_mapping_v2::ObjectMapSrvResponse res;
-  while(!obj_map_service_client_.call(req, res)){
-    ROS_WARN("SEMANTIC MAP CALL FAILED");
-  }
-  prior_prob_map_ = new ObjectMap(res.maps[0]);
-
-  if(octo_mapper_ == nullptr){
-    octo_mapper_ = new OctoMapper(RESOLUTION);
-    obj_map_.resize(61);
-    for(auto& m:obj_map_){
-      m = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
-      m->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
-    }
-
-    seen_maps_.resize(SEEN_MAP_STEPS);
-    previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
-    for(auto &map : seen_maps_)
-      map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
-    for(auto &map : previous_pose_maps_)
-      map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
-  }
-
-  prior_prob_map_->resample(*obj_map_[0], 0.0);
-  tf::StampedTransform transform;
-  try{
-    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
-  }
-  catch (tf::TransformException ex){
-    ROS_ERROR("%s",ex.what());
-  }
-  transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
-  tf::poseTFToMsg(transform, curr_view_pose_);
+//  delete prior_prob_map_;
+//  prior_prob_map_ = nullptr;
+//  semantic_mapping_v2::ObjectMapSrvRequest req;
+//  req.id = searched_obj_;
+//  req.room_id = -1;
+//  semantic_mapping_v2::ObjectMapSrvResponse res;
+//  while(!obj_map_service_client_.call(req, res)){
+//    ROS_WARN("SEMANTIC MAP CALL FAILED");
+//  }
+//  prior_prob_map_ = new ObjectMap(res.maps[0]);
+//
+//  if(octo_mapper_ == nullptr){
+//    octo_mapper_ = new OctoMapper(RESOLUTION);
+//    obj_map_.resize(61);
+//    for(auto& m:obj_map_){
+//      m = new ObjectMap(RESOLUTION, 4.0, prior_prob_map_->getMaxHeight(), OBJ_PRIOR_PROB);
+//      m->expandUntilFitting(prior_prob_map_->getMinX(), prior_prob_map_->getMaxX(), prior_prob_map_->getMinY(), prior_prob_map_->getMaxY(), OBJ_PRIOR_PROB);
+//    }
+//
+//    seen_maps_.resize(SEEN_MAP_STEPS);
+//    previous_pose_maps_.resize(VIEW_ANGLE_STEPS);
+//    for(auto &map : seen_maps_)
+//      map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
+//    for(auto &map : previous_pose_maps_)
+//      map = cv::Mat_<float>(obj_map_[0]->getHeight(), obj_map_[0]->getWidth(), 0.f);
+//  }
+//
+//  prior_prob_map_->resample(*obj_map_[0], 0.0);
+//  tf::StampedTransform transform;
+//  try{
+//    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+//  }
+//  catch (tf::TransformException ex){
+//    ROS_ERROR("%s",ex.what());
+//  }
+//  transform.setRotation(tf::createQuaternionFromYaw(tf::getYaw(transform.getRotation()) + M_PI/6.0));
+//  tf::poseTFToMsg(transform, curr_view_pose_);
   running_ = true;
-
-  ROS_INFO("SEARCH STARTED");
+//
+//  ROS_INFO("SEARCH STARTED");
 }
 
 void Searcher::stop(){
@@ -304,6 +309,134 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
+
+void Searcher::outputmapCb(const nav_msgs::OccupancyGridConstPtr &msg){
+  if(!running_)
+    return;
+
+  ros::Time t = ros::Time::now();
+  cv::Mat_<uchar> free(msg->info.height, msg->info.width, uchar(0));
+  cv::Mat_<uchar> occupied(msg->info.height, msg->info.width, uchar(0));
+  for(int x=0; x<msg->info.width; x++){
+    for(int y=0; y<msg->info.height; y++){
+      if(msg->data[y * msg->info.width + x] == 0)
+        free(y,x) = 255;
+      else if(msg->data[y * msg->info.width + x] > 0)
+        occupied(y,x) = 255;
+    }
+  }
+  cv::Mat_<uchar> occupied_dilate, not_forbidden;
+  int robot_kernel_size = ROBOT_SIZE*2+1;
+  cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_not(occupied_dilate, not_forbidden);
+  cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  cv::bitwise_and(not_forbidden, free, not_forbidden);
+
+  tf::StampedTransform transform;
+  try{
+    tf_listener_->lookupTransform("map", "base_link", ros::Time(0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
+  cv::Point pos(int((transform.getOrigin().x()-msg->info.origin.position.x)/msg->info.resolution),
+                int((transform.getOrigin().y()-msg->info.origin.position.y)/msg->info.resolution));
+  cv::Point start = getNearestFree(not_forbidden, pos.x, pos.y);
+
+  cv::Mat_<uchar> accessible_mat = cv::Mat_<uchar>(msg->info.height, msg->info.width, uchar(0));
+  std::deque<cv::Point> next[2];
+  cv::Mat_<uchar> already_inserted;
+  cv::bitwise_not(not_forbidden, already_inserted);
+  already_inserted(start) = 255;
+  int i=0;
+  next[i].push_back(start);
+  while(!next[i&1].empty()){
+    for(const auto& p : next[i&1]){
+      if(not_forbidden(p)){
+        accessible_mat(p) = 255;
+      }
+      insertNeighbors(p, already_inserted, next[(i+1)&1]);
+    }
+    next[i&1].clear();
+    i++;
+  }
+
+  cv::Mat dists, nearest, accessible_dil;
+  cv::dilate(accessible_mat, accessible_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size-4,robot_kernel_size-4)));
+  cv::distanceTransform(255-accessible_dil, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
+  cv::Mat grad_x, grad_y, mag, dir;
+
+  cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
+  cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
+  cv::resize(grad_x, grad_x, cv::Size(accessible_mat.cols, accessible_mat.rows));
+  cv::resize(grad_y, grad_y, cv::Size(accessible_mat.cols, accessible_mat.rows));
+  cv::cartToPolar(grad_x, grad_y, mag, dir);
+
+  cv::Mat tmp, tmp2;
+  cv::dilate(accessible_mat, tmp, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(std::ceil(ROBOT_SIZE)*2+1,std::ceil(ROBOT_SIZE)*2+1)));
+  cv::dilate(tmp, tmp2, cv::Mat_<uchar>::ones(3,3));
+  border_map_ = tmp2-tmp;
+
+  std::cout << "VERY IMPORTANTE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5" << std::endl;
+  std::cout << "BEFORE: " << border_dir_map_.type() << std::endl;
+  border_dir_map_ = cv::Mat_<uchar>(accessible_mat.rows, accessible_mat.cols, 0.f);
+  std::cout << "MIDDLE: " << border_dir_map_.type() << std::endl;
+  dir.copyTo(border_dir_map_(cv::Rect(0, 0, dir.cols, dir.rows)));
+  std::cout << "END: " << border_dir_map_.type() << std::endl;
+
+  nav_msgs::OccupancyGrid out_map = *msg;
+  nav_msgs::OccupancyGrid weight_map = *msg;
+  geometry_msgs::PoseStamped nice_pose;
+  nice_pose.header.stamp = ros::Time::now();
+  nice_pose.header.frame_id = "/map";
+  nice_pose.pose.position.x = 2.0;
+  nice_pose.pose.position.y = -0.5;
+  nice_pose.pose.position.z = 0.0;
+  tf::Quaternion sdf = tf::createQuaternionFromYaw(75.0*M_PI/180.0);
+  tf::quaternionTFToMsg(sdf,nice_pose.pose.orientation);
+  view_pub_.publish(nice_pose);
+
+  geometry_msgs::PoseArray out_array;
+  out_array.header.stamp = ros::Time::now();
+  out_array.header.frame_id = "/map";
+  for(int x=0; x<accessible_mat.cols; x++){
+    for(int y=0; y<accessible_mat.rows; y++){
+      float angle_dist = angleDist(75.0*M_PI/180.0, border_dir_map_(y,x));
+      float val = gaussian(angle_dist, BORDER_SEEN_SIGMA);
+      if(angleDist(75.0*M_PI/180.0, std::atan2(float(out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution-nice_pose.pose.position.y),float(out_map.info.origin.position.x + (x+0.5)*out_map.info.resolution-nice_pose.pose.position.x))) < 29*M_PI/180)
+        weight_map.data[x+y*out_map.info.width] = 100*val;
+      else
+        weight_map.data[x+y*out_map.info.width] = 0;
+
+      if(accessible_mat(y,x))
+        out_map.data[x+y*out_map.info.width] = 50;
+      else if(border_map_(y,x))
+        out_map.data[x+y*out_map.info.width] = 200;
+      else
+        out_map.data[x+y*out_map.info.width] = -1;
+
+      if(!tmp.at<uchar>(y,x)){
+        geometry_msgs::Pose pose;
+        pose.position.x = out_map.info.origin.position.x + (x+0.5)*out_map.info.resolution;
+        pose.position.y = out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution;
+        pose.position.z = 0.1;
+        tf::Quaternion sdf = tf::createQuaternionFromYaw(dir.at<float>(y,x));
+        tf::quaternionTFToMsg(sdf,pose.orientation);
+        out_array.poses.push_back(pose);
+      }
+    }
+  }
+  map_pub_.publish(out_map);
+  dir_pub_.publish(out_array);
+  weight_map_pub_.publish(weight_map);
+
+  got_map_ = true;
+  //std::cout << "Map processed" << std::endl;
+}
+
+
+
 void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   if(!running_ || obj_map_.empty())
     return;
@@ -364,6 +497,8 @@ void Searcher::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::dilate(accessible_mat, accessible_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size-4,robot_kernel_size-4)));
   cv::distanceTransform(255-accessible_dil, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
   cv::Mat grad_x, grad_y, mag, dir;
+
+
 
   double factor = obj_map_[0]->getResolution()*msg->info.resolution;
   good_accessible_map_.clear();
@@ -433,7 +568,7 @@ cv::Point Searcher::getNearestFree(const cv::Mat_<uchar>& valid, int x, int y) c
 
 
 void Searcher::visionCb(const vision::VisionMsgConstPtr &msg){
-  if(!running_)
+  //if(!running_)
     return;
 
   ros::Time t = ros::Time::now();

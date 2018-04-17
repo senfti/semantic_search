@@ -47,12 +47,34 @@ If the object detection detects an object with a sufficiently high confidence th
 
 \subsection{Search Room Task}
 
-The goal of the search room task is to find an object of the searched type within the current room or to fully search the current room if no searched object is in the room. The low-level planner has to find the optimal next view pose for the robot to drive to, which minimizes the expected search time, based on the information gathered. It also has to decide if an object was found and also if the room was fully searched. The difficulty of these problems, limited hardware resources and inaccurate sensor data and object detections made many simplifications to the problem necessary.
+The goal of the search room task is to find an object of the searched type within the current room or to fully search the current room if no searched object is in the room. The low-level planner has to find the best next view pose for the robot to drive to, which minimizes the expected search time, based on the information gathered. It also has to decide if an object was found and if the room was fully searched.
+
+In this work a greedy approach is used to find the best next view pose. The best view pose $\mathbf{p}^*$ is selected by:
+\begin{equation}
+ \mathbf{p}^*= \argmaxA_{\mathbf{p}} \frac{P(o|\mathbf{p})+B(\mathbf{p})}{T(\mathbf{p}_0,\mathbf{p})}
+\end{equation}
+
+$P(o|\mathbf{p})$ is the probability of finding an object of type $o$ from pose $\mathbf{p}$, $B(\mathbf{p})$ is an additional term to reduce the maximum search time and $T(\mathbf{p}_0,\mathbf{p})$ is the time needed to drive from the current pose $\mathbf{p}_0$ to the pose $\mathbf{p}$. $T(\mathbf{p}_0,\mathbf{p})$ is estimated assuming movement on the shortest path between two poses:
+\begin{equation}
+ T(\mathbf{p}_0,\mathbf{p}) = \frac{(\measuredangle(\mathbf{p}_0,\overrightarrow{\mathbf{p}_0\mathbf{p}}) + \measuredangle(\overrightarrow{\mathbf{p}_0\mathbf{p}},\mathbf{p}))}{\omega}+\frac{|\overrightarrow{\mathbf{p}_0\mathbf{p}}|}{v}+T_{const}
+\end{equation}
+$\omega$ and $v$ are the estimated rotational and translational velocities and $T_{const}$ is a constant time added to account for planning time and other delays.
+
+Estimating the probability $P(o|\mathbf{p})$ is much more difficult. It depends on what is visible when taking an image at pose $\mathbf{p}$, the object probabilities in visible areas and how likely the object is detected if it is visible. Determining visible space is computational expensive and also not really possible in messy environments without a high quality 3D map. Therefore a heuristic is used. 
+
+The basic assumption is that an object is visible if viewed from the direction of the nearest accessible location. The yellow arrows in figure \ref{fig: border_with_dir}a show these directions. The more the direction of the view pose diverges from the best view direction, the less likely the cell is visible. This decreasing probability is modeled with a Gaussian shaped weight and visualized in figure \ref{fig: border_with_dir}b. This also implies that the vertical field of view of the camera is ignored.
+
+\begin{figure}[h]
+\centering
+  \subfloat[Best view directions (yellow arrows), accessible area (purple) and border of free space (orange)]{{\includegraphics[width=0.48\textwidth]{figures/border_with_dir.png} }}%
+  \,
+  \subfloat[Visibility probability (light grey=0, black=1) for the map shown on the left viewed from the pose of the arrow]{{\includegraphics[width=0.48\textwidth]{figures/dir_weights.png} }}%
+  \caption{2 Figures side by side}%
+  \label{fig: border_with_dir}
+\end{figure}
 
 
 
-
-The search room tasks is the actual search within the room. It is the most complex task as an efficient execution of the object search has to be planned and executed. The concept to solve this task splits the problem into three smaller problems. The first is detecting if and where a searched object is found. The second is the generation of the best next robot pose. The third problem is the recognizing, if every part of the room was sufficiently searched. 
 
 \subsubsection{Detection if Object was Found}
 
