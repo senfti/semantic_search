@@ -145,7 +145,7 @@ Searcher::Searcher(tf::TransformListener *tf_listener)
 
   std::cout << "OBJ_SETS " << OBJ_SETS << std::endl;
 
-  output_file_.open(std::string("/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/search_output_string"+std::to_string(OBJ_SETS)+".txt"));
+  //output_file_.open(std::string("/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/search_output_string"+std::to_string(OBJ_SETS)+".txt"));
 
   calcSeenKernels();
 }
@@ -255,6 +255,7 @@ void Searcher::stop(){
 
 
 void Searcher::calcSeenKernels(){
+  std::cout << "a" << VIEW_ANGLE_STEPS << std::endl;
   seen_kernel_points_.resize(VIEW_ANGLE_STEPS);
   seen_kernel_points_value_.resize(VIEW_ANGLE_STEPS);
   for(int i=0;i<VIEW_ANGLE_STEPS; i++){
@@ -267,7 +268,7 @@ void Searcher::calcSeenKernels(){
     points.push_back(cv::Point(std::cos(angle+VIEW_ANGLE/2.f)*VIEW_MAX_DIST*RESOLUTION, std::sin(angle+VIEW_ANGLE/2.f)*VIEW_MAX_DIST*RESOLUTION)+center);
     points.push_back(cv::Point(std::cos(angle+VIEW_ANGLE/2.f)*VIEW_MIN_DIST*RESOLUTION, std::sin(angle+VIEW_ANGLE/2.f)*VIEW_MIN_DIST*RESOLUTION)+center);
     cv::fillConvexPoly(kernel, points, cv::Scalar(255));
-    //cv::Mat_<float> sdf(kernel.rows, kernel.cols, 0.f);
+    cv::Mat_<float> sdf(kernel.rows, kernel.cols, 0.f);
     for(int x=0;x<kernel.cols; x++){
       for(int y=0; y<kernel.rows; y++){
         if(kernel(y,x)){
@@ -275,14 +276,25 @@ void Searcher::calcSeenKernels(){
           seen_kernel_points_[i].push_back(diff);
           float va = std::min(1.5f-2.f*angleDist(std::atan2(float(diff.y),float(diff.x)), angle), 1.f);
           float r = std::sqrt(float(diff.x)*diff.x+diff.y*diff.y)/(RESOLUTION);
-          float vr = (r > 1.5f ? 1.0f-0.45f*(r-2.f) : (r < 1.5f ? 1.0f-0.3f*(1.5f-r) : 1.f));
+          float vr = std::max(std::min(1.f, 1.f-(r-1.f)/2.5f),0.f);
           seen_kernel_points_value_[i].push_back(va*vr);
-          //sdf(y,x) = va*vr;
+          sdf(y,x) = va*vr;
         }
       }
     }
-    //showProbImage("kernel", sdf, 4);
-    //cv::waitKey(0);
+//    cv::Mat asd;
+//    sdf = 1-sdf;
+//    sdf.convertTo(asd, CV_8UC1);
+//    cv::cvtColor(asd,asd,cv::COLOR_GRAY2BGR);
+//    asd.at<cv::Vec3b>(center) = cv::Vec3b(0,0,255);
+//    asd.at<cv::Vec3b>(center+cv::Point(1,0)) = cv::Vec3b(0,0,255);
+//    asd.at<cv::Vec3b>(center+cv::Point(2,0)) = cv::Vec3b(0,0,255);
+//    asd.at<cv::Vec3b>(center+cv::Point(3,0)) = cv::Vec3b(0,0,255);
+//    asd.at<cv::Vec3b>(center+cv::Point(2,1)) = cv::Vec3b(0,0,255);
+//    asd.at<cv::Vec3b>(center+cv::Point(2,-1)) = cv::Vec3b(0,0,255);
+//    cv::resize(asd,asd,cv::Size(asd.cols*8, asd.rows*8),0,0,cv::INTER_NEAREST);
+//    cv::imshow("asdf",asd);
+//    cv::waitKey(0);
   }
 }
 
@@ -390,10 +402,10 @@ void Searcher::outputmapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   geometry_msgs::PoseStamped nice_pose;
   nice_pose.header.stamp = ros::Time::now();
   nice_pose.header.frame_id = "/map";
-  nice_pose.pose.position.x = 2.0;
-  nice_pose.pose.position.y = -0.5;
+  nice_pose.pose.position.x = 2.3;
+  nice_pose.pose.position.y = -0.7;
   nice_pose.pose.position.z = 0.0;
-  tf::Quaternion sdf = tf::createQuaternionFromYaw(75.0*M_PI/180.0);
+  tf::Quaternion sdf = tf::createQuaternionFromYaw(60.0*M_PI/180.0);
   tf::quaternionTFToMsg(sdf,nice_pose.pose.orientation);
   view_pub_.publish(nice_pose);
 
@@ -402,21 +414,24 @@ void Searcher::outputmapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   out_array.header.frame_id = "/map";
   for(int x=0; x<accessible_mat.cols; x++){
     for(int y=0; y<accessible_mat.rows; y++){
-      float angle_dist = angleDist(75.0*M_PI/180.0, border_dir_map_(y,x));
+      float angle_dist = angleDist(60.0*M_PI/180.0, border_dir_map_(y,x));
+      float angle_dist2 = angleDist(60.0*M_PI/180.0, std::atan2(float(out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution-nice_pose.pose.position.y),float(out_map.info.origin.position.x + (x+0.5)*out_map.info.resolution-nice_pose.pose.position.x)));
       float val = gaussian(angle_dist, BORDER_SEEN_SIGMA);
-      if(angleDist(75.0*M_PI/180.0, std::atan2(float(out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution-nice_pose.pose.position.y),float(out_map.info.origin.position.x + (x+0.5)*out_map.info.resolution-nice_pose.pose.position.x))) < 29*M_PI/180)
+      if(angleDist(60.0*M_PI/180.0, std::atan2(float(out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution-nice_pose.pose.position.y),float(out_map.info.origin.position.x + (x+0.5)*out_map.info.resolution-nice_pose.pose.position.x))) < 29*M_PI/180)
         weight_map.data[x+y*out_map.info.width] = 100*val;
       else
         weight_map.data[x+y*out_map.info.width] = 0;
 
       if(accessible_mat(y,x))
         out_map.data[x+y*out_map.info.width] = 50;
+      else if(border_map_(y,x) && angle_dist < 20*M_PI/180 && angle_dist2 < 25*M_PI/180 && float(out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution-nice_pose.pose.position.y) < 2.0)
+        out_map.data[x+y*out_map.info.width] = 110;
       else if(border_map_(y,x))
         out_map.data[x+y*out_map.info.width] = 200;
       else
         out_map.data[x+y*out_map.info.width] = -1;
 
-      if(!tmp.at<uchar>(y,x)){
+      if(border_map_(y,x)){
         geometry_msgs::Pose pose;
         pose.position.x = out_map.info.origin.position.x + (x+0.5)*out_map.info.resolution;
         pose.position.y = out_map.info.origin.position.y + (y+0.5)*out_map.info.resolution;

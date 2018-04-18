@@ -1,30 +1,30 @@
-\section{Image Processing}
+\section{Visual data extraction} %TODO better name
 
 This section describes the extraction of the information needed in later stages of the system from the input images. It covers the object detection, the room type classification and the doorway detection.
 
-\subsection{Object detection}
+\subsection{Object Detection}
 
 The object detection takes the images from the main RGBD-camera and its task is to find objects visible in the image and also to estimate their positions in space. In this work the goal is to find objects of a given type, so a general object detection system is needed. Visual object detection is the way to go at the moment. On the one hand visual features are probably the most descriptive features for object detection. On the other hand a lot of research was done on visual object detection and huge datasets containing labeled images are available to train the proposed object detectors. This resulted in the idea to use an object detector working on 2D images and then projecting the object detections into 3D space using the depth image. 
 
-Convolutional Neural Networks(CNNs) are the best performing systems for visual object detection at the moment. The data used to train those CNNs is very important for the accuracy of the trained CNN and also defines the object types the CNN can detect. The COCO-dataset is the best choice at the moment as the number of object types is sufficiently high for this work, but still low enough to not overwhelm an object detector. Table \ref{detectable objects} shows a list of the object types in the COCO-dataset. It also contains enough images, so there is enough variation in the objects to achieve a good generality. The drawback is that objects are not labeled per pixel, but only bounding boxes are given. Therefore the detected objects are also only specified by bounding boxes. As no suitable dataset with objects labeled per pixel is available, the object detection and the later stages of the system have to cope with this problem. 
+Convolutional Neural Networks (CNNs) are the best performing systems for visual object detection at the moment. The data used to train those CNNs is very important for the accuracy of the trained CNN and also defines the object types the CNN can detect. The COCO-dataset is the best choice at the moment as the number of object types is sufficiently high for this work, but still low enough to not overwhelm an object detector. Table \ref{detectable objects} shows a list of the object types in the COCO-dataset. It also contains enough images, so there is enough variation in the objects to achieve a good generality. The drawback is that objects are not labeled per pixel, but only bounding boxes are given. Therefore the detected objects are also only specified by bounding boxes. As no suitable dataset with objects labeled per pixel is available, the object detection and the later stages of the system have to cope with this problem. 
 
 \begin{table}
 \caption{Detectable object classes grouped in categories, strikethrough classes are ignored}
 \begin{tabular}{|l|l|}
 \hline
-Categories & Classes\\ \hline
-Person & Person\\ \hline
-Accessory & Backpack, Umbrella, Handbag, Tie, Suitcase\\ \hline
-Animal & Bird, Cat, Dog, \sout{Horse}, \sout{Sheep}, \sout{Cow}, \sout{Elephant}, \sout{Bear}, \\ & \sout{Zebra}, \sout{Giraffe} \\ \hline
-Vehicle & Bicycle, \sout{Car}, \sout{Motorbike}, \sout{Aeroplane}, \sout{Bus}, \sout{Train}, \sout{Truck}, \\ &  \sout{Boat} \\ \hline
-Outdoor Objects & \sout{Traffic light}, \sout{Fire hydrant}, \sout{Stop sign}, \sout{Parking Meter}, \\ &  \sout{Bench} \\ \hline
-Sports & Frisbee, Skis, Snowboard, Sports Ball, Kite, \\ &  Baseball Bat, Baseball Glove, Skateboard, Surfboard, \\ & Tennis Racket \\ \hline
-Kitchenware & Bottle, Wine glass, cup, fork, knife, spoon, bowl\\ \hline
-Food & Banana, apple, sandwich, orange, broccoli, carrot, \\ &  hot dog, pizza, donut, cake\\ \hline
-Furniture & chair, sofa, potted plant, bed, dining table, toilet\\ \hline
-Appliance & Microwave, oven, toaster, sink, refrigerator\\ \hline
-Electronics & TV, laptop, mouse, remote, keyboard, cell phone\\ \hline
-Indoor Objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toothbrush \\ \hline
+categories & classes\\ \hline
+person & person\\ \hline
+accessory & backpack, umbrella, handbag, tie, suitcase\\ \hline
+animal & bird, cat, dog, \sout{horse}, \sout{sheep}, \sout{cow}, \sout{elephant}, \sout{bear}, \\ & \sout{zebra}, \sout{giraffe} \\ \hline
+vehicle & bicycle, \sout{car}, \sout{motorbike}, \sout{aeroplane}, \sout{bus}, \sout{train}, \sout{truck}, \\ &  \sout{boat} \\ \hline
+outdoor objects & \sout{traffic light}, \sout{fire hydrant}, \sout{stop sign}, \sout{parking meter}, \\ &  \sout{bench} \\ \hline
+sports & frisbee, skis, snowboard, sports ball, kite, \\ &  baseball bat, baseball glove, skateboard, surfboard, \\ & tennis racket \\ \hline
+kitchenware & bottle, wine glass, cup, fork, knife, spoon, bowl\\ \hline
+food & banana, apple, sandwich, orange, broccoli, carrot, \\ &  hot dog, pizza, donut, cake\\ \hline
+furniture & chair, sofa, potted plant, bed, dining table, toilet\\ \hline
+appliance & microwave, oven, toaster, sink, refrigerator\\ \hline
+electronics & monitor, laptop, mouse, remote, keyboard, cell phone\\ \hline
+indoor objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toothbrush \\ \hline
 \end{tabular}
 \label{detectable objects}
 \end{table}
@@ -37,13 +37,13 @@ The result of such a object detection CNN is a set of bounding boxes, where each
 
 \begin{figure}[h]
   \includegraphics[width=1.0\textwidth]{figures/vision_still.png}
-  \caption{A typical result of the object detection and the place recognition; detections with a probability greater than $0.1$ are shown with bounding box, most likely class and its probability; in the upper left corner of the image the top classifications of the place classifier and their probabilities are shown} 
+  \caption[Example result of room type classification and object detection]{A typical result of the object detection and the place recognition; detections with a probability greater than $0.1$ are shown with bounding box, most likely class and its probability; in the upper left corner of the image the top classifications of the place classifier and their probabilities are shown} 
   \label{obj detection}
 \end{figure}
 
 The RGBD-camera also creates a depth image alongside with the color image, which contains depth measurements for every pixel. Due to technical limitations the depth of some pixels cannot be measured and is set to invalid. Combining the position of the pixel, the depth value and the intrinsic camera parameters the position of the pixel in space can be calculated. Projecting a bounding box into 3D space on the other hand is not meaningful as neighboring pixels in the image are not necessarily nearby in 3D. The approximate location of a detected object can be estimated using the median depth in the bounding box. However the extend of an object is difficult to estimate, therefore a sample-based approach is used. A sufficient number of pixels with valid depth values is drawn randomly from the image and object probabilities for every object class are assigned to the drawn pixels. Assigning probabilities to pixels based on the bounding boxes of the detections is not possible without further information or assumptions, as the bounding boxes contain pixels not belonging to the object and also overlapping bounding boxes are possible. Segmentation of the pixels in a bounding box into object and background would be possible. However this was not done as this would be quiet time consuming for large numbers of bounding boxes and wrong segmentations are possible, especially with overlapping bounding boxes, occlusion and complex objects. Therefore simply the maximum probability of all bounding boxes overlapping a pixel for an object type is used. The idea behind this is the assumption that all bounding boxes with lower probabilities are just accidentally overlapping. The unreliability of this approach is then taken into account in the inverse sensor model of the object mapping. The final result of the object detection is a set of 3D points, where every point also holds a probability value for all object types. The object types and estimated 3D locations of detections with very high confidence are also added to the result.
 
-\subsection{Room type classification}
+\subsection{Room Type Classification}
 
 There are various features which can be used to classify rooms into categories used by humans. In this work this is done solely using visual input. Visual features are very expressive for room classification and also image datasets containing lots of labeled images exist. Other features like shape or size are not used because of their limited expressiveness and the limited data available. The MIT Places-205 Dataset contains about 2.5 million images assigned to 205 place categories and CNNs trained on this dataset are publicly available. Ignoring outdoor place categories this leaves 60 indoor room types, which are listed in table \ref{room types}. The result of the CNN is a probability distribution over the 205 place categories. The outdoor categories are ignored by setting their probabilities to zero. The remaining probabilities are then normalized to one, resulting in a probability distribution over the 60 indoor categories for the room type seen in the input image.
 
@@ -72,7 +72,7 @@ butcher shop &  galley &  martial arts gym &  waiting room \\ \hline
 
 
 
-\subsection{Doorway detection}
+\subsection{Doorway Detection}
 
 The detection of doorways is important for the segmentation of the environment into rooms. As there is usually few stuff at the ceiling and the standard height of a doorway is 2 meters, doorways are easily and reliably detected in a depth image of an upward looking RGBD-camera. A passable doorway is detected if 
 \begin{itemize}
@@ -85,7 +85,7 @@ These requirements are visualized in Figure \ref{door detection}.
 
 \begin{figure}
   \includegraphics[width=0.9\textwidth,trim=20 180 50 125,clip]{figures/door_detection.pdf}
-  \caption{A successfully detected door marked by the purple arrow in the coordinate frame of the robot; black dots are points at about 2 meters height detected by the RGBD-camera, the yellow points are range measurements from the LIDAR, the detected door frame is marked with the blue rectangle, the red rectangles have to be free of LIDAR range measurements and the green rectangle has to contain LIDAR range measurements }
+  \caption[Door detection example]{A successfully detected door marked by the purple arrow in the coordinate frame of the robot; black dots are points at about 2 meters height detected by the RGBD-camera, the yellow points are range measurements from the LIDAR, the detected door frame is marked with the blue rectangle, the red rectangles have to be free of LIDAR range measurements and the green rectangle has to contain LIDAR range measurements }
   \label{door detection}
 \end{figure}
 
