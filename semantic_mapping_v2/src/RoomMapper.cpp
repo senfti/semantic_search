@@ -452,16 +452,16 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
   else if(time.toSec() >= particle.node->reading->getTime() || !particle.node->parent || !particle.node->parent->reading){
     tf::StampedTransform t1, t2;
     try{
-      tf_->lookupTransform("odom", "base_link", ros::Time(particle.node->reading->getTime()), t1);
+      tf_->lookupTransform("map", "base_link", ros::Time(particle.node->reading->getTime()), t1);
       try{
-        tf_->lookupTransform("odom", "base_link", time, t2);
+        tf_->lookupTransform("map", "base_link", time, t2);
         tf::Transform diff = t1.inverse()*t2;
         result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
                                                                base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),
                                                                tf::getYaw(base_to_laser_transform_.getRotation()) + tf::getYaw(diff.getRotation())), particle.node->pose);
       }
       catch (tf::TransformException ex){
-        tf_->lookupTransform("odom", "base_link", ros::Time(0), t2);
+        tf_->lookupTransform("map", "base_link", ros::Time(0), t2);
         tf::Transform diff = t1.inverse()*t2;
         result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
                                                                base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),
@@ -480,8 +480,8 @@ GMapping::OrientedPoint RoomMapper::getParticlePose2D(int particle_idx, ros::Tim
       if(time.toSec() > n->reading->getTime()){
         try{
           tf::StampedTransform t1, t2;
-          tf_->lookupTransform("odom", "base_link", ros::Time(newer_time), t1);
-          tf_->lookupTransform("odom", "base_link", ros::Time(time), t2);
+          tf_->lookupTransform("map", "base_link", ros::Time(newer_time), t1);
+          tf_->lookupTransform("map", "base_link", ros::Time(time), t2);
           tf::Transform diff = t1.inverse()*t2;
           result = transformPointForward(GMapping::OrientedPoint(base_to_laser_transform_.getOrigin().x() + diff.getOrigin().x(),
                                                                  base_to_laser_transform_.getOrigin().y() + diff.getOrigin().y(),

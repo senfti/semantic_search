@@ -27,7 +27,7 @@ void scanCb(const sensor_msgs::LaserScanConstPtr& msg){
     }
   }
   filtered_pub.publish(filtered);
-  count = (count+1)%10;
+  count = (count+1)%5;
 }
 
 int main(int argc, char** argv){
