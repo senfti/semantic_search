@@ -1,0 +1,19 @@
+\section{Doorway Detection Node}
+
+The input data for the doorway detection node are point clouds from the upward looking RGBD-camera and range measurements from the LIDAR. The output is a set of doorway detections, where each detected doorway is specified by a pose in the robot coordinate system. The most recent range measurements are stored for further processing. When a new point cloud arrives and the robot has moved since the last execution of the doorway detection the doorway detection is started. The following operations on point clouds are done using the Point Cloud Library (PCL) and the operations on images are done using the OpenCV image processing library.
+
+The first step is to transform the point cloud from the coordinate frame of the camera into the coordinate frame of the robot using the known static transformation. Then two subsets of points are extracted from the point cloud, one subset containing only points with a height between 1.95\,m and 2.05\,m and one subset containing only points lower than 1.95\,m. In a next step both subsets of points are projected onto the ground and converted into a 2D image. Those images are shown in figure \ref{fig:door detection precedure} (a) and (b). As can be seen in the left image not only points of the upper part of the door frame are at about 2\,m height, but also points on the walls. The purpose of the second image, which also contains those walls, is to eliminate the undesired pixels. Therefore the second image is subtracted from the first one. Applying the morphological operations closing - to fill possible holes - and opening - to remove stray pixels - results in the filtered image shown in figure \ref{fig:door detection precedure} (c).
+
+\begin{figure}[h]
+\centering
+  \subfloat[Points at about 2\,m]{{\includegraphics[width=0.3\textwidth, trim = 100 250 150 250, clip]{figures/door_det_raw.png} }}%
+  \quad
+  \subfloat[Points lower than 1.95\,m]{{\includegraphics[width=0.3\textwidth, trim = 100 250 150 250, clip]{figures/door_det_under.png} }}%
+  \quad
+  \subfloat[Filtered image]{{\includegraphics[width=0.3\textwidth, trim = 100 250 150 250, clip]{figures/door_det_filtered.png} }}%
+  \caption[Doorway detection procedure]{Preprocessing for the doorway detection}%
+  \label{fig:door detection precedure}
+\end{figure}
+
+The filtered image is searched for contours and around every found contour a rectangle is fitted.
+If the smaller side of the rectangle is greater than a parameter $h_{min}$ and smaller than a parameter $h_{max}$ and the larger side is greater than a parameter $w_{min}$, the rectangle is a possible doorway. In case a possible doorway was found the most recent range measurements are transformed into the robot coordinate frame. Range measurements and point cloud are in general not recorded at the same time. Therefore also the robot movement in between is taken into account in this transformation. This can easily be done using the tf library incorporated into ROS. Using these range measurements the constraints already mentioned in section \ref{DoorwayDetection} are checked for every possible doorway. In case the constraints are fulfilled a doorway is found. Then the doorway pose is estimated as also stated in section \ref{DoorwayDetection} and is appended to the result of the doorway detection. When all possible doorways are processed the result of the doorway detection is published for further use in the mapping.

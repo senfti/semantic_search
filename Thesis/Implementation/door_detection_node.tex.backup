@@ -1,0 +1,3 @@
+\section{Doorway Detection Node}
+
+The input data for the doorway detection node are point clouds from the upward looking RGBD-camera and range measurements from the LIDAR. The most recent range me

@@ -1,0 +1,13 @@
+\section{Vision Node}
+
+The vision node executes the room type classification and the object detection on the input RGB-images. For every RGB-image a corresponding point cloud is received, which is generated base on the depth image.
+
+Two threads are running in this node. The first thread waits for images and decides if an incoming image should be processed. One reason for images to be discarded is too fast rotation of the robot. This causes the images to be blurry. During exploration and search the angular velocity is reduced, but when moving through rooms this might happen. The second reason is no considerable movement of the robot. The mapping has to avoid using the same information multiple times, therefore no processing of such an image is necessary. If an image should be processed the image and its corresponding point cloud are stored. The second thread takes the stored image and point cloud, if there are any, runs the CNNs on the images and generates the vision result. Using two thread is beneficial as no time is lost waiting for images and also the reception of images is not blocked when the CNNs are executed.
+
+In the following the implementation of the two tasks of the vision node, the room type classification and the object detection, is describe in more detail.
+
+\subsection{Room Type Classification}
+
+In this thesis the CNN described in %TODO referenz
+based on the VGGNet-16 model and trained on the Places205 data is used. This CNN was chosen as it achieves state-of-the-art performance with a top1 accuracy of about 60\% and a top5 accuracy of nearly 90\%. The second reason to use this CNN is that the Caffe-model and the trained weights are publicly available. Caffe %TODO referenz
+is an open-source deep-learning framework written in C++. Using CUDA the CNN can be executed on the GPU, which is essential for running large neural networks at reasonable frame rates. On the used hardware a forward pass takes around 30\,ms. The code for setting up and running the network available was adjusted for the neural network and integrated into the code of the vision node. 

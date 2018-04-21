@@ -334,12 +334,14 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
   float scale_factor = 2.f;
   auto begin = std::chrono::steady_clock::now();
   std::sort(predictions.begin(), predictions.end(), probGreater);
-  cv::Mat debug_img;
+  cv::Mat debug_img, debug_img_pure, debug_img_place;
   cv::resize(img, debug_img, cv::Size(img.cols*scale_factor, img.rows*scale_factor));
+  debug_img.copyTo(debug_img_pure);
   for (size_t i = 0; i < predictions.size() && predictions[i].prob_ > 0.05; ++i)
     cv::putText(debug_img, predictions[i].label_ + " " + std::to_string(predictions[i].prob_).substr(0, 5),
-                cv::Point(0, 40 + 40*i), cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(0,255,0), 2);
+                cv::Point(0, 40 + 40*i), cv::FONT_HERSHEY_PLAIN, 3, cv::Scalar(0,255,0), 2);
 
+  debug_img.copyTo(debug_img_place);
   for(int i=0; i<detections.size(); i++){
     if(*std::max_element(detections[i].prob_.begin(), detections[i].prob_.end()) > 0.1){
       detections[i].scale(2.f);
@@ -350,6 +352,8 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
   if(IMAGE_SAVE){
     static int sdf = 0;
     cv::imwrite("/tmp/" + std::to_string(sdf) + ".png", debug_img);
+    cv::imwrite("/tmp/place_" + std::to_string(sdf) + ".png", debug_img_place);
+    cv::imwrite("/tmp/pure_" + std::to_string(sdf) + ".png", debug_img_pure);
     sdf++;
   }
   uchar key = cv::waitKey(1) & 255;

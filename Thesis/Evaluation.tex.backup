@@ -1,0 +1,15 @@
+\chapter{Evaluation}
+
+This chapter covers the evaluation of this active object system. Three environments were available to for test runs, a home environment in a small flat, an office/lab environment
+
+\section{Semantic Mapping}
+
+\subsection{Hybrid Metric Mapping}
+
+This section focuses on the results of the hybrid metric mapping, which consists of the 2D and 3D mapping of the rooms, the mapping of the doorways and the creation of the topological map. Test were made in three environments, 
+
+\begin{figure}
+  \includegraphics[width=0.9\textwidth,clip]{figures/h5e_hybrid_map.png}
+  \caption[Hybrid map home environment]{Hybrid map of the home environment}
+  \label{robot images}
+\end{figure}

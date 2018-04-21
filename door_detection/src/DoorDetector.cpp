@@ -243,6 +243,13 @@ cv::RotatedRect DoorDetector::isContourDoor(const std::vector<cv::Point>& contou
 }
 
 
+void saveImage(std::string name, cv::Mat mat, int factor){
+  cv::Mat tmp;
+  cv::resize(mat, tmp, cv::Size(mat.cols*factor, mat.rows*factor), 0, 0, cv::INTER_NEAREST);
+  cv::imwrite("/tmp/"+name+".png",tmp);
+}
+
+
 void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   if(!useCloud())
     return;
@@ -269,7 +276,10 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
     occupancy(pointToPixel(p)) = 255;
   }
 #ifdef DEBUG_OUTPUT
+  static int asdf = 0;
+  asdf++;
   cv::imshow("occ_orig", occupancy);
+  saveImage(std::to_string(asdf)+"occ_orig", occupancy, 4);
 #endif
 
   //for removing the wall and door
@@ -280,7 +290,18 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   }
 #ifdef DEBUG_OUTPUT
   cv::imshow("occ_under", occupancy_under);
+  saveImage(std::to_string(asdf)+"occ_under", occupancy_under, 4);
   cv::imshow("occ", occupancy);
+#endif
+
+  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
+  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 1);
+  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 1);
+
+#ifdef DEBUG_OUTPUT
+  saveImage(std::to_string(asdf)+"occ_filtered", occupancy, 4);
+  cv::imshow("occ_filtered", occupancy);
   tmp = cv::Mat_<cv::Vec3b>(4*50, 3*50, cv::Vec3b(255,255,255));
 //  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,0,0))*4, pointToPixel(pcl::PointXYZ(1,0,0))*4, cv::Scalar(100,100,100));
 //  cv::line(tmp, pointToPixel(pcl::PointXYZ(0,-1,0))*4, pointToPixel(pcl::PointXYZ(0,1,0))*4, cv::Scalar(100,100,100));
@@ -293,11 +314,6 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   tmp(pointToPixel(pcl::PointXYZ(0,0,0))) = cv::Vec3b(100,100,100);
   cv::resize(tmp, tmp, cv::Size(3*50*4, 4*50*4),0,0,cv::INTER_NEAREST);
 #endif
-
-  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
-  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
-  cv::erode(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
-  cv::dilate(occupancy, occupancy, cv::Mat_<uchar>::ones(3,3), cv::Point(-1,-1), 2);
 
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(occupancy, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
@@ -342,6 +358,7 @@ void DoorDetector::cloudCb(const sensor_msgs::PointCloud2ConstPtr &msg){
   }
   //cv::resize(tmp, tmp, cv::Size(tmp.cols*4, tmp.rows*4), 0, 0, cv::INTER_NEAREST);
   cv::imshow("rects", tmp);
+  cv::imwrite("/tmp/" + std::to_string(asdf) + "rects.png", tmp);
   cv::waitKey(1);
 #endif
 
