@@ -24,7 +24,7 @@ In the following subsections the individual parts of the mapping system are pres
 
 \subsection{3D Mapping and Creation of the 2D Map for Navigation }
 
-3D mapping is done using the OctoMap library, which does 3D mapping with known pose using an octree representation for the map. Each node in the octree represents a cube in space and contains a probability value for being occupied. These probabilities are later used in the creation of the Object-Probability-Map. As some obstacles, like tables, are not sufficiently detectable by the LIDAR, the information in the 3D map is also needed for the navigation. The robot can only execute 2D movements, so planning in 3D is not necessary. To still be able to avoid obstacles only found in the 3D map a second 2D map for navigation is created. Therefore all nodes in the octomap with an occupancy probability higher than a threshold and a smaller z-coordinate than the robots height are projected onto the xy-plane. The cells of the 2D map in the projected areas are then set to occupied. This is illustrated in Figure \ref{fig:downproj}. %TODO: OctoMap reference?
+3D mapping is done using the OctoMap library, which does 3D mapping with known pose using an Octree representation for the map. Each node in the Octree represents a cube in space and contains a probability value for being occupied. These probabilities are later used in the creation of the Object-Probability-Map. As some obstacles, like tables, are not sufficiently detectable by the LIDAR, the information in the 3D map is also necessary for safe navigation. To avoid the more complex path planning in 3D this additional information about obstacles is inserted into a second 2D map, which is then used for navigation. Therefore all nodes in the Octomap with an occupancy probability higher than a threshold and a smaller z-coordinate than the robots height are projected into the 2D map. This is illustrated in Figure \ref{fig:downproj}. %TODO: OctoMap reference?
 
 \begin{figure}[h]
 \centering
@@ -36,11 +36,11 @@ In the following subsections the individual parts of the mapping system are pres
 \subsection{Object-Map Creation} %TODO: better name?
 \label{sec:Object Mapping}
 
-This section covers the creation of the Object-Map, which contains information about where objects were seen. The object detection can detect lots of objects in an image, especially in cluttered indoor environments. Those detections are often not very reliable and the location and especially the extent of the detected objects is inaccurate. All together this makes an object tracking approach not very promising. Therefore a grid map representation containing object probabilities was chosen.
+This section covers the creation of the Object-Map, which contains information about the positions of the objects seen by the robot. The object detection can detect lots of objects in an image, especially in cluttered indoor environments. Those detections are often not very reliable and the location and especially the extent of the detected objects is inaccurate. All together an object tracking approach is not very promising. Therefore a grid map representation containing object probabilities was chosen. This approach can handle uncertainty much better and the number of detected objects has no impact on the performance.
 
-For every detectable object class an independent 3D grid map is created. Every cell in this grid map holds the probability of containing an object of the corresponding type given it is occupied. Mapping this conditional probability is beneficial as the result of the object detection are sample points, which lie on object surfaces and therefore in occupied cells, assuming the depth measurements are accurate. The unconditional probability can be calculated using the 3D occupancy map. With this approach the costly ray-tracing, which is necessary to find the cells to be marked as free, has only to be done in the 3D mapping.
+For every detectable object class an independent 3D grid map is created. Every cell in this grid map holds the probability of containing an object of the corresponding type given it is occupied. Mapping this conditional probability is beneficial, as the result of the object detection are sample points, which lie on object surfaces and therefore in occupied cells, assuming the depth measurements are accurate. The unconditional probability can be calculated using the 3D occupancy map. With this approach the costly ray-tracing, which is necessary to find the cells to be marked as free, has only to be done in the 3D mapping.
 
-Some assumptions were made to make this problem feasible. The first assumption is that grid cells are independent of each other. This is an assumption regularly made in similar problems, like occupancy grid mapping. The second assumption is independence of different object types. This assumption implies that multiple objects can be located in a grid cell. This is reasonable if the resolution of the grid is not very high, which is the case. Also a static map is assumed.
+Some assumptions were made to make this problem feasible. Independence of the grid cells and a static map are assumed. These are assumptions regularly made in similar problems, like occupancy grid mapping. Another assumption is the independence of different object types. This assumption implies that multiple objects can be located in a grid cell. This is reasonable if the resolution of the grid is not very high, which is the case. 
 
 Using those assumptions and Bayes' theorem the following formula can be derived: 
 \begin{multline}
@@ -56,7 +56,7 @@ $P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t},occ_{c})$ is the probability of cell $c$ 
 \end{multline}
 as the sum of $P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t},occ_{c})$ and $P(\neg O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t},occ_{c})$ has to be one. 
 
-In this problem the prior cannot be set to $0.5$ as an occupied cell usually does not contain an object of a certain object type. Furthermore a low prior probability is necessary for many very uncertain object detections resulting in a high object probability, which is an intended behavior. The value of the prior had to be estimated empirically.
+In this problem the prior cannot be set to $0.5$ as an occupied cell usually does not contain an object of a certain object type. Furthermore a low prior probability is necessary for many very uncertain object detections, resulting in a high object probability, which is an intended behavior. The value of the prior had to be estimated empirically.
 
 Finding a suitable inverse sensor model is a difficult task, as it has to cope with the uncertain results of the object detection and other detectable or not detectable objects in the cell.
 
@@ -66,9 +66,9 @@ The chosen inverse sensor model is
 \end{equation} 
 with $P(O_{s}^{o}|I_t)$ being the probability for object type $o$ of sample $s$ given the image $I_t$. $\mathbf{S_t^{c}}$ is the set of samples, which are the result of the object detection on image $I_t$, falling into cell $c$. $V_{hit}$ and $V_{miss}$ are parameters modeling the uncertainty of the object detection.  
 
-In words, the inverse sensor is the highest probability for an object type of all samples falling into a cell with additional application of uncertainty. The assumptions behind this approach is that the sample with the highest probability is on the object, the other samples are on other objects in the cell.
+In words, the inverse sensor is the highest probability for an object type of all samples falling into a cell with the additional application of uncertainty. The assumptions behind this approach is that the sample with the highest probability is on the object, the other samples are on other objects in the cell.
 
-The problem of pixels in a bounding box not belonging to the object is not explicitly handled by this approach. Suitable values for the parameters $V_{hit}$ and $V_{miss}$ and the integration of information from images taken at different poses should however cope with this problem.
+The problem of pixels in a bounding box not belonging to the object is not explicitly handled by this approach. Suitable values for the parameters $V_{hit}$ and $V_{miss}$ and the integration of information from images taken at different poses should cope with this problem.
 
 The final probability of an object of type $o$ being seen in a cell can be calculated with:
 \begin{equation}
