@@ -39,6 +39,7 @@ class Door{
     GMapping::OrientedPoint getPose2D() const { return GMapping::OrientedPoint(pose_.getOrigin().x(), pose_.getOrigin().y(), tf::getYaw(pose_.getRotation())); }
     bool isInBehindDoorRect(float x, float y) const;
     bool isBehindDoor(float x, float y) const;
+    bool isInDoorArea(float x, float y) const;
 
     double getIsDoorConfidence(const tf::Transform &pose) const;
 

@@ -533,7 +533,7 @@ Octomap OctoMapper::getFullOctoMapMsg(const ros::Time &rostime) {
 }
 
 
-nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map) {
+nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGrid &map, const std::vector<Door>& doors) {
   if(map.data.empty())
     return map;
 
@@ -552,7 +552,11 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
         double y_max = y_min + m_res*res;
         for(int x=std::round(x_min); x<x_max-0.5; x++){
           for(int y=std::round(y_min); y<y_max-0.5; y++){
-            if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height){
+            bool in = false;
+            for(const auto& door : doors){
+              in = in || door.isInDoorArea(x*downprojected_map.info.resolution+downprojected_map.info.origin.position.x, y*downprojected_map.info.resolution+downprojected_map.info.origin.position.y);
+            }
+            if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height && !in){
               tmp_map(y,x) = 255;
               //downprojected_map.data[y * downprojected_map.info.width + x] = 100;
             }
@@ -571,7 +575,11 @@ nav_msgs::OccupancyGrid OctoMapper::addDownprojected(const nav_msgs::OccupancyGr
         double yd = it.getY() - downprojected_map.info.origin.position.y;
         int x = (cos_yaw * xd - sin_yaw * yd) * res;
         int y = (sin_yaw * xd + cos_yaw * yd) * res;
-        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height)
+        bool in = false;
+        for(const auto& door : doors){
+          in = in || door.isInDoorArea(x*downprojected_map.info.resolution+downprojected_map.info.origin.position.x, y*downprojected_map.info.resolution+downprojected_map.info.origin.position.y);
+        }
+        if(x >= 0 && x < downprojected_map.info.width && y >= 0 && y < downprojected_map.info.height && !in)
           tmp_map(y,x) = 255;
           //downprojected_map.data[y * downprojected_map.info.width + x] = 100;
       }

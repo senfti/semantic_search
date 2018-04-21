@@ -38,6 +38,7 @@
 #include <octomap_ros/conversions.h>
 #include <octomap/octomap.h>
 #include <octomap/OcTreeKey.h>
+#include <semantic_mapping_v2/DoorMapper.h>
 
 #include <boost/thread.hpp>
 
@@ -104,7 +105,7 @@ class OctoMapper {
                            octomap_msgs::Octomap& octomap_full, visualization_msgs::MarkerArray& free_cells_vis_array,
                            const ros::Time& rostime = ros::Time::now());
 
-    nav_msgs::OccupancyGrid addDownprojected(const nav_msgs::OccupancyGrid &map);
+    nav_msgs::OccupancyGrid addDownprojected(const nav_msgs::OccupancyGrid &map, const std::vector<Door>& doors);
 
     float getOccupancy(float x, float y, float z);
     float getOccupancy(const pcl::PointXYZ& pos) { return getOccupancy(pos.x, pos.y, pos.z); }

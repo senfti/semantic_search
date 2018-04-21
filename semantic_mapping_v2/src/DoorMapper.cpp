@@ -27,6 +27,11 @@ bool Door::isBehindDoor(float x, float y) const{
   return ((std::abs(pos.y())-0.7) / pos.x() < 0.8 && pos.x() > 0.1);
 }
 
+bool Door::isInDoorArea(float x, float y) const{
+  tf::Vector3 pos = pose_.inverse()*tf::Vector3(x,y,0.f);
+  return (std::abs(pos.x())<0.2 && std::abs(pos.y()) < 0.35);
+}
+
 double Door::getIsDoorConfidence(const tf::Transform &pose) const{
   double dist = (pose_.getOrigin()-pose.getOrigin()).length();
   double angle = pose_.getRotation().angleShortestPath(pose.getRotation());

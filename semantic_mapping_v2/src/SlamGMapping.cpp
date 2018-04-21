@@ -560,13 +560,13 @@ void SlamGMapping::updateMap() {
         map.data[MAP_IDX(map.info.width, x, y)] = 0;
     }
   }
-  got_map_ = true;
 
   //make sure to set the header information on the map
   boost::unique_lock<boost::mutex> map_lock(map_mutex_);
   map_.map = map;
   map_.map.header.stamp = ros::Time::now();
   map_.map.header.frame_id = tf_->resolve(map_frame_);
+  got_map_ = true;
   map_lock.unlock();
 //
 //  GMapping::Point center;

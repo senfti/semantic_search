@@ -64,7 +64,7 @@ class SlamGMapping
     nav_msgs::OccupancyGrid getGMap();
 
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
-    bool isInitialized() const { return got_first_scan_; }
+    bool isInitialized() const { return got_map_; }
 
     void resume(const GMapping::OrientedPoint& new_pose);
 
