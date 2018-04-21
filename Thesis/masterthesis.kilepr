@@ -380,10 +380,10 @@ order=24
 
 [item:Concept/Knowledge.tex]
 archive=true
-column=884
+column=48
 encoding=UTF-8
 highlight=LaTeX
-line=4
+line=0
 mode=LaTeX
 open=true
 order=19
@@ -400,10 +400,10 @@ order=13
 
 [item:Concept/Mapping.tex]
 archive=true
-column=611
+column=79
 encoding=UTF-8
 highlight=LaTeX
-line=26
+line=219
 mode=LaTeX
 open=true
 order=1
@@ -771,10 +771,10 @@ JumpList=
 ViMarks=.,8,477,[,8,474,],8,477
 
 [view-settings,view=0,item:Concept/Knowledge.tex]
-CursorColumn=884
-CursorLine=4
+CursorColumn=48
+CursorLine=0
 JumpList=
-ViMarks=.,4,884,[,4,884,],4,884
+ViMarks=.,0,47,[,0,39,],0,47
 
 [view-settings,view=0,item:Concept/LLPlanner.tex]
 CursorColumn=78
@@ -783,10 +783,10 @@ JumpList=
 ViMarks=.,111,67,[,111,67,],111,67
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=611
-CursorLine=26
+CursorColumn=79
+CursorLine=219
 JumpList=
-ViMarks=.,22,195,[,22,193,],22,195,a,209,0
+ViMarks=.,219,79,[,219,79,],219,79,a,209,0
 
 [view-settings,view=0,item:Concept/ObjectMapping.tex]
 CursorColumn=588
