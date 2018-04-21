@@ -149,27 +149,27 @@ double RoomMapper::getObjProbGivenRoomRoomPriorPerCell(int room, bool recalc){
 }
 
 
-GMapping::OrientedPoint transformPointForward(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& current_frame){
-  return GMapping::OrientedPoint(point.x*std::cos(current_frame.theta) - point.y*std::sin(current_frame.theta) + current_frame.x,
-                                 point.x*std::sin(current_frame.theta) + point.y*std::cos(current_frame.theta) + current_frame.y,
-                                 point.theta + current_frame.theta);
-}
-
-GMapping::OrientedPoint transformPointBackward(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& frame){
-  double x_tmp = point.x-frame.x;
-  double y_tmp = point.y-frame.y;
-  return GMapping::OrientedPoint(x_tmp*std::cos(-frame.theta) - y_tmp*std::sin(-frame.theta), x_tmp*std::sin(-frame.theta) + y_tmp*std::cos(-frame.theta), point.theta - frame.theta);
-}
-
-void turnMPI(GMapping::OrientedPoint& point){
-  point.x = -point.x;
-  point.y = -point.y;
-  point.theta = point.theta + M_PI;
-}
-
-GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
-  return transformPointBackward(GMapping::OrientedPoint(0.0,0.0,0.0), frame);
-}
+//GMapping::OrientedPoint transformPointForward(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& current_frame){
+//  return GMapping::OrientedPoint(point.x*std::cos(current_frame.theta) - point.y*std::sin(current_frame.theta) + current_frame.x,
+//                                 point.x*std::sin(current_frame.theta) + point.y*std::cos(current_frame.theta) + current_frame.y,
+//                                 point.theta + current_frame.theta);
+//}
+//
+//GMapping::OrientedPoint transformPointBackward(const GMapping::OrientedPoint& point, const GMapping::OrientedPoint& frame){
+//  double x_tmp = point.x-frame.x;
+//  double y_tmp = point.y-frame.y;
+//  return GMapping::OrientedPoint(x_tmp*std::cos(-frame.theta) - y_tmp*std::sin(-frame.theta), x_tmp*std::sin(-frame.theta) + y_tmp*std::cos(-frame.theta), point.theta - frame.theta);
+//}
+//
+//void turnMPI(GMapping::OrientedPoint& point){
+//  point.x = -point.x;
+//  point.y = -point.y;
+//  point.theta = point.theta + M_PI;
+//}
+//
+//GMapping::OrientedPoint invertFrame(GMapping::OrientedPoint& frame){
+//  return transformPointBackward(GMapping::OrientedPoint(0.0,0.0,0.0), frame);
+//}
 
 
 
@@ -547,18 +547,12 @@ void RoomMapper::activate(){
 }
 
 
-tf::Transform RoomMapper::activate(const GMapping::OrientedPoint& robot, const Door& door){
+tf::Transform RoomMapper::activate(const tf::Transform& robot, const Door& door){
   Door door2 = door_mappers_[0]->getDoor(door.getCounterpartId());
   tf::Transform transform;
   if(door2.isValid()){
-    transform = door2.getPose().inverse()*door.getPose()*tf::Transform(tf::createQuaternionFromYaw(M_PI), tf::Vector3(0.0,0.0,0.0));
-    GMapping::OrientedPoint door1_pose = door.getPose2D();
-    GMapping::OrientedPoint door2_pose = door2.getPose2D();
-    GMapping::OrientedPoint pose = transformPointBackward(robot, door1_pose);
-    turnMPI(pose);
-    pose = transformPointForward(pose, door2_pose);
-
-    resume(pose);
+    transform = door2.getPose()*tf::Transform(tf::createQuaternionFromYaw(M_PI), tf::Vector3(0.0,0.0,0.0))*door.getPose().inverse();
+    resume(transform*robot);
   }
   else{
     ROS_ERROR("Counterpart door exists but not found, counterpart_id: %d, number of doors in new room: %d", door.getCounterpartId(), int(door_mappers_[0]->getDoors().size()));

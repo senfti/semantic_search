@@ -154,10 +154,10 @@ void HierarchyMapper::switchMapper(int mapper_idx, const Door& door){
       catch (tf::TransformException ex){
         ROS_ERROR("%s",ex.what());
       }
-      GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
+      //GMapping::OrientedPoint p(transform.getOrigin().x(), transform.getOrigin().y(), tf::getYaw(transform.getRotation()));
       current_mapper_ = mapper_idx;
       room_changed_[current_mapper_] = true;
-      door_tf = room_mapper_[current_mapper_]->activate(p, door);
+      door_tf = room_mapper_[current_mapper_]->activate(transform, door);
     }
     else{
       current_mapper_ = mapper_idx;

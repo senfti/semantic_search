@@ -677,15 +677,15 @@ tf::StampedTransform SlamGMapping::getTransform(){
 
 
 
-void SlamGMapping::resume(const GMapping::OrientedPoint& new_pose){
+void SlamGMapping::resume(const tf::Transform& new_pose){
   GMapping::OrientedPoint odom_pose;
   getOdomPose(odom_pose, ros::Time(0));
-  tf::Transform laser_to_map = tf::Transform(tf::createQuaternionFromRPY(0, 0, new_pose.theta), tf::Vector3(new_pose.x, new_pose.y, 0.0)).inverse();
+  tf::Transform laser_to_map = new_pose.inverse();
   tf::Transform odom_to_laser = tf::Transform(tf::createQuaternionFromRPY(0, 0, odom_pose.theta), tf::Vector3(odom_pose.x, odom_pose.y, 0.0));
 
   boost::mutex::scoped_lock lock(map_to_odom_mutex_);
   map_to_odom_ = (odom_to_laser * laser_to_map).inverse();
   boost::lock_guard<boost::mutex> gsp_lock(gsp_mutex_);
-  gsp_->resume(new_pose, odom_pose);
+  gsp_->resume(GMapping::OrientedPoint(new_pose.getOrigin().x(), new_pose.getOrigin().y(), tf::getYaw(new_pose.getRotation())), odom_pose);
 }
 

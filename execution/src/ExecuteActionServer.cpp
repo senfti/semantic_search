@@ -114,7 +114,7 @@ void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgCo
     tf::Transform pose;
     tf::poseMsgToTF(msg->transform, transform);
     tf::poseMsgToTF(goal_.pose, pose);
-    tf::poseTFToMsg(pose*transform, goal_.pose);
+    tf::poseTFToMsg(transform*pose, goal_.pose);
     sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
   }
   else{
@@ -156,9 +156,19 @@ void ExecuteActionServer::doorPoseCb(const geometry_msgs::PoseArrayConstPtr& msg
 
     last_calculation = t;
     tf::Transform diff = best_door.inverseTimes(curr_pose);
-    if(diff.getOrigin().length() > 0.05 || std::abs(tf::getYaw(diff.getRotation())) > 0.05){
-      tf::poseTFToMsg(best_door, goal_.pose);
-      sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
+    if(!move_to_map_switched_){
+      if(diff.getOrigin().length() > 0.05 || std::abs(tf::getYaw(diff.getRotation())) > 0.05){
+        tf::poseTFToMsg(best_door, goal_.pose);
+        sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
+      }
+    }
+    else{
+      best_door.getBasis().getColumn(0) = -best_door.getBasis().getColumn(0);
+      best_door.getBasis().getColumn(1) = -best_door.getBasis().getColumn(1);
+      if(diff.getOrigin().length() > 0.05 || std::abs(tf::getYaw(diff.getRotation())) > 0.05){
+        tf::poseTFToMsg(best_door, goal_.pose);
+        sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
+      }
     }
   }
   else

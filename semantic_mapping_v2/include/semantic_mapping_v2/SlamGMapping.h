@@ -66,7 +66,7 @@ class SlamGMapping
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& scan);
     bool isInitialized() const { return got_map_; }
 
-    void resume(const GMapping::OrientedPoint& new_pose);
+    void resume(const tf::Transform& new_pose);
 
   protected:
     ros::NodeHandle node_;
