@@ -105,8 +105,8 @@
     <param name="ROOM_MAX_PROB" value="0.8" />
     <param name="PUBLISH_DEBUG_IMAGES" value="1" />
     <param name="DEBUG_OUTPUT" value="1" />
-    <param name="USE_OBJ_MAP" value="1" />
+    <param name="USE_OBJ_MAP" value="0" />
     <param name="OBJ_TO_ROOM" value="0" />
-    <param name="ROOM_TO_OBJ" value="1" />
+    <param name="ROOM_TO_OBJ" value="0" />
   </node>
 </launch>

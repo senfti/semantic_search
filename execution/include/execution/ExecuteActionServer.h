@@ -37,6 +37,7 @@ class ExecuteActionServer{
 
     MoveBaseState move_base_state_ = MoveBaseState::WAITING;
     move_base_msgs::MoveBaseGoal move_base_goal_;
+    pcl::PointCloud<pcl::PointXYZ> found_pose_;
 
     bool move_to_first_reached_ = false;
     bool move_to_map_switched_ = false;
@@ -50,11 +51,13 @@ class ExecuteActionServer{
     ros::Subscriber map_switch_sub_;
     ros::Subscriber door_pose_sub_;
     ros::Subscriber map_sub_;
+    ros::Subscriber obj_found_sub_;
 
     ros::Publisher frontier_pub_;
     ros::Publisher vel_pub_;
     ros::Publisher curr_action_pub_;
     ros::Publisher room_explored_pub_;
+    ros::Publisher obj_found_pub_;
 
     void sendMoveBaseGoal(const geometry_msgs::Pose& pose);
     void doMoveTo();
@@ -78,6 +81,7 @@ class ExecuteActionServer{
 
     void mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgConstPtr& msg);
     void doorPoseCb(const geometry_msgs::PoseArrayConstPtr& msg);
+    void objFoundCb(const vision::ObjectFoundMsgConstPtr& msg);
 
     void run();
 };

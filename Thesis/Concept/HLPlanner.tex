@@ -1,20 +1,20 @@
 \section{High-Level Planner}
 
-This section covers the high-level planner, which operates on the topological map and selects the room the robot should search next. Based on the selected target room it also generates high-level tasks, which are then planned and executed by the low-level planner. The expected search time was chosen as the objective function to be minimized by the planner. Other possible objectives for the planner would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most scenarios. The high-level planner is called when a search task is started and also every time a high-level tasks finishes. 
+This section covers the high-level planner, which operates on the topological map and selects the room the robot should search next. Based on the selected target room it also generates high-level tasks, which are then planned and executed by the low-level planner. The expected search time was chosen as the objective function to be minimized by the planner. Other possible objectives for the planner would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most scenarios. The high-level planner is executed when a search task is started and also every time a high-level tasks finishes. 
 
 
 \subsection{High-Level Planning}
 
-The objective of the high-level planner is to find the optimal search path $\mathbf{p^*}=(r_1,r_2,...,r_{\mathbf{|R|}})$ with $r_i$ being the $i^{th}$ room to search and $\mathbf{|R|}$ being the number of not searched rooms given the starting room $r_0$. A valid search path contains every not already searched room exactly once. In this work the optimal path is the valid path with the minimal expected search time.
+The objective of the high-level planner is to find the optimal search path $\mathbf{p^*}=(r_1,r_2,...,r_{\mathbf{|R|}})$ with $r_i$ being the $i^{th}$ room to search and $\mathbf{|R|}$ being the number of not searched rooms given a starting room $r_0$. A valid search path contains every not already searched room exactly once. In this work the optimal path is the valid path with the minimal expected search time.
 \begin{equation}
  \mathbf{p^*}=\argminA_{\mathbf{p} \in valid paths} E(t|\mathbf{p},r_0) 
 \end{equation}
 
-The expected search time given the staring room $r_0$ and a search path $\mathbf{p}$ can be calculated with
+The expected search time given a staring room $r_0$ and a search path $\mathbf{p}$ can be calculated with
 \begin{equation}
  E(t|\mathbf{p},r_0) = \sum_{i=1}^{\mathbf{|p|}} (\prod_{j=1}^{i-1}(1-P_{r_j}(o))(M_{r_{i-1},r_i}+E_{r_i}) 
 \end{equation}
-This calculation is illustrated in an example calculation in Figure \ref{fig: search tree}. Searching rooms with high object probabilities first results in a lower expected search time as it is more likely than other rooms do not have to be searched. However, the probability of finding the object is the same for all paths. The matrix $M$ contains estimations of the movement times, where $M_{r_i,r_j}$ is the time needed to drive from room $r_i$ to room $r_j$. The matrix elements are calculated using the movement times described at the end of section 5.5.7 and the topological map. 
+This calculation is illustrated in an example calculation in Figure \ref{fig: search tree}. Searching rooms with high object probabilities first results in a lower expected search time as it is more likely that other rooms do not have to be searched. However, the probability of finding the object is the same for all paths. The matrix $M$ contains estimations of the movement times, where $M_{r_i,r_j}$ is the time needed to drive from room $r_i$ to room $r_j$. The matrix elements are calculated using the movement times described at the end of section 5.5.7 and the topological map. 
 
 The possible paths form a search tree, as illustrated in Figure \ref{fig: search tree}. The tree representation shows possibilities for optimizations in the calculation like the reuse of intermediate results and pruning. 
 
@@ -35,7 +35,7 @@ The search path contains only the order, in which the rooms are searched. To exe
  \item \textbf{Search room:} The robot should search for the target object in the current room
 \end{itemize}
 
-The high-level planner keeps track of whether a room was visited, explored or searched and the generation of the high-level tasks is done as shown in figure \ref{fig: HLTask}. The path to the room to search, containing the rooms on the way, is retrieved out of the topological map. As replanning is done after every high-level task only the generation of the next high-level task is necessary.
+The high-level planner keeps track of whether a room was visited, explored or searched. Using this information the generation of the high-level tasks is done as shown in figure \ref{fig: HLTask}. The path to the room to search, containing the rooms on the way, is retrieved out of the topological map. As replanning is done after every high-level task only the generation of the next high-level task is necessary.
 
 \begin{figure}[h]
  \centering

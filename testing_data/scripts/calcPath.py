@@ -5,20 +5,11 @@ from nav_msgs.msg import Path
 import tf
 import math
 
-files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full21_Remote_wzTable_full_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full22_Remote_wzTable_full_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full24_Remote_wzTable_full_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full25_Spoon_Table_full_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full26_Spoon_Table_full_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full27_Remote_wzTable_stupid_search_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full28_Remote_wzTable_stupid_search_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full29_Remote_wzTable_stupid_search_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full30_Remote_wzTable_stupid_explore_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full31_Remote_wzTable_stupid_explore_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full33_Remote_wzTable_stupid_explore_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full34_Spoon_Table_stupid_explore_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full35_Spoon_Table_full_unexplored.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/full37_Spoon_Table_stupid_search_unexplored.bag"]
+files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp20.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp23.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp24.bag"]
 
 explore_times = []
 search_times = []

@@ -1,34 +1,30 @@
 \section{Mapping} 
 
-This section describes the mapping concept used in this thesis. The mapping puts together the data gathered by the sensors and the results of the visual data extraction into a semantic map. In addition to the information about drivable space and obstacles needed for navigation the semantic map also contains information about rooms, room types and objects to enable an intelligent search planning.  %TODO better word for visual data extraction
+This section describes the mapping concept used in this thesis. The mapping puts together the data gathered by the sensors and the results of the visual data extraction into a semantic map. In addition to the information about drivable space and obstacles needed for navigation, the semantic map also contains information about rooms, room types and objects to enable an intelligent search planning.  %TODO better word for visual data extraction
 
-The first main idea is to use a hybrid map. The chosen hybrid map design combines two paradigms, grid-based and topological. Grid-based maps are accurate metric maps ideal for navigation. However, with increasing size grid-based maps are difficult to keep consistent and the efficiency goes down, especially for movement planning. Topological maps on the other hand are more difficult to use for local navigation, but scale very well. A hybrid map can combine the benefits of both map types. Indoor environments are very suitable for such a hybrid map. On a higher level an indoor environment can be represented by a topology of rooms and every room can then be described separately in more detail using a grid-based map. Therefore this approach was used in this work. Every discovered room gets its own grid-based metric map, not only containing occupancy information but also information about the types of areas in the room and object locations. Each room is also a node in the high-level topological map capturing the room structure of the environment. Another benefit of this design is the possibility to split the search problem into two abstraction levels, which will be described later in this chapter.
+The first main idea in the mapping design used in this work is to use a hybrid map. The chosen hybrid map design combines two paradigms, grid-based and topological. Grid-based maps are accurate metric maps ideal for navigation. However, with increasing size grid-based maps are difficult to keep consistent and the efficiency goes down, especially for movement planning. Topological maps on the other hand are more difficult to use for local navigation, but scale very well. A hybrid map can combine the benefits of both map types. Indoor environments are very suitable for such a hybrid map. On a higher level an indoor environment can be represented by a topology of rooms and every room can then be described separately in more detail using a grid-based map. Therefore this approach was used in this work. Every discovered room gets its own grid-based metric map, not only containing occupancy information but also information about the types of areas in the room and object locations. Each room is also a node in the high-level topological map, capturing the room structure of the environment. Another benefit of this design is the possibility to split the search problem into two abstraction levels, which will be described later in this chapter.
  
 The second main idea is to use a 2D simultaneous localization and
 mapping (SLAM) system based on a Rao-Blackwellized particle filter. 
 
-SLAM is a difficult problem as the quality of the map depends on the quality of the localization and vice versa. This leads to uncertain maps and this uncertainty 
+SLAM is a difficult problem as the quality of the map depends on the quality of the localization and vice versa. This leads to uncertainty in the map, the current pose and also the whole path. This uncertainty has to be taken into account when information is added to the map. The easiest way to do this is probably using a SLAM systems based on a Rao-Blackwellized particle filter. In this approach uncertainty is represented by particles and their weights. The particle itself has no uncertainty. Therefore all other maps can be created with known pose. The drawback of this approach is that every particle needs its own set of maps, making it only feasible for low particle numbers. To overcome this drawback sophisticated sampling techniques, like the one used in Gmapping, can be used, which allow to create high-quality maps even with low particle numbers. The maps of the currently most likely particle are then used in the other parts of the system. 2D SLAM was chosen over 3D SLAM as tests using 3D SLAM systems showed mediocre results, probably because of the inaccuracy and unreliability of the depth measurements from the RGBD-camera.   %TODO Gmapping reference?
 
-Due to uncertain localization it is difficult to keep the maps for occupancy, object probabilities and room types and the locations of doorways consistent. The development of a completely new mapping system was out of the scope of this work. Therefore the uncertainty of the SLAM had to be taken into consideration in the mapping of the other information. 
-
-This is most easily done with SLAM systems using Rao-Blackwellized particle filters, as the uncertainty is represented by particles and their weights and every particle itself has no uncertainty. Therefore all other maps can be created with known pose. The drawback of this approach is that every particle needs its own set of maps, making it only feasible for low particle numbers. However the use of sophisticated sampling techniques in SLAM systems like Gmapping allow for high-quality maps even with low particle numbers. The maps of the currently most likely particle are then used in the other parts of the system. 2D SLAM was chosen over 3D SLAM as tests using 3D SLAM systems showed mediocre results, probably because of the inaccuracy and unreliability of the RGBD-camera compared to the LIDAR.  %TODO Gmapping reference?
-
-Ultimately the map representation consists of a topological map with a node for every room and an edge for every doorway connecting two rooms. Each room has a set of maps, called semantic room map, containing different information for every particle. These are:
+The map representation consists of a topological map with a node for every room and an edge for every doorway connecting two rooms. Each room has a set of maps, called semantic room map, containing different information for every particle. These are:
 \begin{itemize}
  \item Two 2D occupancy grid maps: One is created by the SLAM system based on the range measurements of the LIDAR and used for localization. The second one is based on the first 2D map, but also contains the obstacles detected by 3D mapping and is used for navigation, exploration and in-room search planning.
  \item A 3D occupancy grid map: This map is created using the RGBD-camera. It is used in the creation of the 2D occupancy grid map for navigation and also in the calculation of likely object locations.
  \item A Room-Type-Map: This is a 2D grid map, where every grid cell contains a probability distribution over all detectable room types. It is created using the results of the room type classification.
  \item An Object-Map for every detectable object class: These are 61 3D grid maps containing the probability of an object of the corresponding type being seen in a grid cell given the cell is occupied. These maps are created based on the result of the object detection.
- \item An Object-Probability-Map: This is a 3D grid map containing the probability of the currently searched object being in a grid cell. This map is only created for the currently most likely particle and the searched object type. It is created with the information in the other maps and the commonsense knowledge.
+ \item An Object-Probability-Map: This is a 3D grid map containing the probability of the currently searched object being in a grid cell. This map is only created for the currently most likely particle and the searched object type. It is created out of the information in the other maps and the commonsense knowledge.
 \end{itemize}
 
-Furthermore, the semantic room map contains estimated locations of detected doorway. 
+Furthermore, the semantic room map contains estimated locations of detected doorways. 
 
-In the following subsections the individual parts of the mapping system are presented in more detail. The generation of the high-level attributes of the room, like total object probability or expected search time, is described at the end of this section.
+In the following subsections the individual parts of the mapping system are presented in more detail. The generation of the high-level attributes of the room, like the total object probability and the expected search time, is described at the end of this section.
 
 \subsection{3D Mapping and Creation of the 2D Map for Navigation }
 
-3D mapping is done using the OctoMap library, which does 3D mapping with known pose using an octree representation for the map. Each node in the octree represents a cube in space and contains a probability value for being occupied. These probabilities are later used in the creation of the Object-Probability-Map. As some obstacles, like tables, are not sufficiently detectable by the LIDAR, the information in the 3D map is also needed for the navigation. The robot can only execute 2D movements, so planning in 3D is not necessary. To still be able to avoid obstacles only found in the 3D map a second 2D map for navigation is created. Therefore all nodes in the octomap with an occupancy probability higher than a threshold and a smaller z-coordinate than the robots height are projected onto the xy-plane. The cells of the 2D map in the projected areas are then set to occupied. This is illustrated in Figure \ref{fig:downproj}. %TODO: OctoMap reference?
+3D mapping is done using the OctoMap library, which does 3D mapping with known pose using an Octree representation for the map. Each node in the Octree represents a cube in space and contains a probability value for being occupied. These probabilities are later used in the creation of the Object-Probability-Map. As some obstacles, like tables, are not sufficiently detectable by the LIDAR, the information in the 3D map is also necessary for safe navigation. To avoid the more complex path planning in 3D this additional information about obstacles is inserted into a second 2D map, which is then used for navigation. Therefore all nodes in the Octomap with an occupancy probability higher than a threshold and a z-coordinate smaller than the robots height are projected into the 2D map. This is illustrated in Figure \ref{fig:downproj}. %TODO: OctoMap reference?
 
 \begin{figure}[h]
 \centering
@@ -40,11 +36,11 @@ In the following subsections the individual parts of the mapping system are pres
 \subsection{Object-Map Creation} %TODO: better name?
 \label{sec:Object Mapping}
 
-This section covers the creation of the Object-Map, which contains information about where objects were seen. The object detection can detect lots of objects in an image, especially in cluttered indoor environments. Those detections are often not very reliable and the location and especially the extent of the detected objects is inaccurate. All together this makes an object tracking approach not very promising. Therefore a grid map representation containing object probabilities was chosen.
+This section covers the creation of the Object-Map, which contains information about the positions of the objects seen by the robot. The object detection can detect lots of objects in an image, especially in cluttered indoor environments. Those detections are often not very reliable and the location and especially the extent of detected objects is inaccurate. All together an object tracking approach is not very promising. Therefore a grid map representation containing object probabilities was chosen. This approach can handle uncertainty much better and the number of detected objects has no impact on the performance.
 
-For every detectable object class an independent 3D grid map is created. Every cell in this grid map holds the probability of containing an object of the corresponding type given it is occupied. Mapping this conditional probability is beneficial as the result of the object detection are sample points, which lie on object surfaces and therefore in occupied cells, assuming the depth measurements are accurate. The unconditional probability can be calculated using the 3D occupancy map. With this approach the costly ray-tracing, which is necessary to find the cells to be marked as free, has only to be done in the 3D mapping.
+For every detectable object class an independent 3D grid map is created. Every cell in this grid map holds the probability of containing an object of the corresponding type given it is occupied. Mapping this conditional probability is beneficial, as the result of the object detection are sample points, which lie on object surfaces and therefore in occupied cells, assuming the depth measurements are accurate. The unconditional probability can be calculated using the 3D occupancy map. With this approach the costly ray-tracing, which is necessary to find the cells to be marked as free, has only to be done in the 3D mapping.
 
-Some assumptions were made to make this problem feasible. The first assumption is that grid cells are independent of each other. This is an assumption regularly made in similar problems, like occupancy grid mapping. The second assumption is independence of different object types. This assumption implies that multiple objects can be located in a grid cell. This is reasonable if the resolution of the grid is not very high, which is the case. Also a static map is assumed.
+Some assumptions were made to make this problem feasible. The independence of the grid cells and a static map are assumed. These are assumptions regularly made in similar problems, like occupancy grid mapping. Another assumption is the independence of different object types. This assumption implies that multiple objects can be located in a grid cell. This is reasonable if the resolution of the grid is not very high, which is the case. 
 
 Using those assumptions and Bayes' theorem the following formula can be derived: 
 \begin{multline}
@@ -60,7 +56,7 @@ $P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t},occ_{c})$ is the probability of cell $c$ 
 \end{multline}
 as the sum of $P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t},occ_{c})$ and $P(\neg O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t},occ_{c})$ has to be one. 
 
-In this problem the prior cannot be set to $0.5$ as an occupied cell usually does not contain an object of a certain object type. Furthermore a low prior probability is necessary for many very uncertain object detections resulting in a high object probability, which is an intended behavior. The value of the prior had to be estimated empirically.
+In this problem the prior cannot be set to $0.5$ as an occupied cell usually does not contain an object of a certain object type. Furthermore a low prior probability is necessary for many very uncertain object detections, resulting in a high object probability, which is an intended behavior. The value of the prior had to be estimated empirically.
 
 Finding a suitable inverse sensor model is a difficult task, as it has to cope with the uncertain results of the object detection and other detectable or not detectable objects in the cell.
 
@@ -70,9 +66,9 @@ The chosen inverse sensor model is
 \end{equation} 
 with $P(O_{s}^{o}|I_t)$ being the probability for object type $o$ of sample $s$ given the image $I_t$. $\mathbf{S_t^{c}}$ is the set of samples, which are the result of the object detection on image $I_t$, falling into cell $c$. $V_{hit}$ and $V_{miss}$ are parameters modeling the uncertainty of the object detection.  
 
-In words, the inverse sensor is the highest probability for an object type of all samples falling into a cell with additional application of uncertainty. The assumptions behind this approach is that the sample with the highest probability is on the object, the other samples are on other objects in the cell.
+In words, the inverse sensor model is the highest probability for an object type of all samples falling into a cell with the additional application of uncertainty. The assumption behind this approach is that the sample with the highest probability is on the object, the other samples are on other objects in the cell.
 
-The problem of pixels in a bounding box not belonging to the object is not explicitly handled by this approach. Suitable values for the parameters $V_{hit}$ and $V_{miss}$ and the integration of information from images taken at different poses should however cope with this problem.
+The problem of pixels in a bounding box not belonging to the object is not explicitly handled by this approach. Suitable values for the parameters $V_{hit}$ and $V_{miss}$ and the integration of information from images taken at different poses should cope with this problem.
 
 The final probability of an object of type $o$ being seen in a cell can be calculated with:
 \begin{equation}
@@ -84,7 +80,7 @@ as the probability of a cell containing an object is zero if the cell is not occ
 
 Assigning a single room type to a whole room is not sufficient for many rooms. On the one hand it is quiet common that different types of rooms, like a kitchen and a living room, are only partially or not at all separated by walls. On the other hand more accurate classes can often be found for areas in a room, like a pantry-like area in a kitchen. Therefore a Room-Type-Map is created for every room, which is a 2D grid map where each grid cell has its own probability distribution over the detectable room types. 
 
-The mapping procedure is similar to the creation of the  Object-Map and also assumes independent grid cells. Another assumption is that a cell is completely of one type. The update formula is: 
+The mapping procedure is similar to the creation of the  Object-Map and also assumes independent grid cells. Another assumption is that a cell is completely of one type. The formula of the probability update is: 
 \begin{multline}
  P(R_{c}|I_{1:t}, \mathbf{x}_{1:t}) = 
  \\ \frac{P(R_{c}|I_{t}, \mathbf{x}_{t})P(I_{t}| \mathbf{x}_{t})P(R_{c}|I_{1:t-1}, \mathbf{x}_{1:t-1})}
@@ -98,7 +94,7 @@ $P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})$ is the probability distribution over the de
 \end{equation}
 as the probabilities have to sum to $1$. 
 
-The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }|I_t)$. It has also to take into account which cells are visible. A simple approach is used, assuming all cells with a cell center within the view cone of the camera and within a certain range, are visible. This is illustrated in Figure \ref{fig:room_type_update}. A more complex estimation of the seen area is not used as it is difficult to estimate which cells are visible enough to contribute to the room type classification and how much each visible cell contributes to the classification. The used simplistic estimation of the visible cells, however, leads to invisible cells being updated. As these wrongly updated invisible cells are most of the time behind a wall and space outside the room is ignored in later stages of the system, the impact of wrongly updated cells should be small.
+The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }|I_t)$. Also the visibility of the cells has to be taken into account. A simple approach is used, assuming all cells with a cell center within the view cone of the camera and within a certain range, are visible and receive the same update. This is illustrated in Figure \ref{fig:room_type_update}. A more complex mode is not used for two reasons. One reason is that no reasonable estimation can be made how much a visible area contributed to the classification result. The other one is that most of the cells wrongly updated using the simple model lie behind walls. The area behind a wall is usually outside of the room and therefore ignored anyway in later stages of the system. 
 
 \begin{figure}[h]
 \centering
@@ -107,16 +103,16 @@ The inverse sensor model $P(R_{c}|I_{t}, \mathbf{x}_{t})$ uses the result of the
   \label{fig:room_type_update}
 \end{figure}
 
-Also to be considered is that not all cells visible in an image have to be of the same room type. The connection between classification result and room type probability of the cell based on the classified image is given by the following formula: 
+Also modeled in the inverse sensor model is the uncertainty of the classification result and the possibility of an image showing areas with different room types.  The connection between classification result and room type probability of the cell based on the classified image is given by the following formula: 
 \begin{equation}
 P(R_{c}|I_{t},\mathbf{x}_{t}) = \begin{cases}\sum_{R_{I_{t} }} P(R_{I_{t} }|I_t) \; P(R_{c}|R_{I_{t}})  & if \;cell \; c \; visible\\P(R_{c}) & else\end{cases}
 \end{equation}
 
-$P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image $R_{I_{t}}$. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2, a library for extraction of information from commonsense databases, and the ConceptNet4 commonsense knowledge base. %TODO: references?
+$P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image $R_{I_{t}}$. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are set to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2, a library for extraction of information from commonsense databases, and the ConceptNet4 commonsense knowledge base. %TODO: references?
 
 \subsection{Doorway Mapping}
 
-The doorway mapping inserts and updates the poses of doorways in the semantic room map, using the result of the doorway detection. The result of the doorway detection is a set of doorway proposal poses in the coordinate frame of the robot. These proposal poses are transformed into the map frames of the particles. If no already found doorway is within a threshold distance to a proposal pose, a new doorway is added into the map. Otherwise the best fitting doorway, selected based on distance and orientation, is updated. This is show in figure \ref{fig:door_mapping}. A running average filter is used to estimate the true doorway pose. Due to the orientation constraint of doorway detections doorways are always facing out of the room.  
+The doorway mapping inserts and updates the poses of doorways in the semantic room map, using the result of the doorway detection. The result of the doorway detection is a set of doorway proposal poses in the coordinate frame of the robot. These proposal poses are transformed into the map frames of the particles. If no already found doorway is within a threshold distance to a proposal pose, a new doorway is added into the map. Otherwise the best fitting doorway, selected based on distance and orientation, is updated. This is shown in figure \ref{fig:door_mapping}. A running average filter is used to estimate the true doorway pose. Due to the orientation constraint of doorway detections, doorways are always facing out of the room.  
 \begin{figure}[h]
 \centering
   \includegraphics[width=0.5\textwidth]{figures/door_mapping.png}
@@ -124,9 +120,9 @@ The doorway mapping inserts and updates the poses of doorways in the semantic ro
   \label{fig:door_mapping}
 \end{figure}
 
-\subsection{Object-Probability-Map Estimation}
+\subsection{Object-Probability-Map Estimation} \label{ObjectProbMap}
 
-This subsection describes how the information in the different types of maps of a room are put together to obtain an estimation of the object probability at all locations in the room. This includes the estimation of the room type in location only seen by the LIDAR, the estimation of the object probabilities based on the Room-Type-Map and the combination of those estimates with the Object-Map. The Object-Probability-Map contains no information not already present in another map, therefore this map is only created when needed and only for the best particle and the searched object type. 
+This subsection describes how all the information stored in the semantic room map is put together to get a 3D grid map containing the probabilities of an object of the searched type being in a grid cell. This includes the estimation of the room type in areas only seen by the LIDAR, the estimation of the object probabilities based on the Room-Type-Map and the combination of those estimates with the Object-Map. The Object-Probability-Map contains no information not already present in another map. Therefore this map is only created when requested and only for the searched object type and the currently most likely particle.
 
 \subsubsection{Estimation of room types in locations only seen by the LIDAR}
 
@@ -134,18 +130,18 @@ The LIDAR has a field of view of 240°, while the RGBD-camera has a horizontal f
 \begin{figure}[h]
 \centering
   \includegraphics[width=0.8\textwidth, clip]{figures/seen.png}
-  \caption[Areas only seen by LIDAR]{An explored room, light areas were only seen by the LIDAR}
+  \caption[Areas only seen by LIDAR]{An explored room, blueish areas were only seen by the LIDAR}
   \label{fig:seen}
 \end{figure}
-Those cells are considered as possible object locations and are therefore of interest. Cells neither seen by the camera nor the LIDAR are ignored. The room type distribution in those areas is estimated based on the average room type distribution $P_{avg}(R_c|I_{1:t}, \mathbf{x}_{1:t})$ in the room and the room type distribution  of the neighborhood. This is done using a two dimensional Gaussian kernel $G(\Delta x, \Delta y)$, as can be seen in the following formula:
+Those cells are considered as possible object locations and are therefore of interest. Cells neither seen by the camera nor the LIDAR are ignored, as they are most likely outside the room. The room type distribution in those areas is estimated based on the average room type distribution $P_{avg}(R_c|I_{1:t}, \mathbf{x}_{1:t})$ in the room and the room type distribution  of the neighborhood. This is done using a two dimensional Gaussian kernel $G(\Delta x, \Delta y)$, as can be seen in the following formula:
 \begin{equation}
  P(R_{c}|I_{1:t}, \mathbf{x}_{1:t})= \sum_{c_2} \begin{cases} G(\Delta x, \Delta y)P(R_{c_2}|I_{1:t}, \mathbf{x}_{1:t}) & if\; c_2 \;was \; seen \;by\;camera \\ G(\Delta x, \Delta y) P_{avg}(R_c|I_{1:t}, \mathbf{x}_{1:t}) & else \end{cases}
 \end{equation}
 
 
-\subsubsection{Object probabilities based on the room type map}
+\subsubsection{Object probabilities based on the Room-Type-Map}
 
-As already described there exists a correlation between the room type of an area and the objects located in this area. This correlation is captured in the matrix K, which contains the probability of an object $o$ being in an image showing room type $r$. In a first step another matrix $K_{r,o}^*$ has to be calculated containing the probability of an object of type $o$ being in a grid cell of room type $r$. Assuming an object does not occupy multiple cells and $N_v$ cells being visible in an typical image of the dataset, the following formula is derived:
+As described in section \ref{Knowledge} there exists a correlation between the room type of an area and the objects located in this area. This correlation is captured in the matrix K, which contains the probability of an object $o$ being in an image showing room type $r$. In a first step another matrix $K_{r,o}^*$ has to be calculated containing the probability of an object of type $o$ being in a grid cell of room type $r$. Assuming an object does not occupy multiple cells and $N_v$ cells being visible in an typical image of the dataset, the following formula is derived: 
 \begin{equation}
  K_{r,o}^*= 1-(1-K_{r,o})^{\frac{1}{N_v}}
 \end{equation}
@@ -169,20 +165,20 @@ $Z$ is a normalization term, as $P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}) + P(\n
  Z=P(O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})+P(\neg O_{R,c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(\neg O_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})
 \end{equation}
 
-Some post-processing is done on the Object-Probability-Map. The probabilities of cells assumed to be outside the room are set to zero. These cells are in areas never seen by the RGBD-camera or the LIDAR or in areas behind doorways. Also probabilities in free space are set to zero. For every other cell a minimum probability is set, which is half value of the room type based probability. 
+Some post-processing is done on the Object-Probability-Map. The probabilities of cells assumed to be outside the room are set to zero. These cells are in areas never seen by the RGBD-camera or the LIDAR, or in areas behind doorways. Also probabilities in free space are set to zero, as no objects can be in areas where the robot can drive. For every other cell a minimum probability is set, which is half the value of the room type based probability. 
 
 \subsection{Topological Mapping and Room Transitioning}
 
 The topological map consists of nodes for every room, which contain the semantic room maps and condensed information for the high-level planning based on the semantic room maps. It also contains edges, where each edge corresponds to a doorway and holds information about which rooms are connected and the pose of the connecting doorway in both rooms. The topological mapping is responsible for the creation of this graphical structure, including the initialization of new room maps, the localization in the topological map and the handling of room transitions. 
 
-When a new doorway is found a new node is inserted into the graph with an edge connecting the node of the current room and the new node. An empty semantic room map is assigned to the new node. In this map the newly detected doorway is inserted to have a valid connection between the two rooms with corresponding doorway poses in both room maps. The doorway in the new room has the same coordinates as in the current room, but the opposite orientation to meet the convention of doorways always facing out of the room. In this work environments are assumed to have no loops, meaning there is only one way into a room given a starting room. Therefore the room behind a newly found doorway cannot be already discovered. 
+When a new doorway is found a new node is inserted into the graph with an edge connecting the node of the current room and the new node. An empty semantic room map is assigned to the new node. In this map the newly detected doorway is inserted to have a valid connection between the two rooms with corresponding doorway poses in both room maps. The doorway in the new room has the same coordinates as in the current room, but the opposite orientation to meet the convention of doorways always facing out of the room. In this work environments are assumed to have no loops. Therefore the room behind a newly found doorway cannot be already discovered. Without this assumption complicated loop closure would be necessary.
 
-When a doorway is passed the semantic room map has to be switched. A doorway is passed if the robot is more than a threshold distance in front of the doorway and therefore in the next room. The threshold is marked with a blue line in the left image in Figure \ref{fig:doors}. The threshold is important to achieve a hysteresis and avoid unstable behavior at the doorway. In a first step the mapping in the old room is stopped. Then the mapping in the new room is set up. If the room was never visited before, the specified number of particles are generated with empty maps. Otherwise the best particle, including its maps, is multiplied. In a next step the particles are set to meaningful poses. Therefore the poses of the particles in the old room's particle filter are transformed into the new room's coordinate frame with
+When a doorway is passed the semantic room map of the new room has to be activate and the old one deactivated. A doorway is passed if the robot is more than a threshold distance through the doorway. The threshold is marked with a blue line in the left image in Figure \ref{fig:doors}. It is important to achieve a hysteresis and avoid unstable behavior at the doorway. In a first step the mapping in the old room is stopped. Then the mapping in the new room is set up. If the room was never visited before, the specified number of particles are generated with empty maps. Otherwise the best particle, including its maps, is multiplied. In a next step the poses of the new room's particles are set to the pose of the best particle of the old room. This is sufficient as within a doorway the localization is very accurate. The pose has to be transformed into the new room's coordinate frame with
 \begin{equation}
  \mathbf{P_{new}}=P_{D_{new}}T_{flip}P_{D_{old}}^{-1}\mathbf{P_{old}}
 \end{equation}
 
-$\mathbf{P_{old}}$ and $\mathbf{P_{new}}$ are the particle pose in the old and new room coordinate frames, $P_{D_{old}}$ and $P_{D_{new}}$ are the poses of the doorway in the old and new room and $T_{flip}$ is a 180° rotation matrix. The rotation is necessary as the doorway poses have an opposite orientation. After that all particles except the best one in the old rooms particle filter are discarded, as those particles are not meaningful when the robot returns to the room. In the last step the mapping in the new room is started. Figure \ref{fig:doors} shows the map before and after a doorway passing. The maps contain also space in the other room. This is necessary for navigation through the doorway. In the search planning space behind a doorway is ignored.
+$\mathbf{P_{old}}$ and $\mathbf{P_{new}}$ are the particle pose in the old and new room coordinate frames, $P_{D_{old}}$ and $P_{D_{new}}$ are the poses of the doorway in the old and new room and $T_{flip}$ is a 180° rotation matrix. The rotation is necessary as the doorway poses have an opposite orientation. After that all particles except the best one in the old rooms particle filter are discarded, as those particles are not meaningful when the robot returns to the room. In the last step the mapping in the new room is started. Figure \ref{fig:doors} shows the map before and after a doorway passing. The maps contain also space in the other room. This is necessary for safe navigation through the doorway. However, space behind doorways is ignored in all the calculations and in the search planning.
 
 \begin{figure}[h]
 \centering
@@ -195,7 +191,7 @@ $\mathbf{P_{old}}$ and $\mathbf{P_{new}}$ are the particle pose in the old and n
 
 \subsection{High-Level Room Information Generation}
 
-For the high level planner to work the information in the semantic room maps has to be condensed into easier to used room attributes. These are
+The information in the semantic room maps has to be condensed into a compact form containing only the information necessary for the high-level planning. These high-level attributes of a room are
 \begin{itemize}
  \item the total probability of an object of the searched object type being in the room
  \item the time needed to completely search the room
@@ -204,7 +200,7 @@ For the high level planner to work the information in the semantic room maps has
  \item the time to leave the room for all doorways
 \end{itemize}
 
-The time needed for exploration is ignored, as it is hard to estimate and this way an incentive for exploration over searching in unlikely rooms is added. Another incentive for exploration is given by setting the object probabilities of unvisited rooms to very high values and the search times to very low values. This is done to encourage the robot to peek into rooms. Peeking into a room is a desirable behavior as it takes relatively little time and gives the robot much more information about the environment. 
+The time necessary for exploration is ignored, as the exploration is difficult to model. On the one hand it takes time, but on the other hand some objects might be found during the process and information about other rooms and likely object locations is gathered. Therefore ignoring the time for exploration seems to be a reasonable idea. Another used idea concerning exploration is setting the high-level attributes of unvisited rooms to very optimistic values. This is done to encourage the robot to peek into rooms. Peeking into a room is a desirable behavior as it takes relatively little time and gives the robot much more information about the environment. 
 
 \subsubsection{Total object probability in a room r $\mathbf{P_r(o)}$}
 
@@ -217,16 +213,16 @@ Three types of cells within a room $\mathbf{C_r}$ have to be distinguished. Ther
 \begin{equation}
  N_{unex} = \begin{cases} 0 & if \;room\; explored \\ max(N_{room}-|\mathbf{\mathbf{C_{r,ex}}}|, N_{min}) & else \end{cases}
 \end{equation}
-$N_{room}$ is a basic estimate of the size of an unexplored room and $N_{min}$ is a minimal number of unexplored cells in a not explored room. The object probability in those cells is estimated based on the average room type probability distribution $P(R_{avg})$. For the calculation of $P(Obj_{unex}^o)$ the correlation matrix between room type and object, $K^*$, is used:
+$N_{room}$ is a general estimate of the size of an unexplored room and $N_{min}$ is a minimal number of unexplored cells in a not explored room. The object probability in those cells is estimated based on the average room type probability distribution $P(R_{avg})$. For the calculation of $P(Obj_{unex}^o)$ the correlation matrix between room type and object $K^*$ is used:
 \begin{equation}
  P(Obj_{unex}^o) = \sum_{R_{avg}}P(R_{avg})P(Obj_{unex}^o|R_{avg}) = \sum_{R_{avg}}P(R_{avg})K_{R_{avg},Obj_{unex}^o}^*
 \end{equation}
-The third type of cells are technically not within the room. Those are cells in so far undiscovered adjacent rooms. To avoid the addition of uncertain rooms into the topological map those are considered to be part of another room during probability calculation. The expected number of those cells $N_{undis}$ is estimated with:
+Cells of the third type are technically not within the room. Those are cells in undiscovered adjacent rooms. To avoid the addition of uncertain rooms into the topological map those are considered to be part of the discovered adjacent room during probability calculation. The expected number of those cells $N_{undis}$ is estimated with:
 \begin{equation}
  N_{undis}=\begin{cases} 0 & if \;room\; explored \\ max\Big(\sum_{R_{avg}}P(R_{avg})N_{adj}(R_{avg})-N_{r,dis},0\Big)N_r & else \end{cases}
 \end{equation} 
 
-$N_{adj}(R_{avg})$ is the average number of adjacent rooms for a room of type $R_{avg}$. Based on results presented in activeobjectsearchgutmapplanphd.pdf $N_{adj}(corridor)$ is set to 6 and $N_{adj}(R)$ is 1.2 for all other room types. The number of already discovered adjacent rooms $N_{r,dis}$ has to be subtracted and obviously the number of undiscovered adjacent rooms cannot be smaller than zero. The probability of the object being in one of those cells $P(Obj_{undis}^o)$ is calculated assuming a equally distributed room type probability distribution in the undiscovered room. %TODO: activeobjectsearchgutmapplanphd.pdf austauschen
+$N_{adj}(R_{avg})$ is the average number of adjacent rooms for a room of type $R_{avg}$. Based on results presented in [A. Aydemir, “Exploiting structure in man-made environments,” PhD dissertation, Stockholm, 2012.] $N_{adj}(corridor)$ is set to 6 and $N_{adj}(R)$ is 1.2 for all other room types. The number of already discovered adjacent rooms $N_{r,dis}$ has to be subtracted and obviously the number of undiscovered adjacent rooms cannot be smaller than zero. The probability of the object being in one of those cells $P(Obj_{undis}^o)$ is calculated assuming a equally distributed room type probability distribution in the undiscovered room. %TODO: activeobjectsearchgutmapplanphd.pdf austauschen
 
 Putting all together the following formula is obtained:
 \begin{multline}
@@ -234,21 +230,21 @@ Putting all together the following formula is obtained:
  \\(1-P(Obj_{unex}^o))^{N_{unex}}(1-P(Obj_{undis}^o))^{N_{undis}} 
 \end{multline} 
 
-\subsubsection{Time needed to completely search room r $\mathbf{T_r}$}
+\subsubsection{Full search time in room r $\mathbf{T_r}$}
 
-The time needed to search a room is difficult to estimate, as it not only depends on the room but also on what the search planner is doing and how well the navigation works. As the generation of a lot of test data is impossible a minimalistic model is used. The number of occupied cells in the 2D map $|\mathbf{C_{occ2d}}|$ has a high correlation with the search time. A high number means many possible object locations and also many obstacles, which slow down robot movement. Therefore the time needed to completely search a room is the number of occupied cells in the 2D map within the room times a parameter $T_c$ found in test runs. Similar to the calculation of the total object probability unexplored areas in the room have to be taken into account. This is done using a basic estimated for the search time in an unexplored room $T_{room}$ and a minimum time needed for searching in unexplored areas in the room $T_{min}$. This results in
+The time needed to search a room is difficult to estimate because it not only depends on the room but also on what the search planner is doing and how well the navigation works. In this work a minimalistic model is used because a lot of test data would be needed for a more sophisticated model, which is not possible to generate in a reasonable time. The number of occupied cells in the 2D map $|\mathbf{C_{occ2d}}|$ has a high correlation with the search time. A high number means many possible object locations and also many obstacles, which slow down robot movement. Therefore the time needed to completely search a room is the number of occupied cells in the 2D map within the room times a parameter $T_c$ found in test runs. As in the calculation of the total object probability unexplored areas in the room have to be taken into account. This is done using a general estimated for the search time in an unexplored room $T_{room}$ and a minimum time needed for searching in unexplored areas of the room $T_{min}$. This results in
 \begin{equation}
  T_r = \begin{cases} |\mathbf{C_{occ2d}}|T_c & if \;room\; explored \\ max(T_{room}, |\mathbf{C_{occ2d}}|T_c+T_{min}) & else \end{cases}
 \end{equation}
 
-\subsubsection{Expected value of time spent searching in room r $\mathbf{E_r(o)}$}
+\subsubsection{Expected search time in room r $\mathbf{E_r(o)}$}
 
-The expected value of time spent searching in a room also take into consideration that a searched object might be found and the search can be stopped earlier. The expected value is calculated with
+The expected time spent searching in a room also takes into consideration that a searched object might be found and the search can be stopped earlier. The expected value is calculated with
 \begin{equation}
  E_r(o) = \int_{0}^\infty f_r^o(t)\cdot t\cdot dt
 \end{equation}
 
-The search ends if the object is found or the room is completely searched. Therefore the probability distribution of ending the search over time $f_r(t)$ is
+The search ends if the object is found or all areas in the room are covered. Therefore the probability distribution of ending the search over time $f_r^o(t)$ is
 \begin{equation}
  f_r^o(t)=(1-P_r(o))\delta(T_r)+f_{find,r}^o(t)
 \end{equation}
@@ -265,11 +261,12 @@ The estimation of $f_{find,r}^o(t)$ is done by discretization of time. To calcul
 \begin{equation}
  P_{i}=\prod_{j=1}^{i-1}(1-P_{j}) \cdot (1-\prod_{c \in \mathbf{C_i}}(1-P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}))
 \end{equation}
-This model was chosen as it takes into account the distribution of object probabilities in the room and the decreasing probability of finding an object due to the objective of the search planner. The estimated search time is then 
+The estimated search time is then 
 \begin{equation}
  E_r(o)=\sum_i P_iT_i+(1-P_r(o))T_r 
 \end{equation}
+This model was chosen as it takes into account the distribution of object probabilities in the room and the decreasing probability of finding an object due to the objective of the search planner. While the time
 
 \subsubsection{Movement times}
 
-In the high-level planning the time spent on moving into the next room to search has to be taken into account. The time needed to drive to a target room is split into the time needed to leave the starting room and the times needed to traverse rooms on the way. In this thesis the time it takes to drive from A to B is estimated by the distance between A and B multiplied with an average velocity. So for every pair of doorways in the room the estimated movement time is calculated based on their distance. The time to leave a room depends on the location of the robot, which is not known when planning in the future. Therefore an assumption is made that the robot is in the middle of the room, which is the center of mass of all free cells. For every doorway a time needed to leave the room is calculated based on the distance of the center of the room to the doorway.
+The time spent moving between the rooms is also considered in the high-level planning. The time necessary to drive from a starting room to a target room is split into the time necessary to leave the starting room and the times necessary to traverse rooms on the way. In this thesis the time it takes the robot to drive from a pose A to a pose B is estimated by the distance between A and B multiplied with an average velocity. So for every pair of doorways in the room the estimated movement time is calculated based on their distance. The time to leave a room depends on the location of the robot, which is can be anywhere in the room after exploration or search. Therefore an assumption is made that the robot is in the middle of the room, which is the center of mass of all free cells. For every doorway the time necessary to leave the room is calculated based on the distance of the center of the room to the doorway.

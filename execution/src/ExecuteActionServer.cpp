@@ -4,6 +4,7 @@
 
 #include "execution/ExecuteActionServer.h"
 #include <std_msgs/Int8.h>
+#include <pcl_ros/point_cloud.h>
 
 ExecuteActionServer::ExecuteActionServer()
       : action_server_(nh_, "execute_action", false), action_client_(nh_, "move_base", false), explorer_(&tf_listener_), searcher_(&tf_listener_)
@@ -27,6 +28,8 @@ ExecuteActionServer::ExecuteActionServer()
   map_sub_ = ros::NodeHandle().subscribe("map", 1, &ExecuteActionServer::mapCb, this);
   map_switch_sub_ = nh_.subscribe("map_switch", 1, &ExecuteActionServer::mapSwitchCb, this);
   door_pose_sub_ = nh_.subscribe("mapper_door_poses", 1, &ExecuteActionServer::doorPoseCb, this);
+  obj_found_sub_ = ros::NodeHandle().subscribe("obj_found_in_image", 1, &ExecuteActionServer::objFoundCb, this);
+  obj_found_pub_ = ros::NodeHandle().advertise<sensor_msgs::PointCloud2>("object_found_pose", 1, true);
   frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("navigation_velocity_smoother/raw_cmd_vel", 1);
   curr_action_pub_ = nh_.advertise<std_msgs::Int8>("current_action", 1);
@@ -156,6 +159,38 @@ void ExecuteActionServer::mapSwitchCb(const semantic_mapping_v2::RoomSwitchMsgCo
     action_server_.setAborted(result, "ABORTED");
     goal_.action = -1;
     move_base_state_ = MoveBaseState::STOPPED;
+  }
+}
+
+
+void ExecuteActionServer::objFoundCb(const vision::ObjectFoundMsgConstPtr &msg){
+  if(goal_.action<4)
+    return;
+
+  tf::StampedTransform transform;
+  try{
+    tf_listener_.lookupTransform("map", "camera_rgb_optical_frame", msg->header.stamp, transform);
+  }
+  catch (tf::TransformException ex){
+    try{
+      tf_listener_.lookupTransform("map", "camera_rgb_optical_frame", ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return;
+    }
+  }
+  for(int i=0; i<msg->object_type.size(); i++){
+    if(msg->object_type[i] != goal_.target_obj)
+      continue;
+
+    tf::Vector3 p(msg->positions[i].x,msg->positions[i].y,msg->positions[i].z);
+    p = transform*p;
+    found_pose_.push_back(pcl::PointXYZ(p.x(), p.y(), p.z()));
+    found_pose_.header.frame_id = "map";
+    found_pose_.header.stamp = ros::Time::now().toSec();
+    obj_found_pub_.publish(found_pose_);
+    std::cout << "IMAGE OBJ FOUND " << msg->object_type[i] << " " << p.x() << " " << p.y() << " " << p.z() << std::endl;
   }
 }
 
@@ -479,11 +514,19 @@ void ExecuteActionServer::doEnterRoomRotation(){
   static float angle = 0.f;
   static ros::Time start_time;
   if(!started){
+    found_pose_.clear();
     start_time = ros::Time::now();
     tf_listener_.lookupTransform("map", "base_link", ros::Time(0), old_transform);
     started = true;
     state = 0;
     angle = 0.f;
+  }
+
+  if(!found_pose_.empty()){
+    execution::ExecuteResult result;
+    result.result_number = 100;
+    action_server_.setSucceeded(result, "SUCCESS");
+    goal_.action = -1;
   }
 
   tf::StampedTransform transform;
@@ -525,10 +568,18 @@ void ExecuteActionServer::doStartRotation(){
   static float angle = 0.f;
   static ros::Time start_time;
   if(!started){
+    found_pose_.clear();
     start_time = ros::Time::now();
     tf_listener_.lookupTransform("map", "base_link", ros::Time(0), old_transform);
     started = true;
     angle = 0.f;
+  }
+
+  if(!found_pose_.empty()){
+    execution::ExecuteResult result;
+    result.result_number = 100;
+    action_server_.setSucceeded(result, "SUCCESS");
+    goal_.action = -1;
   }
 
   tf::StampedTransform transform;

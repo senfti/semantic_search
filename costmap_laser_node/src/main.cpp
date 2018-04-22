@@ -107,7 +107,8 @@ void cloudCb(const sensor_msgs::PointCloud2ConstPtr& msg){
       tf::Vector3 pos = door_tf*tf::Vector3(door_poses.poses[i].position.x, door_poses.poses[i].position.y, door_poses.poses[i].position.z);
       int idx = (atan2(pos.y(), pos.x())-true_angle_min-angle)/true_increment;
       float dist = std::sqrt(pos.x()*pos.x()+pos.y()*pos.y());
-      filtered.ranges[idx] = std::min(filtered.ranges[idx], dist+0.2f);
+      if(idx>=0 && idx < filtered.ranges.size())
+        filtered.ranges[idx] = std::min(filtered.ranges[idx], dist+0.2f);
     }
   }
   filtered_pub.publish(filtered);

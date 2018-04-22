@@ -21,7 +21,7 @@ xterm -hold -e roslaunch hardware 4_cam1_settings_move_base.launch &
 sleep 3
 xterm -hold -e roslaunch hardware 5_cam2_settings_footprint.launch &
 sleep 3
-xterm -hold -e roslaunch hardware 6_door_detection.launch &
+#xterm -hold -e roslaunch hardware 6_door_detection.launch &
 sleep 2
 xterm -hold -e roslaunch hardware 7_vision.launch &
 sleep 4
