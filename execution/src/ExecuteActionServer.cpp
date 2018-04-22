@@ -24,6 +24,7 @@ ExecuteActionServer::ExecuteActionServer()
     ros::spinOnce();
     break;
   }
+  map_sub_ = ros::NodeHandle().subscribe("map", 1, &ExecuteActionServer::mapCb, this);
   map_switch_sub_ = nh_.subscribe("map_switch", 1, &ExecuteActionServer::mapSwitchCb, this);
   door_pose_sub_ = nh_.subscribe("mapper_door_poses", 1, &ExecuteActionServer::doorPoseCb, this);
   frontier_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("current_frontier", 1, true);
@@ -79,17 +80,48 @@ void ExecuteActionServer::preemptCb(){
   move_base_state_ = MoveBaseState::STOPPED;
 }
 
+void ExecuteActionServer::mapCb(const nav_msgs::OccupancyGridConstPtr &msg){
+  curr_map_ = *msg;
+}
 
-tf::Transform offsetPose(tf::Transform pose, double dist, bool forward = true){
+
+tf::Transform ExecuteActionServer::offsetPose(tf::Transform pose, double dist, bool forward){
+  cv::Mat_<uchar> map_mat(curr_map_.info.height, curr_map_.info.width, uchar(0));
+  for(int x=0; x<map_mat.cols; x++){
+    for(int y=0; y<map_mat.rows; y++){
+      if(curr_map_.data[x+y*curr_map_.info.width] > 0)
+        map_mat(y,x) = 255;
+    }
+  }
+  int robot_kernel_size = explorer_.ROBOT_SIZE*2+3;
+  cv::dilate(map_mat, map_mat, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   if(forward)
     pose.setOrigin(pose.getOrigin()+dist*tf::Vector3(pose.getBasis().getColumn(0).x(), pose.getBasis().getColumn(0).y(),0.0));
   else
     pose.setOrigin(pose.getOrigin()+dist*tf::Vector3(pose.getBasis().getColumn(1).x(), pose.getBasis().getColumn(1).y(),0.0));
+
+  for(int i=0; i<10; i++){
+    tf::Vector3 pose_off = pose.getOrigin()+i*0.05*tf::Vector3(pose.getBasis().getColumn(1).x(), pose.getBasis().getColumn(1).y(),0.0);
+    int x = (pose_off.x()-curr_map_.info.origin.position.x)/curr_map_.info.resolution;
+    int y = (pose_off.y()-curr_map_.info.origin.position.y)/curr_map_.info.resolution;
+    if(x>=0 && x<map_mat.cols && y>=0 && y<map_mat.rows && map_mat(y,x)==0){
+      pose.setOrigin(pose_off);
+      return pose;
+    }
+    pose_off = pose.getOrigin()-i*0.05*tf::Vector3(pose.getBasis().getColumn(1).x(), pose.getBasis().getColumn(1).y(),0.0);
+    x = (pose_off.x()-curr_map_.info.origin.position.x)/curr_map_.info.resolution;
+    y = (pose_off.y()-curr_map_.info.origin.position.y)/curr_map_.info.resolution;
+    if(x>=0 && x<map_mat.cols && y>=0 && y<map_mat.rows && map_mat(y,x)==0){
+      pose.setOrigin(pose_off);
+      return pose;
+    }
+  }
+
   return pose;
 }
 
 
-geometry_msgs::Pose offsetPose(const geometry_msgs::Pose& pose, double dist, bool forward = true){
+geometry_msgs::Pose ExecuteActionServer::offsetPose(const geometry_msgs::Pose& pose, double dist, bool forward){
   if(forward){
     tf::Transform tf_pose;
     tf::poseMsgToTF(pose, tf_pose);
@@ -219,8 +251,6 @@ void ExecuteActionServer::doMoveTo(){
       move_base_state_ = MoveBaseState::WAITING;
     }
     else{
-      static int fail_cound = 0;
-      fail_cound++;
       execution::ExecuteResult result;
       geometry_msgs::Twist cmd_vel;
       cmd_vel.linear.x = -0.1;
@@ -229,7 +259,7 @@ void ExecuteActionServer::doMoveTo(){
       vel_pub_.publish(cmd_vel);
       ros::Rate r(1.0);
       r.sleep();
-      sendMoveBaseGoal(offsetPose(offsetPose(goal_.pose, move_offset_dist_), ((fail_cound%2) ? 0.3: -0.3),false));
+      sendMoveBaseGoal(offsetPose(goal_.pose, move_offset_dist_));
     }
   }
 }

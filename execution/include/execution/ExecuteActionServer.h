@@ -13,6 +13,7 @@
 #include <semantic_mapping_v2/RoomSwitchMsg.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseArray.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 #include <execution/StartRotationStateMachine.h>
 #include <execution/Explorer.h>
@@ -44,8 +45,11 @@ class ExecuteActionServer{
     Explorer explorer_;
     Searcher searcher_;
 
+    nav_msgs::OccupancyGrid curr_map_;
+
     ros::Subscriber map_switch_sub_;
     ros::Subscriber door_pose_sub_;
+    ros::Subscriber map_sub_;
 
     ros::Publisher frontier_pub_;
     ros::Publisher vel_pub_;
@@ -58,6 +62,8 @@ class ExecuteActionServer{
     void doSearch();
     void doEnterRoomRotation();
     void doStartRotation();
+    tf::Transform offsetPose(tf::Transform pose, double dist, bool forward = true);
+    geometry_msgs::Pose offsetPose(const geometry_msgs::Pose& pose, double dist, bool forward = true);
 
   public:
     ExecuteActionServer();
@@ -65,6 +71,7 @@ class ExecuteActionServer{
     void activeCb();
     void feedbackCb(const move_base_msgs::MoveBaseFeedbackConstPtr& feedback);
     void doneCb(const actionlib::SimpleClientGoalState& state, const move_base_msgs::MoveBaseResultConstPtr& result);
+    void mapCb(const nav_msgs::OccupancyGridConstPtr& msg);
 
     void goalCb();
     void preemptCb();

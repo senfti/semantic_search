@@ -298,16 +298,24 @@ bool SlamGMapping::getOdomPose(GMapping::OrientedPoint& gmap_pose, const ros::Ti
   // Get the pose of the centered laser at the right time
   centered_laser_pose_.stamp_ = t;
   // Get the laser's pose that is centered
-  tf::Stamped<tf::Transform> odom_pose;
   try {
+    tf::Stamped<tf::Transform> odom_pose;
     tf_->transformPose(odom_frame_, centered_laser_pose_, odom_pose);
+    double yaw = tf::getYaw(odom_pose.getRotation());
+    gmap_pose = GMapping::OrientedPoint(odom_pose.getOrigin().x(), odom_pose.getOrigin().y(), yaw);
   }
   catch(tf::TransformException e) {
-    ROS_WARN("Failed to compute odom pose, skipping scan (%s)", e.what());
-    return false;
+    tf::StampedTransform odom_pose;
+    try{
+      tf_->lookupTransform(odom_frame_, centered_laser_pose_.frame_id_, ros::Time(0), odom_pose);
+    }
+    catch(tf::TransformException e){
+      ROS_WARN("Failed to compute odom pose, skipping scan (%s)", e.what());
+      return false;
+    }
+    double yaw = tf::getYaw(odom_pose.getRotation());
+    gmap_pose = GMapping::OrientedPoint(odom_pose.getOrigin().x(), odom_pose.getOrigin().y(), yaw);
   }
-  double yaw = tf::getYaw(odom_pose.getRotation());
-  gmap_pose = GMapping::OrientedPoint(odom_pose.getOrigin().x(), odom_pose.getOrigin().y(), yaw);
 
   return true;
 }
