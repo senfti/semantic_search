@@ -1,10 +1,63 @@
 \chapter{Implementation}
 
-In this chapter the implementational details of the concept presented in chapter \ref{Concept} are described. The software runs on a Linux operating system. ROS Kinetic, which is described in section \ref{ROS}, is used as middle-ware. At the beginning the interface with the sensors and the robot, and the preprocessing of the sensor data are described. Then the implementational details of the five main components, the vision node, the doorway detection node, the mapping node, the high-level-planner node and the low-level-planner node, are presented.
+In this chapter the implementational details of the concept presented in chapter \ref{Concept} are described. The software runs on a Linux operation system and uses ROS Kinetic as middle-ware. The usage of ROS allows easy communication between different processes, also called nodes, and the easy integration of existing packages. Existing packages are used for the communication with the robot and the sensors and the source code of some packages was used as a starting point for the Implementation. Also useful is the tf library, which is integrated in ROS. It keeps track of all coordinate frames and allows nodes to obtain the most recent transformation between two coordinate frames and also the transformations in the past. Other used libraries are OpenCV, PCL, the mapping libraries Octomap and Gmapping, and the CNN libraries Caffe and Darknet. OpenCV is an open-source image processing library. In this work it was not only used for image processing but also in the internal representation of grid maps and for operations executed on those maps. PCL (Point Cloud Library) was used for operations on point clouds, like coordinate transformations. 
 
-\input{Implementation/Sensorstuff.tex}
+Figure \ref{ImplOverview} shows the structure of the implementation, with its nodes and the communication channels between the nodes. The following sections contain an in-depth description of the implementation of the nodes and the communication between the nodes. 
+
+\begin{landscape}
+\begin{figure}
+  \includegraphics[width=1.35\textheight,clip]{figures/ImplementationOverview.pdf} 
+  \caption[Implementation overview]{Overview over the nodes in the system and the messages, services and actions; message connections are drawn from publishing node to the subscribed nodes }
+  \label{ImplOverview}
+\end{figure}
+\end{landscape}
+
+\input{Implementation/HardwareInterface.tex}
+\input{Implementation/Preprocessing.tex}
 \input{Implementation/door_detection_node.tex}
 \input{Implementation/vision_node.tex}
 \input{Implementation/mapping_node.tex}
 \input{Implementation/hl_planner_node.tex}
 \input{Implementation/ll_planner_node.tex}
+\input{Implementation/Navigation.tex}
+
+\begin{lstlisting}[language=Python, caption=mapping/TopologicalMapService,frame=single, label=TopologicalMapService]
+   RoomMsg[] rooms
+      int16 id
+      float32 obj_prob
+      int16[] doorways # doorways in the room
+      float32[] to_doorway_times
+      float32 search_time
+      float32 expected_search_time
+   int16 curr_room
+   DoorwayMsg[] doorways
+      int16 room1
+      int16 room2
+      geometry_msgs/Pose door1_pose # doorway pose in room 1
+      geometry_msgs/Pose door2_pose # doorway pose in room 2
+      float32[] dists # distances to other doorways
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption=mapping/ObjectProbabilityMapService,frame=single,    label=ObjectProbabilityMapService]
+   int16 room_id
+   int16 id
+   ---
+   ObjectMapMsg map
+      int16 width
+      int16 height
+      int16 z_steps
+      int16 origin_x # position of the origin in the map
+      int16 origin_y
+      float32 resolution
+      float32[] data
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption=low_level_planner/HLTaskAction,frame=single,    label=HLTaskAction]
+int16 action
+geometry_msgs/Pose pose
+int16 target_room
+int16 target_obj
+---
+int16 result_number
+---
+\end{lstlisting}

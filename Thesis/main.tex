@@ -189,11 +189,19 @@
 \usepackage{capt-of}
 \usepackage{listings}
 \usepackage{subfig}
+\usepackage{pdflscape}
 \usepackage{amsmath}
 \usepackage[linesnumbered,algoruled,boxed,lined]{algorithm2e}
 \DeclareMathOperator*{\argminA}{arg\,min}
 \DeclareMathOperator*{\argmaxA}{arg\,max}
 \SetKwInOut{Parameter}{Parameter}
+
+\newcommand{\hlnode}{high{\_}level{\_}planner}
+\newcommand{\llnode}{low{\_}level{\_}planner}
+
+\lstset{
+   basicstyle=\fontsize{10}{12}\selectfont\ttfamily
+}
 
 %% ========================================================================
 %%%% MISC self-defined commands and settings

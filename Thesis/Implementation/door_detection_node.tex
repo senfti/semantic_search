@@ -1,4 +1,4 @@
-\section{Doorway Detection Node}
+\section{Doorway Detection}
 
 The input data for the doorway detection node are point clouds from the upward looking RGBD-camera and range measurements from the LIDAR. The output is a set of doorway detections, where each detected doorway is specified by a pose in the robot coordinate system. The most recent range measurements are stored for further processing. When a new point cloud arrives and the robot has moved since the last execution of the doorway detection the doorway detection is started. The following operations on point clouds are done using the Point Cloud Library (PCL) and the operations on images are done using the OpenCV image processing library.
 
