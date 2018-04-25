@@ -41,7 +41,7 @@ Alongside with the color image the RGBD-camera takes also an depth image, which 
 
 Ultimately, the result of the object detection is a set of 3D points, each one holding probabilities for every detectable object types. Furthermore, the result contains object type and estimated 3D location of very confident object detections. 
 
-\subsection{Room Type Classification} %TODO reference to Places-205?
+\subsection{Room Type Classification} \label{Room Type Classification} %TODO reference to Places-205?
 
 In this thesis room type classification is done base on images. Visual features are very expressive for room type classification and also image datasets containing lots of labeled images exist. One of those is the MIT Places-205 dataset. It contains about 2.5 million images assigned to 205 place categories and CNNs trained on this dataset are publicly available. 60 of those categories are relevant as the other categories are outdoor place categories. These indoor place categories, which are room types and types of areas in rooms, are listed in table \ref{room types}. The result of a CNN trained on the Places-205 dataset is a probability distribution over the 205 place categories. The irrelevant outdoor categories are then ignored by setting their probabilities to zero. The remaining probabilities are normalized to one, resulting in a probability distribution over the 60 indoor categories for the room type seen in the input image.
 
