@@ -33,7 +33,7 @@ In the following subsections the individual parts of the mapping system are pres
   \label{fig:downproj}
 \end{figure}
 
-\subsection{Object-Map Creation} %TODO: better name?
+\subsection{Object-Map Creation} \label{Object-Map}%TODO: better name?
 \label{sec:Object Mapping}
 
 This section covers the creation of the Object-Map, which contains information about the positions of the objects seen by the robot. The object detection can detect lots of objects in an image, especially in cluttered indoor environments. Those detections are often not very reliable and the location and especially the extent of detected objects is inaccurate. All together an object tracking approach is not very promising. Therefore a grid map representation containing object probabilities was chosen. This approach can handle uncertainty much better and the number of detected objects has no impact on the performance.
@@ -76,7 +76,7 @@ The final probability of an object of type $o$ being seen in a cell can be calcu
 \end{equation}
 as the probability of a cell containing an object is zero if the cell is not occupied.
 
-\subsection{Room-Type-Map Creation}
+\subsection{Room-Type-Map Creation} \label{Room-Type-Map}
 
 Assigning a single room type to a whole room is not sufficient for many rooms. On the one hand it is quiet common that different types of rooms, like a kitchen and a living room, are only partially or not at all separated by walls. On the other hand more accurate classes can often be found for areas in a room, like a pantry-like area in a kitchen. Therefore a Room-Type-Map is created for every room, which is a 2D grid map where each grid cell has its own probability distribution over the detectable room types. 
 
@@ -110,7 +110,7 @@ P(R_{c}|I_{t},\mathbf{x}_{t}) = \begin{cases}\sum_{R_{I_{t} }} P(R_{I_{t} }|I_t)
 
 $P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image $R_{I_{t}}$. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are set to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2, a library for extraction of information from commonsense databases, and the ConceptNet4 commonsense knowledge base. %TODO: references?
 
-\subsection{Doorway Mapping}
+\subsection{Doorway Mapping} \label{Doorway Mapping}
 
 The doorway mapping inserts and updates the poses of doorways in the semantic room map, using the result of the doorway detection. The result of the doorway detection is a set of doorway proposal poses in the coordinate frame of the robot. These proposal poses are transformed into the map frames of the particles. If no already found doorway is within a threshold distance to a proposal pose, a new doorway is added into the map. Otherwise the best fitting doorway, selected based on distance and orientation, is updated. This is shown in figure \ref{fig:door_mapping}. A running average filter is used to estimate the true doorway pose. Due to the orientation constraint of doorway detections, doorways are always facing out of the room.  
 \begin{figure}[h]
@@ -167,7 +167,7 @@ $Z$ is a normalization term, as $P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t}) + P(\n
 
 Some post-processing is done on the Object-Probability-Map. The probabilities of cells assumed to be outside the room are set to zero. These cells are in areas never seen by the RGBD-camera or the LIDAR, or in areas behind doorways. Also probabilities in free space are set to zero, as no objects can be in areas where the robot can drive. For every other cell a minimum probability is set, which is half the value of the room type based probability. 
 
-\subsection{Topological Mapping and Room Transitioning}
+\subsection{Topological Mapping and Room Transitioning} \label{topomapping}
 
 The topological map consists of nodes for every room, which contain the semantic room maps and condensed information for the high-level planning based on the semantic room maps. It also contains edges, where each edge corresponds to a doorway and holds information about which rooms are connected and the pose of the connecting doorway in both rooms. The topological mapping is responsible for the creation of this graphical structure, including the initialization of new room maps, the localization in the topological map and the handling of room transitions. 
 

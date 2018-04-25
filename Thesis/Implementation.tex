@@ -23,37 +23,6 @@ Figure \ref{ImplOverview} shows the structure of the implementation, with its no
 
 
 
-\begin{lstlisting}[language=Python, caption=mapping/TopologicalMapService,frame=single, label=TopologicalMapService]
-   RoomMsg[] rooms
-      int16 id
-      float32 obj{\_}prob
-      int16[] doorways # doorways in the room
-      float32[] to{\_}doorway{\_}times
-      float32 search{\_}time
-      float32 expected{\_}search{\_}time
-   int16 curr{\_}room
-   DoorwayMsg[] doorways
-      int16 room1
-      int16 room2
-      geometry{\_}msgs/Pose door1{\_}pose # doorway pose in room 1
-      geometry{\_}msgs/Pose door2{\_}pose # doorway pose in room 2
-      float32[] dists # distances to other doorways
-\end{lstlisting}
-
-\begin{lstlisting}[language=Python, caption=mapping/ObjectProbabilityMapService,frame=single,    label=ObjectProbabilityMapService]
-   int16 room{\_}id
-   int16 id
-   ---
-   ObjectMapMsg map
-      int16 width
-      int16 height
-      int16 z{\_}steps
-      int16 origin{\_}x # position of the origin in the map
-      int16 origin{\_}y
-      float32 resolution
-      float32[] data
-\end{lstlisting}
-
 \begin{lstlisting}[language=Python, caption=low{\_}level{\_}planner/HLTaskAction,frame=single,    label=HLTaskAction]
 int16 action
 geometry{\_}msgs/Pose pose

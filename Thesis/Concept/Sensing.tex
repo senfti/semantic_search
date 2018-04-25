@@ -32,6 +32,7 @@ indoor objects & book, clock, vase, scissors, teddy bear, hair drier, \\ &  toot
 The result of such an object detection CNN is a set of bounding boxes. Each bounding box, specified by location in the image and size, has also probability values for each detectable object class attached. In figure \ref{obj detection} a typical result of the object detection is shown. In this image only the most likely detections are displayed. As one can see the result is far from perfect, even with state-of-the-art object detection CNNs. Many objects are not detected or have a low confidence. Another problem visible in the image is the possibility of overlapping bounding boxes. These problems have to be taken into account in the design of the object mapping system, as the accumulation of information from multiple images is needed for more reliable results.
 
 \begin{figure}[h]
+\centering
   \includegraphics[width=1.0\textwidth]{figures/vision_still.png}
   \caption[Example result of room type classification and object detection]{A typical result of the object detection and the room type classification; detections with a probability greater than $0.1$ are shown with bounding box, most likely class and its probability; in the upper left corner of the image the top classifications of the room type classifier and their probabilities are shown} 
   \label{obj detection}

@@ -4,4 +4,6 @@ The communication with the ASUS Xtion Pro RGBD-cameras is done using the openni2
 
 The hokuyo{\_}node provides access to the LIDAR. It publishes a laser scan message, which contains an array of range measurements and information about the angle range and resolution of the laser scan.
 
+The transformation publisher publishes the transformations of the robot, so the transformation from all the components of the robot into the robot base coordinate frame are available.
+
 The interface to the Turtlebot takes velocity commands, which contain a translational and a rotational velocity. These commands are then executed by the robot, if possible. The interface also provides the data from the odometry as a transformation between the robot and the odometry coordinate frame. 
