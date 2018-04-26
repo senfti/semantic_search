@@ -2,7 +2,7 @@
 
 The vision node operates on the RGB-image and the depth-registered point cloud from the main RGBD-camera. The output are two messages. The \texttt{VisionResult} message, sent to the mapping node and the \llplanner\ node, contains the results of the room type classification and the object detection and is described in listing \ref{VisionResult}. The \texttt{HighConfidenceObjects} message, sent only to the \llplanner, contains the types and locations of object detections with very high confidence and is described in listing \ref{HighConfidenceObjects}. 
 
-\begin{lstlisting}[language=Python, caption=\texttt{vision/VisionResult},frame=single, label=VisionResult]
+\begin{lstlisting}[caption=\texttt{vision/VisionResult},frame=single, label=VisionResult]
    Header header
    DetectionSample[] samples
       geometry_msgs/Point position
@@ -10,7 +10,7 @@ The vision node operates on the RGB-image and the depth-registered point cloud f
    float32[] room_type_probabilities
 \end{lstlisting}
 
-\begin{lstlisting}[language=Python,caption=\texttt{vision/HighConfidenceObjects},frame=single,label=HighConfidenceObjects]
+\begin{lstlisting}[caption=\texttt{vision/HighConfidenceObjects},frame=single,label=HighConfidenceObjects]
    Header header
    geometry_msgs/Point[] positions
    int16[] object_types
@@ -18,30 +18,34 @@ The vision node operates on the RGB-image and the depth-registered point cloud f
 
 The implementation of this node uses two threads. The first thread waits for input images and point clouds and decides if an images should be processed. The second thread runs the CNNs on the images delivered by the first thread, creates the output messages and publishes these messages. The multi-threaded approach is used to avoid waiting for a new image and to be able to receive images all the time.  
 
-The decision to process an image is made base on the movement of the robot. If the robot turns too fast the images are blurry and have to be discarded. If the robot does not move no new information is gathered and no processing is necessary. This also avoids using the same information multiple times in the mapping. The movement of the robot is obtained from the odometry data, which is accessible through the tf library. If an image should be processed the image and the current point cloud are put into a buffer for the second thread.
+The decision to process an image is made based on the movement of the robot. If the robot turns too fast the images are blurry and therefore discarded. If the robot does not move no new information is gathered and no processing is necessary. This also avoids using the same information multiple times in the mapping. The movement of the robot is obtained from the odometry data, which is accessible through the tf library. If an image should be processed the image and the current point cloud are stored in a buffer for the second thread.
+
+The images are processed in three steps, starting with the execution of the place classification CNN and followed by the execution of the object detection CNN. In the last step the output messages are created using the results of the CNNs.
 
 The processing of an image is done in three steps, executing the place classification CNN, executing the the object detection CNN and the creation of the output messages using the results of the CNNs. In the following these steps are described in more detail. 
 
 \subsection{Place Classification}
 
 In this thesis a CNN using the VGGNet-16 model and trained on the Places205 dataset is used. The training was done by Wang et al. described in []. %TODO: referenz
-This CNN was chosen as it achieves state-of-the-art performance with a top1 accuracy of about 60\% on the Place205 testset. The second reason is that the model of the CNN and the trained weights are publicly available and ready to use with the Caffe deep learning library. Caffe %TODO referenz
-is an open-source deep-learning framework written in C++. Using CUDA, the CNN can be executed on the GPU, which is essential for running large neural networks with reasonable frame rates. On the used hardware a forward pass takes about 30\,ms. 
+This CNN was chosen as it achieves state-of-the-art performance with a top1 accuracy of about 60\% on the Place205 testset. Another advantage is that the model of the CNN and the trained weights are publicly available and ready to use with the Caffe deep learning library. Caffe %TODO referenz
+is an open-source deep-learning framework written in C++. Using CUDA, a framework for executing code on the GPU, the CNN can be executed on the GPU, which is essential for running large neural networks with reasonable frame rates. On the used hardware a forward pass takes about 30\,ms. 
 
-An example code for setting up a CNN and the execution of the classification on an image is available. This code was modified to use the chosen CNN and adapted to fit into the vision node. The result of the classification executed on an image is an array of 205 probability values, one for each place category.
+An example code for setting up a CNN and the execution of the classification on an image is distributed with Caffe. This code was modified to use the chosen CNN and adapted to fit into the vision node. The result of the classification is an array of 205 probability values, one for each place category.
 
 \subsection{Object Detection} 
 
-For object detection the YOLOv3 object detection CNN is used. This CNN was chosen because according to its publication it has the best trade-off between speed and accuracy. State-of-the-art object detection systems cannot be used because the used GPU is not fast enough to achieve reasonable frame rates. With YOLOv3 a forward pass still takes about 150\,ms. YOLOv3 is available running on a second deep learning framework, which is Darknet. Darknet is open-source, written in C and also uses CUDA for GPU support. This causes problems when linking the vision node because Caffe links CUDA with C++-linkage and Darknet with C-linkage. To resolve this problem Darknet was ported to C++, which involved mainly the renaming of variables with names forbidden in C++. The code of an example program using YOLOv3 is shipped with Darknet. This code also includes the post-processing of the result of the CNN. This post-processing consists of adapting the locations and sizes of the bounding boxes to the image size and a non-maximum-suppression. In decreasing order, based on their probability, the overlap with all already processed bounding boxes is calculated and if it is greater than a threshold, the bounding box is discarded. The example code was adapted and integrated into the vision node code. The main adaptation was to change the input size to 640x480, which is the resolution of the RGBD-camera. 
+For object detection the YOLOv3 object detection CNN is used. This CNN was chosen because according to its publication it has the best trade-off between speed and accuracy. State-of-the-art object detection systems cannot be used because the used GPU is not fast enough to achieve reasonable frame rates. With YOLOv3 a forward pass still takes about 150\,ms. YOLOv3 is available running on a second deep learning framework, which is Darknet. Darknet is open-source, written in C and also uses CUDA for GPU support. This causes problems when linking the vision node because Caffe links CUDA with C++-linkage and Darknet with C-linkage. To resolve this problem Darknet was ported to C++, which involved mainly the renaming of variables with names forbidden in C++. The code of an example program using YOLOv3 is shipped with Darknet. 
 
-The output is an array of object detections. Each object consists of a bounding box, given by the location of the center and the size in pixels, and an array of probabilities, one probability for every object class. 
+The necessary post-processing of the result of the CNN is also included in the example code. First the bounding boxes are transformed into image coordinates. Then a non-maximum-suppression is applied. In decreasing order, based on their probability, the overlap with all already processed bounding boxes is calculated and if it is greater than a threshold, the bounding box is discarded. The example code was adapted and integrated into the vision node code. The main adaptation was to change the input size to 640x480, which is the resolution of the RGBD-camera. 
+
+The output is an array of object detections. Each object consists of a bounding box, given by the location of its center and its size in pixels, and an array of probabilities, one probability for every object class. 
 
 \subsection{Output Generation}
 
-The \texttt{VisionResult} message should only contain the probabilities of the relevant indoor place categories, also called room types. Using an array containing information about what place categories are relevant all irrelevant place categories are removed from the result of the place classification. The remaining probabilities are normalized to one and the resulting array is inserted into the \texttt{VisionResult} message.
+The \texttt{VisionResult} message should only contain the probabilities of the relevant indoor place categories, also called room types. Using an array containing the information about what place categories are relevant, all irrelevant place categories are removed from the result of the place classification. The remaining probabilities are normalized to one and the resulting array is inserted into the \texttt{VisionResult} message.
 
-The handling of the object detections is more complex. In a first step all probabilities of irrelevant types, which are stated in table \ref{obj detection}, are removed from the probability arrays of the object detections. Furthermore, all very unlikely detections, which are detections with no class having a probability greater than 0.00001, are also discarded. Then samples are drawn randomly from the image, where every drawn sample must have a valid corresponding 3D point in the point cloud. For every sample and every relevant object type the maximum probability of all overlapping object detections is assigned. The samples, consisting of a 3D point and a probability for every object type, are then inserted into the \texttt{VisionResult} message.
+The handling of the object detections is more complex. In a first step all probabilities of irrelevant types, which are stated in table \ref{obj detection}, are removed from the probability arrays of the object detections. Furthermore, all very unlikely detections, which are detections with no class having a probability greater than 0.00001, are also discarded. Then samples are drawn randomly from the valid points in the point cloud. Using the structure of the point cloud the corresponding pixel in the image can be found. For every sample and every relevant object type the maximum probability of all overlapping object detections is assigned. The samples, consisting of a 3D point and a probability for every object type, are then inserted into the \texttt{VisionResult} message.
 
-T generate the \texttt{HighConfidenceObjects} message an iteration over all object detections is done. If the probability of the most likely object class of a detection is higher than 0.9, the detection is assumed to be correct. In this case the median z-coordinate, which is in the direction the camera is facing, of all points in the bounding box is calculated. Using this distance the center of the bounding box is projected into 3D space and this point is assumed to be the object location. This object location and the id of the object class are then inserted into the \texttt{HighConfidenceObjects} message. 
+To generate the \texttt{HighConfidenceObjects} message, an iteration over all object detections is done. If the probability of the most likely object class of a detection is higher than 0.9, the detection is assumed to be correct. In this case the median z-coordinate, which is in the direction the camera is facing, of all points in the bounding box is calculated. Using this distance the center of the bounding box is projected into 3D space and this point is assumed to be the object location. This object location and the id of the object class are then inserted into the \texttt{HighConfidenceObjects} message. 
 
 Finally both generated messages are published.

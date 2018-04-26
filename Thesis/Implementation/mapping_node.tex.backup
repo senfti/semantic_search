@@ -1,10 +1,10 @@
 \section{Mapping Node}
 
-As can be seen in figure \ref{ImplOverview} the mapping node has a central position in the system. It is also the largest node in terms written code. This section is split into two parts, the class structure and the execution. 
+As can be seen in figure \ref{ImplOverview} the mapping node has a central position in the system. It is also the largest node in terms written code. This section is split into two parts, the class structure and the execution of the node. 
 
 \subsection{Class Stucture}
 
-In figure \ref{mapping overview} the general structure of the mapping node is show. The \texttt{TopologicalMapper} class is the main class in this structure, holding an instance of the  \texttt{RoomMapper} class for every room. The \texttt{RoomMapper} class is derived from the \texttt{SlamGmapper} class, which does the 2D SLAM using Gmapping. Instead of putting the other types of maps into the particles, which would have resulted in making major changes to Gmapping, the \texttt{RoomMapper} class holds a separate mapping class for every type of map and every particle. 
+In figure \ref{mapping overview} the general structure of the mapping node is show. 
 
 \begin{figure}
   \centering
@@ -12,6 +12,8 @@ In figure \ref{mapping overview} the general structure of the mapping node is sh
   \caption[Mapping node structure]{An overview over structure of the mapping node}
   \label{mapping overview}
 \end{figure}
+
+The \texttt{TopologicalMapper} class is the main class in this structure, holding an instance of the  \texttt{RoomMapper} class for every room. The \texttt{RoomMapper} class is derived from the \texttt{SlamGmapper} class, which does the 2D SLAM using Gmapping. Instead of putting the other types of maps into the particles, which would have resulted in making major changes to Gmapping, the \texttt{RoomMapper} class holds a separate mapping class for every type of map and every particle. 
 
 In listing \ref{TopologicalMapper} the most important member variables and methods of the \texttt{TopologicalMapper} class are shown. 
 
@@ -189,124 +191,59 @@ In the callback for the \texttt{vision{\_}result} message the \texttt{processVis
 
 The doorway poses in the \texttt{door{\_}detections} message are transformed into the map frames of all particles and the \texttt{processDoorway} functions of the corresponding \texttt{DoorwayMapper} instances are called. According to section \ref{Doorway Mapping} the decision is made if it is a new doorway or another detection of an already found doorway. If it is a new doorway a new instance of \texttt{Doorway} is added to the array of doorways. All elements in the \texttt{pose{\_}array} and \texttt{pose} are set to the pose of the detected door, a new id is generated for the doorway and the values of \texttt{counterpart{\_}id} and \texttt{other{\_}room} are set to -1. -1 signals that the doorway was never passed. If the detection is from an already found doorway, the oldest element in the \texttt{pose{\_}array} is replaced by the pose of the doorway detection and the average in the \texttt{pose{\_}array} is assigned to the \texttt{pose} variable. To calculate the average orientation the corresponding point on the unit circle is calculated for all orientations of the poses in the \texttt{pose{\_}array}. The angle of the average of these points is the average orientation.
 
-The creation of the map used for navigation and low-level planning in regular intervals is done as described in section \ref{topomapping}. Additionally, if \texttt{current{\_}action} is not move through doorway, the doorways have to be blocked. This is done by setting cells on a line short line perpendicular to the doorway poses to occupied. This created map is then published. 
+\subsubsection{Map creation and publishing}
 
+The creation of the map used for navigation and low-level planning in regular intervals is done as described in section \ref{topomapping}. As a second thread is working on the 3D map, locking is important to avoid race conditions and possible program crashes. Additionally, if \texttt{current{\_}action} is not move through doorway, the doorways have to be blocked. This is done by setting cells on a short line perpendicular to the doorway poses to occupied. This created map is then published. 
 
+\subsubsection{Map switch}
 
+The last step in the main loop is the check if a doorway was passed. Therefore for all doorways in the \texttt{DoorwayMapper} of the best particle in the current room the robot pose is transformed into the doorway's coordinate frame. If the x-coordinate of the transformed robot pose is greater than a threshold, meaning the robot has driven beyond the doorway, and the distance to the doorway is smaller than second threshold, to ensure the robot is near the doorway, the doorway is returned and the map switch is triggered.
 
-\subsection{Implementation Details}
+First \texttt{deactivate} function of the \texttt{RoomMapper} of the current room is called. This function discards all but the best particle in the particle filter. Also in the arrays of mappers all mappers except those of the best particle are deleted. Then the thread for publishing the map-to-odometry-transformation is paused.
 
+If the \texttt{other{\_}room} variable of the doorway is negative, a never visited room is entered. A new \texttt{RoomMapper} is created. The particle poses in the particle filter of the new \texttt{RoomMapper} are set to the pose of the best particle in the old room and also the map-to-odometry-transformation is copied to the new mapper. Therefore the the map coordinate frames of both rooms is initially the same. The doorway pose is flipped, so it is facing outwards in the new room, and added to the \texttt{DoorwayMapper}s of the new \texttt{RoomMapper}. Then the new \texttt{RoomMapper} is added to the \texttt{room{\_}mapper} array. The doorway in the old \texttt{RoomMapper} is updated, so it contains the id of the new room in the \texttt{other{\_}room} variable and id of the doorway in the new room in the \texttt{counterpart{\_}id} variable. 
 
+If the \texttt{other{\_}room} variable of the doorway is not negative, it specifies the room to switch to. Using the id in the \texttt{counterpart{\_}id} variable of the doorway the corresponding doorway in the other room is found. As described in section \ref{topomapping} the robot pose is transformed into the coordinate frame of the other room. With this pose as parameter the \texttt{activate} function of the other \texttt{RoomMapper} is called. There the pose of the particle in the other room is set to this transformed pose and also the map-to-odometry-transformation is set accordingly. After that the particle and the mappers of the other rooms \texttt{RoomMapper} are multiplied, so the correct number of particles is available. 
 
+In both cases the next step is to set the \texttt{current{\_}room} variable to the entered room and resume the thread for publishing the map-to-odometry-transformation in the entered room's \texttt{RoomMapper}. A message containing the transformation between the leaved and the entered room is then published as the last step. 
 
+\subsubsection{Processing of Service Requests}
 
+The services requests are processed in a separate thread. This is necessary as the processing of the service requests would block the mapping for too long otherwise, especially the \texttt{TopologicalMapSrv} service, which can take more than one second. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\subsection{Processing of Messages}
-
-All messages are fetched by the \texttt{TopologicalMapper} class and forwarded to the \texttt{RoomMapper} instance of the current room. The \texttt{TopologicalMapper} class has a different callback function for all the different messages and also in this section the processing of the messages is described separately.
-
-\subsubsection{Laser scan}
-
-The laser scan messages are forwarded to the \texttt{processLaser()} function of the \texttt{SlamGmapper} class. The \texttt{processLaser()} function is basically the same as in the ROS node for Gmapping, with one exception. For the particle filter to work resampling is needed. During the resampling unlikely particles are replaced by copies of more likely particles. This has also to be done with the mappers of the other maps. To get the information about the resampling a own particle filter class is derived from the Gmapping particle filter class, which stores if resampling was done and how the particles were changed. Using this information the replacement of the other mappers is done after the processing of the laser scan.
-
-\subsubsection{Point cloud}
-
-The point cloud messages are forwarded to the \texttt{processCloud()} function of the \texttt{RoomMapper} class. This function copies the point cloud into a buffer to be processed by the thread for 3D mapping. This runs in a loop and checks, if a new point cloud is in the buffer. If this is the case the operations independent of the particle are done. Those are the transformation from the camera coordinate frame into the robot coordinate frame and the segmentation of the point cloud into ground points and points in the mapped height range. This segmentation is done because the ground should not be mapped. 
-
-The remaining steps are executed for every particle individually. First the poses of the particles at the time the point cloud was recorded are calculated. The pose of a particle exists only for the times, when a processed laser scan was recorded. However, especially the orientation of the particle has to be accurate because even small deviations in the orientation causes points at the maximum range of the camera to be far off. Therefore the particle pose is interpolated using the data of the odometry. Using the particle pose the two parts of the point cloud are transformed into the map coordinate frame of the particle. 
-
-These transformed point clouds are the sent to the corresponding \texttt{OctoMapper}. The code for the map update is basically the same as in the octomap{\_}server ROS-node. 
-
-\subsubsection{Vision result}
-
-The \texttt{VisionResult} message contains both the results of the room type classification and the object detection. So for every particle two maps are updated. 
-
-First the update of the Room-Type-Map is done. To do this the \texttt{updateMaps()} functions of the  \texttt{RoomTypeMapper} of all the particles of the current \texttt{RoomMapper} are called with \texttt{VisionResult} message and the pose of the corresponding particle as parameters. The pose of the particle is calculated as described in the processing of the point cloud. 
-
-The update of the probabilities is done according to \ref{Room-Type-Map}. When a cell is updated the the corresponding value in the \texttt{seen{\_}count{\_}map} is incremented. When the area to update goes beyond the map a fixed number of columns or rows is added to the map, so the updated region fits into the map. 
-
-For the update of the Object-Map the detection samples are transformed into the map coordinate frames of the particles. The update of the object probabilities is done according to \ref{Object-Map} and the map resize is done the same way as in the \texttt{RoomTypeMapper}.
-
-\subsubsection{Doorway detection}
-
-If the doorway detection message contains at least one doorway the call to the \texttt{DoorwayMapper}s is done similar to for the other messages. 
-
-\subsection{Main Execution Loop}
-
-In this node four threads are running simultaneously. One thread is just for publishing the transformation between map coordinate frame and odometry coordinate frame, which is an indirect way of publishing the robot pose. A second thread is used for processing the service requests. For every room a worker thread exists for 3D mapping, but only the thread of the current room is running. This leaves the main thread, whose execution is now described in more detail. Beside the receiving, forwarding to the current room mapper and processing of the message, which will be described in the next section, it has two additional tasks. 
-
-The first is the creation and publishing of the map used for navigation and low-level planning in regular intervals. The creation involves two steps. The first one is inserting the obstacles found with 3D mapping. Listing \ref{Downprojection} shows how this is done. A second thread is working on the 3D map, so getting exclusive access to the 3D map is essential. The \texttt{getProjection()} function calculates the projection of the node into the 2D grid map. The cells in this projection are then set occupied.
+In listing \ref{TopologicalMapService} the request and response specification of the \texttt{TopologicalMapSrv} service is shown. The request specifies the id of the object of interest. Important to note is that references to the doorways in a room are stored in the rooms as well as the rooms connected by a doorway in the doorways. Also noteworthy is that the times to traverse a room are stored in the doorways. Every doorway stores a time for every doorway, which is the time to traverse in case the doorways are in one room and -1 otherwise.
 
 \begin{minipage}{\linewidth}
-\begin{lstlisting}[language=Python, caption=Inserting obstacles found in 3D map,frame=single, label=Downprojection]
-   navigation_map = room_mapper[current_room].get2DMap()
-   lock3DMap()
-   for node in room_mapper[current_room].
-                  octo_mapper[best_particle].octree.nodes:
-      if node.getOccupancy() > threshold:
-         navigation_map.setOccupied(node.getProjection())
-   unlock3DMap()
-   publishNavigationMap()
-\end{lstlisting}
-\end{minipage} 
-
-The second task is detecting if a doorway is passed and if this is the case executing the map switch. The detection of a doorway passing is shown in listing \ref{doorway passing}. 
-
-\begin{minipage}{\linewidth}
-\begin{lstlisting}[language=Python, caption=Detection of doorway passing,frame=single, label=doorway passing]
-   for doorway in room_mapper[current_room].
-                     doorway_mapper[best_particle].doorways:
-      pose = doorway.pose.inverse()*robot_pose
-      if pose.x > threshold1 and pose.y < threshold2:
-         return doorway
-   return Doorway()
-\end{lstlisting}
-\end{minipage} 
-
-If a doorway was passed the map switch is executed. There are two cases, the other room was visited before or not. In both cases the \texttt{deactivate()} function of \texttt{room{\_}mapper[current{\_}room]} is executed, which reduces the number of particles to one by discarding all particles except the best particle and all mappers except those of the best particle. If the other room was never visited, which is the case if the \texttt{other{\_}room} variable of the passed doorway is negative, 
-
-There the number of particles in the particle filter is reduced to one, leaving only the best particle. Gmapping provides a function for this. Using the index of the best particle stored before all other instances of the mappers are removed from the mapper arrays. If the other room was already visited, the transformation between the passed doorway and the counterpart of the doorway in the other room  is calculated. 
-
-\subsection{Processing of Service Requests}
-
-The two services the mapping node advertises are the \texttt{ObjectProbabilityMapSrv} service and the \texttt{TopologicalMapSrv} service. A lot of code is shared in 
-
 \begin{lstlisting}[language=Python, caption=mapping/TopologicalMapSrv,frame=single, label=TopologicalMapService]
+   # request
+   int16 object_id
+   ---
+   # response
    RoomMsg[] rooms
       int16 id
-      float32 obj_prob
+      float32 object_probability
       int16[] doorways # doorways in the room
       float32[] to_doorway_times
       float32 search_time
       float32 expected_search_time
-   int16 curr_room
+   int16 current_room
    DoorwayMsg[] doorways
       int16 room1
       int16 room2
       geometry_msgs/Pose door1_pose # doorway pose in room 1
       geometry_msgs/Pose door2_pose # doorway pose in room 2
-      float32[] dists # distances to other doorways
+      float32[] traverse_times # distances to other doorways
 \end{lstlisting}
+\end{minipage}
 
-\begin{lstlisting}[language=Python, caption=mapping/ObjectProbabilityMapSrv,frame=single,    label=ObjectProbabilityMapService]
+When processing a service the first step is to copy the interesting data out of the mapping structure. This way the mapping can proceed without creating race conditions. In a second step the data has to be brought into a common structure. Therefore all types of maps are converted into an \texttt{ObjectMap} class, resampling is done to have the same resolution in all maps and the sizes of the maps is made equal by adding additional space to the maps if necessary. Now the calculation of the Object-Probability-Map is done for every room as described in section \ref{ObjectProbMap}. Using the Object-Probability-Map, the other maps and the mapped doorways the response message is created according to section \ref{HLInfoGen}.
+
+In listing \ref{ObjectProbabilityMapSrv} the request and response specification of the \texttt{ObjectProbabilityMapSrv} service is shown. The request also specifies the room of interest. The processing is similar to the processing of the \texttt{TopologicalMapSrv} service, except only one room is of interest and the response message can be created after the calculation of the Object-Probability-Map.
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=Python, caption=mapping/ObjectProbabilityMapSrv,frame=single,    label=ObjectProbabilityMapSrv]
    int16 room_id
-   int16 id
+   int16 object_id
    ---
    ObjectMapMsg map
       int16 width
@@ -317,3 +254,4 @@ The two services the mapping node advertises are the \texttt{ObjectProbabilityMa
       float32 resolution
       float32[] data
 \end{lstlisting}
+\end{minipage}

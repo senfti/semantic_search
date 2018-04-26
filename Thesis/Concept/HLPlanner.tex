@@ -11,7 +11,7 @@ The objective of the high-level planner is to find the optimal search path $\mat
 \end{equation}
 
 The expected search time given a staring room $r_0$ and a search path $\mathbf{p}$ can be calculated with
-\begin{equation}
+\begin{equation} \label{expected formula}
  E(t|\mathbf{p},r_0) = \sum_{i=1}^{\mathbf{|p|}} (\prod_{j=1}^{i-1}(1-P_{r_j}(o))(M_{r_{i-1},r_i}+E_{r_i}) 
 \end{equation}
 This calculation is illustrated in an example calculation in Figure \ref{fig: search tree}. Searching rooms with high object probabilities first results in a lower expected search time as it is more likely that other rooms do not have to be searched. However, the probability of finding the object is the same for all paths. The matrix $M$ contains estimations of the movement times, where $M_{r_i,r_j}$ is the time needed to drive from room $r_i$ to room $r_j$. The matrix elements are calculated using the movement times described at the end of section 5.5.7 and the topological map. 
@@ -25,7 +25,7 @@ The possible paths form a search tree, as illustrated in Figure \ref{fig: search
  \label{fig: search tree}
 \end{figure}
 
-\subsection{Generation of next High-Level task}
+\subsection{Generation of next High-Level task} \label{HLTaskGen}
 
 The search path contains only the order, in which the rooms are searched. To execute the search path tasks have to be generated, which are then planned and executed by the low-level planner. These high-level tasks are:
 \begin{itemize}
@@ -43,81 +43,3 @@ The high-level planner keeps track of whether a room was visited, explored or se
  \caption{Flow diagram for high-level task generation}
  \label{fig: HLTask}
 \end{figure}
-
-% \subsection{Generation of high-level information}
-% 
-% The high level planner does not use the room maps for planning but high-level information extracted from the room maps. The needed information is
-% \begin{itemize}
-%  \item the probability of an object of the search type being in a room
-%  \item the time needed to completely search a room
-%  \item the expected time the robot searches in a room until an object of searched type is found or the room is completely searched 
-%  \item the time to get from any room to any other room
-% \end{itemize}
-% 
-% The time needed to explore a room is not needed as it is implicitly included in the search time of unexplored rooms. 
-% 
-% \subsubsection{Object probability in room r $\mathbf{P_r(O)}$}
-% 
-% The probability of an object being in a is 1 minus the probability of no cell in the room containing the object 
-% \begin{multline}
-%  P_R(O)=P(O_R^{OT}|I_{1:t},\mathbf{x}_{1:t}) \\= 1-(\prod_{C_i \in \mathbf{C_R}}(1-P(O_{R,C_i}^{OT}|I_{1:t},\mathbf{x}_{1:t})))(1-P(O_{R,unexp}^{OT}))
-% \end{multline}
-% where $\mathbf{C_R}$ is the set of explored cells in the room. If a room is not fully explored yet the unexplored areas have also to be taken into account. The probability of an object being in unexplored areas $P(O_{R,unexp}^{OT}|I_{1:t},\mathbf{x}_{1:t})$ is dependent on the number of unexplored, occupied cells and the probability density in those areas. Both has to be estimated. 
-% 
-% The estimation of the number of unexplored, occupied cells is done in a simplistic way. It is a fixed parameter, which is the estimated number of occupied cells in a completely unexplored room, minus the number of explored occupied cells, greater or equal a second parameter. This second parameter is needed as the number of explored occupied cells can be greater than the first parameter and the room can still be not fully explored. If the room is fully explored, the number number of unexplored, occupied cells is obviously zero. A more sophisticated model was not chosen as a more realistic, better performing model is hard to find and would also need a lot of data to find reasonable parameters.
-% 
-% The estimation of the probability density is done based on the average room type probability in the room and the room-type-object-correlation matrix. Therefore, with the expected number of unexplored, occupied cells $N_{unexp}$ and the average room type probability $P(R_{avg})$ 
-% \begin{equation}
-%  P(O_{R,unexp}^{OT})=1-(1-\sum_{r \in \mathbf{RT}}P(R_{avg})*P(O_{R,unexp}^{OT}|R_{avg}))^{N_{unexp}} 
-% \end{equation}
-% 
-% \subsubsection{Complete Search Time in room r $\mathbf{T_r}$}
-% 
-% The time needed to search a room is difficult to estimate, as it depends on what the search planner is doing and especially on how well the navigation works. Based on the map is hardly possible to estimate, how fast the robot can drive between view poses and how often a recovery behavior has to be executed. As the generation of a lot of test data is impossible a minimalistic model is used. 
-% 
-% The number of occupied cells in the 2D map has a high correlation with the search time. A high number means many possible object locations and also many obstacles, which can cause problems for the navigation. Therefore the time needed to completely search a room is the number of occupied cells in the 2D map in a room times a parameter found in test runs.
-% 
-% \subsubsection{Estimated Search Time in room r $\mathbf{E_r}$}
-% 
-% The estimated search time is the expected value for the time the robot is searching in a room calculated with
-% \begin{equation}
-%  E_r(O) = \int_{0}^\infty f_r^O(t)\cdot t\cdot dt
-% \end{equation}
-% 
-% The search ends if the object is found or the room is completely searched. Therefore the probability distribution of ending the search over time $f_r(t)$ is
-% \begin{equation}
-%  f_r^O(t)=(1-P_r(O))\delta(T_r)+f_{find,r}^O(t)
-% \end{equation}
-% with $f_{find,r}^O(t)$ being the probability distribution over time for finding the object, which has to fulfill 
-% \begin{equation}
-%  \int_{0}^\infty f_{find,r}^O(t)\cdot dt = P_r(O)
-% \end{equation}
-% and
-% \begin{equation}
-%  f_{find,r}^O(t) = 0 \;\; \forall \; t < 0, t > T_r
-% \end{equation}
-% 
-% The estimation of $f_{find,r}^O(t)$ is done by discretization of time. To calculate the probability of finding the object in a time step $[T_{i-1},T_i)$ the object probabilities of all cells in the room are sorted and assigned to the time steps in decreasing order. The probability of finding the object in a certain time step $[T_{i-1},T_i)$, $P_i$, is then calculated with
-% \begin{equation}
-%  P_{i}=\prod_{j=1}^{i-1}(1-P_{j}) \cdot (1-\prod_{c \in \mathbf{C_i}}(1-P(O_{R,c}^{OT}|I_{1:t},\mathbf{x}_{1:t}))
-% \end{equation}
-% This model was chosen as it takes into account the distribution of object probabilities in the room and the decreasing probability of finding an object due to the objective of the search planner. The estimated search time is then
-% \begin{equation}
-%  E_r(O)=\sum_i P_iT_i+(1-P_r(O))T_r 
-% \end{equation}
-% 
-% \subsubsection{Movement time between room r1 and r2 $\mathbf{M_{r1,r2}}$}
-% 
-% Movement time between rooms has to be further specified, as rooms are areas and not positions and the movement within a room is not neglectable. In this context the movement time is measured from the the doorway, where the room is left, to the doorway leading into the target room and an estimated time for the movement within the first room is added.
-% 
-% For the estimation of the movement time between two points a simple model is used, which calculates the time by multiplying the distance between the points with a empirically determined parameter. A more complex model using the length of a planned path is not used as the calculation is much more time-consuming. Further such a model does not take into account how fast the robot will drive on this path and how likely a recovery behavior will be executed.
-% 
-% To calculate the movement times a graph is created with every doorway being a node and an edge between two nodes if the doorways are in one room. The weight of the edge is the movement time between the doorways estimated as described above. The Floyd-Warshall algorithm is applied on the graph resulting in a matrix containing the shortest paths between two doorways and also the nodes to traverse can be retrieved. 
-% 
-% The time to leave the starting room through a certain doorway depends on the location of the robot. This location is not known in when planning ahead as it depends on where the robot ends a room search, which is not known in advance. So the location is assumed to be the center of mass of all accessible cells in the grid map. The time to leave the room through a doorway is then estimated based on the distance to the doorway as explained above. 
-% 
-% The full movement time between to rooms is then the sum of the time calculated using the doorway graph and the time to move to the first doorway. As no loops are assumed there is no loss of optimality by not considering the leave-time in the shortest path calculation.
-% 
-% \subsubsection{Handling unvisited rooms}
-% 
-% In general unvisited and just entered rooms could be handled like partially explored rooms. However peeking into a newly found room was said to be a beneficial behavior. Therefore highly optimistic values for search time and object probabilities are assigned to unvisited rooms to achieve this behavior without bypassing the planner.

@@ -1,13 +1,13 @@
 \chapter{Implementation}
 
-In this chapter the implementational details of the concept presented in chapter \ref{Concept} are described. The software runs on a Linux operation system and uses ROS Kinetic as middle-ware. The usage of ROS allows easy communication between different processes, also called nodes, and the easy integration of existing packages. Existing packages are used for the communication with the robot and the sensors, and the source code of some packages was used as a starting point for the implementation. Also useful is the tf library, which is integrated into ROS. It keeps track of all coordinate frames and allows nodes to obtain the most recent transformation between two coordinate frames and also the transformations at past times. Other used libraries are OpenCV, PCL, the mapping libraries Octomap and Gmapping, and the CNN libraries Caffe and Darknet. OpenCV is an open-source image processing library. In this work it was not only used for image processing but also in the internal representation of grid maps and for operations executed on those maps. PCL (Point Cloud Library) was used for operations on point clouds, like coordinate transformations. The whole software was written in C++.
+In this chapter the implementational details of the concept presented in chapter \ref{Concept} are described. The software runs on a Linux operation system and uses ROS Kinetic as middle-ware. The usage of ROS allows easy communication between different processes, also called nodes, and the easy integration of existing packages. Existing packages are used for the communication with the robot and the sensors, and the source code of some packages was used as a starting point for the implementation. Also useful is the in ROS integrated tf library, which keeps track of the coordinate frames and allows nodes to obtain the most recent transformation between two coordinate frames and also transformations between coordinate frames at past times. Other used libraries are OpenCV, PCL, the mapping libraries Octomap and Gmapping, and the CNN libraries Caffe and Darknet. OpenCV is an open-source image processing library. In this work it was not only used for image processing, but also in the internal representation of grid maps and for operations executed on those maps. PCL (Point Cloud Library) was used for operations on point clouds, like coordinate transformations. Except for some debug programs written in Python and the message specifications the whole implementation was written in C++.
 
 Figure \ref{ImplOverview} shows the structure of the implementation, with its nodes and the communication channels between the nodes. The following sections contain an in-depth description of the implementation of the nodes and the communication between the nodes. 
 
 \begin{landscape}
 \begin{figure}
   \includegraphics[width=1.35\textheight,clip]{figures/ImplementationOverview.pdf} 
-  \caption[Implementation overview]{Overview over the nodes in the system and the messages, services and actions; message connections are drawn from publishing node to the subscribed nodes; nodes connected with the tf package publish updated coordinate transformations }
+  \caption[Implementation overview]{Overview over the nodes in the system and the messages, services and actions for inter-node communication; message connections are drawn from publishing node to the subscribed nodes; nodes connected with the tf package publish updated coordinate transformations }
   \label{ImplOverview}
 \end{figure}
 \end{landscape}
@@ -20,15 +20,3 @@ Figure \ref{ImplOverview} shows the structure of the implementation, with its no
 \input{Implementation/hl_planner_node.tex}
 \input{Implementation/ll_planner_node.tex}
 \input{Implementation/Navigation.tex}
-
-
-
-\begin{lstlisting}[language=Python, caption=low{\_}level{\_}planner/HLTaskAction,frame=single,    label=HLTaskAction]
-int16 action
-geometry{\_}msgs/Pose pose
-int16 target{\_}room
-int16 target{\_}obj
----
-int16 result{\_}number
----
-\end{lstlisting}

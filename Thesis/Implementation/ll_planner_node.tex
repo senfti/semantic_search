@@ -1,2 +1,10 @@
-\section{\llplanner}
+\section{Low-Level-Planner node}
 
+The \llplanner\ node receives \texttt{HighLevelTask} actions from the \\hlplanner\ node and sends goal poses to the move_{_\}base or velocity commands directly to the robot. If a task is finished or stopped a result is sent back to the \\hlplanner\ node. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth,clip]{figures/ll_planner.pdf}
+  \caption[Robot setup]{Overview over the execution of the \ll_planner\ node}
+  \label{ll_planner}
+\end{figure}

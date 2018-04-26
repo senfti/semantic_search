@@ -129,6 +129,13 @@ void Explorer::objFoundCb(const semantic_mapping_v2::ObjFoundMsgConstPtr& msg){
 }
 
 
+void imout(std::string n, cv::Mat sdf){
+  cv::Mat asd = sdf(cv::Rect(cv::Point(146,158), cv::Point(289,323)));
+  cv::resize(asd,asd,cv::Size(sdf.cols*4, sdf.rows*4),0,0,cv::INTER_NEAREST);
+  cv::imwrite(n, asd);
+}
+
+
 struct CompareFrontier{
   bool operator() (const std::pair<cv::Point,double>& lhs, const std::pair<cv::Point,double>& rhs) const
   {return lhs.second<rhs.second;}
@@ -158,14 +165,23 @@ void Explorer::calcFrontier(){
   cv::dilate(unknown, unknown_dilate, cv::Mat_<uchar>::ones(3,3));
   cv::Mat_<uchar> frontiers_mask;
   cv::bitwise_and(unknown_dilate, free, frontiers_mask);
+  imout("/tmp/unknown.png", unknown);
+  imout("/tmp/free.png", free);
+  imout("/tmp/occupied.png", occupied);
+  imout("/tmp/unknown_dilate.png", unknown_dilate);
+  imout("/tmp/frontiers_mask.png", frontiers_mask);
 
   cv::Mat_<uchar> occupied_dilate, not_forbidden;
   int robot_kernel_size = ROBOT_SIZE*2+1;
   cv::dilate(occupied, occupied_dilate, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  imout("/tmp/occupied_dilate.png", occupied_dilate);
   cv::bitwise_not(occupied_dilate, not_forbidden);
   cv::erode(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
   cv::dilate(free, free, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size,robot_kernel_size)));
+  imout("/tmp/free2.png", free);
+  imout("/tmp/not_forbidden.png", not_forbidden);
   cv::bitwise_and(not_forbidden, free, not_forbidden);
+  imout("/tmp/not_forbidden2.png", not_forbidden);
 
   tf::StampedTransform transform;
   try{
@@ -195,14 +211,20 @@ void Explorer::calcFrontier(){
     next[i&1].clear();
     i++;
   }
+  imout("/tmp/accessible.png", accessible);
 
   cv::Mat_<uchar> good_frontiers_mask;
   cv::bitwise_and(accessible, frontiers_mask, good_frontiers_mask);
+  imout("/tmp/good_frontiers_mask.png", good_frontiers_mask);
   std::vector<cv::Mat_<uchar>> good_accessibles(5);
   cv::erode(accessible, good_accessibles[0], cv::Mat_<uchar>::ones(3,3));
+  cv::Mat_<uchar> good_tmp(accessible.rows, accessible.cols, uchar(255));
+  good_tmp = good_tmp - good_accessibles[0]/5;
   for(int i=1; i<good_accessibles.size(); i++){
     cv::erode(good_accessibles[i-1], good_accessibles[i], cv::Mat_<uchar>::ones(3,3));
+    good_tmp = good_tmp - good_accessibles[i]/5;
   }
+  imout("/tmp/good_tmp.png", good_tmp);
   nav_msgs::OccupancyGrid map = last_map_;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
