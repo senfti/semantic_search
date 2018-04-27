@@ -2,7 +2,7 @@
 
 Based on the currently pending high-level task the low-level planner generates goal poses for the robot. All high-level tasks can be executed within a single room, with the exception of the move through doorway task. For the other tasks the low-level planner can ignore other rooms to make the planning easier. The low-level planner also decides if the searched object was found, using the results of the object detection. An overview on how those tasks are planned and executed is given in this section.
 
-\subsection{Move Through Doorway Task}
+\subsection{Move Through Doorway Task} \label{move_trough_doorway_task}
 
 With this task the robot is initiated to drive through a specified doorway into the next room. It is the only high-level task where the robot can drive into another room. The execution of this task is illustrated in figure \ref{fig:move_trough_doorway}. In a first step the robot is sent to a position in front of the doorway facing towards the doorway. In this process the door pose becomes more accurate and possible obstacles behind the doorway are detected. In a second step the robot is sent to a goal behind the doorway to drive into the next room. During the execution the low-level planner keeps track of the doorway pose and changes the goal pose accordingly. This is especially important when the map switch occurs, as the doorway pose might be very different in the new room's map coordinate frame. 
 
@@ -21,7 +21,7 @@ With this task the robot is initiated to drive through a specified doorway into 
 
 The purpose of this task is to quickly get a first impression of a room never visited before. This is achieved by turning the robot left and right, so the the area seen by the robot is increased. If the object detection detects a searched object with a sufficiently high confidence during this task, the object is assumed to be found and the task is stopped.
 
-\subsection{Explore Room Task}
+\subsection{Explore Room Task} \label{explore_task}
 
 The goals of the explore room task is to find all doorways in the room, detect likely object locations and also to find easy to spot target objects. 2D exploration is done to achieve these goals. After finishing 2D exploration all doorways are guaranteed to be found, as unexplored space would be behind an undiscovered doorway. Also most of the room is seen at least vague, though some areas might be completely unseen due to the smaller field of view of the camera compared to the LIDAR. 
 
@@ -45,7 +45,7 @@ If the object detection detects a searched object with a sufficiently high confi
  \label{fig: exploration_door_blocked}
 \end{figure}
 
-\subsection{Search Room Task}
+\subsection{Search Room Task} \label{SearchTask}
 
 The goal of the search room task is to find an object of the searched type within the current room or to search the whole room if no searched object is in the room. The low-level planner has to find the best next view pose, which minimizes the expected search time, based on the information gathered. Also the decisions have to be made if an object was found and if the room was fully searched.
 

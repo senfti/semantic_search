@@ -14,6 +14,7 @@ Explorer::Explorer(tf::TransformListener* tf_listener)
   door_found_sub_ = ros::NodeHandle().subscribe("door_found", 1, &Explorer::doorFoundCb, this);
   obj_found_sub_ = ros::NodeHandle().subscribe("obj_found", 1, &Explorer::objFoundCb, this);
   map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("frontier_map", 1, true);
+  acc_map_pub_ = ros::NodeHandle().advertise<nav_msgs::OccupancyGrid>("acc_map", 1, true);
   obj_found_pub_ = ros::NodeHandle().advertise<geometry_msgs::PoseStamped>("object_found_pose", 1);
 
   ros::NodeHandle("~").param("EXPLORE_MAX_ROT_VEL", EXPLORE_MAX_ROT_VEL, EXPLORE_MAX_ROT_VEL);
@@ -226,6 +227,7 @@ void Explorer::calcFrontier(){
   }
   imout("/tmp/good_tmp.png", good_tmp);
   nav_msgs::OccupancyGrid map = last_map_;
+  nav_msgs::OccupancyGrid acc_map = last_map_;
   for(int x=0; x<last_map_.info.width; x++){
     for(int y=0; y<last_map_.info.height; y++){
       if(good_frontiers_mask(y,x))
@@ -235,14 +237,20 @@ void Explorer::calcFrontier(){
       else
         map.data[y * last_map_.info.width + x] = -1;
       //map.data[y * last_map_.info.width + x] = (good_frontiers_mask(y,x) ? 0 : -1);
+      if(accessible(y,x))
+        acc_map.data[y * last_map_.info.width + x] = 0;
+      else
+        acc_map.data[y * last_map_.info.width + x] = 100;
     }
   }
   map_pub_.publish(map);
+  acc_map_pub_.publish(acc_map);
 
 //  cv::imshow("explore_accessible", accessible);
 //  cv::imshow("good_frontiers", good_frontiers_mask);
 //  cv::waitKey(1);
 
+  cv::Mat_<uchar> poseses=255-accessible/255*230;
   cv::Point best_pos(-1,-1);
   double best_dir = 0.0;
   double best_dist = 999999999999999.9;
@@ -260,10 +268,16 @@ void Explorer::calcFrontier(){
             best_pos = cv::Point(p);
             best_dir = std::atan2(-cp.y,-cp.x);
           }
+          if(accessible(p))
+            poseses(p) = 128;
+          if(good_frontiers_mask(p))
+            poseses(p) = 0;
         }
       }
     }
   }
+  imout("/tmp/poseses.png", poseses);
+
 
   if(best_pos.x < 0){
     if(finished_count_ > 3){

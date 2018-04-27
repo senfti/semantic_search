@@ -43,6 +43,7 @@ class Explorer{
     void calcFrontier();
 
     ros::Publisher map_pub_;
+    ros::Publisher acc_map_pub_;
     ros::Publisher obj_found_pub_;
 
     std::vector<cv::Point> circle_points_;

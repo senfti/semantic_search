@@ -64,15 +64,7 @@ During the execution \texttt{high{\_}confidence{\_}objects} messages can be rece
 
 In the search task the triggering of the calculation of a new goal pose is slightly different than in the exploration task. Instead of calculating a new goal pose every time a map is received, a new goal pose is calculated and sent if an image taken at the goal pose was processed. 
 
-During the search multiple data structures are maintained. Firstly, an Object-Map is created out of the received \texttt{VisionResult} messages. This is done like in the mapping node, but only for the robot pose, which is assumed to be the true pose, and the searched object type. Also a 3D map is created similar to the creation in the mapping node, but also just for the robot pose. The samples in the \texttt{VisionResult} messages are used as input point clouds for the 3D mapping. Together the probability of an searched object being in a cell can be calculated. This is done every execution cycle and if a cell with a probability greater than a threshold is found, the object is found and the search is stopped.
-
-Using the \texttt{map} messages, a map of the accessible cells, a map containing the direction to the nearest accessible cell and a map containing the border described in section \ref{SearchTask} are created. These maps are stored as \texttt{cv::Mat}. The map of acce
-
-
-
-Last but not least maps for different directions, containing how often a cell has been seen from that direction, are created. 
-
-
+During the search multiple data structures are maintained. Firstly, an Object-Map is created out of the received \texttt{VisionResult} messages. This is done like in the mapping node, but only for the robot pose, which is assumed to be the true pose, and the searched object type. Also a 3D map is created similar to the creation in the mapping node, but also just for the robot pose. The samples in the \texttt{VisionResult} messages are used as input point clouds for the 3D mapping. Using the \texttt{map} messages, a map of the accessible cells and the border described in section \ref{SearchTask} are created. This border 
 
 In addition to the calculation of the next movement goal an Object-Map and a 3D map are created like in the mapping node, but only for the robot pose, which is assumed to be accurate enough, and the searched object type. Every execution cycle the object probability in all cells is calculated and if the object probability in the cell with the highest probability is greater than a threshold, the object is found and the search is stopped.
 
