@@ -154,8 +154,8 @@ The generated next high-level task is sent to the low-level-planner in form of a
 
 The low-level-planner tries to execute the high-level tasks and sends back a result. Based on the result the state is updated. Possible results are:
 \begin{itemize}
- \item Successful: The high-level task was successfully executed and nothing special happened. If an move-through-doorway task was executed, the entered room is set to visited. If an explore-room task was executed, the current room is set to explored. If an search-room task was executed, the current room is set to searched. 
- \item Aborted: The high-level task could not be executed. In this case the state is not changed.
- \item Object found: The high-level task was stopped because the object was found. In this case the state is not changed, but the search is finished.
- \item New doorway found: The high-level task was stopped because a new doorway was found. This result is only possible when executing a explore-room task. The state will be changed after receiving the new topological map.
+ \item \texttt{SUCCEEDED}: The high-level task was successfully executed and nothing special happened. If an move-through-doorway task was executed, the entered room is set to visited. If an explore-room task was executed, the current room is set to explored. If an search-room task was executed, the current room is set to searched. 
+ \item \texttt{ABORTED}: The high-level task could not be executed. In this case the state is not changed.
+ \item \texttt{OBJECT{\_}FOUND}: The high-level task was stopped because the object was found. In this case the state is not changed, but the search is finished.
+ \item \texttt{NEW{\_}DOORWAY{\_}FOUND}: The high-level task was stopped because a new doorway was found. This result is only possible when executing a explore-room task. The state will be changed after receiving the new topological map.
 \end{itemize}

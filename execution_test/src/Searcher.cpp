@@ -321,6 +321,11 @@ void Searcher::resize(float x1, float x2, float y1, float y2){
 
 void insertNeighbors(const cv::Point& p, cv::Mat_<uchar>& already_inserted, std::deque<cv::Point>& list);
 
+void imout2(std::string n, cv::Mat sdf){
+  cv::Mat asd = sdf;
+  cv::resize(asd,asd,cv::Size(sdf.cols*4, sdf.rows*4),0,0,cv::INTER_NEAREST);
+  cv::imwrite(n, asd);
+}
 
 void Searcher::outputmapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   if(!running_)
@@ -375,9 +380,12 @@ void Searcher::outputmapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   }
 
   cv::Mat dists, nearest, accessible_dil;
+  imout2("/tmp/access.png", accessible_mat);
   cv::dilate(accessible_mat, accessible_dil, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(robot_kernel_size-4,robot_kernel_size-4)));
   cv::distanceTransform(255-accessible_dil, dists, nearest, CV_DIST_L2, CV_DIST_MASK_PRECISE, cv::DIST_LABEL_PIXEL);
   cv::Mat grad_x, grad_y, mag, dir;
+  imout2("/tmp/accessible_dil.png", accessible_dil);
+  imout2("/tmp/dists.png", dists*15);
 
   cv::Sobel(dists, grad_x, CV_32F, 1, 0, 5);
   cv::Sobel(dists, grad_y, CV_32F, 0, 1, 5);
@@ -389,6 +397,9 @@ void Searcher::outputmapCb(const nav_msgs::OccupancyGridConstPtr &msg){
   cv::dilate(accessible_mat, tmp, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(std::ceil(ROBOT_SIZE)*2+1,std::ceil(ROBOT_SIZE)*2+1)));
   cv::dilate(tmp, tmp2, cv::Mat_<uchar>::ones(3,3));
   border_map_ = tmp2-tmp;
+  imout2("/tmp/tmp1.png", tmp);
+  imout2("/tmp/tmp2.png", tmp2);
+  imout2("/tmp/border_map_.png", border_map_);
 
   std::cout << "VERY IMPORTANTE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5" << std::endl;
   std::cout << "BEFORE: " << border_dir_map_.type() << std::endl;

@@ -56,18 +56,18 @@ In this work a greedy approach is used to find the best next view pose. The best
 \end{equation}
 
 $P(o|\mathbf{p})$ is the probability of finding an object of type $o$ when the robot is at pose $\mathbf{p}$. $B(\mathbf{p})$ is an additional term to promote coverage and is also necessary for the termination criteria, as described later. $T(\mathbf{p}_0,\mathbf{p})$ is the time to drive from the current pose $\mathbf{p}_0$ to the pose $\mathbf{p}$. Assuming movement on the shortest path between two poses, $T(\mathbf{p}_0,\mathbf{p})$ is estimated with:
-\begin{equation}
+\begin{equation} \label{objfunc2}
  T(\mathbf{p}_0,\mathbf{p}) = \frac{|\measuredangle(\mathbf{p}_0,\overrightarrow{\mathbf{p}_0\mathbf{p}})| + |\measuredangle(\overrightarrow{\mathbf{p}_0\mathbf{p}},\mathbf{p})|}{\omega}+\frac{|\overrightarrow{\mathbf{p}_0\mathbf{p}}|}{v}+T_{const}
 \end{equation}
 $\omega$ and $v$ are the average rotational and translational velocities and $T_{const}$ is a constant time added to account for planning time and other delays.
 
 Estimating the probability $P(o|\mathbf{p})$ is much more difficult. It depends on what is visible when taking an image at pose $\mathbf{p}$, the object probabilities in the visible space and how likely a searched object located in the visible space is detected. Therefore $P(o|\mathbf{p})$ is calculated with:
-\begin{equation}
+\begin{equation} \label{objfunc3}
  P(o|\mathbf{p})=\prod_{c \in cells\;in\;room} P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(vis_c|\mathbf{p})P(det_c|\mathbf{p})
 \end{equation}
 
 Determining visible space is computational expensive and also not really possible in messy environments without a high quality 3D map, therefore a heuristic is used. The used heuristic reduces the problem from 3D to 2D and the limited vertical field of view is ignored. The basic assumption is that an object can always be seen from the direction of the nearest cell accessible by the robot. This is true if objects are side-by-side and not behind each other. The yellow arrows in figure \ref{fig: border_with_dir} show these directions, which are referred to as best directions. The probability of an object being visible depends on the angle between the best view direction and the direction from robot to object. This is modeled with
-\begin{equation}
+\begin{equation} \label{objfunc4}
  P(vis_c|\mathbf{p})=\begin{cases}e^{-\frac{\measuredangle(\mathbf{p},\overrightarrow{\mathbf{p}c})^2}{2\sigma_{view}^2}} & if\;in\;field\;of\;view \\ 0 & else \end{cases}
 \end{equation}
 
@@ -108,7 +108,7 @@ In addition every cell in the set gets a counter. When the object detection is e
  \label{fig: border_view}
 \end{figure} 
 Using the same line of thought the term $B(\mathbf{p})$ is calculated with:
-\begin{equation}
+\begin{equation} \label{objfunc5}
  B(\mathbf{p})=\begin{cases} V_B|\mathbf{C_{B_{interest}}}| & if\;|\mathbf{C_{B_{interest}}}| > 0 \\ -\infty & else \end{cases}
 \end{equation}
 where $\mathbf{|C_{B_{interest}}}|$ is the number of border cells, whose counter would be increased in a view from pose $\mathbf{p}$ and is lower than a threshold parameter. $V_B$ is a parameter weighting coverage versus finding probability. Ultimately the termination criteria is defined with $P(o|\mathbf{p}^*) \leq 0 \wedge B(\mathbf{p}^*) \leq 0$.  
