@@ -1,15 +1,96 @@
 \chapter{Evaluation}
 
-This chapter covers the evaluation of this active object system. Three environments were available to for test runs. Environment 1 is home environment in a small flat consisting of three rooms. This environment is used  Environment 2 is an office environment with little variety of rooms. Environment 3 is an office environment with various different rooms 
+This chapter covers the evaluation of this active object system. The evaluation is split into three parts. The first part covers the hardware and the basic functionality like the object detection, the room type classification and the door detection. In the second part the quality of the generated maps is investigated. The last part evaluates the search performance, both within single rooms and in larger indoor environments.
 
-\section{Semantic Mapping}
+Three environments were available to for test runs. Environment 1 is home environment in a small flat consisting of three rooms. Environment 2 is an atypical university environment consisting of some offices and the robotics-lab. Environment 3 is a part of an university floor with rooms of various different room types. A more detailed description of the environments can be found in section \ref{EvalMapping}.
 
-\subsection{Hybrid Metric Mapping}
+\section{Basic Functionality}
 
-This section focuses on the results of the hybrid metric mapping, which consists of the 2D and 3D mapping of the rooms, the mapping of the doorways and the creation of the topological map. Test were run in three environments, 
+\subsection{Hardware}
+
+\subsection{Computer Vision}
+
+\subsection{System Stability}
+
+
+\section{Mapping} \label{EvalMapping}
+
+The quality of the maps are investigated after a complete exploration of the environment without object search. This was done in all three environments multiple times. In this section typical results of those exploration runs are presented and also encountered problems. At first the metric maps are investigated, followed by the Room-Type-Maps and the Object-Maps. At the end of this section the resulting Object-Probability-Maps and the total object probabilities are discussed.
+
+\subsection{Hybrid Metric Map}
+
+In figure \ref{map2d_home}, figure \ref{map2d_lab} and figure \ref{map2d_ist} maps created in the three environments are shown. The 2D maps of the rooms have in general good quality, especially in the small rooms. All maps contain cells wrongly set to free outside of the room. On the one hand those are caused by reflexion and transparent surfaces. On the other hand they are caused by the handling of invalid range measurements described in section \ref{preprocessing}. However those cause no major problems. The maps of the rooms lab1 and institute1 are distorted. In the map of room lab1 the top part leans to the left while the bottom right part is rotated towards the bottom right part. In the map of room institute1 the bottom corridor is curved upwards. The distortion in both rooms are probably caused by a conjunction of inaccurate odometry and insufficient distinct features in the visible by the LIDAR. These distortion show the benefit of the hybrid map design. The maps are still sufficiently accurate, but those distortion become more and more problematic with larger maps. As can be seen in the maps the doorway poses are all quiet accurate. 
 
 \begin{figure}
-  \includegraphics[width=0.9\textwidth,clip]{figures/h5e_hybrid_map.png}
-  \caption[Hybrid map home environment]{Hybrid map of the home environment}
-  \label{robot images}
+\centering
+  \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all5.png}
+  \caption[Hybrid map of the home environment]{Hybrid map of the home environment: The room home1 is combination of a kitchen and a living room, the room home2 is a bedroom with an office-like in the upper right corner and the room home3 is an anteroom.}
+  \label{map2d_home}
 \end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=0.99\textwidth,clip]{figures/2Dmaps/all_lab.png}
+  \caption[Hybrid map of the robotics-lab environment]{Hybrid map of robotics-lab environment: The room lab1 is the robotics-lab, which consists mainly of office area and has free space at the botton left and a sofa and a kitchen area at the bottom right, the room lab2 is an office, the room lab3 is a corridor, the room lab4 is also an office and the room lab5 is a workshop/storage room.}
+  \label{map2d_lab}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all_IST_b.png}
+  \caption[Hybrid map of the university floor]{Hybrid map of a part of an university floor: The room institute1 is a corridor with an copy area, the room institute2 contains a kitchen area and a dining table, the room institute3 is a meeting room, the room institute4 is a bathroom and the room institute5 is a secretariat. }
+  \label{map2d_ist}
+\end{figure}
+
+\subsection{Room Type Map}
+
+\begin{figure}
+\centering
+  \includegraphics[width=0.9\textwidth,clip]{figures/wz_imgs/wz_views_b.png}
+  \caption[Hybrid map of the university floor]{Hybrid map of a part of an university floor: The room institute1 is a corridor with an copy area, the room institute2 contains a kitchen area and a dining table, the room institute3 is a meeting room, the room institute4 is a bathroom and the room institute5 is a secretariat. }
+  \label{map2d_ist}
+\end{figure}
+
+\begin{figure}
+\renewcommand*\thesubfigure{\arabic{subfigure}} 
+\centering
+\begin{tabular}{cc}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/1.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/4.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/5.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/6.png}}
+\end{tabular}
+\caption{Calculation of the frontiers: In those binary images black is 1 and white is 0; the gray accessible area in the last image is just for clarity}
+\label{frontier_calc}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 360 250, clip]{figures/wz_imgs/h5e/classes0_b.png}} &
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 360 250, clip]{figures/wz_imgs/h5e/classes1_b.png}} &
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=0 20 0 50,clip]{figures/wz_imgs/h5e/classes2_b_b2.png}} \\
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0,clip]{figures/wz_imgs/h5e/classes_search_b.png}} &
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchen_b.png}} & 
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchenette_b.png}} \\
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/livingroom_b.png}} &
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/closet_b.png}} &
+\subfloat[]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/dine_b.png}} \\
+\end{tabular}
+\caption{Calculation of the frontiers: In those binary images black is 1 and white is 0; the gray accessible area in the last image is just for clarity}
+\label{frontier_calc}
+\end{figure}
+
+\subsection{Object Map}
+
+\subsection{Object Probabilities}
+
+
+\section{Search}
+
+\subsection{Single Room Search}
+
+\subsection{Search in Indoor Environments}
+

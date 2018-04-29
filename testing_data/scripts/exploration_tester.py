@@ -41,10 +41,11 @@ def terminate_ros_node(s):
             os.system("rosnode kill " + str)
 
 files = ["explore_lab_1.bag","explore_lab_1.bag","h1e.bag", "h1e.bag", "h2e.bag", "h2e.bag", "h3e.bag", "h3e.bag", "h5e.bag", "h5e.bag", "h6e.bag", "h6e.bag", "h7e.bag", "h7e.bag"]
+files = ["IST_expolere_su.bag"]
 
 for i in range(0,1):
     filename = files[i]
-    folder = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
+    folder = "/home/thomas/Desktop/"#""/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"
     bag = rosbag.Bag(folder+filename)
 
     start_time = 0
@@ -84,7 +85,7 @@ for i in range(0,1):
             if room_times[tr] < t.to_sec():
                 room_nr = rooms[tr]
         explore_rooms.append(room_nr)
-        print "explore: ", t.to_sec(), room_nr
+        print "explore: ", t.to_sec()-start_time, room_nr
 
     last_clock.clock = rospy.Time(0)
 
