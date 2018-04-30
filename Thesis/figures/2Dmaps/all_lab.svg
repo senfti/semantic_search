@@ -45,8 +45,8 @@
      id="namedview4"
      showgrid="false"
      inkscape:zoom="0.27569167"
-     inkscape:cx="-1058.6272"
-     inkscape:cy="1557.4669"
+     inkscape:cx="1409.1156"
+     inkscape:cy="1013.3079"
      inkscape:window-x="1920"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -264,4 +264,24 @@
        x="85.414894"
        y="2175.9709"
        style="font-size:30px">doorway poses</tspan></text>
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 328.30034,369.14367 799.59086,323.61765"
+     id="path4163"
+     inkscape:connector-curvature="0" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 923.3447,315.92311 524.5111,-42.96117"
+     id="path4174"
+     inkscape:connector-curvature="0" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 899.61987,760.28275 997.08403,1182.2"
+     id="path4176"
+     inkscape:connector-curvature="0" />
+  <path
+     style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 473.35489,1464.905 506.90687,-82.5197"
+     id="path4178"
+     inkscape:connector-curvature="0" />
 </svg>

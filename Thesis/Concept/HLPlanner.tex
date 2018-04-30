@@ -3,7 +3,7 @@
 This section covers the high-level planner, which operates on the topological map and selects the room the robot should search next. Based on the selected target room it also generates high-level tasks, which are then planned and executed by the low-level planner. The expected search time was chosen as the objective function to be minimized by the planner. Other possible objectives for the planner would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most scenarios. The high-level planner is executed when a search task is started and also every time a high-level tasks finishes. 
 
 
-\subsection{High-Level Planning}
+\subsection{High-Level Planning} \label{hl_plan}
 
 The objective of the high-level planner is to find the optimal search path $\mathbf{p^*}=(r_1,r_2,...,r_{\mathbf{|R|}})$ with $r_i$ being the $i^{th}$ room to search and $\mathbf{|R|}$ being the number of not searched rooms given a starting room $r_0$. A valid search path contains every not already searched room exactly once. In this work the optimal path is the valid path with the minimal expected search time.
 \begin{equation}

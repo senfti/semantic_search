@@ -59,6 +59,9 @@ void ProbViewApp::input(wxTimerEvent &event){
   }
 }
 
+std::vector<int> fixed = {47,32,38,39,24,41,23,18};
+std::vector<int> colour = {120,90,0,15,30,60,100,150};
+
 uchar colorFromNum(uchar num){
   switch(num){
     case 0:   return 0;
@@ -121,10 +124,31 @@ void ProbViewApp::showMaxClassMat(cv::Mat_<uchar>& max_idx_mat, cv::Mat_<uchar>&
       }
     }
   }
+  for(int x=0; x<max_idx_mat.cols; x++){
+    for(int y=0; y<max_idx_mat.rows; y++){
+      bool have = false;
+      for(int sdf=0; sdf<fixed.size(); sdf++){
+        if(max_idx_mat(y,x)==fixed[sdf]){
+          color_mat(y,x) = colour[sdf];
+          have = true;
+          break;
+        }
+      }
+      if(!have){
+        sat_mat(y,x) = 0;
+      }
+    }
+  }
   cv::Mat_<uchar> tmp;
   cv::flip(color_mat, color_mat, 0);
   cv::flip(sat_mat, sat_mat, 0);
   cv::flip(occ, tmp, 0);
+  for(int x=0; x<tmp.cols; x++){
+    for(int y=0; y<tmp.rows; y++){
+      if(tmp(y,x) > 128 && tmp(y,x) < 255)
+        tmp(y,x) = 179;
+    }
+  }
   cv::resize(color_mat, color_mat, cv::Size(8*color_mat.cols, 8*color_mat.rows), 0, 0, cv::INTER_NEAREST);
   cv::resize(sat_mat, sat_mat, cv::Size(color_mat.cols, color_mat.rows), 0, 0, cv::INTER_NEAREST);
   cv::resize(tmp, tmp, cv::Size(color_mat.cols, color_mat.rows), 0, 0, cv::INTER_NEAREST);

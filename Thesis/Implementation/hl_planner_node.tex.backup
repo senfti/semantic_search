@@ -1,4 +1,4 @@
-\section {High-Level-Planner Node}
+\section {High-Level-Planner Node} \label{hl_node}
 
 The \hlplanner\ node does the high-level control of the system, which also includes the receipt of search commands from the user. In figure \ref{hl_execution} an overview over the execution of a search is given. After an description of the data structures used in the implementation the individual steps are described in more detail.
 
@@ -11,7 +11,7 @@ The \hlplanner\ node does the high-level control of the system, which also inclu
 
 \subsection{Data Structures}
 
-The \texttt{TopologicalMap} class stores the information in the topological map in a form easier to use by the planner. For every room the object probability, the time to completely search the room and the explected search time are stored. Furthermore, for every pair of rooms the time to travel from room A to room B, the rooms on the way from A to B and the poses of the doorways on the way are stored.  
+The \texttt{TopologicalMap} class stores the information of the topological map in a form which is easier to use by the planner. For every room the object probabilities, the times to completely search the room and the expected search times are stored. Furthermore, for every pair of rooms the time to travel from room A to room B, the rooms on the way from A to B and the poses of the doorways on the way are stored.  
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=TopologicalMap,frame=single, label=TopologicalMap]
@@ -24,7 +24,9 @@ The \texttt{TopologicalMap} class stores the information in the topological map 
 \end{lstlisting}
 \end{minipage}
 
-The \texttt{Action} class represents a high-level task. The type specifies the high-level task and the other variables contain further information needed in the execution of this task. 
+the action class spezifies the high level task. its variables contain information needed for the execution of the task. bsp?
+
+The \texttt{Action} class specifies the high-level tasks. Its variables contain the information needed for the execution of the task. The \texttt{type} variable specifies what high-level task to execute, the \texttt{target{\_}object} and \texttt{target{\_}room} variables contain the searched object and the current room. In case of the move-through-doorway task the next room is stored in the \texttt{target{\_}room} variable and the \texttt{pose} variable contains the doorway pose.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=Action,frame=single, label=Action]
@@ -46,7 +48,7 @@ The \texttt{State} class represents the current state of the search, storing the
 \end{lstlisting}
 \end{minipage}
 
-The \texttt{Plan} class contains the actions in the plan and also the state after executing all actions, the probability of finding the object, the estimated time to fully execute the plan and the expected time of the search using this plan. It has an \texttt{addAction} function, which adds an action to a plan and also updates the other member variables. The update of the expected{\_}search{\_}time is done according to formula \ref{expected formula}.
+The \texttt{Plan} class contains the actions to be executed in the plan and also the state after the execution of all actions. Additionally, the probability of finding the object, the estimated time to fully execute the plan and the expected time of the search using this plan are stored in the \texttt{Plan} class. It has an \texttt{addAction} function, which adds an action to a plan and also updates the other member variables. The update of the expected{\_}search{\_}time is done according to formula \ref{expected formula}.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=Plan,frame=single, label=Plan]
@@ -62,11 +64,11 @@ The \texttt{Plan} class contains the actions in the plan and also the state afte
 
 \subsection{Execution}
 
-The search starts with giving the high-level planner an object to search. All rooms are set to not searched, but the rest of the state is kept from previous searches.
+The object search starts when the high level planer gets the input of the object which should be searched. All rooms are set to not searched, but the rest of the state is kept from previous searches.
 
 \subsubsection{Update of the topological map}
 
-At the start of the search or after the execution of a high-level task a \texttt{TopologicalMapSrv} request is sent to the mapping node. Using the response to the service call, the internal representation is updated. This involves adding new rooms to the state, if necessary, and updating the data in the \texttt{TopologicalMap} instance. The values in \texttt{object{\_}probabilities}, \texttt{search{\_}times} and \texttt{expected{\_}search{\_}times} can be copied from the response. To calculate the \texttt{travel{\_}times}, \texttt{travel{\_}paths} and \texttt{travel{\_}waypoints} a graph is created, where each doorway is a node and doorways belonging to the same room are connected by an edge. The weight of the edge, which is the time needed to drive from one doorway to the other, is given in the service response. Using the Floyd–Warshall algorithm the shortest path and the length of the shortest path are calculated for every pair of doorways. The \texttt{travel{\_}waypoints} are the poses of the doorways on the shortest path, the \texttt{travel{\_}path} are the rooms between the doorways on the shortest path with the addition of the final room, and the \texttt{travel{\_}times} are calculated by adding the correct \texttt{to{\_}doorway{\_}times} from the service response to the length of the shortest path. Those calculations are done for every pair of doorways, which is in further consequence also for every pair of different rooms. Pairs of the same room have \texttt{travel{\_}times} of zero and empty paths. 
+At the start of the search or after the execution of a high-level task a \texttt{TopologicalMapSrv} request is sent to the mapping node. Using the response of the service call, the internal representation is updated. This involves updating the data in the \texttt{TopologicalMap} instance and adding new rooms to the state if new rooms were discovered. The values in \texttt{object{\_}probabilities}, \texttt{search{\_}times} and \texttt{expected{\_}search{\_}times} can be copied from the response. To calculate the \texttt{travel{\_}times}, \texttt{travel{\_}paths} and \texttt{travel{\_}waypoints} a graph is created, where each doorway is a node and doorways belonging to the same room are connected by an edge. The weight of the edge, which is the time needed to drive from one doorway to the other, is given in the service response. Using the Floyd–Warshall algorithm the shortest path and the length of the shortest path are calculated for every pair of doorways. The \texttt{travel{\_}waypoints} are the poses of the doorways on the shortest path, the \texttt{travel{\_}path} are the rooms between the doorways on the shortest path with the addition of the final room, and the \texttt{travel{\_}times} are calculated by adding the correct \texttt{to{\_}doorway{\_}times} from the service response to the length of the shortest path. Those calculations are done for every pair of doorways, which is in further consequence also for every pair of different rooms. Pairs of the same room have \texttt{travel{\_}times} of zero and empty paths. 
 
 \subsubsection{Planning}
 
@@ -83,8 +85,8 @@ Plan greedyPlan(TopologicalMap map, State state){
     Action best_action;
     float max_speed = 0.0;
     for(action in possible_actions){
-      float time = map.travel_times[state.current_room][action.target_room] +
-                   map.search_times[action.target_room];
+      float time = map.travel_times[plan.state.current_room][action.target_room] 
+                     + map.search_times[action.target_room];
       float speed = map.object_probabilities[action.target_room] / time;
       if(speed > max_speed){
         max_speed = speed;
@@ -132,27 +134,30 @@ Plan plan(TopologicalMap map, Plan old_plan, float& cutoff_time){
 
 The generated plan only contains the order in which the rooms are searched. The generation of the high-level task is done according to \ref{HLTaskGen}. If the plan is empty, the search is finished and no object was found.
 
-\subsubsection{Executing next high-level-task}
+\subsubsection{Executing the next high-level task}
 
-The generated next high-level-task is sent to low-level-planner in form of a \texttt{HighLevelTask} action, which is shown in listing \ref{HighLevelTaskAction}. 
+The generated next high-level task is sent to the low-level-planner in form of a \texttt{HighLevelTask} action, which is shown in listing \ref{HighLevelTaskAction}. 
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=HighLevelTask,frame=single, label=HighLevelTaskAction]
-int16 action
-geometry_msgs/Pose pose
-int16 target_room
-int16 target_obj
----
-int16 result_number
----
+   # goal
+   int16 type
+   geometry_msgs/Pose pose
+   int16 target_room
+   int16 target_obj
+   ---
+   # result
+   int16 result_number 
+   ---
+   # feedback
 
 \end{lstlisting}
 \end{minipage}
 
-The low-level-planner tries to execute the high-level-tasks and sends back a result. Based on the result the state is updated. Possible results are:
+The low-level-planner tries to execute the high-level tasks and sends back a result. Based on the result the state is updated. Possible results are:
 \begin{itemize}
- \item Successful: The high-level-task was successfully executed and nothing special happened. If an move-through-doorway-task was executed, the entered room is set to visited. If an explore-room-task was executed, the current room is set to explored. If an search-room-task was executed, the current room is set to searched. 
- \item Aborted: The high-level-task could not be executed. In this case the state is not changed.
- \item Object found: The high-level-task was stopped because the object was found. In this case the state is not changed, but the search is finished.
- \item New doorway found: The high-level-task was stopped because a new doorway was found. This result is only possible when executing a explore-room-task. The state will be changed after receiving the new topological map.
+ \item \texttt{SUCCEEDED}: The high-level task was successfully executed and nothing special happened. If an move-through-doorway task was executed, the entered room is set to visited. If an explore-room task was executed, the current room is set to explored. If an search-room task was executed, the current room is set to searched. 
+ \item \texttt{ABORTED}: The high-level task could not be executed. In this case the state is not changed.
+ \item \texttt{OBJECT{\_}FOUND}: The high-level task was stopped because the object was found. In this case the state is not changed, but the search is finished.
+ \item \texttt{NEW{\_}DOORWAY{\_}FOUND}: The high-level task was stopped because a new doorway was found. This result is only possible when executing a explore-room task. The state will be changed after receiving the new topological map.
 \end{itemize}

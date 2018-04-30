@@ -105,7 +105,7 @@ Also modeled in the inverse sensor model is the uncertainty of the classificatio
 P(R_{c}|I_{t},\mathbf{x}_{t}) = \begin{cases}\sum_{R_{I_{t} }} P(R_{I_{t} }|I_t) \; P(R_{c}|R_{I_{t}})  & if \;cell \; c \; visible\\P(R_{c}) & else\end{cases}
 \end{equation}
 
-$P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image $R_{I_{t}}$. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are set to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2, a library for extraction of information from commonsense databases, and the ConceptNet4 commonsense knowledge base. %TODO: references?
+$P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the room type mainly shown in the image $R_{I_{t}}$. The combinations form a $|\mathbf{R}|$x$|\mathbf{R}|$ matrix. The diagonal elements, where $R_{c} = R_{I_{t}}$, are set to a parameter $V_{eq}$. Instead of presuming no prior knowledge and making all other values equal, prior knowledge is gathered to get better mapping results. The off-diagonal elements are weighted based on how related the two room types are. How much two room types are related is estimated using Divisi2\footnote{https://github.com/commonsense/divisi2}, a library for extraction of information from commonsense databases, and the ConceptNet4 commonsense knowledge base.
 
 \subsection{Doorway Mapping} \label{Doorway Mapping}
 
@@ -219,7 +219,7 @@ Cells of the third type are technically not within the room. Those are cells in 
  N_{undis}=\begin{cases} 0 & if \;room\; explored \\ max\Big(\sum_{R_{avg}}P(R_{avg})N_{adj}(R_{avg})-N_{r,dis},0\Big)N_r & else \end{cases}
 \end{equation} 
 
-$N_{adj}(R_{avg})$ is the average number of adjacent rooms for a room of type $R_{avg}$. Based on results presented in [A. Aydemir, “Exploiting structure in man-made environments,” PhD dissertation, Stockholm, 2012.] $N_{adj}(corridor)$ is set to 6 and $N_{adj}(R)$ is 1.2 for all other room types. The number of already discovered adjacent rooms $N_{r,dis}$ has to be subtracted and obviously the number of undiscovered adjacent rooms cannot be smaller than zero. The probability of the object being in one of those cells $P(Obj_{undis}^o)$ is calculated assuming a equally distributed room type probability distribution in the undiscovered room. %TODO: activeobjectsearchgutmapplanphd.pdf austauschen
+$N_{adj}(R_{avg})$ is the average number of adjacent rooms for a room of type $R_{avg}$. Based on results presented in \cite{main_phd} $N_{adj}(corridor)$ is set to 6 and $N_{adj}(R)$ is 1.2 for all other room types. The number of already discovered adjacent rooms $N_{r,dis}$ has to be subtracted and obviously the number of undiscovered adjacent rooms cannot be smaller than zero. The probability of the object being in one of those cells $P(Obj_{undis}^o)$ is calculated assuming a equally distributed room type probability distribution in the undiscovered room.
 
 Putting all together the following formula is obtained:
 \begin{multline}
