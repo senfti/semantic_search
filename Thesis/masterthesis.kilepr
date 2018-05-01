@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Evaluation.tex
+lastDocument=main.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -134,6 +134,27 @@ Indentation Mode=normal
 Mode=LaTeX
 
 [document-settings,item:Evaluation.tex]
+Bookmarks=
+Encoding=UTF-8
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+
+[document-settings,item:Evaluation/BasicEval.tex]
+Bookmarks=
+Encoding=UTF-8
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+
+[document-settings,item:Evaluation/MappingE.tex]
+Bookmarks=
+Encoding=UTF-8
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+
+[document-settings,item:Evaluation/SearchEval.tex]
 Bookmarks=
 Encoding=UTF-8
 Highlighting=LaTeX
@@ -374,13 +395,13 @@ order=4
 
 [item:Concept/HLPlanner.tex]
 archive=true
-column=65
+column=47
 encoding=UTF-8
 highlight=LaTeX
-line=27
+line=5
 mode=LaTeX
-open=false
-order=5
+open=true
+order=32
 
 [item:Concept/Hardware.tex]
 archive=true
@@ -399,8 +420,8 @@ encoding=UTF-8
 highlight=LaTeX
 line=19
 mode=LaTeX
-open=false
-order=19
+open=true
+order=33
 
 [item:Concept/LLPlanner.tex]
 archive=true
@@ -414,10 +435,10 @@ order=8
 
 [item:Concept/Mapping.tex]
 archive=true
-column=1309
+column=721
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=107
 mode=LaTeX
 open=true
 order=1
@@ -474,40 +495,70 @@ order=28
 
 [item:Conclusion.tex]
 archive=true
-column=21
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=1
 mode=LaTeX
 open=true
 order=26
 
 [item:Evaluation.tex]
 archive=true
-column=109
+column=256
+encoding=UTF-8
+highlight=LaTeX
+line=2
+mode=LaTeX
+open=true
+order=31
+
+[item:Evaluation/BasicEval.tex]
+archive=true
+column=0
+encoding=UTF-8
+highlight=LaTeX
+line=29
+mode=LaTeX
+open=true
+order=35
+
+[item:Evaluation/MappingE.tex]
+archive=true
+column=57
 encoding=UTF-8
 highlight=LaTeX
 line=78
 mode=LaTeX
 open=true
-order=31
+order=34
 
-[item:Implementation.tex]
+[item:Evaluation/SearchEval.tex]
 archive=true
 column=0
 encoding=UTF-8
 highlight=LaTeX
-line=13
+line=0
+mode=LaTeX
+open=true
+order=36
+
+[item:Implementation.tex]
+archive=true
+column=12
+encoding=UTF-8
+highlight=LaTeX
+line=11
 mode=LaTeX
 open=true
 order=25
 
 [item:Implementation/HardwareInterface.tex]
 archive=true
-column=36
+column=613
 encoding=UTF-8
 highlight=LaTeX
-line=8
+line=2
 mode=LaTeX
 open=true
 order=27
@@ -524,7 +575,7 @@ order=23
 
 [item:Implementation/Preprocessing.tex]
 archive=true
-column=44
+column=45
 encoding=UTF-8
 highlight=LaTeX
 line=0
@@ -534,7 +585,7 @@ order=22
 
 [item:Implementation/door_detection_node.tex]
 archive=true
-column=737
+column=955
 encoding=UTF-8
 highlight=LaTeX
 line=19
@@ -544,37 +595,37 @@ order=18
 
 [item:Implementation/hl_planner_node.tex]
 archive=true
-column=39
+column=23
 encoding=UTF-8
 highlight=LaTeX
-line=159
+line=115
 mode=LaTeX
 open=true
 order=24
 
 [item:Implementation/ll_planner_node.tex]
 archive=true
-column=80
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=35
+line=127
 mode=LaTeX
 open=true
 order=21
 
 [item:Implementation/mapping_node.tex]
 archive=true
-column=830
+column=21
 encoding=UTF-8
 highlight=LaTeX
-line=206
+line=224
 mode=LaTeX
 open=true
 order=20
 
 [item:Implementation/vision_node.tex]
 archive=true
-column=396
+column=542
 encoding=UTF-8
 highlight=LaTeX
 line=46
@@ -694,10 +745,10 @@ order=17
 
 [item:RelatedResearch.tex]
 archive=true
-column=1353
+column=1383
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=22
 mode=LaTeX
 open=true
 order=30
@@ -793,10 +844,10 @@ JumpList=
 ViMarks=.,0,0,[,0,0,],0,0
 
 [view-settings,view=0,item:Concept/HLPlanner.tex]
-CursorColumn=65
-CursorLine=27
+CursorColumn=47
+CursorLine=5
 JumpList=
-ViMarks=.,27,64,[,27,49,],27,64
+ViMarks=.,5,46,[,5,43,],5,46
 
 [view-settings,view=0,item:Concept/Hardware.tex]
 CursorColumn=12
@@ -817,10 +868,10 @@ JumpList=
 ViMarks=.,52,16,[,52,16,],52,16
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=1309
-CursorLine=6
+CursorColumn=721
+CursorLine=107
 JumpList=
-ViMarks=.,6,1308,[,6,1308,],6,1308,a,206,0
+ViMarks=.,107,721,[,107,721,],107,721,a,206,0
 
 [view-settings,view=0,item:Concept/ObjectMapping.tex]
 CursorColumn=588
@@ -853,28 +904,46 @@ JumpList=
 ViMarks=.,34,0,[,34,0,],34,9
 
 [view-settings,view=0,item:Conclusion.tex]
-CursorColumn=21
-CursorLine=2
+CursorColumn=0
+CursorLine=1
 JumpList=
-ViMarks=.,2,20,[,2,6,],2,20
+ViMarks=.,1,0,[,1,0,],1,0
 
 [view-settings,view=0,item:Evaluation.tex]
-CursorColumn=109
+CursorColumn=256
+CursorLine=2
+JumpList=
+ViMarks=.,2,255,[,2,246,],2,255
+
+[view-settings,view=0,item:Evaluation/BasicEval.tex]
+CursorColumn=0
+CursorLine=29
+JumpList=
+ViMarks=.,39,145,[,39,145,],39,145
+
+[view-settings,view=0,item:Evaluation/MappingE.tex]
+CursorColumn=57
 CursorLine=78
 JumpList=
-ViMarks=.,78,108,[,78,107,],78,108
+ViMarks=.,78,56,[,78,25,],78,56
+
+[view-settings,view=0,item:Evaluation/SearchEval.tex]
+CursorColumn=0
+CursorLine=0
+JumpList=
+ViMarks=
 
 [view-settings,view=0,item:Implementation.tex]
-CursorColumn=0
-CursorLine=13
+CursorColumn=12
+CursorLine=11
 JumpList=
-ViMarks=.,20,42,[,20,42,],20,42
+ViMarks=.,2,1082,[,2,1082,],2,1110
 
 [view-settings,view=0,item:Implementation/HardwareInterface.tex]
-CursorColumn=36
-CursorLine=8
+CursorColumn=613
+CursorLine=2
 JumpList=
-ViMarks=.,8,0,[,8,0,],8,0
+ViMarks=.,2,612,[,2,610,],2,612
 
 [view-settings,view=0,item:Implementation/Navigation.tex]
 CursorColumn=0
@@ -883,40 +952,40 @@ JumpList=
 ViMarks=
 
 [view-settings,view=0,item:Implementation/Preprocessing.tex]
-CursorColumn=44
+CursorColumn=45
 CursorLine=0
 JumpList=
-ViMarks=.,0,44,[,0,31,],0,44
+ViMarks=.,8,240,[,8,222,],8,240
 
 [view-settings,view=0,item:Implementation/door_detection_node.tex]
-CursorColumn=737
+CursorColumn=955
 CursorLine=19
 JumpList=
-ViMarks=.,19,737,[,19,737,],19,737
+ViMarks=.,19,954,[,19,945,],19,954
 
 [view-settings,view=0,item:Implementation/hl_planner_node.tex]
-CursorColumn=39
-CursorLine=159
+CursorColumn=23
+CursorLine=115
 JumpList=
-ViMarks=.,159,32,[,159,22,],159,32
+ViMarks=.,115,23,[,115,23,],115,23
 
 [view-settings,view=0,item:Implementation/ll_planner_node.tex]
-CursorColumn=80
-CursorLine=35
+CursorColumn=0
+CursorLine=127
 JumpList=
-ViMarks=.,35,0,[,35,0,],35,0
+ViMarks=.,151,373,[,151,372,],151,382
 
 [view-settings,view=0,item:Implementation/mapping_node.tex]
-CursorColumn=830
-CursorLine=206
+CursorColumn=21
+CursorLine=224
 JumpList=
-ViMarks=.,206,829,[,206,826,],206,829
+ViMarks=.,224,0,[,224,0,],224,20
 
 [view-settings,view=0,item:Implementation/vision_node.tex]
-CursorColumn=396
+CursorColumn=542
 CursorLine=46
 JumpList=
-ViMarks=.,46,395,[,46,387,],46,395
+ViMarks=.,46,541,[,46,536,],46,541
 
 [view-settings,view=0,item:Introduction.tex]
 CursorColumn=263
@@ -985,10 +1054,10 @@ JumpList=
 ViMarks=.,6,72,[,6,72,],6,72
 
 [view-settings,view=0,item:RelatedResearch.tex]
-CursorColumn=1353
-CursorLine=6
+CursorColumn=1383
+CursorLine=22
 JumpList=
-ViMarks=.,6,1352,[,6,1349,],6,1352
+ViMarks=.,22,1382,[,22,1382,],22,1382
 
 [view-settings,view=0,item:abstract.tex]
 CursorColumn=22
