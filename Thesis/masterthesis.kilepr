@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=main.tex
+lastDocument=Evaluation/BasicEval.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -169,13 +169,6 @@ Indentation Mode=normal
 Mode=LaTeX
 
 [document-settings,item:Implementation/HardwareInterface.tex]
-Bookmarks=
-Encoding=UTF-8
-Highlighting=LaTeX
-Indentation Mode=normal
-Mode=LaTeX
-
-[document-settings,item:Implementation/Navigation.tex]
 Bookmarks=
 Encoding=UTF-8
 Highlighting=LaTeX
@@ -385,7 +378,7 @@ order=2
 
 [item:Concept/GeneralMapping.tex]
 archive=true
-column=351
+column=0
 encoding=UTF-8
 highlight=LaTeX
 line=6
@@ -401,7 +394,7 @@ highlight=LaTeX
 line=5
 mode=LaTeX
 open=true
-order=32
+order=31
 
 [item:Concept/Hardware.tex]
 archive=true
@@ -421,7 +414,7 @@ highlight=LaTeX
 line=19
 mode=LaTeX
 open=true
-order=33
+order=32
 
 [item:Concept/LLPlanner.tex]
 archive=true
@@ -435,10 +428,10 @@ order=8
 
 [item:Concept/Mapping.tex]
 archive=true
-column=721
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=107
+line=6
 mode=LaTeX
 open=true
 order=1
@@ -491,7 +484,7 @@ highlight=LaTeX
 line=36
 mode=LaTeX
 open=true
-order=28
+order=27
 
 [item:Conclusion.tex]
 archive=true
@@ -501,27 +494,27 @@ highlight=LaTeX
 line=1
 mode=LaTeX
 open=true
-order=26
+order=25
 
 [item:Evaluation.tex]
 archive=true
-column=256
+column=453
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=4
 mode=LaTeX
 open=true
-order=31
+order=30
 
 [item:Evaluation/BasicEval.tex]
 archive=true
-column=0
+column=671
 encoding=UTF-8
 highlight=LaTeX
-line=29
+line=37
 mode=LaTeX
 open=true
-order=35
+order=34
 
 [item:Evaluation/MappingE.tex]
 archive=true
@@ -531,7 +524,7 @@ highlight=LaTeX
 line=78
 mode=LaTeX
 open=true
-order=34
+order=33
 
 [item:Evaluation/SearchEval.tex]
 archive=true
@@ -541,17 +534,17 @@ highlight=LaTeX
 line=0
 mode=LaTeX
 open=true
-order=36
+order=35
 
 [item:Implementation.tex]
 archive=true
-column=12
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=11
+line=2
 mode=LaTeX
 open=true
-order=25
+order=24
 
 [item:Implementation/HardwareInterface.tex]
 archive=true
@@ -561,24 +554,14 @@ highlight=LaTeX
 line=2
 mode=LaTeX
 open=true
-order=27
+order=26
 
-[item:Implementation/Navigation.tex]
+[item:Implementation/Preprocessing.tex]
 archive=true
 column=0
 encoding=UTF-8
 highlight=LaTeX
-line=0
-mode=LaTeX
-open=true
-order=23
-
-[item:Implementation/Preprocessing.tex]
-archive=true
-column=45
-encoding=UTF-8
-highlight=LaTeX
-line=0
+line=2
 mode=LaTeX
 open=true
 order=22
@@ -595,30 +578,30 @@ order=18
 
 [item:Implementation/hl_planner_node.tex]
 archive=true
-column=23
-encoding=UTF-8
-highlight=LaTeX
-line=115
-mode=LaTeX
-open=true
-order=24
-
-[item:Implementation/ll_planner_node.tex]
-archive=true
 column=0
 encoding=UTF-8
 highlight=LaTeX
-line=127
+line=68
+mode=LaTeX
+open=true
+order=23
+
+[item:Implementation/ll_planner_node.tex]
+archive=true
+column=1138
+encoding=UTF-8
+highlight=LaTeX
+line=15
 mode=LaTeX
 open=true
 order=21
 
 [item:Implementation/mapping_node.tex]
 archive=true
-column=21
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=224
+line=13
 mode=LaTeX
 open=true
 order=20
@@ -641,7 +624,7 @@ highlight=LaTeX
 line=6
 mode=LaTeX
 open=true
-order=29
+order=28
 
 [item:Prerequisites.tex]
 archive=true
@@ -675,10 +658,10 @@ order=9
 
 [item:Prerequisites/GMapping.tex]
 archive=true
-column=2
+column=774
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=4
 mode=LaTeX
 open=true
 order=11
@@ -695,13 +678,13 @@ order=12
 
 [item:Prerequisites/OccupancyGridMapping.tex]
 archive=true
-column=67
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=20
+line=36
 mode=LaTeX
-open=false
-order=2
+open=true
+order=37
 
 [item:Prerequisites/Octomapping.tex]
 archive=true
@@ -725,13 +708,13 @@ order=13
 
 [item:Prerequisites/YOLO.tex]
 archive=true
-column=401
+column=0
 encoding=UTF-8
 highlight=LaTeX
 line=10
 mode=LaTeX
-open=false
-order=23
+open=true
+order=36
 
 [item:ProblemFormulation.tex]
 archive=true
@@ -745,13 +728,13 @@ order=17
 
 [item:RelatedResearch.tex]
 archive=true
-column=1383
+column=1118
 encoding=UTF-8
 highlight=LaTeX
-line=22
+line=16
 mode=LaTeX
 open=true
-order=30
+order=29
 
 [item:abstract.tex]
 archive=true
@@ -838,10 +821,10 @@ JumpList=
 ViMarks=.,0,51,[,0,50,],0,51
 
 [view-settings,view=0,item:Concept/GeneralMapping.tex]
-CursorColumn=351
+CursorColumn=0
 CursorLine=6
 JumpList=
-ViMarks=.,0,0,[,0,0,],0,0
+ViMarks=.,6,207,[,6,207,],6,214
 
 [view-settings,view=0,item:Concept/HLPlanner.tex]
 CursorColumn=47
@@ -868,10 +851,10 @@ JumpList=
 ViMarks=.,52,16,[,52,16,],52,16
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=721
-CursorLine=107
+CursorColumn=0
+CursorLine=6
 JumpList=
-ViMarks=.,107,721,[,107,721,],107,721,a,206,0
+ViMarks=.,6,1289,[,6,1289,],6,1296,a,206,0
 
 [view-settings,view=0,item:Concept/ObjectMapping.tex]
 CursorColumn=588
@@ -910,16 +893,16 @@ JumpList=
 ViMarks=.,1,0,[,1,0,],1,0
 
 [view-settings,view=0,item:Evaluation.tex]
-CursorColumn=256
-CursorLine=2
+CursorColumn=453
+CursorLine=4
 JumpList=
-ViMarks=.,2,255,[,2,246,],2,255
+ViMarks=.,4,452,[,4,451,],4,452
 
 [view-settings,view=0,item:Evaluation/BasicEval.tex]
-CursorColumn=0
-CursorLine=29
+CursorColumn=671
+CursorLine=37
 JumpList=
-ViMarks=.,39,145,[,39,145,],39,145
+ViMarks=.,37,670,[,37,645,],37,670
 
 [view-settings,view=0,item:Evaluation/MappingE.tex]
 CursorColumn=57
@@ -934,10 +917,10 @@ JumpList=
 ViMarks=
 
 [view-settings,view=0,item:Implementation.tex]
-CursorColumn=12
-CursorLine=11
+CursorColumn=0
+CursorLine=2
 JumpList=
-ViMarks=.,2,1082,[,2,1082,],2,1110
+ViMarks=.,2,964,[,2,964,],2,971
 
 [view-settings,view=0,item:Implementation/HardwareInterface.tex]
 CursorColumn=613
@@ -945,15 +928,9 @@ CursorLine=2
 JumpList=
 ViMarks=.,2,612,[,2,610,],2,612
 
-[view-settings,view=0,item:Implementation/Navigation.tex]
-CursorColumn=0
-CursorLine=0
-JumpList=
-ViMarks=
-
 [view-settings,view=0,item:Implementation/Preprocessing.tex]
-CursorColumn=45
-CursorLine=0
+CursorColumn=0
+CursorLine=2
 JumpList=
 ViMarks=.,8,240,[,8,222,],8,240
 
@@ -964,22 +941,22 @@ JumpList=
 ViMarks=.,19,954,[,19,945,],19,954
 
 [view-settings,view=0,item:Implementation/hl_planner_node.tex]
-CursorColumn=23
-CursorLine=115
+CursorColumn=0
+CursorLine=68
 JumpList=
 ViMarks=.,115,23,[,115,23,],115,23
 
 [view-settings,view=0,item:Implementation/ll_planner_node.tex]
-CursorColumn=0
-CursorLine=127
+CursorColumn=1138
+CursorLine=15
 JumpList=
-ViMarks=.,151,373,[,151,372,],151,382
+ViMarks=.,104,672,[,104,672,],104,672
 
 [view-settings,view=0,item:Implementation/mapping_node.tex]
-CursorColumn=21
-CursorLine=224
+CursorColumn=0
+CursorLine=13
 JumpList=
-ViMarks=.,224,0,[,224,0,],224,20
+ViMarks=.,179,467,[,179,467,],179,474
 
 [view-settings,view=0,item:Implementation/vision_node.tex]
 CursorColumn=542
@@ -1012,10 +989,10 @@ JumpList=
 ViMarks=.,0,61,[,0,43,],0,61
 
 [view-settings,view=0,item:Prerequisites/GMapping.tex]
-CursorColumn=2
-CursorLine=2
+CursorColumn=774
+CursorLine=4
 JumpList=
-ViMarks=.,2,1,[,2,1,],2,1
+ViMarks=.,4,773,[,4,770,],4,773
 
 [view-settings,view=0,item:Prerequisites/MOVE_BASE.tex]
 CursorColumn=0
@@ -1024,8 +1001,8 @@ JumpList=
 ViMarks=.,0,17,[,0,9,],0,17
 
 [view-settings,view=0,item:Prerequisites/OccupancyGridMapping.tex]
-CursorColumn=67
-CursorLine=20
+CursorColumn=0
+CursorLine=36
 JumpList=
 ViMarks=.,0,30,[,0,24,],0,30
 
@@ -1042,10 +1019,10 @@ JumpList=
 ViMarks=.,0,46,[,0,44,],0,46
 
 [view-settings,view=0,item:Prerequisites/YOLO.tex]
-CursorColumn=401
+CursorColumn=0
 CursorLine=10
 JumpList=
-ViMarks=.,11,0,[,10,400,],-1,-1
+ViMarks=.,10,383,[,10,380,],10,383
 
 [view-settings,view=0,item:ProblemFormulation.tex]
 CursorColumn=72
@@ -1054,10 +1031,10 @@ JumpList=
 ViMarks=.,6,72,[,6,72,],6,72
 
 [view-settings,view=0,item:RelatedResearch.tex]
-CursorColumn=1383
-CursorLine=22
+CursorColumn=1118
+CursorLine=16
 JumpList=
-ViMarks=.,22,1382,[,22,1382,],22,1382
+ViMarks=.,16,1118,[,16,1118,],16,1118
 
 [view-settings,view=0,item:abstract.tex]
 CursorColumn=22

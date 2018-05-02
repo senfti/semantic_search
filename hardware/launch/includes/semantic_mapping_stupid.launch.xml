@@ -98,15 +98,15 @@
     <param name="ROOM_ESTIMATED_OCCUPIED_AREA" value="10.0" />
     <param name="ROOM_MIN_UNEXPLORED_AREA" value="1.0" />
     <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="0.5" />
-    <param name="TRAVEL_DIST_LIN_FACTOR" value="10.0" />
+    <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />
     <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.0" />
     <param name="TRAVEL_TURN_FACTOR" value="0.0" />
     <param name="SEARCH_TIME_PER_GRID_CELL" value="4.0" />
     <param name="ROOM_MAX_PROB" value="0.8" />
     <param name="PUBLISH_DEBUG_IMAGES" value="1" />
     <param name="DEBUG_OUTPUT" value="1" />
-    <param name="USE_OBJ_MAP" value="1" />
+    <param name="USE_OBJ_MAP" value="0" />
     <param name="OBJ_TO_ROOM" value="0" />
-    <param name="ROOM_TO_OBJ" value="1" />
+    <param name="ROOM_TO_OBJ" value="0" />
   </node>
 </launch>

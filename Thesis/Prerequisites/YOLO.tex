@@ -8,5 +8,5 @@ The image is segmented into a 13x13 grid. A grid cell is responsible for an obje
 
 In addition to the bounding boxes the probability distribution over all object classes is calculated for every cell. The number of different object classes depends on the used training dataset. In this thesis YOLO trained on the COCO dataset was used. This training data contains more than 100,000 images with labels of 80 different object classes. Therefore the final prediction of the used YOLO version is a 13x13x105 tensor. 
 
-To get the final result of the object detection non-maximum suppression is applied to get rid of bounding boxes responsible of objects being already better represented by another bounding box. In a last step the confidence of every bounding box is multiplied with the classification results of the corresponding cell to receive $< 845$ bounding boxes with object probabilities for every object class. 
+To get the final result of the object detection non-maximum suppression is applied to get rid of bounding boxes responsible of objects being already better represented by another bounding box. In a last step the confidence of each bounding box is multiplied with the classification results of the corresponding cell to receive $< 845$ bounding boxes with object probabilities for each object class. 
 

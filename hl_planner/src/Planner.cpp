@@ -207,6 +207,7 @@ const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","do
 std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res);
 
 void Planner::run(int obj, std::string run_name){
+  bool init_turn_done = false;
   if(run_name.empty())
     run_name = std::to_string(ros::Time::now().toSec());
 
@@ -230,11 +231,13 @@ void Planner::run(int obj, std::string run_name){
       else
         sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
       output_file_ << "GOAL " << (state_.num_rooms_ < 2 ? "START_ROTATE" : "ROTATE") << std::endl;
+      init_turn_done = true;
       continue;
     }
-    else if(state_.num_rooms_<2 && !state_.not_explored_.empty()){
+    else if(state_.num_rooms_<2 && !state_.not_explored_.empty() && !init_turn_done){
       sendGoal(Action(Action::START_ROTATE, obj, hierarchy.curr_room));
       output_file_ << "GOAL " << "ROTATE" << std::endl;
+      init_turn_done = true;
     }
 
     HierarchyMap graph_map(hierarchy, obj);

@@ -8,13 +8,13 @@
     <param name="FINISHED_TRIES" value="10" />
     <param name="PEEK_TURN_SPEED" value="0.7" />
 
-    <param name="MOVE_MAX_ROT_VEL" value="2.0" />
+    <param name="MOVE_MAX_ROT_VEL" value="1.0" />
     <param name="MOVE_MAX_TRANS_VEL" value="0.3" />
 
     <param name="SEARCH_MAX_ROT_VEL" value="0.7" />
     <param name="SEARCH_MAX_TRANS_VEL" value="0.3" />
 
-    <param name="OBJ_PRIOR_PROB" value="0.004" />
+    <param name="OBJ_PRIOR_PROB" value="0.005" />
     <param name="OBJ_MIN_PROB" value="0.004" />
     <param name="OBJ_MAX_PROB" value="0.99" />
 
@@ -30,7 +30,7 @@
     <param name="OBJECT_FOUND_THRESH" value="0.95" />
 
     <param name="VIEW_ANGLE_STEPS" value="12" />
-    <param name="SEEN_MAP_STEPS" value="24" />
+    <param name="SEEN_MAP_STEPS" value="36" />
     <param name="SAMPLE_COUNT_THRESH" value="20" />
 
     <param name="VIEW_MIN_DIST" value="0.49" />

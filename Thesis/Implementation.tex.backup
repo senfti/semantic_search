@@ -1,0 +1,21 @@
+\chapter{Implementation}
+
+In this chapter the implementational details of the concept presented in chapter \ref{Concept} are described. The software runs on a Linux operation system and uses ROS Kinetic as middle-ware. The usage of ROS allows easy communication between different processes, also called nodes, and the easy integration of existing packages. Existing packages are used for the communication with the robot and the sensors, and the source code of some packages was used as a starting point for the implementation. Also useful is the in ROS integrated tf library, which keeps track of the coordinate frames and allows nodes to obtain the most recent transformation between two coordinate frames and also transformations between coordinate frames at past times. Other used libraries are OpenCV\footnote{https://opencv.org/}, PCL\footnote{http://pointclouds.org/}, the mapping libraries Octomap\footnote{https://octomap.github.io/} and Gmapping\footnote{https://www.openslam.org/gmapping.html}, and the deep learning libraries Caffe\footnote{http://caffe.berkeleyvision.org/} and Darknet\footnote{https://pjreddie.com/darknet/}. OpenCV is an open-source image processing library. In this work it was not only used for image processing, but also in the internal representation of grid maps and for operations executed on those maps. PCL (Point Cloud Library) was used for operations on point clouds, like coordinate transformations. Except for some debug programs written in Python and the message specifications, the whole implementation was written in C++.
+
+Figure \ref{ImplOverview} shows the structure of the implementation, with its nodes and the communication channels between the nodes. The following sections contain an in-depth description of the implementation of the nodes and the communication between the nodes. 
+
+\begin{landscape}
+\begin{figure}
+  \includegraphics[width=1.35\textheight,clip]{figures/ImplementationOverview.pdf} 
+  \caption[Implementation overview]{Overview over the nodes in the system and the messages, services and actions for inter-node communication; message connections are drawn from publishing node to the subscribed nodes; nodes connected with the tf package publish updated coordinate transformations }
+  \label{ImplOverview}
+\end{figure}
+\end{landscape}
+
+\input{Implementation/HardwareInterface.tex}
+\input{Implementation/Preprocessing.tex}
+\input{Implementation/door_detection_node.tex}
+\input{Implementation/vision_node.tex}
+\input{Implementation/mapping_node.tex}
+\input{Implementation/hl_planner_node.tex}
+\input{Implementation/ll_planner_node.tex}
