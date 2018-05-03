@@ -24,20 +24,20 @@ In figure \ref{roomobj} and also in figure \ref{wz_imgs} images with the corresp
 \begin{figure}
 \centering
 \begin{tabular}{cc}
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/7.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/2.png}} \\
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/3.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/4.png}} \\
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/5.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/6.png}}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/7.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/4.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/5.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/6.png}}
 \end{tabular}
 \caption[Example images]{Example images with the most likely place classifications and object detections with a probability greater 0.1}
 \label{roomobj}
 \end{figure}
 
-The object detection produces mixed results, where some examples are shown in figure \ref{roomobj}. Some objects are obviously not detected, like the cutlery on the table in image a, but also better visible objects are often not detected. Some objects are wrongly classified, as the monitor detections in image f and the blurriness caused by robot rotations also reduces the number of correctly detected objects. However, many objects are detected correctly, at least if the image is sharp and the object is well lit and big enough in the image, although the confidence is not very high in many cases.
+The object detection produces mixed results, where some examples are shown in figure \ref{roomobj}. Some objects are obviously not detected, like the cutlery on the table in image a, but also better visible objects are often not detected. Some objects are wrongly classified, as the monitor detections in image f and the blurriness caused by robot rotations also reduces the number of correctly detected objects, as can be seen when comparing image d and e. However, many objects are detected correctly, at least if the image is sharp and the objects are well lit and big enough in the image. The confidence of the detections varies, depending not only on how well the objects are seen but also on the background and other factors.
 
-The doorway detection works very well, with no wrong detections and no passing of undetected doorways during the test runs. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by.
+The doorway detection works very well, with no wrong detections and no passing of undetected doorways during the test runs. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by, which 
 
 \subsection{Navigation} \label{NavEval}
 
@@ -53,4 +53,4 @@ There is a lot of room for improvements in terms of system stability and correct
 
 A second reason for failed object searches are program crashes. Due to the size and complexity of the implementation there are still bugs in the code, which infrequently cause a crash of a node. However, also the nodes of the used ROS-packages crash sometimes, mainly the camera nodes and the node creating the costmap for the local planner of the move{\_}base.  
 
-The last reason for a failed search is not detecting the searched object or finding a wrong object. The object detection has problems to detect some object types, mainly small objects. Therefore some objects may not be found even if they were visible well. There are two reasons for finding a wrong object. Firstly, some object types are often detected, even if there is no such object. For example many cupboards are detected as refrigerator. Secondly, the parameters are not perfect for all object types. If a similar object is seen very often, the probability of it being the searched object might increase high enough to let the system think the object was found. 
+The last reason for a failed search is not detecting the searched object or finding a wrong object. The object detection has problems to detect some object types, mainly small objects. Therefore some objects may not be found even if they were seen. There are two reasons for finding a wrong object. Firstly, some object types are often detected, even if there is no such object. For example many cupboards are detected as refrigerator. Secondly, the parameters are not perfect for all object types. If a similar object is seen very often, the probability of it being the searched object might increase high enough to let the system think the object was found. 

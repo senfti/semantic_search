@@ -4,7 +4,7 @@ This section is no detailed evaluation of the basic functionality of the robot s
 
 \subsection{Sensor Data} \label{SensorEval}
 
-The accuracy of the range measurements from the LIDAR were found to be accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Firstly, without many valid range measurements being available in open space the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Secondly, some obstacles are not detected. Obviously, the LIDAR has problems with glass and reflecting surfaces, but also some other surfaces are not reliably detected, like painted wood. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality.
+The accuracy of the range measurements from the LIDAR were found to be accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Firstly, without many valid range measurements being available in open space, the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Secondly, some obstacles are not detected. Obviously, the LIDAR has problems with glass and reflecting surfaces, but also some other surfaces are not reliably detected, like painted wood. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality.
 
 The low resolution of the images from the RGBD-camera is no problem because the CNNs cannot use higher resolutions anyway. More problematic is the mediocre quality of the images. The CNNs can handle the noise pretty well, but the low dynamic range prevents the detection of objects in bad lit areas and the necessary high exposure time leads to motion blur. This is especially noticeable when the robot rotates. Therefore the rotational velocity during exploration and search is limited and generally images are discarded if the robot rotates too fast. In figure \ref{RotMax} an image taken with the maximum allowed rotational velocity is shown. Small, distant objects are rarely detected anymore. However, decreasing the maximum rotational velocity further would result in very slow object searches.
 
@@ -15,7 +15,7 @@ The low resolution of the images from the RGBD-camera is no problem because the 
   \label{RotMax}
 \end{figure}
 
-The quality of the point cloud is good, but obviously not as accurate as the laser scan. The distance range given in the specifications of the RGBD-camera from 0.8\,m to 3.5\,m is very pessimistic. Tests showed a minimum detectable distance of 0.55\,m and a maximum distance much higher than the 3.5\,m. 
+The quality of the point cloud is good, but the depth measurements are obviously not as accurate as the range measurements of the laser scan. The distance range given in the specifications of the RGBD-camera from 0.8\,m to 3.5\,m is very pessimistic. Tests showed a minimum detectable distance of 0.55\,m and a maximum distance much higher than the 3.5\,m. 
 
 \subsection{Computer vision}
 
@@ -24,20 +24,20 @@ In figure \ref{roomobj} and also in figure \ref{wz_imgs} images with the corresp
 \begin{figure}
 \centering
 \begin{tabular}{cc}
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/7.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/2.png}} \\
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/3.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/4.png}} \\
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/5.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/6.png}}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/7.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/4.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/5.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/6.png}}
 \end{tabular}
 \caption[Example images]{Example images with the most likely place classifications and object detections with a probability greater 0.1}
 \label{roomobj}
 \end{figure}
 
+The object detection produces mixed results, where some examples are shown in figure \ref{roomobj}. Some objects are obviously not detected, like the cutlery on the table in image a, but also better visible objects are often not detected. Some objects are wrongly classified, as the monitor detections in image f and the blurriness caused by robot rotations also reduces the number of correctly detected objects, as can be seen when comparing image d and e. However, many objects are detected correctly, at least if the image is sharp and the objects are well lit and big enough in the image. Although the confidence is not very high in many cases.
 
-
-The doorway detection works very well, with no wrong detections and no passing of undetected doorways during the test runs. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by.
+The doorway detection works very well, with no wrong detections and no passing of undetected doorways during the test runs. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by, which 
 
 \subsection{Navigation} \label{NavEval}
 
