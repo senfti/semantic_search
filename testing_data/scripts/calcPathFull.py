@@ -5,13 +5,12 @@ from nav_msgs.msg import Path
 import tf
 import math
 
-files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp25.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp26.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp27.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp28.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp29.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp30.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp31.bag"]
+files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s13.bag"]
 
 move_to_times = []
 explore_times = []

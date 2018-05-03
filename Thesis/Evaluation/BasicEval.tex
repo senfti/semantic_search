@@ -2,7 +2,7 @@
 
 This section is no detailed evaluation of the basic functionality of the robot system, but only an overview for better understanding of the results in the following sections.
 
-\subsection{Sensor Data}
+\subsection{Sensor Data} \label{SensorEval}
 
 The accuracy of the range measurements from the LIDAR were found to be accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Firstly, without many valid range measurements being available in open space, the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Secondly, some obstacles are not detected. Obviously, the LIDAR has problems with glass and reflecting surfaces, but also some other surfaces are not reliably detected, like painted wood. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality.
 
@@ -19,7 +19,23 @@ The quality of the point cloud is good, but the depth measurements are obviously
 
 \subsection{Computer vision}
 
-The room type classification works well 
+In figure \ref{roomobj} and also in figure \ref{wz_imgs} images with the corresponding room type classification results are shown. In most cases the room type classification returns reasonable results. If two similar fitting categories exist most of the probability is split between those classes. There are images where the place classification struggles, like image c in figure \ref{roomobj} or the images 2 and 6 in figure \ref{wz_imgs}. Also the probability distribution of the room type classification does not really reflect if two areas with different room type are visible. In this case one is dominant, as can be seen in image 1 or figure \ref{wz_imgs}.
+
+\begin{figure}
+\centering
+\begin{tabular}{cc}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/7.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/4.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/5.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test/6.png}}
+\end{tabular}
+\caption[Example images]{Example images with the most likely place classifications and object detections with a probability greater 0.1}
+\label{roomobj}
+\end{figure}
+
+The object detection produces mixed results, where some examples are shown in figure \ref{roomobj}. Some objects are obviously not detected, like the cutlery on the table in image a, but also better visible objects are often not detected. Some objects are wrongly classified, as the monitor detections in image f and the blurriness caused by robot rotations also reduces the number of correctly detected objects. However, many objects are detected correctly, at least if the image is sharp and the object is well lit and big enough in the image, although the confidence is not very high in many cases.
 
 The doorway detection works very well, with no wrong detections and no passing of undetected doorways during the test runs. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by.
 
@@ -35,6 +51,6 @@ The navigation generally struggles in narrow areas, where it sometimes fails to 
 
 There is a lot of room for improvements in terms of system stability and correct execution, but the creation of a robust autonomous system was not the main goal of this work. The problems with the navigation are described in section \ref{NavEval}. Technically a run failed if the robot is unable to turn, but then no successful run would be possible in the institute environment, with its problematic joints in the floor. Therefore little pushes to unstuck the robot, which do not distort the results of the tests, are valid. 
 
-A second reason for failed object searches are program crashes. Due to the size and complexity of the implementation there are still bugs in the code, which infrequently cause a crash of a node. However, also the nodes of the used ROS-packages crash sometimes, mainly the camera nodes and the node creating the costmap for the local planner of the move{\_}base. 
+A second reason for failed object searches are program crashes. Due to the size and complexity of the implementation there are still bugs in the code, which infrequently cause a crash of a node. However, also the nodes of the used ROS-packages crash sometimes, mainly the camera nodes and the node creating the costmap for the local planner of the move{\_}base.  
 
 The last reason for a failed search is not detecting the searched object or finding a wrong object. The object detection has problems to detect some object types, mainly small objects. Therefore some objects may not be found even if they were visible well. There are two reasons for finding a wrong object. Firstly, some object types are often detected, even if there is no such object. For example many cupboards are detected as refrigerator. Secondly, the parameters are not perfect for all object types. If a similar object is seen very often, the probability of it being the searched object might increase high enough to let the system think the object was found. 
