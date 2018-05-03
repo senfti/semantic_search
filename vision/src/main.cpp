@@ -354,6 +354,12 @@ void VisionApp::showDebugImage(cv::Mat img, std::vector<CaffeRecognition>& predi
     cv::imwrite("/tmp/" + std::to_string(sdf) + ".png", debug_img);
     cv::imwrite("/tmp/place_" + std::to_string(sdf) + ".png", debug_img_place);
     cv::imwrite("/tmp/pure_" + std::to_string(sdf) + ".png", debug_img_pure);
+    for(int i=0; i<detections.size(); i++){
+      if(*std::max_element(detections[i].prob_.begin(), detections[i].prob_.end()) > 0.1){
+        detections[i].draw(debug_img_pure, cv::Scalar(255, 255, 255), 1, cv::Scalar(0, 0, 255), 0.8, 2);
+      }
+    }
+    cv::imwrite("/tmp/obj_" + std::to_string(sdf) + ".png", debug_img_pure);
     sdf++;
   }
   uchar key = cv::waitKey(1) & 255;
