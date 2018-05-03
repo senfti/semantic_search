@@ -4,7 +4,7 @@ This section is no detailed evaluation of the basic functionality of the robot s
 
 \subsection{Sensor Data}
 
-The accuracy of the range measurements from the LIDAR were found to be accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Firstly, without many valid range measurements being available in open space the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Secondly, some obstacles are not detected. Obviously, the LIDAR has problems with glass and reflecting surfaces, but also some other surfaces are not reliably detected, like painted wood. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality.
+The accuracy of the range measurements from the LIDAR were found to be accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Firstly, without many valid range measurements being available in open space, the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Secondly, some obstacles are not detected. Obviously, the LIDAR has problems with glass and reflecting surfaces, but also some other surfaces are not reliably detected, like painted wood. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality.
 
 The low resolution of the images from the RGBD-camera is no problem because the CNNs cannot use higher resolutions anyway. More problematic is the mediocre quality of the images. The CNNs can handle the noise pretty well, but the low dynamic range prevents the detection of objects in bad lit areas and the necessary high exposure time leads to motion blur. This is especially noticeable when the robot rotates. Therefore the rotational velocity during exploration and search is limited and generally images are discarded if the robot rotates too fast. In figure \ref{RotMax} an image taken with the maximum allowed rotational velocity is shown. Small, distant objects are rarely detected anymore. However, decreasing the maximum rotational velocity further would result in very slow object searches.
 
@@ -15,7 +15,7 @@ The low resolution of the images from the RGBD-camera is no problem because the 
   \label{RotMax}
 \end{figure}
 
-The quality of the point cloud is good, but obviously not as accurate as the laser scan. The distance range given in the specifications of the RGBD-camera from 0.8\,m to 3.5\,m is very pessimistic. Tests showed a minimum detectable distance of 0.55\,m and a maximum distance much higher than the 3.5\,m. 
+The quality of the point cloud is good, but the depth measurements are obviously not as accurate as the range measurements of the laser scan. The distance range given in the specifications of the RGBD-camera from 0.8\,m to 3.5\,m is very pessimistic. Tests showed a minimum detectable distance of 0.55\,m and a maximum distance much higher than the 3.5\,m. 
 
 \subsection{Computer vision}
 
