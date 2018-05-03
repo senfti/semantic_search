@@ -5,12 +5,31 @@ from nav_msgs.msg import Path
 import tf
 import math
 
-files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f11.bag",
+files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f1.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f2.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f4.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s1.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s2.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s3.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f2.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f11.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f12.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f23.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s11.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s12.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s13.bag"]
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s23.bag"]
 
 move_to_times = []
 explore_times = []

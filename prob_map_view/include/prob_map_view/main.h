@@ -27,6 +27,7 @@ class ProbViewApp : public wxApp{
 
     ProbViewer* place_viewer_ = nullptr;
     ProbViewer* obj_viewer_ = nullptr;
+    ProbViewer* obj_thresh_viewer_ = nullptr;
     ProbViewer* base_obj_viewer_ = nullptr;
     ProbViewer* base_room_viewer_ = nullptr;
     ProbViewer* search_prob_viewer_ = nullptr;

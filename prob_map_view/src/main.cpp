@@ -221,7 +221,8 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
     return;
 
   if(obj_viewer_ == nullptr){
-    obj_viewer_ = new ProbViewer("Object Prob Viewer", msg->names, msg->img_are_log);
+    obj_viewer_ = new ProbViewer("Object Prob Viewer", msg->names, true);
+    obj_thresh_viewer_ = new ProbViewer("Object Thresh Viewer", msg->names, msg->img_are_log);
     obj_viewer_->Show(true);
   }
 

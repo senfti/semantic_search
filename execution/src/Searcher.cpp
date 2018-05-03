@@ -48,8 +48,8 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::merge(std::vector<cv::Mat>({tmp, o, o}), tmp);
   cv::cvtColor(tmp, tmp, CV_HSV2BGR);
   cv::imshow(name, tmp);
-  cv::moveWindow(name, 1600,0);
   cv::waitKey(1);
+  cv::moveWindow(name, 1600,0);
 }
 
 void showProbImage(const std::string& name, const cv::Mat mat, float resize_factor, const cv::Mat& mask){
@@ -69,6 +69,7 @@ void showProbImage(const std::string& name, const cv::Mat mat, float resize_fact
   cv::merge(std::vector<cv::Mat>({tmp, o, mask_t}), tmp);
   cv::cvtColor(tmp, tmp, CV_HSV2BGR);
   cv::imshow(name, tmp);
+  cv::waitKey(1);
   cv::moveWindow(name, 1600,0);
 }
 
@@ -797,7 +798,6 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_p
   prob = 1-prob;
   std::cout << "Remaining prob: " << prob << std::endl;
   showProbImage("probabilities", tmp, 1, 255-accessible_map_*0.3);
-  cv::waitKey(1);
 
   cv::Point2f curr_pos = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
   tf::Transform old_pose_tf;
@@ -948,7 +948,6 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::flip(tmp, tmp, 0);
   cv::imshow("not_fully_viewed_border_", tmp);
   cv::moveWindow("not_fully_viewed_border_", 1600,300);
-  cv::waitKey(1);
   std::cout << "In seen map inserted" << std::endl;
 
 //  showProbImage("not_fully_viewed_border_dir", border_dir_map_/(2*M_PI), 4, not_fully_viewed_border_);
