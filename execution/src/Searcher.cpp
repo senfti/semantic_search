@@ -892,7 +892,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
     angle += 2*M_PI;
   while(angle >= 2*M_PI)
     angle -= 2*M_PI;
-  int idx = angle/(2*M_PI)*SEEN_MAP_STEPS;
+  int idx = int(angle/(2*M_PI)*SEEN_MAP_STEPS+SEEN_MAP_STEPS)%SEEN_MAP_STEPS;
   int other_idx = ((angle/(2*M_PI)*SEEN_MAP_STEPS - idx) < 0.5 ? (idx+SEEN_MAP_STEPS-1)%SEEN_MAP_STEPS : (idx+1)%SEEN_MAP_STEPS);
 
   cv::Point pos = poseToPoint(curr_pose, obj_map_->getOrigin(), RESOLUTION);
@@ -912,7 +912,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   for(int x=0; x<border_dir_map_.cols; x++){
     for(int y=0; y<border_dir_map_.rows; y++){
       if(border_map_(y,x) > 0){
-        int border_idx = border_dir_map_(y,x)/(2*M_PI)*SEEN_MAP_STEPS;
+        int border_idx = int(border_dir_map_(y,x)/(2*M_PI)*SEEN_MAP_STEPS+SEEN_MAP_STEPS)%SEEN_MAP_STEPS;
         if(seen_maps_[border_idx](y,x) >= BORDER_SEEN_THRESH)
           tmp(y,x) = 0;
       }
@@ -936,7 +936,7 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   }
   for(int x=std::max(pos.x-3, 0); x<=std::min(pos.x+3,previous_pose_maps_[0].cols-1); x++){
     for(int y=std::max(pos.y-3, 0); y<=std::min(pos.y+3,previous_pose_maps_[0].rows-1); y++){
-      previous_pose_maps_[angle/(2*M_PI)*VIEW_ANGLE_STEPS](y,x) = 255;
+      previous_pose_maps_[int(angle/(2*M_PI)*VIEW_ANGLE_STEPS+VIEW_ANGLE_STEPS)%VIEW_ANGLE_STEPS](y,x) = 255;
     }
   }
 
