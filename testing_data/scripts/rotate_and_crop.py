@@ -17,4 +17,5 @@ for f in contents:
     M = cv2.getRotationMatrix2D((cols/2,rows/2),103,1)
     img = cv2.warpAffine(img,M,(cols,rows), borderValue=[255,255,255])
     #img[np.where((img == [0,0,0]).all(axis=2))] = [255,255,255]
+    img = img[65:305,70:315]
     cv2.imwrite(f[:-4] + '_b2' + f[-4:],img)
