@@ -797,7 +797,7 @@ bool Searcher::calcNextViewpoint(const tf::Transform& curr_pose, bool need_new_p
   cv::putText(tmp, std::to_string(max_val).substr(0,5), cv::Point(0,20), cv::FONT_HERSHEY_PLAIN, 0.5, cv::Scalar(1.0));
   prob = 1-prob;
   std::cout << "Remaining prob: " << prob << std::endl;
-  showProbImage("probabilities", tmp, 1, 255-accessible_map_*0.3);
+  //showProbImage("probabilities", tmp, 1, 255-accessible_map_*0.3);
 
   cv::Point2f curr_pos = poseToPoint(curr_pose, obj_map_->getOrigin(), obj_map_->getResolution());
   tf::Transform old_pose_tf;
@@ -946,8 +946,9 @@ bool Searcher::insertIntoSeenMaps(const tf::Transform &curr_pose){
   cv::bitwise_or(not_fully_viewed_border_(cv::Rect(x1,y1,kernel.cols,kernel.rows)), kernel, tmp(cv::Rect(x1,y1,kernel.cols,kernel.rows)));
   //cv::resize(tmp, tmp, cv::Size(not_fully_viewed_border_.cols*2, not_fully_viewed_border_.rows*2), 0, 0, cv::INTER_NEAREST);
   cv::flip(tmp, tmp, 0);
-  cv::imshow("not_fully_viewed_border_", tmp);
-  cv::moveWindow("not_fully_viewed_border_", 1600,300);
+  cv::imshow("border", tmp);
+  cv::waitKey(1);
+  //cv::moveWindow("not_fully_viewed_border_", 1600,300);
   std::cout << "In seen map inserted" << std::endl;
 
 //  showProbImage("not_fully_viewed_border_dir", border_dir_map_/(2*M_PI), 4, not_fully_viewed_border_);
