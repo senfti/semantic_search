@@ -1,23 +1,38 @@
 \section{Basic Functionality}
 
-This section is no detailed evaluation of the basic functionality of the robot system, but only an overview for better understanding of the results in the following sections.
+This section gives an overview over how well the basic components of the developed system work in practice for a better understanding of the following sections.
 
-\subsection{Sensor Data} \label{SensorEval}
+% \subsection{Sensor Data} \label{SensorEval}
+% 
+% The used LIDAR produces the for LIDAR typical accurate range measurements and has the common problems with reflective and transparent surfaces. The downside of this particular LIDAR is the relative low range of 4\,m. 
+% A lower range means less distinctive features, like corners, can be seen, which makes the localization more dependent on the odometry and therefore less accurate. The problem described in section \ref{preprocessing}, that 
+% 
+% The range measurements from the LIDAR are accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Without many distinctive shapes being visible by the LIDAR, the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Also some obstacles are not detected because of their surface. Like all LIDARs the used one struggles with glass and mirrors, but also some other surfaces, like painted wood, are not reliably detected. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality. %TODO: BILD
+% 
+% The low resolution of the images from the RGBD-camera is no problem because the CNNs cannot use higher resolutions anyway. More problematic is the mediocre quality of the images. The CNNs can handle the noise pretty well, but the low dynamic range prevents the detection of objects in bad lit areas and the necessary high exposure time leads to motion blur. This is especially noticeable when the robot rotates. Therefore the rotational velocity during exploration and search is limited and generally images are discarded if the robot rotates too fast. In figure \ref{RotMax} an image taken with the maximum allowed rotational velocity is shown. Small, distant objects are rarely detected anymore. However, decreasing the maximum rotational velocity further would result in very slow object searches.
+% 
+% \begin{figure}[h]
+% \centering
+%   \includegraphics[width=0.7\textwidth,clip]{figures/basic_eval/max_rot_img.png} 
+%   \caption[Example RGB-image]{An example RGB-image taken with the maximum rotational velocity, showing noticeable motion blur; the limited dynamic range is also visible in this image }
+%   \label{RotMax}
+% \end{figure}
+% 
+% The quality of the point cloud is good, but the depth measurements are obviously not as accurate as the range measurements of the laser scan. The distance range given in the specifications of the RGBD-camera from 0.8\,m to 3.5\,m is very pessimistic. Tests showed a minimum detectable distance of 0.55\,m and a maximum distance much higher than the 3.5\,m. 
 
-The accuracy of the range measurements from the LIDAR were found to be accurate enough for the creation of good quality maps. However, the limited range of the sensor, which is only 4\,m, causes problems in open areas and corridors. Firstly, without many valid range measurements being available in open space, the localization of the robot has to rely on the odometry, which can lead to inaccurate results. Secondly, some obstacles are not detected. Obviously, the LIDAR has problems with glass and reflecting surfaces, but also some other surfaces are not reliably detected, like painted wood. The combination of those two problems is difficult to handle, as described in section \ref{preprocessing}, and has therefore a negative impact on the map quality.
+\subsection{Computer Vision}
 
-The low resolution of the images from the RGBD-camera is no problem because the CNNs cannot use higher resolutions anyway. More problematic is the mediocre quality of the images. The CNNs can handle the noise pretty well, but the low dynamic range prevents the detection of objects in bad lit areas and the necessary high exposure time leads to motion blur. This is especially noticeable when the robot rotates. Therefore the rotational velocity during exploration and search is limited and generally images are discarded if the robot rotates too fast. In figure \ref{RotMax} an image taken with the maximum allowed rotational velocity is shown. Small, distant objects are rarely detected anymore. However, decreasing the maximum rotational velocity further would result in very slow object searches.
+In most cases the room type classification returns reasonable results. 
 
-\begin{figure}[h]
+\begin{figure}
 \centering
-  \includegraphics[width=0.7\textwidth,clip]{figures/basic_eval/max_rot_img.png} 
-  \caption[Example RGB-image]{An example RGB-image taken with the maximum rotational velocity, showing noticeable motion blur; the limited dynamic range is also visible in this image }
-  \label{RotMax}
+\begin{tabular}{cc}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/7.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/2.png}} \\
+\end{tabular}
+\caption[Example images]{Example images with the most likely place classifications and object detections with a probability greater 0.1}
+\label{roomobj}
 \end{figure}
-
-The quality of the point cloud is good, but the depth measurements are obviously not as accurate as the range measurements of the laser scan. The distance range given in the specifications of the RGBD-camera from 0.8\,m to 3.5\,m is very pessimistic. Tests showed a minimum detectable distance of 0.55\,m and a maximum distance much higher than the 3.5\,m. 
-
-\subsection{Computer vision}
 
 In figure \ref{roomobj} and also in figure \ref{wz_imgs} images with the corresponding room type classification results are shown. In most cases the room type classification returns reasonable results. If two similar fitting categories exist most of the probability is split between those classes. There are images where the place classification struggles, like image c in figure \ref{roomobj} or the images 2 and 6 in figure \ref{wz_imgs}. Also the probability distribution of the room type classification does not really reflect if two areas with different room type are visible. In this case one is dominant, as can be seen in image 1 or figure \ref{wz_imgs}.
 
@@ -41,16 +56,14 @@ The doorway detection works very well, with no wrong detections and no passing o
 
 \subsection{Navigation} \label{NavEval}
 
-The robot movement and the navigation causes a lot of problems in this work. The main problem is that the robot has not enough grip, especially on slippery and uneven ground. This lack of grip is caused by the high payload, which puts too much weight on the passive wheels. The passive wheels have a fixed forward orientation, therefore the robot has difficulties to rotate when there is too much weight on the passive wheels. In some cases the robot is even unable to rotate, in other cases the robot drifts forwards or backwards while executing in-place rotations. The slipping also causes the robot to drive curves too wide because the translational velocity is correct but the rotational velocity is too small. This can result in the robot getting stuck because it drifted too near to an obstacle. The recovery behaviors may be successful, but sometimes the robot needs help to unstuck. This problem was somewhat solved by increasing the planned rotational velocities before sending them to the Turtlebot. 
-
-Another encountered problem occurs when the robot should turn around in narrow passages. In this scenario the local planner cannot decide if it is best to turn left or right. So the robots turns alternating left and right, with some additional little forward movements, until it is finally able to turn around. This may take a while and has therefore a big impact on the search time. 
-
-The navigation generally struggles in narrow areas, where it sometimes fails to keep enough distance to the obstacles and gets stuck. No suitable parameters were found to solve this problem, which is probably caused by inaccurate and changing maps and the movement problems. The robot can usually recover using the recovery behaviors, but this takes some time and slows down the search drastically.
-
-\subsection{System Stability}
-
-There is a lot of room for improvements in terms of system stability and correct execution, but the creation of a robust autonomous system was not the main goal of this work. The problems with the navigation are described in section \ref{NavEval}. Technically a run failed if the robot is unable to turn, but then no successful run would be possible in the institute environment, with its problematic joints in the floor. Therefore little pushes to unstuck the robot, which do not distort the results of the tests, are valid. 
-
-A second reason for failed object searches are program crashes. Due to the size and complexity of the implementation there are still bugs in the code, which infrequently cause a crash of a node. However, also the nodes of the used ROS-packages crash sometimes, mainly the camera nodes and the node creating the costmap for the local planner of the move{\_}base.  
-
-The last reason for a failed search is not detecting the searched object or finding a wrong object. The object detection has problems to detect some object types, mainly small objects. Therefore some objects may not be found even if they were seen. There are two reasons for finding a wrong object. Firstly, some object types are often detected, even if there is no such object. For example many cupboards are detected as refrigerator. Secondly, the parameters are not perfect for all object types. If a similar object is seen very often, the probability of it being the searched object might increase high enough to let the system think the object was found. 
+In general the navigation works fine and the robot is able to drive to the given goal pose. The global planning in the 2D map of the room works without problems. However the local planner and the robot movement cause some problems. The high payload brings the robot to its limits. On even and clean floors the robot moves fine, but on slippery or uneven floors the robot has not enough grip on the active wheels to execute the movements as planned because too much weight is on the passive wheels. Due to the robot's design, with the passive wheels being fixed in forward direction, rotational movements are more difficult to execute for the robot. Therefore the problem with slipping wheels only affects the rotational component of the movement. The result is that rotations are slower, curves are driven wider as planned and changes in the direction are delayed. This is most of the time no problem, but especially in narrow areas the local planner sometimes fails to keep enough distance between the robot and obstacles and the robot gets stuck. The robot can also get stuck if it drifts towards an obstacle during an in-place rotation, which happens if only one active wheel is slipping. The recovery behaviors are usually enough to unstuck the robot, but these take some time. This is a major factor for varying search times for the same test scenario. The local planner has in general a big impact on the search time because it is often not able to navigate the robot smoothly through narrow areas and around obstacles. 
+% 
+% \subsection{Success Rate}
+% 
+% 
+% 
+% There is a lot of room for improvements in terms of system stability and correct execution, but the creation of a robust autonomous system was not the main goal of this work. The problems with the navigation are described in section \ref{NavEval}. Technically a run failed if the robot is unable to turn, but then no successful run would be possible in the institute environment, with its problematic joints in the floor. Therefore little pushes to unstuck the robot, which do not distort the results of the tests, are valid. 
+% 
+% A second reason for failed object searches are program crashes. Due to the size and complexity of the implementation there are still bugs in the code, which infrequently cause a crash of a node. However, also the nodes of the used ROS-packages crash sometimes, mainly the camera nodes and the node creating the costmap for the local planner of the move{\_}base.  
+% 
+% The last reason for a failed search is not detecting the searched object or finding a wrong object. The object detection has problems to detect some object types, mainly small objects. Therefore some objects may not be found even if they were seen. There are two reasons for finding a wrong object. Firstly, some object types are often detected, even if there is no such object. For example many cupboards are detected as refrigerator. Secondly, the parameters are not perfect for all object types. If a similar object is seen very often, the probability of it being the searched object might increase high enough to let the system think the object was found. 
