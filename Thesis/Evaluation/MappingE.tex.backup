@@ -105,3 +105,17 @@ In image b of figure \ref{roomclass} the Room-Type-Map created without the usage
 \caption{Calculation of the frontiers: In those binary images black is 1 and white is 0; the gray accessible area in the last image is just for clarity}
 \label{frontier_calc}
 \end{figure}
+
+\begin{center}
+\begin{tabular}{lllllll}
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×\\
+× & × & × & × & × & × & ×
+\end{tabular}
+\end{center}
+

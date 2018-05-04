@@ -19,9 +19,11 @@ class ProbViewer : public ProbViewer_B{
     cv::Mat_<float> curr_img_;
     bool img_are_log_;
     wxChoice* select_choice_;
+    bool use2 = false;
+    bool default_max_ = true;
 
   public:
-    ProbViewer(const wxString& win_name, const std::vector<std::string>& prob_names, bool img_are_log);     //very dangerous
+    ProbViewer(const wxString& win_name, const std::vector<std::string>& prob_names, bool img_are_log, bool default_max = false);     //very dangerous
 
     virtual void onChoice( wxCommandEvent& event );
     virtual void onCheck( wxCommandEvent& event );
@@ -34,6 +36,8 @@ class ProbViewer : public ProbViewer_B{
 
     void updateImages(const std::vector<cv::Mat_<float>>& prob_images, const cv::Mat_<uchar>& occ);
     void setCurrent();
+    void updateImages2(const std::vector<cv::Mat_<float>>& prob_images, const cv::Mat_<uchar>& occ);
+    void setCurrent2();
 
     void save(const std::string& folder, const std::string& postfix = std::string(""));
 };

@@ -40,6 +40,8 @@ void ProbViewApp::input(wxTimerEvent &event){
       place_viewer_->Close();
     if(obj_viewer_ != nullptr)
       obj_viewer_->Close();
+    if(obj_thresh_viewer_ != nullptr)
+      obj_thresh_viewer_->Close();
     if(base_obj_viewer_ != nullptr)
       base_obj_viewer_->Close();
     if(base_room_viewer_ != nullptr)
@@ -221,9 +223,10 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
     return;
 
   if(obj_viewer_ == nullptr){
-    obj_viewer_ = new ProbViewer("Object Prob Viewer", msg->names, true);
+    obj_viewer_ = new ProbViewer("Object Prob Viewer", msg->names, msg->img_are_log, true);
     obj_thresh_viewer_ = new ProbViewer("Object Thresh Viewer", msg->names, msg->img_are_log);
     obj_viewer_->Show(true);
+    obj_thresh_viewer_->Show(true);
   }
 
   std::vector<cv::Mat_<float>> imgs(msg->images.size());
@@ -236,6 +239,7 @@ void ProbViewApp::objProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
   occ = cv::max(occ, 128);
 
   obj_viewer_->updateImages(imgs, occ);
+  obj_thresh_viewer_->updateImages2(imgs, occ);
 }
 
 void ProbViewApp::baseObjProbCb(const prob_map_view::ProbMapMsgConstPtr& msg){
@@ -357,6 +361,8 @@ void ProbViewApp::saveAll(const std::string& postfix, std::string folder){
     place_viewer_->save(folder, postfix);
   if(obj_viewer_ != nullptr)
     obj_viewer_->save(folder, postfix);
+  if(obj_thresh_viewer_ != nullptr)
+    obj_thresh_viewer_->save(folder, postfix);
   if(base_obj_viewer_ != nullptr)
     base_obj_viewer_->save(folder, postfix);
   if(base_room_viewer_ != nullptr)
