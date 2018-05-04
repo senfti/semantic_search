@@ -88,9 +88,29 @@ In image b of figure \ref{roomclass} the Room-Type-Map created without the usage
 
 \subsection{Object Probability Map}
 
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[potted plant(cyan), refrigerator(green), book(blue), chair(red)] {\includegraphics[width=0.3\textwidth,trim=-20 0 -20 0, clip]{figures/obj/cbrp2.png}} & 
+\subfloat[cup(cyan), monitor(green), bowl(blue), sofa(red)]{\includegraphics[width=0.3\textwidth,trim=-20 0 -20 0, clip]{figures/obj/sbmc2.png}} & 
+\subfloat[sink(cyan), oven(green), microwave(blue), table(red)]{\includegraphics[width=0.3\textwidth,trim=-20 0 -20 0, clip]{figures/obj/tmos2.png}} \\ 
+\subfloat[book(cyan), bottle(green), oven(blue), table(red)] {\includegraphics[width=0.3\textwidth,trim=40 20 80 120, clip]{figures/obj/bbto.png}} & 
+\subfloat[cup(cyan), bowl(green), sink(blue), sofa(red)]{\includegraphics[width=0.3\textwidth,trim=40 20 80 120, clip]{figures/obj/bcss.png}} & 
+\subfloat[potted plant(cyan), refrigerator(green), microwave(blue), chair(red)]{\includegraphics[width=0.3\textwidth,trim=40 20 80 120, clip]{figures/obj/cmpr.png}} \\ 
+\subfloat[fork]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/fork.png}} & 
+\subfloat[knife]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/knife.png}} & 
+\subfloat[apple]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/apple.png}} \\ 
+\subfloat[toaster]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/toaster.png}} & 
+\subfloat[suitcase]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/suitcase.png}} & 
+\subfloat[dog]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/dog.png}}
+\end{tabular}
+\caption{Probabilities of stated room type in room home 1 after run 1}
+\label{roomprob}
+\end{figure}
 
+\subsection{Probability Estimations after Peek Task}
 
-\subsection{Information after Peek Task}
+For the system to work well the estimation of the probability for a searched object being in a room after the peek task is very important because based on this estimate the robot decides if the room should be investigated further or if other rooms are more promising. As only a fr
 
 \begin{figure}
 \centering
@@ -106,16 +126,23 @@ In image b of figure \ref{roomclass} the Room-Type-Map created without the usage
 \label{frontier_calc}
 \end{figure}
 
+{%
+\newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}\vline}
+\definecolor{csdfr}{rgb}{1,0,0}
+\definecolor{csdfy}{rgb}{1,1,0}
+\definecolor{csdfo}{rgb}{1,0.6,0}
+\definecolor{csdfg}{rgb}{0,1,0}
 \begin{center}
-\begin{tabular}{lllllll}
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×\\
-× & × & × & × & × & × & ×
+\begin{tabular}{|l|l|l|l|l|l|l|} \hline
+object type & \mc{1}{c}{a} & \mc{1}{c}{b} & \mc{1}{c}{c} & \mc{1}{c}{d} & \mc{1}{c}{e} & \mc{1}{c}{f}\\ \hline
+microwave & \mc{1}{>{\columncolor{csdfo}}r}{0.065} & \mc{1}{>{\columncolor{csdfo}}r}{0.099} & \mc{1}{>{\columncolor{csdfg}}r}{0.317} & \mc{1}{>{\columncolor{csdfg}}r}{0.287} & \mc{1}{>{\columncolor{csdfr}}r}{0.029} & \mc{1}{>{\columncolor{csdfo}}r}{0.050}\\ \hline
+wine glass & \mc{1}{>{\columncolor{csdfo}}r}{0.088} & \mc{1}{>{\columncolor{csdfg}}r}{0.201} & \mc{1}{>{\columncolor{csdfy}}r}{0.128} & \mc{1}{>{\columncolor{csdfg}}r}{0.223} & \mc{1}{>{\columncolor{csdfr}}r}{0.029} & \mc{1}{>{\columncolor{csdfo}}r}{0.095}\\ \hline
+spoon & \mc{1}{>{\columncolor{csdfo}}r}{0.087} & \mc{1}{>{\columncolor{csdfy}}r}{0.190} & \mc{1}{>{\columncolor{csdfg}}r}{0.323} & \mc{1}{>{\columncolor{csdfg}}r}{0.324} & \mc{1}{>{\columncolor{csdfr}}r}{0.036} & \mc{1}{>{\columncolor{csdfy}}r}{0.156}\\ \hline
+apple & \mc{1}{>{\columncolor{csdfr}}r}{0.040} & \mc{1}{>{\columncolor{csdfr}}r}{0.049} & \mc{1}{>{\columncolor{csdfo}}r}{0.074} & \mc{1}{>{\columncolor{csdfo}}r}{0.083} & \mc{1}{>{\columncolor{csdfr}}r}{0.015} & \mc{1}{>{\columncolor{csdfr}}r}{0.041}\\ \hline
+laptop & \mc{1}{>{\columncolor{csdfg}}r}{0.665} & \mc{1}{>{\columncolor{csdfy}}r}{0.152} & \mc{1}{>{\columncolor{csdfo}}r}{0.053} & \mc{1}{>{\columncolor{csdfy}}r}{0.106} & \mc{1}{>{\columncolor{csdfr}}r}{0.046} & \mc{1}{>{\columncolor{csdfg}}r}{0.431}\\ \hline
+mouse & \mc{1}{>{\columncolor{csdfg}}r}{0.584} & \mc{1}{>{\columncolor{csdfr}}r}{0.043} & \mc{1}{>{\columncolor{csdfr}}r}{0.019} & \mc{1}{>{\columncolor{csdfr}}r}{0.041} & \mc{1}{>{\columncolor{csdfr}}r}{0.024} & \mc{1}{>{\columncolor{csdfy}}r}{0.176}\\ \hline
+remote & \mc{1}{>{\columncolor{csdfg}}r}{0.288} & \mc{1}{>{\columncolor{csdfg}}r}{0.255} & \mc{1}{>{\columncolor{csdfr}}r}{0.048} & \mc{1}{>{\columncolor{csdfy}}r}{0.103} & \mc{1}{>{\columncolor{csdfo}}r}{0.057} & \mc{1}{>{\columncolor{csdfg}}r}{0.258}\\ \hline
+toilet & \mc{1}{>{\columncolor{csdfo}}r}{0.075} & \mc{1}{>{\columncolor{csdfo}}r}{0.056} & \mc{1}{>{\columncolor{csdfo}}r}{0.098} & \mc{1}{>{\columncolor{csdfo}}r}{0.104} & \mc{1}{>{\columncolor{csdfg}}r}{0.999} & \mc{1}{>{\columncolor{csdfo}}r}{0.065}\\ \hline
 \end{tabular}
 \end{center}
-
+}%
