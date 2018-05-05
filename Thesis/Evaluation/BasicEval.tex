@@ -22,37 +22,58 @@ This section gives an overview over how well the basic components of the develop
 
 \subsection{Computer Vision}
 
-In most cases the room type classification returns reasonable results. 
-
-\begin{figure}
+In most cases the room type classification returns reasonable results, as shown in Figure \ref{placegood}. 
+\begin{figure} [h]
 \centering
 \begin{tabular}{cc}
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/7.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/4.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p1.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p2.png}} \\
 \end{tabular}
-\caption[Example images]{Example images with the most likely place classifications and object detections with a probability greater 0.1}
-\label{roomobj}
+\caption[Examples of good place classifications]{Examples of good place classifications}
+\label{placegood}
 \end{figure}
+If there is one fitting room type, like in the first two images, the probability of that type is high. If there are similar room types, which can all be correct, like in image c and d, the probability is split mainly between those types.
 
-In figure \ref{roomobj} and also in figure \ref{wz_imgs} images with the corresponding room type classification results are shown. In most cases the room type classification returns reasonable results. If two similar fitting categories exist most of the probability is split between those classes. There are images where the place classification struggles, like image c in figure \ref{roomobj} or the images 2 and 6 in figure \ref{wz_imgs}. Also the probability distribution of the room type classification does not really reflect if two areas with different room type are visible. In this case one is dominant, as can be seen in image 1 or figure \ref{wz_imgs}.
-
-\begin{figure}
+However, there are images where the classifier struggles. In some images, like image a and b in Figure \ref{placebad}, the classifier is undecided between multiple room types and in other images, like image c, not enough is seen for a reasonable classification. If multiple areas of different room types are seen in an image, the probability distribution does not really reflect this because one area overrules the other, as can be seen in image d.
+\begin{figure} [h]
 \centering
 \begin{tabular}{cc}
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/7.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/2.png}} \\
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/3.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/4.png}} \\
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/5.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/6.png}}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p4.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p6.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p5.png}} \\
 \end{tabular}
-\caption[Example images]{Example images with the most likely place classifications and object detections with a probability greater 0.1}
-\label{roomobj}
+\caption[Examples of not so good place classifications]{Examples of not so good place classifications}
+\label{placebad}
 \end{figure}
 
-The object detection produces mixed results, where some examples are shown in figure \ref{roomobj}. Some objects are obviously not detected, like the cutlery on the table in image a, but also better visible objects are often not detected. Some objects are wrongly classified, as the monitor detections in image f and the blurriness caused by robot rotations also reduces the number of correctly detected objects, as can be seen when comparing image d and e. However, many objects are detected correctly, at least if the image is sharp and the objects are well lit and big enough in the image. The confidence of the detections varies, depending not only on how well the objects are seen but also on the background and other factors.
+The place classification CNN does not seem to have much problems with the noise in the images and also the motion blur has at least no big negative impact, if any.
 
-The doorway detection works very well, with no wrong detections and no passing of undetected doorways during the test runs. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by, which 
+The object detection produces mixed results. Some object types are detected very well. These are larger objects, like monitor, bed of chair, but also some smaller objects like mouse or wine glass. Some object types, like spoon or knife, are only detected if seen very well and then also not reliably and rarely with high confidence. The detection of many other types also depends on the appearance of the object instance and the view angle. And some objects are seen where no such object is, like refrigerators at walls and cupboards and monitors at windows. In Figure \ref{obj} the object detections in some example images are shown. 
+\begin{figure} [h]
+\centering
+\begin{tabular}{cc}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o1.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o3.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o4.png}} \\
+\end{tabular}
+\caption[Examples images with object detection]{Example images with object detections with a confidence greater 0.1}
+\label{obj}
+\end{figure}
+Many other factors also affect the accuracy of the object detection, like the brightness and the background. The motion blur has a negative impact on the object detection, as can be seen by comparing image b from Figure \ref{obj} with the image in Figure \ref{objblur}.
+\begin{figure} [h]
+\centering
+\begin{tabular}{c}
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o5.png}}
+\end{tabular}
+\caption[Blurry images with object detection]{Blurry images with object detections with a confidence greater 0.1}
+\label{objblur}
+\end{figure}
+
+The doorway detection works very well. Very rarely a wrong doorway is detected at a closed door and passing through an undetected doorway was newer observed. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by, which delays finding a possibly interesting room.
 
 \subsection{Navigation} \label{NavEval}
 
