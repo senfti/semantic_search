@@ -5,7 +5,7 @@ The quality of the maps are investigated after a complete exploration of the env
 
 \subsection{Hybrid Metric Map} \label{EvalMapping}
 
-In figure \ref{map2d_home}, figure \ref{map2d_lab} and figure \ref{map2d_ist} maps created in the three environments are shown.
+In Figure \ref{map2d_home}, Figure \ref{map2d_lab} and Figure \ref{map2d_ist} maps created in the three test environments are shown.
 \begin{figure}
 \centering
   \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all5.png}
@@ -24,11 +24,13 @@ In figure \ref{map2d_home}, figure \ref{map2d_lab} and figure \ref{map2d_ist} ma
   \caption[Hybrid map of the university floor]{Hybrid map of a part of an university floor: The room institute1 is a corridor with a copier in the open area on the left, the room institute2 contains a kitchen area and a dining table, the room institute3 is a meeting room, the room institute4 is a bathroom and the room institute5 is a secretariat. }
   \label{map2d_ist}
 \end{figure}
-The 2D maps of the rooms have in general a good quality, at least for small rooms. All maps contain cells wrongly set to free outside of the room, due to the reasons described in section \ref{SensorEval}. However those cause no major problems. The maps of the rooms lab1 and institute1 are a bit distorted. In the map of room lab1 the top part leans to the left while the bottom right part is rotated towards the bottom left part. In the map of the room institute1 the bottom corridor is curved upwards. The distortion in both rooms are probably caused by a conjunction of an inaccurate odometry and insufficient distinct features visible by the LIDAR. These distortion show the benefit of the hybrid map design. The maps are still sufficiently accurate, but the distortions become more and more a problem with larger maps. As can be seen in the maps the doorway poses are all nicely in the center of the doorways and facing out of the room quiet accurately. The only exception is the doorway between the rooms lab1 and lab3, where a door closer caused the shift to the left.
+The 2D maps of the rooms have in general a good quality, at least those of small rooms. All maps contain cells wrongly set to free outside of the room because of the handling of invalid range measurements described in section \ref{preprocessing}. However those cause no major problems. In larger rooms the quality of the maps decreases. In the map of room lab1 the top part leans to the left while the bottom right part is rotated towards the bottom left part. In the map of the room institute1 the bottom corridor is curved upwards. The main reason for these distortions is probability the limited range of the LIDAR, which results in many invalid range measurements in open areas. In further consequence less distinctive features are seen by the LIDAR, so the localization of the robot has to rely on the odometry, which can lead to inaccurate localization and therefore also inaccurate maps. The larger the rooms are the more impact those inaccuracies have. This shows the benefit of the hybrid map design, which splits larger environments into easier to handle room maps. 
+
+As can be seen in the hybrid maps the doorway mapping works nicely, both the positions and orientations of the doorway poses are accurate in almost all cases. The only exception is the doorway between the rooms lab1 and lab3, where a door closer caused the shift to the left. But as the doorway pose is still within the doorway and the shift is the same in both rooms, this causes no problems.
 
 \subsection{Room Type Map}
 
-The room home1 was chosen for the evaluation of the quality of the Room-Type-Maps because there are areas of different room types and also areas, which are difficult to assign to a specific room type. Assigning a ground truth Room-Type-Map is not straight forward because for some areas multiple room types are fitting and the boundary between areas of different room types is often not sharp. Therefore images, shown in figure \ref{wz_imgs}, are given together with a map of the corresponding view poses, shown in figure \ref{vz_views}. From the images one can see that the left is a kitchen area while the bottom right is a living room area. Between those is a dining table. The area with the TV can be classified as lining room, but the rest of the room cannot really be classified. These areas are also depicted in figure \ref{wz_views}. 
+The room home1 was chosen for the evaluation of the quality of the Room-Type-Maps because there are areas of different room types and also areas, which are difficult to assign to a specific room type. Assigning a ground truth Room-Type-Map is not straight forward because for some areas multiple room types are fitting and the boundary between areas of different room types is often not sharp. Therefore images, shown in Figure \ref{wz_imgs}, are given together with a map of the corresponding view poses, shown in Figure \ref{wz_views}. From the images one can see that the left is a kitchen area while the bottom right is a living room area. Between those areas is a dining table. The area with the TV can be classified as living room, but the rest of the room cannot really be classified. These areas are also depicted in Figure \ref{wz_views}. 
 
 \begin{figure}
 \renewcommand*\thesubfigure{\arabic{subfigure}} 
@@ -41,22 +43,22 @@ The room home1 was chosen for the evaluation of the quality of the Room-Type-Map
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/5.png}} &
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/6.png}}
 \end{tabular}
-\caption[Images of the room home1]{Images with place classification results of the room home1}
+\caption[Images of the room home1]{Images of the room home1 with place classification results}
 \label{wz_imgs}
 \end{figure}
 
 \begin{figure}
 \centering
   \includegraphics[width=0.7\textwidth, trim=0 0 50 0,clip]{figures/wz_imgs/wz_views_b.png}
-  \caption[Detailed map of the room home1 with image poses]{Detailed map of the room home1: Green arrows mark the doorways and the numbered red arrows are the view poses of the corresponding images from figure \ref{wz_imgs}. The red area is a kitchen area, the yellow area is a dining table and the green area are should be classified as living room.}
+  \caption[Detailed map of the room home1 with image poses]{Detailed map of the room home1: Green arrows mark the doorways and the numbered red arrows are the view poses of the corresponding images in Figure \ref{wz_imgs}. The red area is a kitchen area, the yellow area is a dining table and the green area are should be classified as living room.}
   \label{wz_views}
 \end{figure}
 
-In figure \ref{roomclass} the most likely classes for different runs and settings are shown. In general the main areas of the room are correctly classified, though the borders of the areas are very different for different runs and settings. After the exploration in run 1 the kitchen area, the dining table and the living room area are correctly classified. The areas near the doorways are classified as closet, probably because of the wooden door frames. The area around the TV is classified as dine room, which is a bit strange, but in image 2 of figure \ref{wz_imgs} can be seen that the room type classification struggles there. 
+In Figure \ref{roomclass} the most likely classes for different runs and settings are shown. In general the main areas of the room are correctly classified, though the borders of the areas are very different for different runs and settings. After the exploration in run 1 the kitchen area, the dining table and the living room area are correctly classified. The areas near the doorways are classified as closet, probably because of the wooden door frames. The area around the TV is classified as dine room, which is a bit strange. However, the place classification is unsure about the type of this area, as can be seen in image 2 of Figure \ref{wz_imgs}.
 
-In figure \ref{roomprob} the probabilities of the most important room types in room home1 are shown. The confidence is relatively high because the parameters have have to be chosen in a way that a quick estimation of the room type during the peek task is possible. Therefore the probability of the most likely room type of a cell increases relatively quickly to the saturation value of 0.8. Also noteworthy is the relatively high probability for kitchenette on the right side of the room. As can be seen in image 6 of figure \ref{wz_imgs} the room type classification is not sure about the room type there. 
+In Figure \ref{roomprob} the probabilities of the most important room types in the room home1 are shown. The confidence is relatively high because the parameters have have to be chosen in a way that a quick estimation of the room type during the peek task is possible. Therefore the probability of the most likely room type of a cell increases relatively quickly to the saturation value of 0.8. Also noteworthy is the relatively high probability for kitchenette on the right side of the room. As can be seen in image 6 of Figure \ref{wz_imgs} the room type classification is not sure about the room type there. 
 
-In image b of figure \ref{roomclass} the Room-Type-Map created without the usage of the correlation between room types described at the end of section \ref{Room-Type-Map} is shown. On the one hand the dining room area is much larger there. This is caused by the uncertainty of the room type classification between the similar room types kitchen and kitchenette. Without considering this similarity a third, different room type becomes more likely. On the other hand the closet area is much larger because it is not penalized for not really fitting to the other room types. In the images c and d of figure \ref{roomclass} the resulting Room-Type-Maps after other runs are shown. After run 2 the living room area is much larger than after run 2, whereas in run three the kitchen and kitchenette area is much larger. This shows that the trajectory of the robot has a big impact on the result, mainly on the size and shape of areas of a certain room type. In image e of figure \ref{roomclass} the result after an object search is shown. The result is similar to the results after exploration. 
+In image b of Figure \ref{roomclass} the Room-Type-Map created without the usage of the correlation between room types described at the end of section \ref{Room-Type-Map} is shown. On the one hand the dining room area is much larger there. This is caused by the uncertainty of the room type classification between the similar room types kitchen and kitchenette. Without considering this similarity a third, different room type becomes more likely. On the other hand the closet area is much larger because it is not penalized for not really fitting to the other room types. In the images c and d of Figure \ref{roomclass} the resulting Room-Type-Maps after other runs are shown. After run 2 the living room area is much larger than after run 1, whereas in run 3 the kitchen and kitchenette area is much larger. Especially the upper right part of the room is classified differently in different runs. This shows the impact of the trajectory during the exploration on the result. In image e of Figure \ref{roomclass} the result after an object search is shown. The result is similar to the results after exploration. 
 
 \begin{figure}
 \centering
@@ -105,12 +107,12 @@ In image b of figure \ref{roomclass} the Room-Type-Map created without the usage
 \subfloat[dog]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/dog.png}}
 \end{tabular}
 \caption{Probabilities of stated room type in room home 1 after run 1}
-\label{roomprob}
+\label{objprob}
 \end{figure}
 
 \subsection{Probability Estimations after Peek Task}
 
-For the system to work well the estimation of the probability for a searched object being in a room after the peek task is very important because based on this estimate the robot decides if the room should be investigated further or if other rooms are more promising. As only a fr
+For the system to work well the estimation of the probability for a searched object being in a room after the peek task is very important because based on this estimate the robot decides if the room should be investigated further or if other rooms are more promising. As only a fraction of the room is seen during the peek task, the estimation of object probability depends mostly on the estimation of the rest of the room. 
 
 \begin{figure}
 \centering
@@ -123,7 +125,7 @@ For the system to work well the estimation of the probability for a searched obj
 \subfloat[classroom: 0.6971 \newline cafeteria: 0.0919 \newline conference center: 0.0256]{\includegraphics[width=0.4\textwidth, clip]{figures/peek/IST_explore_subag850.png}} 
 \end{tabular}
 \caption{Calculation of the frontiers: In those binary images black is 1 and white is 0; the gray accessible area in the last image is just for clarity}
-\label{frontier_calc}
+\label{peek}
 \end{figure}
 
 {%

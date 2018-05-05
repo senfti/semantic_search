@@ -13,7 +13,10 @@ files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f11.ba
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f23.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s11.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s13.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s15.bag"]
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s15.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s23.bag"]
 
 move_to_times = []
 explore_times = []
