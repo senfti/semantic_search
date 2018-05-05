@@ -92,11 +92,10 @@ In image e of Figure \ref{roomclass} the result after an object search is shown.
 
 \subsection{Object Probability Map}
 
-This section evaluates the Object-Probability-Maps after the exploration of the room home1. This evaluation is done using the 2D projections of the Object-Probability-Maps for better clarity and because the 2D projection is used in the search planning. The Object-Probability-Map is build from two sources, the Object-Map containing seen objects and the object probabilities calculated from the Room-Type-Maps. 
+This section evaluates the Object-Probability-Maps after the exploration. Again this is done for room home1, where many objects of various types were present during the exploration runs. The 2D projection of the Object-Probability-Map is evaluated in this section because the search planning uses the 2D projection and the 3D Object-Probability-Map is difficult to visualize. The Object-Probability-Map is build from two sources, the Object-Map containing seen objects and the object probabilities calculated from the Room-Type-Maps. Therefore also the evaluation of the Object-Probability-Map is split into two parts. First the focus is on object types with significant detections during the exploration. The second part is about object types not seen at all.
 
-In Figure \ref{objfound} all cells with a probability greater than 0.25 in any Object-Probability-Map are depicted together with the type of the object. As in some cells multiple objects were seen, this is visualized in three images to have no overlap. In the results of both runs can be seen that big objects, like sofas or tables, are well detected. However, the object probabilities of those objects is also high in the areas around the objects due to the missing per-pixel segmentation of the objects. For example also parts of the dining table have a high probability for being a sofa. For the search planning this is usually no problem as the object is either already found during the exploration or found quickly anyway. On the other hand only some smaller objects have a high probability in the Object-Probability-Map. Small objects are less often detected and so the object probability does not increase high enough. The seen objects depend on the trajectory of the robot. For example the monitor was not seen in run 1 or the cups were seen at different locations. Especially small objects are seen in some runs and not in other runs as their detection does not work as well and it is more likely that they are not seen often enough.
-
-\begin{figure}[h]
+In Figure \ref{objfound} all cells with a probability greater than 0.25 in any Object-Probability-Map are depicted together with the type of the object. 
+\begin{figure}
 \centering
 \begin{tabular}{ccc}
 \subfloat[bowl(green), sink(blue), cup(cyan), sofa(red)] {\includegraphics[width=0.3\textwidth,trim=40 20 80 120, clip]{figures/obj/1_ssbc.png}} & 
@@ -109,28 +108,11 @@ In Figure \ref{objfound} all cells with a probability greater than 0.25 in any O
 \caption[Objects probabilities higher than 0.25 after exploration]{Objects probabilities higher than 0.25 after exploration; first row from run 1, second row from run 2}
 \label{objfound}
 \end{figure}
+As in some cells multiple objects were seen, this is visualized in three images to have no overlap. In the results of the two depicted runs can be seen that big objects, like sofas or tables, are well detected. However, the object probabilities of those objects is also high in the areas around the objects due to the missing per-pixel segmentation of the objects. For example also parts of the dining table have a high probability for being a sofa. For the search planning this is usually no problem as the object is either already found during the exploration or found quickly anyway. On the other hand only some smaller objects have a high probability in the Object-Probability-Map. Small objects are less often detected and so the object probability does not increase high enough. The seen objects depend on the trajectory of the robot. For example the monitor was not seen in run 1 or different cups were detected. This is as intended because the exploration is only a quick way to obtain enough data for an intelligent search planning.
 
-In Figure \ref{objprob} the probabilities of some objects not seen during the exploration are depicted, together with the most likely room types of the corresponding Room-Type-Map. In general those probabilities are very low, but many cells together may have a significant object probability. These probabilities depend on the Room-Type-Maps, which can be seen nicely in the images. For example a fork is more likely in a dine room than in areas of other room type or a dog more likely in a living room. On the other hand a suitcase is very unlikely in a kitchen. This works well, assuming a reasonable Room-Type-Map, but the probabilities are a bit vague. This can be seen well in 
+In Figure \ref{objprob} the probabilities of some objects not seen during the exploration are depicted, together with the most likely room types of the corresponding Room-Type-Map. In general those probabilities are very low, but many cells together may have a significant object probability. These probabilities depend on the Room-Type-Maps, which can be seen nicely in the images. For example a fork is more likely in a dine room than in areas of other room type or a dog more likely in a living room. On the other hand a suitcase is very unlikely in a kitchen. The relatively high probabilities in the upper center are because of cells only seen by the LIDAR, so the probabilities in this area are not damped by the Object-Map, which contains lower probabilities everywhere else in the room. The resulting Object-Probability-Maps are reasonable at the first glance and the search tests will show how much they improve the object search. 
 
-\begin{table}
-\centering
-\begin{tabular}{|l|c|c|c|c|}
-\hline
- & run 1 & run 2 & run 3 & average\\ \hline
-fork & 0.184 & 0.161 & 0.159 & 0.168\\ \hline
-knife & 0.315 & 0.331 & 0.314 & 0.320\\ \hline
-apple & 0.085 & 0.095 & 0.080 & 0.087\\ \hline
-toaster & 0.050 & 0.064 & 0.052 & 0.055\\ \hline
-suitcase & 0.076 & 0.089 & 0.061 & 0.075\\ \hline
-dog & 0.138 & 0.179 & 0.131 & 0.149\\ \hline
-\end{tabular}
-\caption{Total object probabilities in room home1}
-\label{totalobj}
-\end{table}
-
-
-
-\begin{figure}[h]
+\begin{figure}
 \centering
 \begin{tabular}{ccc}
 \subfloat[kitchen]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchen_b.png}} & 
@@ -149,6 +131,24 @@ dog & 0.138 & 0.179 & 0.131 & 0.149\\ \hline
 \caption{Objects probabilities of given types after exploration run 1}
 \label{objprob}
 \end{figure}
+
+In Table \ref{totalobj} the total probabilities for the objects in Figure \ref{objprob} are shown. The probabilities are according to the Object-Probability-Map. 
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+ & run 1 & run 2 & run 3 & average\\ \hline
+fork & 0.184 & 0.161 & 0.159 & 0.168\\ \hline
+knife & 0.315 & 0.331 & 0.314 & 0.320\\ \hline
+apple & 0.085 & 0.095 & 0.080 & 0.087\\ \hline
+toaster & 0.050 & 0.064 & 0.052 & 0.055\\ \hline
+suitcase & 0.076 & 0.089 & 0.061 & 0.075\\ \hline
+dog & 0.138 & 0.179 & 0.131 & 0.149\\ \hline
+\end{tabular}
+\caption{Total object probabilities in room home1}
+\label{totalobj}
+\end{table}
 
 \subsection{Probability Estimations after Peek Task}
 
