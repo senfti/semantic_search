@@ -8,15 +8,52 @@ import math
 files = ["/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f11.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f12.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f13.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f21.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f22.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f23.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s11.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s13.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s15.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_f23.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s21.bag",
 "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s22.bag",
-"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s23.bag"]
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/knife_s23.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f1.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f2.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f4.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s1.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s2.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s3.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_f13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/mouse_s13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_f23.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/remote_table_s23.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_f11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_f12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_f13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_s11.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_s12.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_s13.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_f21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_f22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_f23.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_s21.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_s22.bag",
+"/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/spoon_s23.bag"]
+
 
 move_to_times = []
 explore_times = []
@@ -40,8 +77,10 @@ for filename in files:
     print filename
 
     found_msgs = bag.read_messages(topics="/object_found_pose")
+    was_found = False
     for topic, msg, t in found_msgs:
         print "found"
+        was_found = True
 
     path_msgs = bag.read_messages(topics="/robot_path")
     for topic, msg, t in path_msgs:
@@ -134,6 +173,17 @@ for filename in files:
 
         old_data = msg.data
 
+    if was_found == False and old_data != -1:
+        search_time += t.to_sec() - last_segment_start_time
+        idx = next(x[0] for x in enumerate(array_times) if x[1] > t.to_sec())
+        start_idx = next(x[0] for x in enumerate(array_times) if x[1] > last_segment_start_time)
+        search_dist += dist_array[idx] - dist_array[start_idx]
+        search_ang_dist += ang_dist_array[idx] - ang_dist_array[start_idx]
+        full_time = t.to_sec() - start
+        full_dist = dist_array[idx]
+        full_ang_dist = ang_dist_array[idx]
+
+
     move_to_times.append(move_to_time)
     explore_times.append(explore_time)
     search_times.append(search_time)
@@ -153,12 +203,18 @@ for filename in files:
 
 for i in range(len(full_times)):
     print full_times[i], move_to_times[i], explore_times[i], search_times[i], turn_times[i]
+    if (i%3)==2:
+        print
 print
 
 for i in range(len(full_dists)):
     print full_dists[i], move_to_dists[i], explore_dists[i], search_dists[i], turn_dists[i]
+    if (i%3)==2:
+        print
 print
 
 for i in range(len(search_dists)):
     print full_ang_dists[i], move_to_ang_dists[i], explore_ang_dists[i], search_ang_dists[i], turn_ang_dists[i]
+    if (i%3)==2:
+        print
 print
