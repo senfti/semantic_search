@@ -34,4 +34,5 @@ for x in xrange(img.shape[1]):
             img[y,x,1] = 255
             img[y,x,2] = 0
 
-cv2.imwrite(os.path.dirname(contents[0])+"/"+os.path.basename(contents[0])[1]+os.path.basename(contents[1])[1]+os.path.basename(contents[2])[1]+os.path.basename(contents[3])[1]+".png", img)
+print os.path.dirname(contents[0])+"/"+"2_"+os.path.basename(contents[0])[1]+os.path.basename(contents[1])[1]+os.path.basename(contents[2])[1]+os.path.basename(contents[3])[1]+".png"
+cv2.imwrite(os.path.dirname(contents[0])+"/"+"2_"+os.path.basename(contents[0])[1]+os.path.basename(contents[1])[1]+os.path.basename(contents[2])[1]+os.path.basename(contents[3])[1]+".png", img)
