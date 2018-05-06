@@ -1,4 +1,4 @@
-\section{Low-Level-Planner node}
+\section{Low-Level-Planner Node}
 
 The \hlplanner\ node sends \texttt{HighLevelTask} actions to the \linebreak\llplanner\ node, which tries to execute them and sends the result of the execution back to the \hlplanner. The execution of the robot movements is mainly done via the move{\_}base package. The move{\_}base takes goal poses and plans the robot controls to get to this goal poses, considering the map and sensor inputs for obstacle avoidance. If the goal is reached the move{\_}base returns \texttt{SUCCEEDED} and if the goal could not be reached \texttt{ABORTED} is returned. Only during the peek task velocity commands are directly sent to the Turtlebot interface. 
 

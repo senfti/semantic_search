@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Evaluation/MappingE.tex
+lastDocument=Evaluation/TimePlot.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -155,6 +155,13 @@ Indentation Mode=normal
 Mode=LaTeX
 
 [document-settings,item:Evaluation/SearchEval.tex]
+Bookmarks=
+Encoding=UTF-8
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+
+[document-settings,item:Evaluation/TimePlot.tex]
 Bookmarks=
 Encoding=UTF-8
 Highlighting=LaTeX
@@ -428,10 +435,10 @@ order=2
 
 [item:Concept/Mapping.tex]
 archive=true
-column=0
+column=68
 encoding=UTF-8
 highlight=LaTeX
-line=6
+line=188
 mode=LaTeX
 open=true
 order=0
@@ -498,43 +505,53 @@ order=23
 
 [item:Evaluation.tex]
 archive=true
-column=0
+column=31
 encoding=UTF-8
 highlight=LaTeX
-line=9
+line=8
 mode=LaTeX
 open=true
 order=7
 
 [item:Evaluation/BasicEval.tex]
 archive=true
-column=601
+column=0
 encoding=UTF-8
 highlight=LaTeX
 line=37
 mode=LaTeX
-open=false
-order=31
+open=true
+order=9
 
 [item:Evaluation/MappingE.tex]
 archive=true
-column=30
+column=59
 encoding=UTF-8
 highlight=LaTeX
-line=130
+line=166
 mode=LaTeX
 open=true
 order=5
 
 [item:Evaluation/SearchEval.tex]
 archive=true
-column=0
+column=16
 encoding=UTF-8
 highlight=LaTeX
 line=0
 mode=LaTeX
-open=false
-order=35
+open=true
+order=13
+
+[item:Evaluation/TimePlot.tex]
+archive=true
+column=10
+encoding=UTF-8
+highlight=LaTeX
+line=1
+mode=LaTeX
+open=true
+order=14
 
 [item:Implementation.tex]
 archive=true
@@ -563,8 +580,8 @@ encoding=UTF-8
 highlight=LaTeX
 line=2
 mode=LaTeX
-open=false
-order=22
+open=true
+order=10
 
 [item:Implementation/door_detection_node.tex]
 archive=true
@@ -581,20 +598,20 @@ archive=true
 column=0
 encoding=UTF-8
 highlight=LaTeX
-line=68
+line=9
 mode=LaTeX
-open=false
-order=23
+open=true
+order=12
 
 [item:Implementation/ll_planner_node.tex]
 archive=true
-column=1138
+column=28
 encoding=UTF-8
 highlight=LaTeX
-line=15
+line=0
 mode=LaTeX
-open=false
-order=21
+open=true
+order=11
 
 [item:Implementation/mapping_node.tex]
 archive=true
@@ -618,13 +635,13 @@ order=19
 
 [item:Introduction.tex]
 archive=true
-column=263
+column=221
 encoding=UTF-8
 highlight=LaTeX
 line=6
 mode=LaTeX
-open=false
-order=26
+open=true
+order=8
 
 [item:Prerequisites.tex]
 archive=true
@@ -758,10 +775,10 @@ order=4
 
 [item:main.tex]
 archive=true
-column=20
+column=0
 encoding=UTF-8
 highlight=LaTeX
-line=194
+line=0
 mode=LaTeX
 open=true
 order=6
@@ -851,8 +868,8 @@ JumpList=
 ViMarks=.,52,16,[,52,16,],52,16
 
 [view-settings,view=0,item:Concept/Mapping.tex]
-CursorColumn=0
-CursorLine=6
+CursorColumn=68
+CursorLine=188
 JumpList=
 ViMarks=.,6,1289,[,6,1289,],6,1296,a,206,0
 
@@ -893,28 +910,34 @@ JumpList=
 ViMarks=.,1,0,[,1,0,],1,0
 
 [view-settings,view=0,item:Evaluation.tex]
-CursorColumn=0
-CursorLine=9
+CursorColumn=31
+CursorLine=8
 JumpList=
-ViMarks=.,0,0,[,0,0,],-1,-1
+ViMarks=.,7,0,[,7,0,],7,0
 
 [view-settings,view=0,item:Evaluation/BasicEval.tex]
-CursorColumn=601
+CursorColumn=0
 CursorLine=37
 JumpList=
 ViMarks=.,37,600,[,37,593,],37,600
 
 [view-settings,view=0,item:Evaluation/MappingE.tex]
-CursorColumn=30
-CursorLine=130
+CursorColumn=59
+CursorLine=166
 JumpList=
-ViMarks=.,130,29,[,130,29,],130,29
+ViMarks=.,170,158,[,170,155,],170,158
 
 [view-settings,view=0,item:Evaluation/SearchEval.tex]
-CursorColumn=0
+CursorColumn=16
 CursorLine=0
 JumpList=
-ViMarks=
+ViMarks=.,4,0,[,4,0,],4,0
+
+[view-settings,view=0,item:Evaluation/TimePlot.tex]
+CursorColumn=10
+CursorLine=1
+JumpList=
+ViMarks=.,1,0,[,1,0,],1,9
 
 [view-settings,view=0,item:Implementation.tex]
 CursorColumn=0
@@ -942,15 +965,15 @@ ViMarks=.,19,954,[,19,945,],19,954
 
 [view-settings,view=0,item:Implementation/hl_planner_node.tex]
 CursorColumn=0
-CursorLine=68
+CursorLine=9
 JumpList=
 ViMarks=.,115,23,[,115,23,],115,23
 
 [view-settings,view=0,item:Implementation/ll_planner_node.tex]
-CursorColumn=1138
-CursorLine=15
+CursorColumn=28
+CursorLine=0
 JumpList=
-ViMarks=.,104,672,[,104,672,],104,672
+ViMarks=.,0,27,[,0,27,],0,27
 
 [view-settings,view=0,item:Implementation/mapping_node.tex]
 CursorColumn=0
@@ -965,7 +988,7 @@ JumpList=
 ViMarks=.,46,541,[,46,536,],46,541
 
 [view-settings,view=0,item:Introduction.tex]
-CursorColumn=263
+CursorColumn=221
 CursorLine=6
 JumpList=
 ViMarks=.,6,262,[,6,0,],6,262
@@ -1049,8 +1072,8 @@ JumpList=
 ViMarks=
 
 [view-settings,view=0,item:main.tex]
-CursorColumn=20
-CursorLine=194
+CursorColumn=0
+CursorLine=0
 JumpList=
 ViMarks=.,194,19,[,194,17,],194,19
 
