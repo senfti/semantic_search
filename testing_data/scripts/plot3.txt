@@ -1,2 +1,3 @@
-    };
-\addplot[ybar,fill=red] coordinates {
+        };
+        \addplot[ybar,fill=red]
+            coordinates {

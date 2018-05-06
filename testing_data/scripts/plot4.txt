@@ -1,3 +1,4 @@
-    };
-\end{axis}
+        };
+    \end{axis}
 \end{tikzpicture}
+\end{center}

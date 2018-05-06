@@ -183,7 +183,7 @@ bool VisionApp::useImage(const cv::Mat& img, ros::Time stamp){
     std::cout << "No depth image" << std::endl;
     return false;
   }
-
+  return true;
   tf::StampedTransform transform;
   try{
     tf_listener_.waitForTransform("base_link", "odom", stamp, ros::Duration(0.2));

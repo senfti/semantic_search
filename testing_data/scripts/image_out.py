@@ -13,7 +13,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
 
-bag = rosbag.Bag("/home/thomas/Desktop/IST_expolere_su.bag")
+bag = rosbag.Bag("/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/explore_lab_1.bag")
 found_msgs = bag.read_messages(topics="/camera/rgb/image_raw")
 for topic, msg, t in found_msgs:
     try:

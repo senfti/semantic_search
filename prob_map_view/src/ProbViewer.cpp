@@ -149,7 +149,7 @@ void ProbViewer::setCurrent2(){
           out.at<cv::Vec3b>(y,x) = cv::Vec3b(0,0,0);
         else
           out.at<cv::Vec3b>(y,x) = cv::Vec3b(255,255,255);
-        if(curr_img_(y,x) > 0.25)
+        if(curr_img_(y,x) > 0.0)
           out.at<cv::Vec3b>(y,x) = cv::Vec3b(255,0,0);
       }
     }
@@ -212,7 +212,7 @@ void ProbViewer::save(const std::string& folder, const std::string& postfix){
               out.at<cv::Vec3b>(y,x) = cv::Vec3b(0,0,0);
             else
               out.at<cv::Vec3b>(y,x) = cv::Vec3b(255,255,255);
-            if(img(y,x) > 0.25)
+            if(img(y,x) > 0.0)
               out.at<cv::Vec3b>(y,x) = cv::Vec3b(255,0,0);
           }
         }

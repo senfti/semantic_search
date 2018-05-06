@@ -1,21 +1,105 @@
 \section{Search}
 
+The results of a series of test runs are presented in the first part of this section, where the proposed intelligent active object search system and an uninformed system, which does not estimate likely object locations, are compared. In the second part of this section the behavior of the proposed system is evaluated in more detail based on individual runs. 
+
+\subsection{Comparison between Intelligent and Uninformed Search}
+
+\subsubsection{Settings}
+
+Two changes were made to the proposed system to get an uninformed active object search system for comparison. Firstly, the detection of doorways is disabled in the uninformed system, so the room structure is ignored. Secondly, every cell that can contain the object, which are cells within the room and not marked as free, have the same probability of containing the object. This results in a coverage maximizing search strategy because the rest of the system is identical to the intelligent search system.
+
+The test runs were done in the home environment. Eight different settings were chosen for the test runs, with four different searched objects and two different starting positions per object. Reliably detected objects were chosen to reduce the influence of the object detection and have more emphasis on the search planning. The objects were positioned in typical locations and a bit hidden, so they are not found during exploration and the robot has to search them. In Figure \ref{search_overview} the map of the environment is shown with marked room types, starting poses and object locations.
+\begin{figure}
+\centering
+  \includegraphics[width=0.9\textwidth, trim=0 0 0 0,clip]{figures/home_search/roomspdf.pdf}
+  \caption[Test environment with room types, starting poses and object locations]{Test environment with room types, starting poses and object locations (1...knife, 2...mouse, 3...remote, 4...spoon)}
+  \label{search_overview}
+\end{figure}
+
+\begin{table}
+\centering
+\begin{tabular}{|c|c|c|c|l|}\hline
+setting & start & object & location & likely locations\\\hline
+1 & 1 & knife & 1 & kitchen, kitchenette, dine room\\\hline
+2 & 2 &knife & 1 & kitchen, kitchenette, dine room\\\hline
+3 & 1 & mouse & 2 & home office\\\hline
+4 & 3 & mouse & 2 & home office\\\hline
+5 & 1 & remote & 3 & living room, hotel room, home office\\\hline
+6 & 3 & remote & 3 & living room, hotel room, home office\\\hline
+7 & 1 & spoon & 4 & kitchen, kitchenette, dine room\\\hline
+8 & 2 & spoon & 4 & kitchen, kitchenette, dine room\\\hline
+\end{tabular}
+\caption{Settings}
+  \label{settings}
+\end{table}
+
+In Table \ref{settings} the searched objects, their locations in the map and the starting poses are given for each setting. Also the areas, where the object is more likely according to the used commonsense knowledge, are stated. For each setting six search runs were done, three with the proposed intelligent system and three with the uninformed system, making a total of 48 runs. 
+
+\subsubsection{Results}
+
+In Figure \ref{timelengthavg} the average search times and trajectory lengths of the runs of the test series are shown. The intelligent search is significant faster than the uninformed search. The difference between the strategies is higher in the trajectory length. The reason is that the switching of high-level tasks and the peek tasks cost time, but no travel distance. The uninformed search has only one peek task and two high-level task switches, while the informed search has multiple of both. The time of about 5 seconds per high-level task switch and 20 seconds per peek task adds up.
+
+The variance in the search runs is high, therefore the search times and trajectory lengths are shown in more detail in Figure \ref{search times} and \ref{search length}. The uninformed search times vary a lot. 
 
 
 
+The results of intelligent search of two settings stand out. The first one is setting 4, where the object is found very quickly. In this setting the robot starts in room home2, where the searched mouse is. After the exploration of the room and a peek into room home1, which is found to be less promising, the mouse is quickly found in all runs with these settings. 
 
-
+\begin{figure}
+\centering
+\begin{tabular}{cc}
 \begin{tikzpicture}
-\begin{axis}[
-    enlargelimits=false,
-]
-\addplot+[
-    only marks,
-    scatter,
-    mark=x,
-    mark size=2.9pt]
-table[meta=ma]
-{scattered_example.dat};
-\end{axis}
+      \begin{axis}[
+      width  = 0.45*\textwidth,
+      height = 8cm,
+      major x tick style = transparent,
+      ybar=2*\pgflinewidth,
+      ylabel={search time in seconds},
+      compat=1.3,
+      bar width=40pt,
+      ymajorgrids = true,
+      symbolic x coords={intelligent,uninformed},
+      xtick = data,
+      scaled y ticks = false,
+      enlarge x limits=0.50,
+      ymin=0,
+  ]
+      \addplot[style={fill=white},error bars/.cd, y dir=both, y explicit]
+          plot [error bars/.cd, y dir = both, y explicit]
+          coordinates {
+          (intelligent, 473.14) += (0,269) -= (0,269)
+          (uninformed,667.48) += (0,332.5) -= (0,332.5)};
+  \end{axis}
+\end{tikzpicture} & \quad
+\begin{tikzpicture}
+      \begin{axis}[
+      width  = 0.45*\textwidth,
+      height = 8cm,
+      major x tick style = transparent,
+      ybar=2*\pgflinewidth,
+      ylabel={search trajectory length in meters},
+      compat=1.3,
+      bar width=40pt,
+      ymajorgrids = true,
+      symbolic x coords={intelligent,uninformed},
+      xtick = data,
+      scaled y ticks = false,
+      enlarge x limits=0.50,
+      ymin=0,
+  ]
+      \addplot[style={fill=white},error bars/.cd, y dir=both, y explicit]
+          plot [error bars/.cd, y dir = both, y explicit]
+          coordinates {
+          (intelligent, 32.84) += (0,15.51) -= (0,15.51)
+          (uninformed,51.78) += (0,24.1) -= (0,24.1)};
+  \end{axis}
 \end{tikzpicture}
+\end{tabular}
+\caption[Average search times and trajectory lengths]{Average search times and trajectory lengths for intelligent and uninformed search}
+\label{timelengthavg}
+\end{figure}
+
+\input{Evaluation/TimePlot.tex}
+\input{Evaluation/LengthPlot.tex}
+
 

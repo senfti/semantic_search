@@ -1,6 +1,6 @@
 \section{Basic Functionality}
 
-This section gives an overview over how well the basic components of the developed system work in practice for a better understanding of the following sections.
+In this section an overview is given over how well the basic components of the developed system work in practice. This should help to get a better understanding for the results presented in the following sections.
 
 % \subsection{Sensor Data} \label{SensorEval}
 % 
@@ -29,14 +29,15 @@ In most cases the room type classification returns reasonable results, as shown 
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/4.png}} &
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p1.png}} \\
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/wz_imgs/3.png}} &
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p2.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p2.png}}
 \end{tabular}
-\caption[Examples of good place classifications]{Examples of good place classifications}
+\caption[Example images, where the room type classification works well]{Examples images, where the room type classification works well}
 \label{placegood}
 \end{figure}
-If there is one fitting room type, like in the first two images, the probability of that type is high. If there are similar room types, which can all be correct, like in image c and d, the probability is split mainly between those types.
+If there is one fitting room type, like in the first two images, the probability of that type is high. If there are similar room types, which can all be correct, like in image (c) and (d), the probability is split mainly between those types.
 
-However, there are images where the classifier struggles. In some images, like image a and b in Figure \ref{placebad}, the classifier is undecided between multiple room types and in other images, like image c, not enough is seen for a reasonable classification. If multiple areas of different room types are seen in an image, the probability distribution does not really reflect this because one area overrules the other, as can be seen in image d.
+However, there are images where the classifier struggles. In some images, like image (a) and (b) in Figure \ref{placebad}, the classifier is undecided between multiple room types and in other images, like image (c), the field of view is too small for a reasonable classification. If multiple areas of different room types are seen in an image, usually one room type overrules the other, as can be seen in image (d).
+
 \begin{figure} [h]
 \centering
 \begin{tabular}{cc}
@@ -45,39 +46,41 @@ However, there are images where the classifier struggles. In some images, like i
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p3.png}} &
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p5.png}} \\
 \end{tabular}
-\caption[Examples of not so good place classifications]{Examples of not so good place classifications}
+\caption[Example images, where the room type classification struggles]{Example images, where the room type classification struggles}
 \label{placebad}
+\end{figure}
+
+The place classification CNN is robust against noise and also the negative impact of motion blur is small, as can be seen in Figure \ref{roomblur}
+\begin{figure} [h]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/p7.png}
+\caption[Room type classification and object detections in a blurry image]{Room type classification and object detections in a blurry image}
+\label{roomblur}
 \end{figure}
 
 The place classification CNN does not seem to have much problems with the noise in the images and also the motion blur has at least no big negative impact, if any.
 
-The object detection produces mixed results. Some object types are detected very well. These are larger objects, like monitor, bed of chair, but also some smaller objects like mouse or wine glass. Some object types, like spoon or knife, are only detected if seen very well and then also not reliably and rarely with high confidence. The detection of many other types also depends on the appearance of the object instance and the view angle. And some objects are seen where no such object is, like refrigerators at walls and cupboards and monitors at windows. In Figure \ref{obj} the object detections in some example images are shown. 
-\begin{figure} [h]
+The object detection produces mixed results. Its accuracy strongly depends on the object type, the appearance of the object instance, the view angle, the distance to the camera, the brightness and the background, as can be seen in some example images in Figure \ref{obj}. In general larger objects, like monitors or chairs, are more reliably detected because they are bigger in the images. Some smaller objects, like mouse or cup, are also detected reliably if they are large enough in the image, while other small objects are only detected when seen very well, like spoons or knifes. Sometimes wrong object types are stated and objects are detected where no objects are, especially refrigerators are detected often at walls or cupboards. 
+\begin{figure} 
 \centering
 \begin{tabular}{cc}
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o1.png}} &
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o2.png}} \\
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o3.png}} &
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o4.png}} \\
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o5.png}} &
+\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o6.png}} 
 \end{tabular}
-\caption[Examples images with object detection]{Example images with object detections with a confidence greater 0.1}
+\caption{Detected objects with a confidence greater than 0.1 in some example images}
 \label{obj}
 \end{figure}
-Many other factors also affect the accuracy of the object detection, like the brightness and the background. The motion blur has a negative impact on the object detection, as can be seen by comparing image b from Figure \ref{obj} with the image in Figure \ref{objblur}.
-\begin{figure} [h]
-\centering
-\begin{tabular}{c}
-\subfloat[]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o5.png}}
-\end{tabular}
-\caption[Blurry images with object detection]{Blurry images with object detections with a confidence greater 0.1}
-\label{objblur}
-\end{figure}
+The motion blur has a negative impact on the object detection, as can be seen by comparing image b from Figure \ref{obj} with the image in Figure \ref{roomblur}. Therefore the rotational speed has to be limited if object should be detected. To improve the object detection all lights in the environments were switched on to have the best possible lighting conditions.
 
-The doorway detection works very well. Very rarely a wrong doorway is detected at a closed door and passing through an undetected doorway was newer observed. The only problem is the small field of view of the upward looking RGBD-camera. Therefore doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by, which delays finding a possibly interesting room.
+The doorway detection works very well. During all tests only two false detections were made and it never happened that the robot passed an undetected doorway. The only problem is the small field of view of the upward looking RGBD-camera. Doorways are only detected if the robot is near the doorway and facing towards the doorway. This means that a doorway may not be detected while driving by, which delays finding a possibly interesting room.
 
 \subsection{Navigation} \label{NavEval}
 
-In general the navigation works fine and the robot is able to drive to the given goal pose. The global planning in the 2D map of the room works without problems. However the local planner and the robot movement cause some problems. The high payload brings the robot to its limits. On even and clean floors the robot moves fine, but on slippery or uneven floors the robot has not enough grip on the active wheels to execute the movements as planned because too much weight is on the passive wheels. Due to the robot's design, with the passive wheels being fixed in forward direction, rotational movements are more difficult to execute for the robot. Therefore the problem with slipping wheels only affects the rotational component of the movement. The result is that rotations are slower, curves are driven wider as planned and changes in the direction are delayed. This is most of the time no problem, but especially in narrow areas the local planner sometimes fails to keep enough distance between the robot and obstacles and the robot gets stuck. The robot can also get stuck if it drifts towards an obstacle during an in-place rotation, which happens if only one active wheel is slipping. The recovery behaviors are usually enough to unstuck the robot, but these take some time. This is a major factor for varying search times for the same test scenario. The local planner has in general a big impact on the search time because it is often not able to navigate the robot smoothly through narrow areas and around obstacles. 
+In general the navigation works fine and the robot is able to drive to the given goal pose. The global planning in the 2D map of the room works without problems. However the local planner and the robot movement cause some problems. The high payload brings the robot to its limits. On even and clean floors the robot moves fine, but on slippery or uneven floors the robot has not enough grip on the active wheels to execute the movements as planned because too much weight is on the passive wheels. Due to the robot's design, with the passive wheels being fixed in forward direction, rotational movements are more difficult to execute for the robot. Therefore the problem with slipping wheels only affects the rotational component of the movement. The result is that rotations are slower, curves are driven wider as planned and changes in the direction are delayed. This is most of the time no problem, but especially in narrow areas the local planner sometimes fails to keep enough distance between the robot and the obstacles and the robot gets stuck. The robot can also get stuck if it drifts towards an obstacle during an in-place rotation, which happens if only one active wheel is slipping. The recovery behaviors are usually good enough to free the robot, but these take some time. This is a major factor for the varying search times for the same test scenario. The local planner has in general a big impact on the search time. The smoother it could navigate the robot through narrow areas and around obstacles, the faster the search will be.
 % 
 % \subsection{Success Rate}
 % 
