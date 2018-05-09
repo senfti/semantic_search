@@ -1,6 +1,32 @@
 \chapter{Introduction}
 
-With technical progress in the field of robotics and related areas autonomous robots are now able to execute many tasks in factories even without modifications to the environment, like painted lines. However, robots struggle to conquer everyday human environments. One big reason for this is that factories are designed to be simple. On the other hand everyday domestic environments vary a lot, have areas of different purposes and are often cluttered with various different objects and obstacles. However, humans have a lot of knowledge about 
+With technical progress in the field of robotics and related areas autonomous robots are now able to execute many tasks in factories, even without modifications to the environment like painted lines. However, robots struggle to conquer everyday human environments. Domestic environments might seem very chaotic at the first glance, with a wide variety of different types of environments and huge differences in appearance. However, there is a lot of structure behind indoor environments. Indoor environments are usually segmented into rooms, which are separated by walls and only connected by doors. A room consists of one or a small number of areas, where each area has it specific purposes, like a kitchen is used for cooking. For each purpose specific objects are used, like a pan for cooking, which can be assumed to be somewhere in the area. Knowledge like that is used by humans all the time to carry out tasks efficiently.
+
+The goal of this thesis is to equip a robot with such commonsense knowledge about indoor environments to execute a task efficiently. The investigated task is the search of an object in an unknown open indoor environment. This is a relative simple task, but can benefit a lot from commonsense knowledge about indoor environments. It is also an essential skill for a robot working in domestic environments and therefore research on this topic will be useful in future robotic systems. During the execution of this task the robot has to find the best next view pose. In this thesis the best next view pose is the pose that minimizes the expected search time. The robot has to decide which areas are promising to contain the searched object and also has to find a balance between exploration and search in already explored areas because the environment is unknown at the start of a search. Here the commonsense knowledge is important to make better estimations about not or only vaguely seen areas. 
+
+The system presented in this work uses a hierarchical approach. The environment is seen as a topology of rooms at a higher abstraction level and the details are handled for every room separately. This way the room structure of the environment is used in the search planning. Within a room convolutional neural networks (CNNs) for object detection and place classification are used to create semantic maps containing information about object locations and room types. Using the results of the object detection, the place classification and the connection between the type of an area and the object usually located in that area, likely object locations are found, even in not or only vaguely seen areas. To achieve this a mapping system was developed capable to create the hybrid map combining the room topology and semantic maps of the rooms. 
+
+Using the connection between room types and objects usually located in areas of that room type and the results of the
+
+The basic concept of this work is to segment the environment into rooms. 
+
+In this thesis convolutional neural networks (CNNs) are heavily used to extract information from images. 
+
+Due to the recent success of convolutional neural networks (CNNs) for object detection, general visual object detections systems, which can detect never seen objects of various types, with reasonable accuracy and performance are now available. This enables the search for objects of given types, which is done in this work. Another CNN is used to classify the room type of areas of the environment  
+
+Most of the research on this topic focuses on the search of a specific known object. In this thesis objects of a given type are searched. The recent progress in general object detection lead to visual object detection systems based on convolutional neural network (CNNs), which have a sufficient performance and accuracy to make this feasible. 
+
+
+Also CNNs for the classification of the room type seen in an image are available and 
+
+The goal has to be that robots can also use knowledge about the concepts behind everyday human environments
+
+Applications in domestic environments are far more challenging for robots because of the high variety of environments, the very different appearance of similar environments and the complex concepts behind the structure of these environments. 
+
+
+Those environments are far more complex than factory floors with their wide variety in appearance  
+
+One big reason for this is that factories are designed to be simple. On the other hand everyday domestic environments vary a lot, have areas of different purposes and are often cluttered with various different objects and obstacles. 
 
 One reason is the much higher complexity of everyday human environments. For robots   Factories have a relatively simple structure, . Domestic environments have a lot of variation and the structure is much more difficult to understand. The simple approach, assuming an unstructured environment, is sufficient for simple tasks like floor cleaning, but more complex tasks can benefit a lot from the usage of knowledge about the structure of domestic environments.
 

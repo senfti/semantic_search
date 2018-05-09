@@ -1,20 +1,20 @@
-\begin{figure}
-\centering
 \begin{tikzpicture}
     \centering
     \begin{axis}[
             xtick={1,2,3,4,5,6,7,8},
             ymin=0, ymax=140,
-            width=0.8\textwidth,
-            height=8cm,
-            bar width=10pt,
+            width=0.47\textwidth,
+            height=6cm,
+            bar width=6pt,
             xlabel={setting},
-            ylabel={search trajectory length in meters},
-            compat=1.3,
+            ylabel={trajectory length in meters},
             legend pos=north west,
+            legend style={font=\footnotesize},
+            label style={font=\footnotesize},
+            tick label style={font=\footnotesize},  
             scatter/classes={
-            a={mark=-,colorDarkGreen,line width=1pt,mark size=5pt},%
-            b={mark=-,colorDarkRed,line width=1pt,mark size=5pt}}]%
+            a={mark=-,colorDarkGreen,line width=1pt,mark size=3pt},%
+            b={mark=-,colorDarkRed,line width=1pt,mark size=3pt}}]%
         \addplot[scatter,only marks, scatter src=explicit symbolic]
             coordinates {
                 (4.8, 36.0462990646)[a]
@@ -92,6 +92,3 @@
         \addlegendentry{uninformed}
     \end{axis}
 \end{tikzpicture}
-\caption[Search trajectory lengths in test series]{Search trajectory lengths in test series; Bars show the average search times of a setting}
-\label{search length}
-\end{figure}
