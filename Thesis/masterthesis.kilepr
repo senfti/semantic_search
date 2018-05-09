@@ -9,7 +9,7 @@ kile_livePreviewStatusUserSpecified=true
 kile_livePreviewTool=LivePreview-PDFLaTeX
 kileprversion=2
 kileversion=2.9.60
-lastDocument=Introduction.tex
+lastDocument=abstract.tex
 masterDocument=
 name=MasterThesis
 pkg_extIsRegExp=false
@@ -502,12 +502,12 @@ order=25
 
 [item:Conclusion.tex]
 archive=true
-column=0
+column=775
 encoding=UTF-8
 highlight=LaTeX
-line=1
+line=6
 mode=LaTeX
-open=false
+open=true
 order=23
 
 [item:Evaluation.tex]
@@ -652,7 +652,7 @@ order=19
 
 [item:Introduction.tex]
 archive=true
-column=1104
+column=897
 encoding=UTF-8
 highlight=LaTeX
 line=6
@@ -772,10 +772,10 @@ order=22
 
 [item:abstract.tex]
 archive=true
-column=22
+column=1446
 encoding=UTF-8
 highlight=LaTeX
-line=13
+line=6
 mode=LaTeX
 open=true
 order=21
@@ -921,10 +921,10 @@ JumpList=
 ViMarks=.,34,0,[,34,0,],34,9
 
 [view-settings,view=0,item:Conclusion.tex]
-CursorColumn=0
-CursorLine=1
+CursorColumn=775
+CursorLine=6
 JumpList=
-ViMarks=.,1,0,[,1,0,],1,0
+ViMarks=.,6,763,[,6,763,],6,774
 
 [view-settings,view=0,item:Evaluation.tex]
 CursorColumn=713
@@ -1011,10 +1011,10 @@ JumpList=
 ViMarks=.,46,541,[,46,536,],46,541
 
 [view-settings,view=0,item:Introduction.tex]
-CursorColumn=1104
+CursorColumn=897
 CursorLine=6
 JumpList=
-ViMarks=.,6,1103,[,6,1093,],6,1103
+ViMarks=.,6,888,[,6,888,],6,896
 
 [view-settings,view=0,item:Prerequisites.tex]
 CursorColumn=1
@@ -1083,10 +1083,10 @@ JumpList=
 ViMarks=.,22,1489,[,22,1489,],22,1489
 
 [view-settings,view=0,item:abstract.tex]
-CursorColumn=22
-CursorLine=13
+CursorColumn=1446
+CursorLine=6
 JumpList=
-ViMarks=.,10,0,[,10,0,],10,0
+ViMarks=.,6,1446,[,6,1446,],6,1446
 
 [view-settings,view=0,item:colophon.tex]
 CursorColumn=0

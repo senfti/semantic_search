@@ -4,11 +4,7 @@
 \chapter*{Abstract}
 \label{cha:abstract}
 
-
-This is a placeholder for the abstract. It summarizes the whole thesis
-to give a very short overview. Usually, this the abstract is written
-when the whole thesis text is finished.
-
+Everyday human environments have a lot of underlying structure, which is used by humans to carry out tasks efficiently. In this thesis a robotics system is presented which also uses such commonsense knowledge for more efficient task execution. The investigated task is active object search in unknown open environments, where an object of a specified type is search in an unexplored indoor environment. The system presented in this work uses the concept of rooms and the connection between the room type of an area and the objects usually located in that area to make estimations about the object probability in not or only vaguely seen areas. Therefore a hybrid semantic mapping system was developed, which creates a topological map of the room structure and separate semantic metric maps for each room. The results of convolutional neural networks (CNNs) for object detection and place classification are used to add information about seen objects and the room types of areas in the room to the occupancy information of the semantic metric map of a room. The planning of the search also uses a hierarchical approach, where a high-level planner selects the next room to search base on the topological map and a low-level planner plans the actual search based on the semantic metric map of the searched room. Test runs of the developed system showed a more intelligent behavior and an improved performance compared to a coverage-maximizing system. This work proves again the potential of intelligent robotic systems, which utilize commonsense knowledge to execute tasks in everyday human environments more efficiently.
 
 %\glsresetall %% all glossary entries should be used in long form (again)
 %% vim:foldmethod=expr
