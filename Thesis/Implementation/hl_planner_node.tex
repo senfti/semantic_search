@@ -1,6 +1,6 @@
 \section {High-Level-Planner Node} \label{hl_node}
 
-The \hlplanner\ node does the high-level control of the system, which also includes the receipt of search commands from the user. In figure \ref{hl_execution} an overview over the execution of a search is given. After an description of the data structures used in the implementation the individual steps are described in more detail.
+The \hlplanner\ node does the high-level control of the system, which also includes the receipt of search commands from the user. In Figure \ref{hl_execution} an overview over the execution of a search is given. After an description of the data structures used in the implementation the individual steps are described in more detail.
 
 \begin{figure}
   \centering
@@ -46,7 +46,7 @@ The \texttt{State} class represents the current state of the search, storing the
 \end{lstlisting}
 \end{minipage}
 
-The \texttt{Plan} class contains the actions to be executed in the plan and also the state after the execution of all actions. Additionally, the probability of finding the object, the estimated time to fully execute the plan and the expected time of the search using this plan are stored in the \texttt{Plan} class. It has an \texttt{addAction} function, which adds an action to a plan and also updates the other member variables. The update of the \texttt{expected{\_}search{\_}time} is done according to formula \ref{expected formula}.
+The \texttt{Plan} class contains the actions to be executed in the plan and also the state after the execution of all actions. Additionally, the probability of finding the object, the estimated time to fully execute the plan and the expected time of the search using this plan are stored in the \texttt{Plan} class. It has an \texttt{addAction} function, which adds an action to a plan and also updates the other member variables. The update of the \texttt{expected{\_}search{\_}time} is done according to Formula \ref{expected formula}.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=Plan,frame=single, label=Plan]
@@ -70,9 +70,9 @@ At the start of the search or after the execution of a high-level task a \texttt
 
 \subsubsection{Planning}
 
-The planning is done in three steps. In a first step a plan is generated using a greedy strategy. The second step is to execute a depth-first search on the tree of possible plans described in section \ref{hl_plan}. The result of the greedy planning is used as a first estimate to enable effective pruning, which can reduce the planning time dramatically. Out of the result of the full planning, which only contains search actions, the next high-level task is generated.
+The planning is done in three steps. In a first step a plan is generated using a greedy strategy. The second step is to execute a depth-first search on the tree of possible plans described in Section \ref{hl_plan}. The result of the greedy planning is used as a first estimate to enable effective pruning, which can reduce the planning time dramatically. Out of the result of the full planning, which only contains search actions, the next high-level task is generated.
 
-The greedy planning selects the next room to be searched based on the quotient of object probability and expected search time, as shown in listing \ref{Greedy}. The expected search time also includes the time which the robot needs to get into the room.
+The greedy planning selects the next room to be searched based on the quotient of object probability and expected search time, as shown in Listing \ref{Greedy}. The expected search time also includes the time which the robot needs to get into the room.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=Greedy planning,frame=single, label=Greedy]
@@ -99,7 +99,7 @@ Plan greedyPlan(TopologicalMap map, State state){
 \end{lstlisting}
 \end{minipage}
 
-The depth-first search is implemented with a recursive function, which is shown in listing \ref{planFunction}. The pruning is implemented using the \texttt{cutoff{\_}time} variable. Nodes with an expected search time higher than the cutoff time are not investigated further because their child nodes cannot have a lower expected search time.
+The depth-first search is implemented with a recursive function, which is shown in Listing \ref{planFunction}. The pruning is implemented using the \texttt{cutoff{\_}time} variable. Nodes with an expected search time higher than the cutoff time are not investigated further because their child nodes cannot have a lower expected search time.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=plan function,frame=single, label=planFunction]
@@ -130,11 +130,11 @@ Plan plan(TopologicalMap map, Plan old_plan, float& cutoff_time){
 \end{lstlisting}
 \end{minipage}
 
-The generated plan only contains the order in which the rooms are searched. The generation of the high-level task is done according to \ref{HLTaskGen}. If the plan is empty, the search is finished and no object was found.
+The generated plan only contains the order in which the rooms are searched. The generation of the high-level task is done according to Section \ref{HLTaskGen}. If the plan is empty, the search is finished and no object was found.
 
 \subsubsection{Executing the next high-level task}
 
-The generated next high-level task is sent to the low-level-planner in form of a \texttt{HighLevelTask} action, which is shown in listing \ref{HighLevelTaskAction}. 
+The generated next high-level task is sent to the low-level-planner in form of a \texttt{HighLevelTask} action, which is shown in Listing \ref{HighLevelTaskAction}. 
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=HighLevelTask,frame=single, label=HighLevelTaskAction]

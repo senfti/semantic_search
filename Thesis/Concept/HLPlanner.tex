@@ -12,9 +12,9 @@ The objective of the high-level planner is to find the optimal search path $\mat
 
 The expected search time given a staring room $r_0$ and a search path $\mathbf{p}$ can be calculated with
 \begin{equation} \label{expected formula}
- E(t|\mathbf{p},r_0) = \sum_{i=1}^{\mathbf{|p|}} (\prod_{j=1}^{i-1}(1-P_{r_j}(o))(M_{r_{i-1},r_i}+E_{r_i}) 
+ E(t|\mathbf{p},r_0) = \sum_{i=1}^{\mathbf{|p|}} (\prod_{j=0}^{i-1}(1-P_{r_j}(o))(M_{r_{i-1},r_i}+E_{r_i}(o)) 
 \end{equation}
-This calculation is illustrated in an example calculation in Figure \ref{fig: search tree}. Searching rooms with high object probabilities first results in a lower expected search time as it is more likely that other rooms do not have to be searched. However, the probability of finding the object is the same for all paths. The matrix $M$ contains estimations of the movement times, where $M_{r_i,r_j}$ is the time needed to drive from room $r_i$ to room $r_j$. The matrix elements are calculated using the movement times described at the end of section 5.5.7 and the topological map. 
+The definition $\prod_{j \in \emptyset} = 1$ is used. This calculation is illustrated in an example calculation in Figure \ref{fig: search tree}. Searching rooms with high object probabilities first results in a lower expected search time as it is more likely that other rooms do not have to be searched. However, the probability of finding the object is the same for all paths. The matrix $M$ contains estimations of the movement times, where $M_{r_i,r_j}$ is the time needed to drive from room $r_i$ to room $r_j$. The matrix elements are calculated using the movement times described at the end of section 5.5.7 and the topological map. 
 
 The possible paths form a search tree, as illustrated in Figure \ref{fig: search tree}. The tree representation shows possibilities for optimizations in the calculation like the reuse of intermediate results and pruning. 
 
@@ -35,7 +35,7 @@ The search path contains only the order, in which the rooms are searched. To exe
  \item \textbf{Search room:} The robot should search for the target object in the current room
 \end{itemize}
 
-The high-level planner keeps track of whether a room was visited, explored or searched. Using this information the generation of the high-level tasks is done as shown in figure \ref{fig: HLTask}. The path to the room to search, containing the rooms on the way, is retrieved out of the topological map. As replanning is done after every high-level task only the generation of the next high-level task is necessary.
+The high-level planner keeps track of whether a room was visited, explored or searched. Using this information the generation of the high-level tasks is done as shown in Figure \ref{fig: HLTask}. The path to the room to search, containing the rooms on the way, is retrieved out of the topological map. As replanning is done after every high-level task only the generation of the next high-level task is necessary.
 
 \begin{figure}[h]
  \centering

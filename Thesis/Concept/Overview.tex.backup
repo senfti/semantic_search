@@ -1,28 +1,27 @@
 \section{Overview}
 
-The main questions at the beginning of this thesis were what commonsense knowledge can be used to execute the object search intelligently, what information the robot should gather and what sensors are needed therefore, how the knowledge about the environment should be represented and how the search planning, using this knowledge, should be done. 
-
-Indoor environments can be segmented into rooms and room areas, which serve specific purposes, like a kitchen is used for cooking. Therefore the objects located in an area correlate with the type of the area. This connection is used in this work to make the search intelligent and therefore more efficient. Furthermore, knowledge to recognize objects of the searched type and to classify areas into room types is needed. Therefore neural networks trained on thousands of images are used, which contain this knowledge in their learned weights.
-
-An RGBD-camera is used to gather the images for the neural networks. The additional depth information is helpful to estimate the positions of the detected objects in space, which would be difficult otherwise, and is also necessary for $3$D obstacle detection and mapping. The camera is mounted fixed on the robot to keep the setup simple, therefore the positioning of the camera is only possible by the two dimensional movement of the robot. As the depth data of the RGBD-camera is not very accurate a light detection and ranging sensor (LIDAR) is also mounted on the robot. Together with the odometry data from the robot it is used for $2$D simultaneous localization and mapping (SLAM). Finally, the robot is equipped with a second RGBD-camera, which is used for the detection of doorways. 
-
-To represent the environment a hybrid map is used. In this hybrid map each room has its own semantic metric map. These room maps consists of multiple maps for the same space, each containing different information. These maps are
+A number of fundamental design decision had to be made in the early stages of the development of this active object search system. The main questions were:
 \begin{itemize}
- \item a metric $2$D occupancy map for navigation
- \item a $3D$ occupancy map to insert obstacles not visible in the LIDAR scans into the $2D$ map and  for the estimation of the object probability distribution
- \item a $2D$ grid map containing the probability distribution over the detectable room types for every grid cell
- \item a $3D$ grid map for every detectable object type containing the probability that an object of the given type has been seen in a grid cell
+ \item what commonsense knowledge can be used to execute the object search intelligently
+ \item what information the robot should gather and what sensors are needed for that
+ \item how the gathered knowledge about the environment should be represented
+ \item how the search planning, using this knowledge, should be done
 \end{itemize}
-Further locations of detected doorways are mapped. Based on the above mentioned maps and the commonsense knowledge a $3D$ grid map is created for every detectable object type containing the probability of an object of the given type being in a grid cell. On the other hand a topological map is created, with a node for every discovered room. These nodes contain references to the corresponding room maps and also additional data. This additional data is the estimated time to fully search the room, the probability of an object being in the room and the expected search time in the room for every object type and estimates for the time needed to traverse the room. If two rooms are connected by a doorway an edge exists between the corresponding nodes. The edges also contains information about which doorway mapped in the first room corresponds to which doorway in the second room. Figure \ref{fig:topological map} shows an example of a topological map. 
+
+Indoor environments can be segmented into rooms and room areas, which serve specific purposes, e.g. a kitchen is used for cooking. Therefore, the objects located in an area correlate with the type of the area. This connection is used in this work to make the search intelligent and therefore more efficient. Furthermore, knowledge to recognize objects of the searched type and to classify areas into room types is needed. Neural networks, trained on thousands of images, are used, which represents this knowledge in their learned weights.
+
+An RGBD-camera is used to gather the input images for the neural networks. The additional depth information is helpful to estimate the positions of the detected objects in space. This would be difficult otherwise. The depth measurements are also necessary for 3D obstacle detection and mapping. The camera is mounted on the robot on a fixed location to keep the setup simple. Therefore, the camera pose can only be change by the movement of the robot in the plane. As the depth data from the RGBD-camera is not very accurate, a light detection and ranging sensor (LIDAR) is also mounted on the robot. Together with the odometry data from the robot it is used for 2D simultaneous localization and mapping (SLAM). Finally, the robot is equipped with a second RGBD-camera, which is used for the detection of doorways. The robot setup is depicted in Figure \ref{robot images}.
+
+A hybrid map is used to represent the environment. In this hybrid map each room has its own semantic metric map. These semantic maps contain, in addition to the standard occupancy information for navigation, information about object locations and the room type of areas within the room. Furthermore, locations of detected doorways are inserted into the map. The information in the semantic map and commonsense knowledge are combined to estimate likely object locations within the room, which is then used to find objects faster. On the other hand a topological map is created with a node for every discovered room. These nodes contain references to the corresponding semantic room maps and also additional data generated from those maps. This additional data consists of the probability of a searched object being in a room, an estimation of the time needed to fully search a room, the expected time spent searching in a room, and an estimation for the time needed to leave or traverse a room. The nodes are linked by edges, which correspond to the doorways connecting two rooms. Figure \ref{fig:topological map} shows an example of such a topological map. 
 
 \begin{figure} 
   \centering
     \includegraphics[width=0.8\textwidth]{figures/HybridMap.pdf} 
-  \caption{Example of a topological map with 5 rooms and 4 doorways}
+  \caption[Topological map example]{Example of a topological map with 5 rooms and 4 doorways}
   \label{fig:topological map}
 \end{figure}
 
-The goal of the planning is to minimize the expected search time. As the generation of the optimal next search pose given the available information is infeasible a heuristic is needed. In this work the planning problem is split into two parts. The high-level planner selects the optimal next room to search. Further it generates high-level tasks, like move through a doorway, explore room or search room. Based on the pending high-level tasks the low level planner generates the best next goal pose for the robot. Figure \ref{fig:planning} shows a flowchart depicting the general planning procedure. This planner design fits perfectly to the hybrid map as the high-level planner does its planning on the topological map, while the low-level planner operates on the room map of the current room. 
+The objective of the search planning is to minimize the expected search time. The complexity of the problem makes finding the optimal next view pose infeasible. Therefore, a heuristic is needed. In this thesis the planning problem is split into two abstraction levels. The high-level planner selects the optimal next room to search based on the topological map and also generates high-level tasks, like move through a doorway, explore a room or search a room. Based on the pending high-level tasks the low level planner generates the best next goal pose for the robot using a greedy strategy. Figure \ref{fig:planning} shows a flowchart depicting the general planning procedure. This planner design fits perfectly to the hybrid map as the high-level planner does its planning only on the topological map, while the low-level planner operates only on the room map of the current room. 
 
 \begin{figure}
   \centering
@@ -31,7 +30,7 @@ The goal of the planning is to minimize the expected search time. As the generat
   \label{fig:planning}
 \end{figure}
 
-Figure \ref{fig:Overview} gives an overview over the structure of this intelligent active object search system, showing the main components of the system and also the most important data exchanged by the components.
+Figure \ref{fig:Overview} gives an overview over the structure of this intelligent active object search system, showing the main components of the system and also the most important data exchanged by these components.
 
 \begin{figure}
   \centering
@@ -39,46 +38,3 @@ Figure \ref{fig:Overview} gives an overview over the structure of this intellige
   \caption{Overview over the full system structure}
   \label{fig:Overview}
 \end{figure}
-
-% The goal of this thesis is to find an object of a certain object type in an indoor environment. To improve the search strategy commonsense knowledge should be used. The most important thing to know about indoor environments is that they can be segmented into rooms. Rooms are of a certain type, e.g. living room, or an assambly of room types, e.g. a living room with a kitchenette. Rooms are seperated by walls and are usually only connected by narrow doorways. The other major chunk of commonsense knowledge used in this thesis is the information about the correlation between room types and objects located in this room. Therefore the selection of the correct room to search is the most important part of finding a good search path.
-% 
-% The basic idea in this thesis is to split the search problem into a high-level part, where the whole indoor environment is represented as a topology of rooms with attributes and their connections and a low-level part, which considers only a single room independently of the other rooms. This division simplifies the problem in multiple ways. Firstly the planning is far less complex. The high-level
-% planner selects the best next room to search and the low-level planner, which generates the actual view poses, has only to consider poses within this room. Also the generation of the semantic maps containing a metric map for navigation and information about room type and object locations, is easier. The smaller maps, only having the size of a room, are easier to keep consistent and are also more efficient.
-% 
-% The whole system is split into four parts, sensing, mapping, high-level planning and low-level plannig and execution.
-% 
-% The sensing comprises the gathering of sensor data and the preperation of the information for the mapping. Images are a very descriptive data source for object detection. Due to various challanges for visual object detection many different systems capable of detecting various different object types are available. This is also true for visual place recognition. Therefore the image of an RGBD-camera is used for object detection and also for room type classification, while the depth information is used to get the 3D positions of the detected objects. \newline
-% The other used sensors are a laser scanner, which is used together with the odometry for 2D map generation and localization and another RGBD-camera. This second RGBD-camera observes the ceiling of the room and its depth images are used to find doorways, whose easiest to detect feature is its height. 
-% 
-% The mapping creates semantic maps for each visited room, consisting of an occupancy grid map for navigation and localization, information to the type and subsections of the room, information about already observed objects and positions of the doorways connecting the room to other rooms. The mapping also creates the topological map with a node for every room, holding the semantic map of the room, and a link for every doorway to connect the semantic maps. Figure \ref{fig:topological map} shows an example of such a topological map. All together this results in a hybrid map representation for the environment. 
-% 
-% \begin{figure} [h]
-%   \centering
-%     \includegraphics[width=1.0\textwidth]{figures/DSC_0031.JPG}
-%   \caption{Example of a topological map}
-%   \label{fig:topological map}
-% \end{figure}
-% 
-% The high-level planning comprises the preparation of the for the planning needed information, the planning of the order in which the rooms are searched and the generation of high-level tasks. The information needed for the high-level planning, e.g. the expected search time or the probability of a searched object being in the room, is generated from the semantic maps of the rooms. The planning of the order in which the rooms are searched is done by minimizing the expected search time based on the generated information and the topological map. From the result of the planning high-level tasks like move through a specified doorway, explore a room and search a room are generated.
-% 
-% The low-level planning is the planning of the actual robot movements to execute the high-level tasks. This involves the planning of the search, the planning of the exploration and the navigation. The low-level planning works on the semantic map of a room and is independent of other rooms. 
-
-% At the beginning the basic hardware setup was decided to be based on a Turtlebot 2 with an rigidly mounted additional RGBD-camera. This reduces the complexity of the problem as only movement of the whole robot in two dimensional space is possible with this setup. Assuming not too cluttered environments this setup should be sufficient for most search tasks.
-% 
-% Using visual information for object detection was an obvious choice. As the usage of commonsense knowledge was the main intention behind this work a general out of the box solution was preferred over a specialized handcrafted solution. Computer vision challenges for object detection and other computer vision tasks resulted in various available solutions for these problems to choose from. As object detection systems using color images as input and bounding boxes of detected objects as output were the only systems with a sufficient number of detectable object classes and reasonable accuracy while not being too resource-demanding for the used hardware such a system was chosen. This left the problem of getting from the bounding boxes in the image to a three dimensional representation needed for the search. The depth information of the RGBD-camera was used to project the detections into 3D space and an approach similar to occupancy grid mapping was used to merge the detections of different images into a three dimensional object probability map.
-% 
-% To make the search more intelligent the concept of a room was implemented. Like humans the robot can assign a type to every room, e.g. kitchen. As there is a high correlation between the type of a room and the objects located in this room the classification of a room and its usage to guide the object search is highly beneficial. In this work the classification of rooms was done using a neural network for place classification and also the objects found in this room were used. As in some cases one room consists of areas of different rooms types, e.g. a kitchenette in an office room, the room is split into a grid of cells holding the probability distribution of the cell being of a certain room type over all room types.
-% 
-% The fact that indoor environments can be segmented into rooms is used in the representation of the environment. A hybrid map consisting of a topological map depicting the room structure and metric maps for every room combines has multiple advantages. Splitting the environment into multiple smaller metric maps makes it easier to keep the maps consistent and also reduces the computational load. On the other hand is navigation and the object mapping easier in metric maps. The hybrid map structure is easy to maintain as rooms are only connected by narrow doorways which can be detected reliably.
-% 
-% This structure is also the basis for the planning. A high-level planner working on the topological map chooses the next room to search based on the expected object probabilities and search times in the rooms and the expected travel times between the rooms. A low-level planner plans the tasks within the room like room exploration and search. This greatly simplifies the planning problem and should still lead to good results as the object probability is correlated to the room type. 
-% 
-% Fig bla1 shows the 
-
-% In the early phase we had to make some fundamental decisions regarding the hardware and the basic concept. 
-% Firstly a Turtlebot was chosen as the basic robot setup. To improve the navigation capabilities we replaced the Microsoft Kinect of the standard Turtlebot setup with a far more accurate laser scanner. Visual object detection was the obvious choice, therefore a camera was mounted. We choose an ASUS XTion RGBD-camera because the additional depth information could be used for 3D mapping and obstacle detection. \newline
-% Another fundamental decision was to heavily use the fact that indoor environments can be segmented into rooms. This makes the use of a hybrid map to represent the environment very appealing. Every room is a node in a topological map and contains, beside other information, a metric map. The doorways between the rooms are the edges in the topological map. This representation is also used in the planning process, which is split into a high-level planning and a low-level planning. The high-level planning is used to select the next room based on the topological map and the low-level planning has then only to consider the current room. \newline
-% As the focus was on the usage of commonsense knowledge the use of a universal object detection instead of a specialized one was intended. This led to the decision to use a convolutional nerual  network for object detection. As the accuracy of those CNNs is still not so great and the number of possible objects in a room is quiet high object tracking is most likely infeasible. Therefore the use of an approach similar to occupancy grid mapping to generate a probability distribution for objects of a specific class was decided. \newline
-% The use of commonsense knowledge regarding the correlation between room type and object probability can boost the search efficiency. As a room might have different part, e.g. a kitchenette in a living room, a grid representing the probability distribution of a cell being of a certain room is generated and used to improve the probability distribution of object occurances.
-% 
-% Fig blabla shows the resulting structure or the hybrid map.  

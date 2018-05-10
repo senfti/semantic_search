@@ -4,6 +4,10 @@
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 
 #define PRINT_PARAM(x) std::cout << #x << " = " << x << " " << std::endl;
 
@@ -81,6 +85,7 @@ VisionApp::VisionApp(char* exe_name, ros::NodeHandle& nh)
   cloud_sub_ = nh_.subscribe("/camera/depth_registered/points", 1, &VisionApp::cloudCb, this);
   result_pub_ = nh_.advertise<vision::VisionMsg>(RESULT_TOPIC, 10);
   found_pub_ = nh_.advertise<vision::ObjectFoundMsg>("obj_found_in_image", 10);
+  sample_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("sample_cloud", 10);
 
   is_ok_ = true;
   std::srand(ros::Time::now().nsec);
@@ -291,11 +296,24 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, c
     found_pub_.publish(obj_found_msg);
 
   int i = 0;
+  pcl::PointCloud<pcl::PointXYZRGB> sample_cloud;
+  sample_cloud.header = cloud.header;
+  sample_cloud.height = cloud.height;
+  sample_cloud.width = cloud.width;
+  sample_cloud.is_dense = cloud.is_dense;
+  sample_cloud.sensor_orientation_ = cloud.sensor_orientation_;
+  sample_cloud.sensor_origin_ = cloud.sensor_origin_;
+
   for(int c=0; i<DETECTION_SAMPLE_NUM && c < 5*DETECTION_SAMPLE_NUM; c++){
     int x=std::rand()%cloud.width;
     int y=std::rand()%cloud.height;
     if(!(cloud.at(x,y).z >= MIN_Z && cloud.at(x,y).z <= MAX_Z))
       continue;
+
+    sample_cloud.push_back(pcl::PointXYZRGB(img.at<cv::Vec3b>(y,x)[2], img.at<cv::Vec3b>(y,x)[1], img.at<cv::Vec3b>(y,x)[0]));
+    sample_cloud.back().x = cloud.at(x,y).x;
+    sample_cloud.back().y = cloud.at(x,y).y;
+    sample_cloud.back().z = cloud.at(x,y).z;
 
     //mask(y,x) = 255;
     vision::DetectionSample sample;
@@ -312,6 +330,7 @@ std::vector<YoloDetection> VisionApp::fillObjectDetections(const cv::Mat& img, c
     i++;
   }
 
+  sample_pub_.publish(sample_cloud);
   std::cout << detections.size() << " Objects in " << t1 << "/" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() - t1 << " ms" << std::endl;
 
   return detections;

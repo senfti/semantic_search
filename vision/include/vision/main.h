@@ -66,6 +66,7 @@ class VisionApp{
     ros::Subscriber cloud_sub_;
     ros::Publisher result_pub_;
     ros::Publisher found_pub_;
+    ros::Publisher sample_pub_;
 
     std::thread* nn_thread_ = nullptr;
 
