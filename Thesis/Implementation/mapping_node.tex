@@ -1,6 +1,6 @@
 \section{Mapping Node}
 
-As can be seen in Figure \ref{ImplOverview} the mapping node has a central position in the system. It is also the largest node in terms of written code. This section is split into two parts, the class structure and the execution of the node. 
+As shown in Figure \ref{ImplOverview} the mapping node has a central position in the system. It is also the largest node in terms of written code. This section is split into two parts: the class structure and the execution of the node. 
 
 \subsection{Class Stucture}
 
@@ -11,7 +11,7 @@ In Figure \ref{mapping overview} the general structure of the mapping node is sh
   \caption[Mapping node structure]{An overview over structure of the mapping node}
   \label{mapping overview}
 \end{figure}
-The \texttt{TopologicalMapper} class is the main class in this structure, holding an instance of the  \texttt{RoomMapper} class for every room. The \texttt{RoomMapper} class is derived from the \texttt{SlamGmapper} class, which does the 2D SLAM using GMapping. The \texttt{RoomMapper} class holds a separate mapping class for every type of map and every particle. This design was chosen to reduce the required adaptation to GMapping and to have a more modular structure.
+The \texttt{TopologicalMapper} class is the main class in this structure, holding an instance of the  \texttt{RoomMapper} class for every room. The \texttt{RoomMapper} class is derived from the \texttt{SlamGmapper} class, which does the 2D SLAM using GMapping. The \texttt{RoomMapper} class holds a separate mapping class for every type of map and every particle. This design was chosen to reduce the required adaptation to the existing code of GMapping and to have a more modular structure.
 
 In Listing \ref{TopologicalMapper} the most important member variables and methods of the \texttt{TopologicalMapper} class are shown. \newline
 \begin{minipage}{\linewidth}
@@ -39,7 +39,7 @@ In Listing \ref{TopologicalMapper} the most important member variables and metho
    
 \end{lstlisting}
 \end{minipage} 
-Beside an array of \texttt{RoomMapper} it also has variables to keep track of the current room and the rooms already explored. The latter is important in the generation of the high-level attributes in the \texttt{topologicalMapSrv} service. The variable \texttt{topology} stores the last \texttt{topologicalMapSrv} service response and \texttt{room{\_}changed} keeps track of which rooms' maps were updated since the last execution of the \texttt{topologicalMapSrv} service. Together they are used to avoid unnecessary calculations on unchanged room maps. Also the current action is stored to decide if the doorways have to be blocked by virtual obstacles.
+Beside an array of \texttt{RoomMapper} it also contains variables to keep track of the current room and the rooms already explored. The latter is important in the generation of the high-level attributes in the \texttt{topologicalMapSrv} service. The variable \texttt{topology} stores the last \texttt{topologicalMapSrv} service response and \texttt{room{\_}changed} keeps track of which rooms' maps were updated since the last execution of the \texttt{topologicalMapSrv} service. Together they are used to avoid unnecessary calculations on unchanged room maps. Also the current action is stored to decide if the doorways have to be blocked by virtual obstacles.
 
 The \texttt{TopologicalMapper} class contains the \texttt{run} function, which is started during initialization and contains the main processing loop. The class also contains the callback functions for all messages and services.
 

@@ -19,13 +19,13 @@ With this task the robot is initiated to drive through a specified doorway into 
 
 \subsection{Peek Task}
 
-The purpose of this task is to quickly get a first impression of a room never visited before. This is achieved by turning the robot left and right, so the the area seen by the robot is increased. If the object detection detects a searched object with a sufficiently high confidence during this task, the object is assumed to be found and the task is stopped.
+The purpose of this task is to quickly get a first impression of a room never visited before. This is achieved by turning the robot left and right, so the area seen by the robot is increased. If the object detection detects a searched object with a sufficiently high confidence during this task, the object is assumed to be found and the task is stopped.
 
 \subsection{Explore Room Task} \label{explore_task}
 
-The goals of the explore room task is to find all doorways in the room, detect likely object locations and also to find easy to spot target objects. 2D exploration is done to achieve these goals. After finishing 2D exploration all doorways are guaranteed to be found, as unexplored space would be behind an undiscovered doorway. During the exploration most of the room is seen with the camera, though most areas only in a few images. Some areas might not be seen at all by the camera because the exploration is finished when all accessible cells were seen by the LIDAR. Due to the smaller field of view of the camera, some cells might only be seen by the LIDAR and not by the camera and also some cells in inaccessible areas might not be seen.
+The goals of the explore room task is to find all doorways in the room, to detect likely object locations and also to find easy to spot target objects. 2D exploration is done to achieve these goals. After finishing 2D exploration all doorways are guaranteed to be found, as unexplored space would be behind an undiscovered doorway. During the exploration most of the room is seen with the camera, though most areas only in a few images. Some areas might not be seen at all by the camera because the exploration is finished when all accessible cells were seen by the LIDAR. Due to the smaller field of view of the camera, some cells might only be seen by the LIDAR and not by the camera and also some cells in inaccessible areas might not be seen.
 
-A frontier-based approach is used for the exploration. In this thesis a frontier is defined as an accessible cell in the occupancy grid map adjacent to at least one unexplored cell, as shown in Figure \ref{fig: exploration}. Based on an objective function a frontier is selected and the robot is sent to this frontier. On the way to the frontier some area beyond the frontier is explored. In this work the objective function is the distance between the robot and the frontier, where nearer frontiers are preferred. 
+A frontier-based approach is used for the exploration, similar to the approach proposed by Yamauchi \cite{frontier}. In this thesis a frontier is defined as an accessible cell in the occupancy grid map adjacent to at least one unexplored cell, as shown in Figure \ref{fig: exploration}. Based on an objective function a frontier is selected and the robot is sent to this frontier. On the way to the frontier some area beyond the frontier is explored. In this work the objective function is the distance between the robot and the frontier, where nearer frontiers are preferred. 
 
 \begin{figure}[h]
  \centering
@@ -111,5 +111,5 @@ Using the same line of thought the term $B(\mathbf{p})$ is calculated with:
 \begin{equation} \label{objfunc5}
  B(\mathbf{p})=\begin{cases} V_B|\mathbf{C_{B_{interest}}}| & if\;|\mathbf{C_{B_{interest}}}| > 0 \\ -\infty & else \end{cases}
 \end{equation}
-where $\mathbf{|C_{B_{interest}}}|$ is the number of border cells, whose counter would be increased in a view from pose $\mathbf{p}$ and is lower than a threshold parameter. $V_B$ is a parameter weighting coverage versus finding probability. Ultimately the termination criteria is defined with $P(o|\mathbf{p}^*) = 0 \wedge B(\mathbf{p}^*) \leq 0$.  
+where $\mathbf{|C_{B_{interest}}}|$ is the number of border cells, whose counter would be increased in a view from pose $\mathbf{p}$ and is lower than a threshold parameter. $V_B$ is a parameter weighting coverage versus finding probability. Ultimately the termination criteria is defined with $P(o|\mathbf{p}^*) = 0 \vee B(\mathbf{p}^*) \leq 0$.  
 
