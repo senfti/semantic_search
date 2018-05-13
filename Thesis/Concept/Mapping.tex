@@ -114,7 +114,7 @@ $P(R_{c}|R_{I_{t}})$ is the probability of the room type of a cell $c$ given the
 
 \subsection{Doorway Mapping} \label{Doorway Mapping}
 
-The doorway mapping inserts and updates the poses of doorways in the semantic room map, using the result of the doorway detection. The result of the doorway detection is a set of doorway proposal poses in the coordinate frame of the robot. These proposal poses are transformed into the map frames of the particles. If no already found doorway is within a threshold distance to a proposal pose, a new doorway is added into the map. Otherwise the best fitting doorway, selected based on distance and orientation, is updated. This is shown in Figure \ref{fig:door_mapping}. A running average filter is used to estimate the true doorway pose. Due to the orientation constraint of doorway detections, doorways are always facing out of the room.  
+The doorway mapping inserts and updates the poses of doorways in the semantic room map, using the result of the doorway detection. The result of the doorway detection is a set of doorway proposal poses in the coordinate frame of the robot. These proposal poses are transformed into the map frames of the particles and a data association problem has to be solved. If no already found doorway is within a threshold distance to a proposal pose, a new doorway is added into the map. Otherwise the best fitting doorway, selected based on distance and orientation, is updated. This is shown in Figure \ref{fig:door_mapping}. A running average filter is used to estimate the true doorway pose. Due to the orientation constraint of doorway detections, doorways are always facing out of the room.  
 \begin{figure}[h]
 \centering
   \includegraphics[width=0.5\textwidth]{figures/door_mapping.png}
@@ -191,7 +191,7 @@ $\mathbf{P_{old}}$ is the particle pose in the old room's coordinate frame and $
   \subfloat[Room before doorway passing]{{\includegraphics[width=0.45\textwidth, trim = 0 20 0 25, clip]{figures/door_gang.png} }}%
   \qquad
   \subfloat[Room after doorway passing]{{\includegraphics[width=0.45\textwidth]{figures/door_wz.png} }}%
-  \caption[Doorway passing]{Doorway passing}%
+  \caption[Doorway passing]{Doorway passing; red arrow is the robot pose, green arrow is the doorway pose and the blue line marks where the map switch is triggered}%
   \label{fig:doors}
 \end{figure}
 

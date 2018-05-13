@@ -13,13 +13,18 @@ from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
 
-bag = rosbag.Bag("/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/explore_lab_1.bag")
+bag = rosbag.Bag("/home/thomas/Desktop/h3e.bag")
 found_msgs = bag.read_messages(topics="/camera/rgb/image_raw")
+skip = 0
 for topic, msg, t in found_msgs:
+    if skip > 0:
+        skip = skip-1
+        continue
     try:
         cv_image = bridge.imgmsg_to_cv2(msg, "bgr8")
     except CvBridgeError as e:
         print(e)
 
     cv2.imshow("Image window", cv_image)
-    cv2.waitKey(0)
+    if cv2.waitKey(0) == ord('s'):
+        skip = 10

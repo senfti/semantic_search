@@ -19,13 +19,13 @@ With this task the robot is initiated to drive through a specified doorway into 
 
 \subsection{Peek Task}
 
-The purpose of this task is to quickly get a first impression of a room never visited before. This is achieved by turning the robot left and right, so the the area seen by the robot is increased. If the object detection detects a searched object with a sufficiently high confidence during this task, the object is assumed to be found and the task is stopped.
+The purpose of this task is to quickly get a first impression of a room never visited before. This is achieved by turning the robot left and right, so the area seen by the robot is increased. If the object detection detects a searched object with a sufficiently high confidence during this task, the object is assumed to be found and the task is stopped.
 
 \subsection{Explore Room Task} \label{explore_task}
 
-The goals of the explore room task is to find all doorways in the room, detect likely object locations and also to find easy to spot target objects. 2D exploration is done to achieve these goals. After finishing 2D exploration all doorways are guaranteed to be found, as unexplored space would be behind an undiscovered doorway. Also most of the room is seen at least vague, though some areas might be completely unseen due to the smaller field of view of the camera compared to the LIDAR. 
+The goals of the explore room task is to find all doorways in the room, to detect likely object locations and also to find easy to spot target objects. 2D exploration is done to achieve these goals. After finishing 2D exploration all doorways are guaranteed to be found, as unexplored space would be behind an undiscovered doorway. During the exploration most of the room is seen with the camera, though most areas only in a few images. Some areas might not be seen at all by the camera because the exploration is finished when all accessible cells were seen by the LIDAR. Due to the smaller field of view of the camera, some cells might only be seen by the LIDAR and not by the camera and also some cells in inaccessible areas might not be seen.
 
-A frontier-based approach is used for the exploration. In this thesis a frontier is defined as an accessible cell in the occupancy grid map adjacent to at least one unexplored cell, as shown in Figure \ref{fig: exploration}. Based on an objective function a frontier is selected and the robot is sent to this frontier. On the way to the frontier some area beyond the frontier is explored. In this work the objective function is the distance between the robot and the frontier, where nearer frontiers are preferred. 
+A frontier-based approach is used for the exploration, similar to the approach proposed by Yamauchi \cite{frontier}. In this thesis a frontier is defined as an accessible cell in the occupancy grid map adjacent to at least one unexplored cell, as shown in Figure \ref{fig: exploration}. Based on an objective function a frontier is selected and the robot is sent to this frontier. On the way to the frontier some area beyond the frontier is explored. In this work the objective function is the distance between the robot and the frontier, where nearer frontiers are preferred. 
 
 \begin{figure}[h]
  \centering
@@ -36,18 +36,18 @@ A frontier-based approach is used for the exploration. In this thesis a frontier
 
 Only the current room should be explored. To prevent the robot from driving out of the room during exploration all detected doorways are blocked by virtual obstacles, as shown in Figure \ref{fig: exploration_door_blocked}. 
 
-If the object detection detects a searched object with a sufficiently high confidence, the object is assumed to be found. The estimated location in space is reported and the search is stopped. A decision based on multiple images, like during the search task, is not done during the exploration. Another reason to stop the exploration early is the detection of a new doorway, so the high-level planner can be executed on the updated topological map.
+If the object detection detects the searched object with a sufficiently high confidence, the object is assumed to be found. The estimated location in space is reported and the search is stopped. A decision based on multiple images, like during the search task, is not done during the exploration. Another reason to stop the exploration early is the detection of a new doorway, so the high-level planner can be executed on the updated topological map.
 
 \begin{figure}[h]
  \centering
    \includegraphics[width=0.7\textwidth]{figures/exploration_door_blocked.png} 
- \caption[Blocked doorway]{Doorway (green arrow) is blocked during exploration}
+ \caption[Blocked doorway]{Doorway (green arrow) is blocked by a virtual obstacle (blue) during exploration}
  \label{fig: exploration_door_blocked}
 \end{figure}
 
 \subsection{Search Room Task} \label{SearchTask}
 
-The goal of the search room task is to find an object of the searched type within the current room or to search the whole room if no searched object is in the room. The low-level planner has to find the best next view pose, which minimizes the expected search time, based on the information gathered. Also the decisions have to be made if an object was found and if the room was fully searched.
+The goal of the search room task is to find an object of a given type within the current room or to search the whole room if no searched object is in the room. The low-level planner has to find the best next view pose, which minimizes the expected search time, based on the information gathered. Also the decisions have to be made if an object was found and if the room was fully searched.
 
 In this work a greedy approach is used to find the best next view pose. The best view pose $\mathbf{p}^*$ is selected by:
 \begin{equation}
@@ -63,7 +63,7 @@ $\omega$ and $v$ are the average rotational and translational velocities and $T_
 
 Estimating the probability $P(o|\mathbf{p})$ is much more difficult. It depends on what is visible when taking an image at pose $\mathbf{p}$, the object probabilities in the visible space and how likely a searched object located in the visible space is detected. Therefore, $P(o|\mathbf{p})$ is calculated with:
 \begin{equation} \label{objfunc3}
- P(o|\mathbf{p})=\prod_{c \in cells\;in\;room} P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(vis_c|\mathbf{p})P(det_c|\mathbf{p})
+ P(o|\mathbf{p})=1-\prod_{c \in cells\;in\;room} (1-P(Obj_{c}^{o}|I_{1:t}, \mathbf{x}_{1:t})P(vis_c|\mathbf{p})P(det_c|\mathbf{p}))
 \end{equation}
 
 Determining visible space is computational expensive and also not really possible in messy environments without a high quality 3D map, therefore a heuristic is used. The used heuristic reduces the problem from 3D to 2D and the limited vertical field of view is ignored. The basic assumption is that an object can always be seen from the direction of the nearest cell accessible by the robot. This is true if objects are side-by-side and not behind each other. The yellow arrows in Figure \ref{fig: border_with_dir} show these directions, which are referred to as best directions. The probability of an object being visible depends on the angle between the best view direction and the direction from robot to object. This is modeled with
@@ -74,7 +74,7 @@ Determining visible space is computational expensive and also not really possibl
 \begin{figure}[h]
  \centering
    \includegraphics[width=0.7\textwidth]{figures/border_with_dir.png} 
- \caption[Best directions to view cell]{Best view directions (yellow arrows), accessible area (purple), border of free space (orange) and 2D grid map in background} 
+ \caption[Best directions to view cell]{Directions from the nearest accessible cell for every cell outside of the border (yellow arrows), accessible area (purple), border of free space (orange) and 2D grid map in the background} 
  \label{fig: border_with_dir}
 \end{figure}
 
@@ -89,15 +89,15 @@ The model used to estimate the probability of detecting the object depending on 
  \label{fig: detection_kernel}
 \end{figure}
 
-To find the best next view pose sample poses are generated at regular x and y distances with multiple different orientations. A sample pose is valid if it is accessible by the robot and was not visited before. From the valid sample poses the best one is chosen based on Equation \ref{search_objective}.
+To find the best next view pose sample poses are generated at regular x and y distances with multiple different orientations. This discretization is necessary because only a limited number of poses can be evaluated. A sample pose is valid if it is accessible by the robot and was not visited before. From the valid sample poses the best one is chosen based on Equation \ref{search_objective}.
 
-Two approaches are used to decide if an object was found. The first approach uses only the current image. The object is assumed to be found if a searched object was detected by the CNN with a sufficiently high confidence. In this case the location of the found object is estimated based on the position in the image and the depth values of the detection. The second approach combines the information from multiple images and is done like the creation of the Object-Map in Section \ref{sec:Object Mapping}. Therefore, also a 3D map is created. Here the performance is not as much a concern for two reasons. Firstly, the accuracy of the localization should be accurate enough after exploration, so this has not to be done for multiple particles. Secondly, only the searched object is of interest. Therefore, more detection samples can be used, leading to more reliable results. If the probability of a searched object being in a cell is higher than a threshold, the object is assumed to be found. If an object is found the position of the object is signaled and the search is stopped.
+Two approaches are used to decide if an object was found. The first approach uses only the current image. The object is assumed to be found if a searched object was detected by the CNN with a sufficiently high confidence. In this case the location of the found object is estimated based on the position in the image and the depth values of the detection. The second approach combines the information from multiple images and is done like the creation of the Object-Map in Section \ref{sec:Object Mapping}. Thus, also a 3D map is created. Here the performance is not as much a concern for two reasons. Firstly, the accuracy of the localization should be accurate enough after exploration, so this has not to be done for multiple particles. Secondly, only the searched object is of interest. Therefore, more detection samples can be used, leading to more reliable results. If the probability of a searched object being in a cell is higher than a threshold, the object is assumed to be found. If an object is found the position of the object is signaled and the search is stopped.
 
 In case that no object can be found the planner needs to decide if the room was fully searched. It is impossible for the system to decide which cells in a room can possibly be seen, at least based on the generated 3D map. Therefore, another heuristic is used to define a termination criteria. Above the assumption was made that a cell is seen from the nearest accessible cell. In reverse this means the room is fully searched if the robot has looked outward at every accessible cell. To achieve this a set of cells enclosing the accessible area is created and the direction from the nearest accessible cell to this border is calculated for every cell in this set. This is shown in Figure \ref{fig: border_all}.
 \begin{figure}[h]
  \centering
    \includegraphics[width=0.9\textwidth]{figures/border_all.png} 
- \caption[Direction of search border]{Best view directions (yellow arrows), accessible area (purple), border of free space (orange) and 2D grid map in background}
+ \caption[Direction of search border]{Accessible area (purple), border of free space (orange), outward directions of the border cells (yellow arrows) and 2D grid map in background}
  \label{fig: border_all}
 \end{figure}
 In addition every cell in the set gets a counter. When the object detection is executed on an image, all cells of the border in the field of view of the camera with an orientation similar to the direction of the camera are increased by one. This is illustrated in Figure \ref{fig: border_view}.
@@ -111,5 +111,5 @@ Using the same line of thought the term $B(\mathbf{p})$ is calculated with:
 \begin{equation} \label{objfunc5}
  B(\mathbf{p})=\begin{cases} V_B|\mathbf{C_{B_{interest}}}| & if\;|\mathbf{C_{B_{interest}}}| > 0 \\ -\infty & else \end{cases}
 \end{equation}
-where $\mathbf{|C_{B_{interest}}}|$ is the number of border cells, whose counter would be increased in a view from pose $\mathbf{p}$ and is lower than a threshold parameter. $V_B$ is a parameter weighting coverage versus finding probability. Ultimately the termination criteria is defined with $P(o|\mathbf{p}^*) \leq 0 \wedge B(\mathbf{p}^*) \leq 0$.  
+where $\mathbf{|C_{B_{interest}}}|$ is the number of border cells, whose counter would be increased in a view from pose $\mathbf{p}$ and is lower than a threshold parameter. $V_B$ is a parameter weighting coverage versus finding probability. Ultimately the termination criteria is defined with $P(o|\mathbf{p}^*) = 0 \vee B(\mathbf{p}^*) \leq 0$.  
 

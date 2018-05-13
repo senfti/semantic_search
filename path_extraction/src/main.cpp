@@ -153,7 +153,7 @@ void markPose(cv::Mat& map, const nav_msgs::OccupancyGrid& m, geometry_msgs::Pos
 
 void multiRoom(std::string name){
   rosbag::Bag bag;
-  std::string filename = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/"+name+".bag";
+  std::string filename = "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output"+name+".bag";
   std::cout << filename << std::endl;
   bag.open(filename, rosbag::bagmode::Read);
 
@@ -236,9 +236,9 @@ void multiRoom(std::string name){
       old_room = room;
     }
     //if(r==0)
-      markPose(map, m, path.front().pose, cv::Vec4b(255,255,0,255));
+      //markPose(map, m, path.front().pose, cv::Vec4b(255,255,0,255));
     //if(room_switches.empty() || room_switches.back().new_room==r)
-      markPose(map, m, path.back().pose, cv::Vec4b(255,0,255,255));
+      //markPose(map, m, path.back().pose, cv::Vec4b(255,0,255,255));
 
     int minx = m.info.width, maxx=0, miny=m.info.height, maxy=0;
     for(int x=0; x<map.cols; x++){
@@ -271,7 +271,7 @@ int main(){
 //      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp28.bag",
 //      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp29.bag",
 //      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp30.bag",
-      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_toilet_full_unexp31.bag"//,
+      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/output/wzs5_all.bag"//,
 //      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp20.bag",
 //      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp21.bag",
 //      "/media/thomas/efe87a75-9b65-4f32-bd7d-8ff566ecf8a6/rosbag/IST_wine_glass_full_unexp22.bag",

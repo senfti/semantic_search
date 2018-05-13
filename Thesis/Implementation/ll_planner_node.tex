@@ -2,7 +2,7 @@
 
 The \hlplanner\ node sends \texttt{HighLevelTask} actions to the \linebreak\llplanner\ node, which tries to execute them and sends the result of the execution back to the \hlplanner. The execution of the robot movements is mainly done via the move{\_}base package. The move{\_}base takes goal poses and plans the robot controls to get to this goal poses, considering the map and sensor inputs for obstacle avoidance. If the goal is reached the move{\_}base returns \texttt{SUCCEEDED} and if the goal could not be reached \texttt{ABORTED} is returned. Only during the peek task velocity commands are directly sent to the Turtlebot interface. 
 
-The node runs a loop, which is depicted in Figure \ref{ll_planner}. Which messages are processed depends on the currently active task, but the latest \texttt{map} message is always stored to have the most recent map available. Next, code dependent on the task, the received messages and the result of the move{\_}base is executed. This code involves the start of the task execution, the generation and sending of goal poses or velocity commands, and the sending of the results back to the \hlplanner. At the end of the loop the current action is published to inform the mapping node about the high-level task in execution. In the following sections the implementation of the individual tasks is described in more detail.
+The node runs a loop, which is depicted in Figure \ref{ll_planner}. Which messages are processed depends on the currently active task, but the latest \texttt{map} message is always stored to have the most recent map available. Next, code dependent on the task, the received messages, and the result of the move{\_}base is executed. This code involves the start of the task execution, the generation and sending of goal poses or velocity commands, and the sending of the results back to the \hlplanner. At the end of the loop the current action is published to inform the mapping node about the high-level task in execution. In the following sections the implementation of the individual tasks is described in more detail.
 
 \begin{figure}[h]
   \centering
@@ -28,7 +28,7 @@ In this task velocity commands are sent directly to the Turtlebot interface beca
 
 \subsection{Explore Room Task}
 
-Four events can trigger a new goal pose during the execution of the exploration task. The first is reaching the current goal pose. The second trigger is the receipt of a new map. In this case a new goal pose is calculated. If the new pose differs significantly from the old goal pose, the goal is sent to the move{\_}base. The third trigger is a failed movement execution. In this case a new goal pose is calculated with exclusion of poses similar to the failed goal pose and sent to the move{\_}base. The fourth event is triggered if the robot has not moved for a specified time. In this case a problem in the path planning is assumed and a new goal is calculated like in the previous case.
+Four events can trigger a new goal pose during the execution of the exploration task. The first is reaching the current goal pose. The second trigger is the reception of a new map. In this case a new goal pose is calculated. If the new pose differs significantly from the old goal pose, the goal is sent to the move{\_}base. The third trigger is a failed movement execution. In this case a new goal pose is calculated with exclusion of poses similar to the failed goal pose and sent to the move{\_}base. The fourth event is triggered if the robot has not moved for a specified time. In this case a problem in the path planning is assumed and a new goal is calculated like in the previous case.
 
 The calculation of the next goal pose is done according to Section \ref{explore_task}. The calculation of the frontiers is shown in Figure \ref{frontier_calc}. 
 \begin{figure}
@@ -86,25 +86,28 @@ The \texttt{object{\_}map} and the \texttt{octo{\_}mapper} variables are used fo
 
 The \texttt{mapping{\_}object{\_}map} variable stores the response of the last \linebreak \texttt{ObjectProbabilityMapSrv} service call. Storing the response speeds up the pose calculation because the service can be skipped for some pose calculations until it is done again. 
 
-The \texttt{accesible{\_}map} stores the area accessible by the robot. It is calculated like in the exploration task. The \texttt{border{\_}map} stores the border described in Section \ref{SearchTask}. To get a smoother result an dilated version of the \texttt{accesible{\_}map} is created. This dilated map is further dilated with a 3x3 kernel and the less dilated image is subtracted. The result is the border. The operations are shown in Figure \ref{border_calc}.
+The \texttt{accesible{\_}map} stores the area accessible by the robot. It is calculated like in the exploration task. The \texttt{border{\_}map} stores the border described in Section \ref{SearchTask}. To get a smoother result a dilated version of the \texttt{accesible{\_}map} is created. This dilated map is further dilated with a 3x3 kernel and the less dilated image is subtracted. The result is the border. The operations are shown in Figure \ref{border_calc}.
 \begin{figure}
   \centering
   \includegraphics[width=0.6\textwidth,trim=500 650 100 120,clip]{figures/sea_impl/combi_border.png}
   \caption[Border calculation]{Border calculation: In black is the \texttt{accesible{\_}map}, in the red the area, which is added by the first dilation and the green area is the border, which is added by the dilation with the 3x3 kernel}
   \label{border_calc}
 \end{figure}
-The \texttt{direction{\_}map} contains the directions away from the accessible area for each cell, as described in Section \ref{SearchTask}. To calculate this map a distance transform is applied on a dilated version of the \texttt{accesible{\_}map}. An example of a distance transform is shown in Figure \ref{dist_calc}. 
-\begin{figure}
-  \centering
-  \includegraphics[width=0.6\textwidth,trim=450 600 80 100,clip]{figures/sea_impl/dists.png}
-  \caption[Distance transform of accesible map]{Distance transform of the same dilated \texttt{accesible{\_}map} as above: Black is zero distance and the lighter a cell, the bigger the distance}
-  \label{dist_calc}
-\end{figure}
+The \texttt{direction{\_}map} contains the directions away from the accessible area for each cell, as described in Section \ref{SearchTask}. To calculate this map a distance transform is applied on a dilated version of the \texttt{accesible{\_}map}. 
+%An example of a distance transform is shown in Figure \ref{dist_calc}. 
+% \begin{figure}
+%   \centering
+%   \includegraphics[width=0.6\textwidth,trim=450 600 80 100,clip]{figures/sea_impl/dists.png}
+%   \caption[Distance transform of accesible map]{Distance transform of the same dilated \texttt{accesible{\_}map} as above: Black is zero distance and the lighter a cell, the bigger the distance}
+%   \label{dist_calc}
+% \end{figure}
 The gradient of the distance transform result is calculated by filtering the image with Sobel kernels, once to calculate the x-derivative and once to calculate the y-derivative. The direction of the gradient is the \texttt{direction{\_}map}. The three maps described in this paragraph are calculated when new \texttt{map} messages are received. 
 
-The remaining maps are updated every time a \texttt{VisionResult} message is processed. The \texttt{previous{\_}pose{\_}maps} store the poses at which an image, whose \texttt{VisionResult} was used, was taken. The 360° are split into sectors and for each sector a map is stored in the \texttt{previous{\_}pose{\_}maps} array. If an \texttt{VisionResult} message is processed, the time stamp of the message, which is also the time stamp of the image, is used to get the robot pose at that time from the tf-library. The corresponding cell in the \texttt{previous{\_}pose{\_}maps} is then set to one. The \texttt{seen{\_}maps} array has the same structure, one 2D map for each sector. It stores which cells were seen from which direction. This is important for the decision if a cell on the border was seen well enough. The cells within the view cone and with a distance to the robot of less than 2.2\,m are determined. The reason to limit the distance at 2.2\,m instead of 3.5\,m, which is the specified maximum range of the RGBD-camera, is that not the border is of interest, but the area behind the border. In the seen maps of the corresponding sector and its neighboring sectors the values in the determined cells are incremented. The neighboring sectors are also updated, so the angle constraint is not that strict. The \texttt{not{\_}fully{\_}viewed{\_}border{\_}map} is then created based on the \texttt{border{\_}map}, the \texttt{direction{\_}map} and the \texttt{seen{\_}maps}. It contains border cells, which were not seen well enough. For each cell set in the \texttt{border{\_}map} the direction in the \texttt{direction{\_}map} is used to find the correct cell in the \texttt{seen{\_}maps}. If the value of the cell in the \texttt{seen{\_}maps} is lower than a threshold, the cell is set in the \texttt{not{\_}fully{\_}viewed{\_}border{\_}map}.
+The remaining maps are updated every time a \texttt{VisionResult} message is processed. The \texttt{previous{\_}pose{\_}maps} store the poses at which an image, whose \texttt{VisionResult} was used, was taken. The 360° are split into sectors and for each sector a map is stored in the \texttt{previous{\_}pose{\_}maps} array. If a \texttt{VisionResult} message is processed, the time stamp of the message, which is also the time stamp of the image, is used to get the robot pose at that time from the tf-library. The corresponding cell in the \texttt{previous{\_}pose{\_}maps} is then set to one. The \texttt{seen{\_}maps} array has the same structure, one 2D map for each sector. It stores which cells were seen from which direction. This is important for the decision if a cell on the border was seen well enough. The cells within the view cone and with a distance to the robot of less than 2.2\,m are determined. The reason to limit the distance at 2.2\,m instead of 3.5\,m, which is the specified maximum range of the RGBD-camera, is that not the border is of interest, but the area behind the border. In the seen maps of the corresponding sector and its neighboring sectors the values in the determined cells are incremented. The neighboring sectors are also updated, so the angle constraint is not that strict. The \texttt{not{\_}fully{\_}viewed{\_}border{\_}map} is then created based on the \texttt{border{\_}map}, the \texttt{direction{\_}map} and the \texttt{seen{\_}maps}. It contains border cells, which were not seen well enough. For each cell set in the \texttt{border{\_}map} the direction in the \texttt{direction{\_}map} is used to find the correct cell in the \texttt{seen{\_}maps}. If the value of the cell in the \texttt{seen{\_}maps} is lower than a threshold, the cell is set in the \texttt{not{\_}fully{\_}viewed{\_}border{\_}map}.
 
-The calculation of a new goal pose is triggered by three events. The standard trigger is that a \texttt{VisionResult} message was received from the last goal pose. This design ensures that a view is done at the calculated pose. The other two are the same as in the exploration task, the failed movement execution and no movement for some time. In Listing \ref{Searchercalc} the general execution of the calculation of the next pose is shown. 
+The calculation of a new goal pose is triggered by three events. The standard trigger is that a \texttt{VisionResult} message was received from the last goal pose. This design ensures that a view is done at the calculated pose. The other two are the same as in the exploration task, the failed movement execution and no movement for some time. 
+
+In Listing \ref{Searchercalc} the general execution of the calculation of the next pose is shown. The \texttt{get2DProbabilityMap} function, which calculates the 2D probability map, is described below. For every sector in the \texttt{previous{\_}pose{\_}maps} and every cell in the grid map a view pose is generated, where the position is the center of the cell and the orientation the angle in the middle of the sector. If the cell is accessible and the view pose was never visited, the view pose is evaluated by the \texttt{calculateViewValue} function, which is also described below. The \texttt{getPose} function calculates then the goal the robot should drive to from the best evaluated cell. If no pose has a value greater than 0, the room is completely searched, \texttt{SUCCEEDED} is reported to the high-level planner and the task is stopped. Otherwise, the goal is sent to the \texttt{move{\_}base}.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=Calculation of the next pose,frame=single, label=Searchercalc]
@@ -122,11 +125,12 @@ The calculation of a new goal pose is triggered by three events. The standard tr
       }
     }
   }
-  sendGoal(best_pose);
+  if(best_value > 0.0)
+    sendGoal(best_pose);
 \end{lstlisting}
 \end{minipage}
 
-The calculation of the 2D probability map can be seen in Listing \ref{get2DProbabilityMap}. The \texttt{getMapFromMapping} function, which calls the \texttt{ObjectProbabilityMapSrv} service, is only executed every fifth time a new pose is calculated. Noteworthy is also that cells seen more often than a threshold are ignored, as their probability is assumed to be zero.
+The calculation of the 2D probability map can be seen in Listing \ref{get2DProbabilityMap}. The \texttt{getMapFromMapping} function, which calls the \texttt{ObjectProbabilityMapSrv} service, is only executed every fifth time a new pose is calculated. The 3D probability grid map is then collapsed to 2D as can be seen in the for-loop. The line \texttt{if(octo{\_}mapper.getUpdateCount(x,y,z) < threshold)} checks if the number of updates of a cell in the 3D map is higher than a threshold value, which was set to 20 after tests. If this is true, the probability for the object being in that cell is 0 because the cell was seen often enough to make the assumption that the object is not there.
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[caption=get2DProbabilityMap(),frame=single, label=get2DProbabilityMap]
@@ -149,4 +153,26 @@ cv::Mat get2DProbabilityMap(){
 \end{lstlisting}
 \end{minipage}
 
-The \texttt{calculateViewValue} function calculates the objective function according to the Equations \ref{search_objective}, \ref{objfunc2}, \ref{objfunc3}, \ref{objfunc4}, and \ref{objfunc5}. The necessary data for this calculation is stored in the \texttt{direction{\_}map} and the \linebreak \texttt{not{\_}fully{\_}viewed{\_}border{\_}map}. If the return value of the \linebreak \texttt{calculateViewValue} function is less or equal zero, the room is completely searched, \texttt{SUCCEEDED} is reported to the high-level planner and the task is stopped. 
+The \texttt{calculateViewValue} can be seen in Listing \ref{get2DProbabilityMap}. The probability of detecting an object \texttt{P} is calculated according to Equation \ref{objfunc3} and the term for coverage \texttt{B} is calculated according to Equation \ref{objfunc5}. The variable \texttt{seenKernelValues} contains pre-calculated values for the probability of detecting an object in a cell according to Figure \ref{fig: detection_kernel} and the variable \texttt{seenKernelPoints} is a list of offsets, where those are non-zero. The function \texttt{getVisibilityProb} implements the calculation of the  probability of an object being visible according to Equation \ref{objfunc4}. The time to get to the view pose \texttt{T} is calculated according to Equation \ref{objfunc2} and the return value according to Equation \ref{search_objective}.
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[caption=calculateViewValue(),frame=single, label=get2DProbabilityMap]
+float calculateViewValue(cv::Point cell, int sector, cv::Mat prob_map, 
+                         Pose current_pose){
+  float B = 0.0, P = 1.0;
+  for(int i=0; i<seenKernelPoints.size(); i++){
+    cv::Point offset = seenKernelPoints[sector][i];
+    cv::Point c = cell+offset;
+    P = P * (1-getVisibilityProb(sector,offset)*
+               seenKernelValues[sector][i]*prob_map(c));
+    B = B + V_B*not_fully_viewed_border_map(c);
+  }
+  P = 1-P;
+  if(B == 0.0)
+    return -Infinity;
+    
+  float T = calculateTime(getPose(cell, sector), current_pose);  
+  return (P+B)/T;
+}
+\end{lstlisting}
+\end{minipage}

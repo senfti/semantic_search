@@ -120,14 +120,14 @@ The search times for setting 3 highly depended on the direction the robot starte
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/home_search/explore1.png}} &
 \subfloat[]{\includegraphics[width=0.45\textwidth]{figures/home_search/explore2.png}}
 \end{tabular}
-\caption{Possible starts of the exploration from starting pose 1}
+\caption{Possible exploration trajectories from starting pose 1}
 \label{explore_split}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.8\textwidth, trim=800 800 100 0, clip]{figures/home_search/stupid_fast_mouse.png}
-\caption[Uninformed search for a mouse]{Uninformed search for a mouse: The trajectories during exploration (blue) and search (green) are show as well as the starting pose (cyan) and the final pose, where the object was found (purple)}
+\caption[Uninformed search for a mouse]{Uninformed search for a mouse: The trajectories during exploration (blue) and search (green) are show as well as the starting pose (cyan) and the final pose, where the object was found (purple); The search trajectory is very short because the exploration stopped near the searched object}
 \label{mouse_uninf}
 \end{figure}
 
@@ -150,14 +150,14 @@ To wrap things up, the intelligent active object search system performs much bet
 
 \subsubsection{Search within a room}
 
-The trajectories of the test runs of the intelligent search system with settings 7 and 8, where a spoon was searched, are depicted in Figure \ref{spoons}. Out of the figure it can be seen that the search within a room works very well most of the time. In run (b) and (f) the object was found in one of the first generated view poses, while in run (a), (c) and (e) the search took a bit longer. These small differences are mainly due to the starting position of the robot. In run (d) the object was missed at the beginning, so most of the room was searched before the table with the searched spoon was investigated again.
+The trajectories of the test runs of the intelligent search system with settings 7 and 8, where a spoon was searched, are depicted in Figure \ref{spoons}. From the figure it can be seen that the search within a room works very well most of the time. In run (b) and (f) the object was found in one of the first generated view poses, while in run (a), (c) and (e) the search took a bit longer. These small differences are mainly due to the starting position of the robot. In run (d) the object was missed at the beginning, so most of the room was searched before the table with the searched spoon was investigated again.
 
 Test runs for the search within a room were also executed in the room \textit{lab1}. A bowl was hidden in the kitchen part in the top left corner of the room. In image (a) of Figure \ref{lab_e} the trajectory of one of those test runs is shown. The exploration took most of the search time. After the exploration the robot drove to some view poses in its vicinity and then immediately to the kitchen area and found the object. Also some test runs were executed with disabled exploration. The trajectory of one of those runs is shown in image (b) of Figure \ref{lab_e}. In this run the kitchen area was not found for a long time and much time was lost searching in unlikely areas. This shows the benefit of executing an exploration task before the search task.
 \begin{figure}[h]
 \centering
 \begin{tabular}{cc}
-\subfloat[with exploration]{\includegraphics[width=0.45\textwidth, trim=0 0 0 100, clip]{figures/example_runs/lab_5.png}} &
-\subfloat[without exploration]{\includegraphics[width=0.45\textwidth, trim=400 200 500 100, clip]{figures/example_runs/lab10.png}}
+\subfloat[with exploration task before search task]{\includegraphics[width=0.45\textwidth, trim=0 0 0 100, clip]{figures/example_runs/lab_5.png}} &
+\subfloat[without exploration task before search task; the room is explored as a side effect of the search]{\includegraphics[width=0.45\textwidth, trim=400 200 500 100, clip]{figures/example_runs/lab10.png}}
 \end{tabular}
 \caption[Search of a bowl in the room \textit{lab1}]{Search for a bowl in the room \textit{lab1}: The bowl is hidden in the kitchen area in the top left corner. The trajectories during exploration (blue) and search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple)}
 \label{lab_e}
