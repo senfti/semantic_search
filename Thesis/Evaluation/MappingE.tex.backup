@@ -10,19 +10,19 @@ The 2D maps of the rooms have a good quality in general, especially for small ro
 \begin{figure}
 \centering
   \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all5.png}
-  \caption[Hybrid map of the home environment]{Hybrid map of the home environment: Room \textit{home1} is a combination of a kitchen and a living room, room \textit{home2} is a bedroom with an office-like area in the upper right corner and room \textit{home3} is an anteroom. The topological map consists of the three rooms and the two edges represented by the red lines between the doorway poses (green arrows). }
+  \caption[Hybrid map of the home environment]{Hybrid map of the home environment: Room \textit{home1} is a combination of a kitchen and a living room, room \textit{home2} is a bedroom with an office-like area in the upper right corner and room \textit{home3} is an anteroom. The topological map consists of the three rooms and the two edges represented by the red lines between the doorway poses. }
   \label{map2d_home}
 \end{figure}
 \begin{figure}
 \centering
   \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all_lab.png}
-  \caption[Hybrid map of the robotics-lab environment]{Hybrid map of robotics-lab environment: Room \textit{lab1} is the robotics-lab, which consists mainly of an office area. It has free space at the bottom left and a sofa and a kitchen area at the bottom right. Room \textit{lab2} is an office, room \textit{lab3} is a corridor, room \textit{lab4} is also an office and room \textit{lab5} is a workshop/storage room. The topological map consists of the five rooms and the four edges represented by the red lines between the doorway poses (green arrows). }
+  \caption[Hybrid map of the robotics-lab environment]{Hybrid map of robotics-lab environment: Room \textit{lab1} is the robotics-lab, which consists mainly of an office area. It has free space at the bottom left and a sofa and a kitchen area at the bottom right. Room \textit{lab2} is an office, room \textit{lab3} is a corridor, room \textit{lab4} is also an office and room \textit{lab5} is a workshop/storage room. The topological map consists of the five rooms and the four edges represented by the red lines between the doorway poses. }
   \label{map2d_lab}
 \end{figure}
 \begin{figure}
 \centering
   \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all_IST_b.png}
-  \caption[Hybrid map of the university floor]{Hybrid map of a part of an university floor: Room \textit{institute1} is a corridor with a copier in the open area on the left, room \textit{institute2} consists of a kitchen area and a dining table, room \textit{institute3} is a meeting room, room \textit{institute4} is a bathroom and room \textit{institute5} is a secretariat. The topological map consists of the five rooms and the four edges represented by the red lines between the doorway poses (green arrows). }
+  \caption[Hybrid map of the university floor]{Hybrid map of a part of an university floor: Room \textit{institute1} is a corridor with a copier in the open area on the left, room \textit{institute2} consists of a kitchen area and a dining table, room \textit{institute3} is a meeting room, room \textit{institute4} is a bathroom and room \textit{institute5} is a secretariat. The topological map consists of the five rooms and the four edges represented by the red lines between the doorway poses. }
   \label{map2d_ist}
 \end{figure}
 
@@ -30,9 +30,9 @@ The doorway mapping works nicely in all explored environments, as can be seen in
 
 \subsection{Room Type Map}
 
-The room \textit{home1} was chosen for the evaluation of the quality of the Room-Type-Maps because in this room areas of different room types exist. Assigning a ground truth Room-Type-Map is only possible to a limited extend because for some areas multiple room types are fitting and the boundary between areas of different room types is even hard to judge for humans. 
+The room \textit{home1} was chosen for the evaluation of the quality of the Room-Type-Maps because in this room areas of different room types exist. Assigning a ground truth Room-Type-Map is only possible to a limited extend, because for some areas multiple room types are fitting and the boundary between areas of different room types is even hard to judge for humans. 
 
-Instead of a somewhat arbitrary ground truth, images covering the whole room are used in the evaluation. These images are shown in Figure \ref{wz_imgs}. In Figure \ref{wz_views} the poses, where the images were taken, are depicted and also the room types of the main areas are marked.
+Instead of a somewhat arbitrary ground truth, images covering the whole room are used in the evaluation as comparison for the generated maps. These images are shown in Figure \ref{wz_imgs}. In Figure \ref{wz_views} the poses, where the images were taken, are depicted and also the room types of the main areas are marked.
 
 \begin{figure}
 \renewcommand*\thesubfigure{\arabic{subfigure}} 
@@ -75,9 +75,9 @@ In image (b) of Figure \ref{roomclass} the Room-Type-Map created without using t
 
 In the images (c) and (d) of Figure \ref{roomclass} the resulting Room-Type-Maps for a second and third run are shown. After run 2 the living room area is much larger than after run 1, whereas in run 3 the kitchen and kitchenette area is much larger. This shows the impact of the trajectory during the exploration on the result. The trajectory decides which areas are seen how often and from which direction and which areas are seen together in one image. Especially the room type of areas, where the room type classifier is not sure, depends highly on the trajectory. Also the border between areas of different room type is shifted depending on the taken images because one room type might be overruled by the neighboring room type, as described in Section \ref{vision_eval}.
 
-In image (e) of Figure \ref{roomclass} the result after an object search is shown. Here the favor of the room type classification to detect kitchenettes can be seen. Also noteworthy is the nice shape of the living room area and the basement area, which is probability cause by the robot looking into the wall.
+In image (e) of Figure \ref{roomclass} the result after an object search is shown. Here the favor of the room type classification to detect kitchenettes can be seen. Also noteworthy is the nice shape of the living room area and the basement area, which is probability caused by the robot looking into the wall.
 
-The probabilities of the most important room types in the room \textit{home1} after exploration run 1 are shown in Figure \ref{roomprob}. 
+The maps containing the probabilities of the most important room types in the room \textit{home1} after exploration run 1 are shown in Figure \ref{roomprob}. 
 \begin{figure}
 \centering
 \begin{tabular}{ccc}
@@ -88,7 +88,7 @@ The probabilities of the most important room types in the room \textit{home1} af
 \subfloat[closet]{\includegraphics[width=0.28\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/closet_b.png}} &
 \subfloat{\includegraphics[width=0.28\textwidth,trim=-300 0 -300 0, clip]{figures/wz_imgs/h5e/problegend.pdf}} 
 \end{tabular}
-\caption{Probabilities of the stated room types in room \textit{home1} after run 1; in the legend the probability values for the different colors are stated; blue areas have a high probability of being of the given type, red ares a low probability;  }
+\caption{Probabilities of the stated room types in room \textit{home1} after run 1; in the legend the probability values for the different colors are stated; blue areas have a high probability of being of the given type, red ares a low probability; The probabilities fit to the most likely room types shown in image (a) of Figure \ref{roomclass}.}
 \label{roomprob}
 \end{figure}
 When comparing with image (a) in Figure \ref{roomclass}, it can be seen, as expected, that at every cell the probability of the most likely room type is high. Except at the border of areas the probability of the most likely room type is very high. This is because the parameters have to be chosen in a way that a quick estimation of the room type during the peek task is possible. Therefore the probability of the most likely room type of a cell increases relatively quickly to the saturation value of 0.8. Also noteworthy is the relatively high probability for kitchenette on the right side of the room. As can be seen in image (6) of Figure \ref{wz_imgs} the room type classification is not sure about the room type there and proposes multiple room types, including kitchenette.
@@ -118,8 +118,9 @@ In some cells multiple objects were detected and therefore three images are used
 
 The probabilities in the Object-Probability-Map does not only depend on the object detections. The information in the Room-Type-Maps is also used to estimate the object probabilities, as described in Section \ref{ObjectProbMap}. This indirect way of estimating object probabilities has the most impact if no detections of the given object type were made. In Figure \ref{objprob} the Object-Probability-Maps of some objects not detected during the exploration are depicted, together with the most likely room types of the corresponding Room-Type-Map. In general those probabilities are very low, but many cells together may have a significant object probability. The connection to the Room-Type-Maps can be seen nicely in the images. For example a fork is more likely in a dine room than in areas of other room types or a dog is more likely in a living room. On the other hand a suitcase is very unlikely in a kitchen. 
 
-In the upper center the probabilities are relatively high, as some cells there were only detected by the LIDAR. The probabilities there are higher as these cells are unknown in the Object-Map and the other cells do not contain an object according to the Object-Map. The resulting Object-Probability-Maps are reasonable at first glance and the search tests will show how much they improve the object search. 
+In the upper center the probabilities are relatively high, as can be seen especially in (g) and (h). This area was only seen by the LIDAR, but never by the camera. Therefore the probabilities for those cells in the Object-Map are still the initial probabilities. In the other cells, which were seen by the camera and no object of the given type was found, the probability is lower than the initial value. Therefore, also the values in the Object-Probability-Maps are lower, which means the cells only seen by the LIDAR have higher probabilities for containing the object. 
 
+The resulting Object-Probability-Maps are reasonable at first glance and the search tests will show how much they improve the object search. 
 \begin{figure}
 \centering
 \begin{tabular}{ccc}
@@ -140,8 +141,7 @@ In the upper center the probabilities are relatively high, as some cells there w
 \label{objprob}
 \end{figure}
 
-In Table \ref{totalobj} the total probabilities for the objects in Figure \ref{objprob} are shown. The probabilities are according to the Object-Probability-Map. The larger 
-living room area in run 2 results in a larger probability for a dog being in the room. Also noteworthy are the unexpectedly low probabilities for apple and toaster. The reason is that according to the used commonsense knowledge apples or toasters are not very frequent in indoor environments.
+In Table \ref{totalobj} the probabilities for the given object being anywhere in the room are shown for the objects in Figure \ref{objprob}. The probabilities are according to the Object-Probability-Map. The larger living room area in run 2 results in a larger probability for a dog being in the room. Also noteworthy are the unexpectedly low probabilities for apple and toaster. The reason is that according to the used commonsense knowledge apples or toasters are not very frequent in indoor environments.
 
 \begin{table}[h]
 \centering
@@ -176,7 +176,7 @@ The estimation of the probability for a searched object being in a room after th
 \label{peek}
 \end{figure}
 
-In Table \ref{peekobj} the object probabilities of some selected object types after the peek task are shown. Except for the wine glass in room (d) and the toilet in room (e) none of those objects were seen during the peek task. The toilet was detected with high confidence, which can be seen on the high probability, while the wine glass was only detected in one image, therefore its probability is not so high. The general trend of the probabilities looks good, though the accuracy of the probabilities is hard to evaluate without a huge amount of collected data. Only the relatively high probability for toilets is a bit weird, as toilets are very uncommon outside bathrooms.
+In Table \ref{peekobj} the object probabilities of some selected object types after the peek task are shown. Except for the wine glass in room (d) and the toilet in room (e) none of those objects were seen during the peek task. The toilet was detected with high confidence, which can be seen on the high probability, while the wine glass was only detected in one image, therefore its probability is lower. The general trend of the probabilities looks good, though the accuracy of the probabilities is hard to evaluate without a huge amount of collected data. Only the relatively high probability for toilets is a bit weird, as toilets are very uncommon outside bathrooms.
 
 {%
 \newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}\vline}

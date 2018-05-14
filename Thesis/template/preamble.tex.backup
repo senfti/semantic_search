@@ -373,8 +373,7 @@ draft=\mydraft,      %% if true: included graphics are omitted and black boxes
                      %%          mark overfull boxes in margin space
 BCOR=\myBCOR,        %% binding correction (depends on how you bind
                      %% the resulting printout.
-%\mylaterality        %% oneside: document is not printed on left and right sides, only right side
-twoside=semi,
+\mylaterality        %% oneside: document is not printed on left and right sides, only right side
                      %% twoside: document is printed on left and right sides
 ]{scrbook}  %% article class of KOMA: "scrartcl", "scrreprt", or "scrbook".
             %% CAUTION: If documentclass will be changed, *many* other things

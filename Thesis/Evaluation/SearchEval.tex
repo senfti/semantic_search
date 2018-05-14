@@ -6,21 +6,21 @@ The search results of a series of test runs are presented in the first part of t
 
 \subsubsection{Settings}
 
-The test runs were carried out using two different active object search systems. One is the proposed intelligent active object search system, which uses the gathered information about rooms, room types and object locations to speed up the search. The second one is a modified version of the proposed system, which does not use this additional information and is therefore called uninformed search system. In this system the doorway detection is disabled, which means that the room structure is ignored, and all occupied cells have the same probability of containing the searched object. This results in a coverage maximizing search strategy because the objective function of the search planning in the uninformed system increases with the number of well seen cells in a view. The uninformed search system explores the environment before the search is started, so the high-level tasks are the same as for the intelligent search system within a single room.
+The test runs were carried out using two different active object search systems. One is the proposed intelligent active object search system, which uses the gathered information about rooms, room types, and object locations to speed up the search. The second one is a modified version of the proposed system, which does not use this additional information and is therefore called uninformed search system. In this system the doorway detection is disabled, which means that the room structure is ignored, and all occupied cells have the same probability of containing the searched object. This results in a coverage maximizing search strategy because the objective function of the search planning in the uninformed system increases with the number of well seen cells in a view. The uninformed search system explores the environment before the search is started, so the high-level tasks are the same as for the intelligent search system within a single room.
 
 The test runs were executed in the home environment. Eight different settings were chosen for the test runs, with four different searched objects and two different starting positions per object. Reliable detected objects were chosen to reduce the influence of the object detection and have more emphasis on the search planning. The objects were positioned in for the objects typical locations and between other objects, which means the robot really has to search for them and does not find the objects during the exploration. One example is shown in Figure \ref{hidden knife}, where some knifes are hidden behind some bottles. In Figure \ref{search_overview} the map of the environment is shown with marked room types, starting poses and object locations. In Table \ref{settings} the searched objects, their locations in the map and the starting poses are given for each setting. Also the areas where, according to the used commonsense knowledge, the object is more likely are stated. For each setting six search runs were done, three with the proposed intelligent search system and three with the uninformed search system, which makes in total 48 runs. 
 
 \begin{figure}
 \centering
   \includegraphics[width=0.5\textwidth, trim=0 0 0 0,clip]{figures/home_search/knife.png}
-  \caption{Image of the location of the knife searched in settings 5 and 6}
+  \caption[Location of the knifes searched with settings 5 and 6]{Image of the location of the knifes searched with settings 5 and 6}
   \label{hidden knife}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
   \includegraphics[width=0.8\textwidth, trim=0 0 0 0,clip]{figures/home_search/roomspdf.pdf}
-  \caption[The test environment with room types, starting poses and object locations]{Test environment with room types, starting poses and object locations (1: remote, 2: mouse, 3: knife, 4: spoon)}
+  \caption[Details of test environment]{Test environment with room types, starting poses and object locations (1: remote, 2: mouse, 3: knife, 4: spoon)}
   \label{search_overview}
 \end{figure}
 \begin{table}[!hb]
@@ -110,9 +110,9 @@ The average search time of the intelligent search system was about 30\% lower th
 \label{search times}
 \end{figure}
 
-With settings 1 and 2 the uninformed search system performed better than the intelligent search system. This has two reasons. On the one hand the intelligent search system decided in 4 of the 6 runs to search the room \textit{home2} first, so a lot of time was lost searching there. A more detailed description of the search behavior in these runs is given in the next section. In the other two cases, where the room \textit{home1} was searched first, the remote was found quickly. On the other hand the uninformed search system found the remote relatively quickly because the remote could be seen from a view pose, where the robot could cover many occupied cells, which makes it a preferred view pose. Only once the remote was missed at the beginning, which, together with navigation problems, resulted in the one longer search time of the uninformed search system.
+With settings 1 and 2 the uninformed search system performed better than the intelligent search system. This has two reasons. On the one hand the intelligent search system decided in 4 of the 6 runs to search room \textit{home2} first, so a lot of time was lost searching there. A more detailed description of the search behavior in these runs is given in the next section. In the other two cases, where room \textit{home1} was searched first, the remote was found quickly. On the other hand the uninformed search system found the remote relatively quickly because the remote could be seen from a view pose, where the robot could cover many occupied cells, which makes it a preferred view pose. Only once the remote was missed at the beginning, which, together with navigation problems, resulted in the one longer search time of the uninformed search system.
 
-The search times for setting 3 highly depended on the direction the robot started to explore. In Figure \ref{explore_split} can be seen that the exploration from starting pose 1 can go either first towards room \textit{home3} (image (a)) or towards room \textit{home2} (image (b)). The reason was probably small differences in the navigation. Case (a) was found to happen about twice as often as case (b). In case (a) the intelligent search system first searched the room \textit{home3}, which cost some time, before the room \textit{home2} was discovered and the object was found. This problem of exploration versus exploitation is described in more detail in the next section. In case (b) the mouse was found quickly. On the other hand the uninformed search system performed better in case (a) because then the exploration ended near the searched mouse and the mouse was found quickly. This is shown in Figure \ref{mouse_uninf}.
+The search times for setting 3 highly depended on the direction the robot started to explore. In Figure \ref{explore_split} can be seen that the exploration from starting pose 1 can go either first towards room \textit{home3} (image (a)) or towards room \textit{home2} (image (b)). The reason were probably small differences in the navigation. Case (a) was found to happen about twice as often as case (b). In case (a) the intelligent search system first searched room \textit{home3}, which cost some time, before room \textit{home2} was discovered and the object was found. This problem of exploration versus exploitation is described in more detail in the next section. In case (b) the mouse was found quickly. On the other hand the uninformed search system performed better in case (a) because then the exploration ended near the searched mouse and the mouse was found quickly. This is shown in Figure \ref{mouse_uninf}.
 
 \begin{figure}[h]
 \centering
@@ -127,22 +127,22 @@ The search times for setting 3 highly depended on the direction the robot starte
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.8\textwidth, trim=800 800 100 0, clip]{figures/home_search/stupid_fast_mouse.png}
-\caption[Uninformed search for a mouse]{Uninformed search for a mouse: The trajectories during exploration (blue) and search (green) are show as well as the starting pose (cyan) and the final pose, where the object was found (purple); The search trajectory is very short because the exploration stopped near the searched object}
+\caption[Uninformed search for a mouse]{Uninformed search for a mouse: The trajectories during exploration (blue) and search (green) are show as well as the starting pose (cyan) and the final pose, where the object was found (purple); The search trajectory is very short because the exploration finished near the searched object}
 \label{mouse_uninf}
 \end{figure}
 
 
-The intelligent search system found the object very quickly in setting 4 because the robot recognized that it was already in a promising room, so only this room was explored and the mouse was found quickly. The uninformed search system was also relatively quick in this setting as the mouse could be seen from a preferred view pose, where many cells were covered.
+The intelligent search system found the object very quickly with setting 4 because the robot recognized that it was already in a promising room, so only this room was explored and the mouse was found quickly. The uninformed search system was also relatively quick in this setting as the mouse could be seen from a preferred view pose, where many cells were covered.
 
-With test settings 5, 6, 7 and 8 the intelligent search system performed much better than the uninformed search system. The uninformed search system needed more time in these settings because the searched objects were positioned at locations where they could not be seen form view poses which covered a lot of cells. As the uninformed search used these poses in the beginning of the search it took some time in this mode to find the searched object. The intelligent search system always selected the correct room to search with these settings and most of the time the object was found quickly. In Figure \ref{spoons} the search trajectories for setting 7 and 8 of the intelligent search system are depicted.
+With test settings 5, 6, 7 and 8 the intelligent search system performed much better than the uninformed search system. The uninformed search system needed more time with these settings because the searched objects were positioned at locations where they could not be seen form view poses which covered a lot of cells. As the uninformed search used these poses in the beginning of the search it took some time in this mode to find the searched object. The intelligent search system always selected the correct room to search with these settings and most of the time the object was found quickly. In Figure \ref{spoons} the search trajectories for setting 7 and 8 of the intelligent search system are depicted.
 \begin{figure}
 \centering
 \includegraphics[width=0.9\textwidth, trim=0 0 0 0, clip]{figures/example_runs/spoon.png}
-\caption[Search trajectories for the intelligent search system in settings 7 and 8]{Search trajectories for the intelligent search system in settings 7 and 8 (spoon hidden in room \textit{home1}): The trajectories during the exploration (blue), the move through doorway tasks (red) and the search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple); only the map of room \textit{home1} is shown}
+\caption[Search trajectories for the intelligent search system]{Search trajectories for the intelligent search system with settings 7 and 8 (spoon hidden in room \textit{home1}): The trajectories during the exploration (blue), the move through doorway tasks (red) and the search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple); only the map of room \textit{home1} is shown; in (b) and (f) the object was found very quickly and in (a) and (c) and (e) it took slightly longer; in (d) the robot had difficulties to find the object}
 \label{spoons}
 \end{figure}
 
-The search trajectory lengths show slightly different results because switching high-level tasks and executing the peek tasks have no impact on the trajectory length. Further the search trajectory lengths are not affected by navigation problems because there the robot does not move. The navigation problems had a big impact on the time necessary to search the room \textit{home2}, which consisted mainly of narrow areas, as can be seen in the results of the intelligent search in setting 1. However, the trajectory lengths ignore the rotations of the robot, so the search time is still the better measurement for the search performance.
+The search trajectory lengths show slightly different results because switching high-level tasks and executing the peek tasks have no impact on the trajectory length. Further the search trajectory lengths are not affected by navigation problems because there the robot does not move. The navigation problems had a big impact on the time necessary to search room \textit{home2}, which consisted mainly of narrow areas, as can be seen in the results of the intelligent search with setting 1. However, the trajectory lengths ignore the rotations of the robot, so the search time is still the better measurement for the search performance.
 
 To wrap things up, the intelligent active object search system performs much better than the uninformed system except if there exist multiple rooms with similar probability to contain the object. In this case a lot of time is lost by completely searching a room not containing the object. 
 
@@ -150,56 +150,59 @@ To wrap things up, the intelligent active object search system performs much bet
 
 \subsubsection{Search within a room}
 
-The trajectories of the test runs of the intelligent search system with settings 7 and 8, where a spoon was searched, are depicted in Figure \ref{spoons}. From the figure it can be seen that the search within a room works very well most of the time. In run (b) and (f) the object was found in one of the first generated view poses, while in run (a), (c) and (e) the search took a bit longer. These small differences are mainly due to the starting position of the robot. In run (d) the object was missed at the beginning, so most of the room was searched before the table with the searched spoon was investigated again.
+The trajectories of the test runs of the intelligent search system with settings 7 and 8, where a spoon was searched, are depicted in Figure \ref{spoons}. From the figure it can be seen that the search within a room works very well most of the time. In run (b) and (f) the object was found in one of the first generated view poses, while in run (a), (c) and (e) the search took a bit longer. These small differences are mainly due to the starting position of the robot. In run (d) the object was missed at the beginning, so most of room was searched before the table with the searched spoon was investigated again.
 
-Test runs for the search within a room were also executed in the room \textit{lab1}. A bowl was hidden in the kitchen part in the top left corner of the room. In image (a) of Figure \ref{lab_e} the trajectory of one of those test runs is shown. The exploration took most of the search time. After the exploration the robot drove to some view poses in its vicinity and then immediately to the kitchen area and found the object. Also some test runs were executed with disabled exploration. The trajectory of one of those runs is shown in image (b) of Figure \ref{lab_e}. In this run the kitchen area was not found for a long time and much time was lost searching in unlikely areas. This shows the benefit of executing an exploration task before the search task.
 \begin{figure}[h]
 \centering
 \begin{tabular}{cc}
-\subfloat[with exploration task before search task]{\includegraphics[width=0.45\textwidth, trim=0 0 0 100, clip]{figures/example_runs/lab_5.png}} &
-\subfloat[without exploration task before search task; the room is explored as a side effect of the search]{\includegraphics[width=0.45\textwidth, trim=400 200 500 100, clip]{figures/example_runs/lab10.png}}
+\subfloat[with exploration task; object was found quickly after exploration]{\includegraphics[width=0.45\textwidth, trim=0 100 0 100, clip]{figures/example_runs/lab_5.png}} &
+\subfloat[without exploration task; the room is only explored as a side effect of the search and therefore the kitchen area was not discovered for a long time]{\includegraphics[width=0.45\textwidth, trim=400 300 500 100, clip]{figures/example_runs/lab10.png}}
 \end{tabular}
-\caption[Search of a bowl in the room \textit{lab1}]{Search for a bowl in the room \textit{lab1}: The bowl is hidden in the kitchen area in the top left corner. The trajectories during exploration (blue) and search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple)}
+\caption[Search of a bowl in room \textit{lab1}]{Search for a bowl in room \textit{lab1}: The bowl is hidden in the kitchen area in the top left corner. The trajectories during exploration (blue) and search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple)}
 \label{lab_e}
 \end{figure}
+Test runs for the search within a room were also executed in room \textit{lab1}. A bowl was hidden in the kitchen part in the top left corner of the room. In image (a) of Figure \ref{lab_e} the trajectory of one of those test runs is shown. The exploration took most of the search time. After the exploration the robot drove to some view poses in its vicinity and then immediately to the kitchen area and found the object. Also some test runs were executed with disabled exploration. In this case the exploration and mapping of the room is done during the search and therefore the room is explored only slowly. The trajectory of one of those runs is shown in image (b) of Figure \ref{lab_e}. In this run the kitchen area was not found for a long time and much time was lost searching in unlikely areas. This shows the benefit of executing an exploration task before the search task.
 
 \subsubsection{Search in environments with multiple rooms}
 
-Using the commonsense knowledge about which objects are likely in areas of which room types, the robot can decide in which rooms a search is promising. In figure \ref{spoons} tests runs are shown where the robot searched the room, where the object was located, first.
+Using the commonsense knowledge about which objects are likely in areas of which room types, the robot can decide in which rooms a search is promising. In Figure \ref{spoons} tests runs are shown where the robot searched the room, where the object was located, first.
 
 \begin{figure}[h]
 \centering
 \begin{tabular}{cc}
-\subfloat[room \textit{home2} searched first]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/remote1.png}} &
-\subfloat[room \textit{home1} searched first]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/remote2.png}}
+\subfloat[robot decided to search room \textit{home2} before room \textit{home1}]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/remote1_.png}} &
+\subfloat[robot decided to search room \textit{home1} first]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/remote2_.png}}
 \end{tabular}
 \caption[Example runs of searches for a remote]{Example runs of searches for a remote: The trajectories during exploration (blue), move through doorway (red) and search (green) are shown as well as the starting pose (cyan), the final pose, where the object was found (purple), and the connections of the paths over room borders (red lines); room \textit{home1} is at the bottom, room \textit{home2} is at the top right and room \textit{home3} is at the top left}
 \label{remotes}
 \end{figure}
-As already mentioned in Section \ref{tests}, with setting 2, where a remote was hidden in room \textit{home1}, the robot sometimes searched first in room \textit{home2} and sometimes first in room \textit{home1}. Runs for both cases are depicted in Figure \ref{remotes}. In Table \ref{remote_tab} the object probabilities and expected search times are stated for both rooms and runs. 
-\begin{table}[h!]
+
+{%
+\newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}}
+\definecolor{tcA}{rgb}{0,0,0}
+\definecolor{tcB}{rgb}{0,1,0}
+\begin{table} [b]
 \centering
-\begin{tabular}{|l|c|c|}
-\hline
-run & (a) & (b)\\ \hline
-object probability in \textit{home1} & 0.213 & 0.249\\ \hline
-expected search time in \textit{home1} & 616\,s & 563\,s\\ \hline
-object probability in \textit{home2} & 0.158 & 0.153\\ \hline
-expected search time in \textit{home2} & 360\,s & 438\,s\\ \hline
+\scriptsize
+\begin{tabular}{|l|c|ll|c|ll|c|ll|c|c|}\cline{1-2}\cline{3-5}\cline{6-10}\cline{11-12}
+% use packages: color,colortbl
+\textcolor{tcA}{} & \mc{3}{c|}{\textcolor{tcA}{home1}} & \mc{3}{c|}{\textcolor{tcA}{home2}} & \mc{3}{c|}{\textcolor{tcA}{home3}} & \textcolor{tcA}{1-2-3} & \textcolor{tcA}{2-1-3}\\\hline
+\textcolor{tcA}{} & \textcolor{tcA}{P(o)} & \mc{1}{c|}{\textcolor{tcA}{T}} & \mc{1}{c|}{\textcolor{tcA}{E(t))}} & \textcolor{tcA}{P(o)} & \mc{1}{c|}{\textcolor{tcA}{T}} & \mc{1}{c|}{\textcolor{tcA}{E(t)}} & \textcolor{tcA}{P(o)} & \mc{1}{c|}{\textcolor{tcA}{T}} & \mc{1}{c|}{\textcolor{tcA}{E(t)}} & \textcolor{tcA}{E(t)} & \textcolor{tcA}{E(t)}\\\hline
+\textcolor{tcA}{run (a)} & \textcolor{tcA}{0.213} & \mc{1}{c|}{\textcolor{tcA}{728}} & \mc{1}{c|}{\textcolor{tcA}{616}} & \textcolor{tcA}{0.158} & \mc{1}{c|}{\textcolor{tcA}{400}} & \mc{1}{c|}{\textcolor{tcA}{360}} & \textcolor{tcA}{0.034} & \mc{1}{c|}{\textcolor{tcA}{232}} & \mc{1}{c|}{\textcolor{tcA}{227}} & \textcolor{tcA}{1124} & \mc{1}{>{\columncolor{tcB}}c|}{\textcolor{tcA}{1107}}\\\hline
+\textcolor{tcA}{run (b)} & \textcolor{tcA}{0.249} & \mc{1}{c|}{\textcolor{tcA}{684}} & \mc{1}{c|}{\textcolor{tcA}{563}} & \textcolor{tcA}{0.153} & \mc{1}{c|}{\textcolor{tcA}{484}} & \mc{1}{c|}{\textcolor{tcA}{438}} & \textcolor{tcA}{0.041} & \mc{1}{c|}{\textcolor{tcA}{256}} & \mc{1}{c|}{\textcolor{tcA}{250}} & \mc{1}{>{\columncolor{tcB}}c|}{\textcolor{tcA}{1122}} & \textcolor{tcA}{1152}\\\hline
 \end{tabular}
-\caption{Object probabilities and expected search times in room \textit{home1} and room \textit{home2} for the two runs shown in Figure \ref{remotes}}
+\caption{Object probabilities (P(o)), times to completely search the room (T) and expected search times (E(t) of the three rooms, and the expected search times for the search sequences \textit{home1}-\textit{home2}-\textit{home3} and \textit{home2}-\textit{home1}-\textit{home3} for the two runs shown in Figure \ref{remotes}}
 \label{remote_tab}
 \end{table}
-In run (a) the room \textit{home2} was favored because the lower object probability in room \textit{home2} was offset by the much lower expected search time, which made \textit{home2} the optimal next room to search. In run (b) the difference in the object probabilities was big enough for room \textit{home1} being the optimal choice. In both runs the robot correctly recognized that room \textit{home3} was unlikely to contain the searched remote.
+}
+As already mentioned in Section \ref{tests}, with setting 2, where a remote was hidden in room \textit{home1}, the robot sometimes searched first in room \textit{home2} and sometimes first in room \textit{home1}. Runs for both cases are depicted in Figure \ref{remotes}. In Table \ref{remote_tab} the object probabilities and expected search times of all rooms, and the expected search times of the path, where room \textit{home1} was searched first, and the path, where room \textit{home2} was searched first, are stated for both runs. In both runs room \textit{home1} was found to be more likely to contain the object, but also larger, compared to room \textit{home2}. Therefore, the expected search times for the search sequence \textit{home1}-\textit{home2}-\textit{home3} and the search sequence \textit{home2}-\textit{home1}-\textit{home3} are similar. The other possible search sequences have a higher expected search time because room \textit{home3} is very unlikely to contain the object and is therefore better searched last. In run (a) the difference of the object probabilities in room \textit{home1} and room \textit{home2} is small and the difference in the expected search time is high, therefore searching room \textit{home2} first is optimal. In run (b) the difference in the object probabilities is higher and the difference in the expected search times is lower. This makes searching room \textit{home1} first the optimal decision because the probability that \textit{home2} need not be searched is high enough to compensate for the higher expected search time in room \textit{home1}.
 
-The robot sometimes makes suboptimal decision when no likely room was discovered yet. In Figure \ref{mouse_tab} two search runs with test setting 3, where a mouse is hidden in room \textit{home2}, are depicted. 
-
-In both runs the robot started in the middle of room \textit{home1}, but in the run shown in (a) the exploration was done towards room \textit{home3} and in the run shown in (b) towards room \textit{home2}. Therefore in run (a) room \textit{home3} was entered first and as both visited rooms had a low probability for containing the searched mouse, the smaller room \textit{home3} was searched. Only after that the room \textit{home1} was further explored, room \textit{home2} was discovered and the mouse was found. In run (b) the room \textit{home2} was discovered first and the mouse was found quickly. In both runs the robot correctly recognized that room \textit{home1} was less likely to contain a mouse than room \textit{home2}.
+The robot sometimes makes suboptimal decision when no likely room was discovered yet. In Figure \ref{mouse_tab} two search runs with test setting 3, where a mouse is hidden in room \textit{home2}, are depicted. In both runs the robot started in the middle of room \textit{home1}, but in the run shown in (a) the exploration was done towards room \textit{home3} and in the run shown in (b) towards room \textit{home2}. Therefore, in run (a) room \textit{home3} was entered first and as both visited rooms had a low probability for containing the searched mouse, the smaller room \textit{home3} was searched. Only after that room \textit{home1} was further explored, room \textit{home2} was discovered, and the mouse was found. In run (b) room \textit{home2} was discovered first and the mouse was found quickly. In both runs the robot correctly recognized that room \textit{home1} was less likely to contain a mouse than room \textit{home2}.
 \begin{figure}[h]
 \centering
 \begin{tabular}{cc}
-\subfloat[]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/mouse1.png}} &
-\subfloat[]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/mouse2.png}}
+\subfloat[room \textit{home3} was discovered before room \textit{home2}; the robot decided to search room \textit{home3} because it is a small room and no room with a high object probability was yet discovered]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/mouse1.png}} &
+\subfloat[room \textit{home2} was discovered before room \textit{home3}; the object probability in room \textit{home2} was high, therefore the robot searched there]{\includegraphics[angle=90,origin=c,width=0.47\textwidth]{figures/example_runs/mouse2.png}}
 \end{tabular}
 \caption[Example runs of searches for a mouse]{Example runs of searches for a remote: The trajectories during exploration (blue), move through doorway (red) and search (green) are shown as well as the starting pose (cyan), the final pose, where the object was found (purple), and the connections of the paths over room borders (red lines); room \textit{home1} is at the bottom, room \textit{home2} is at the top right and room \textit{home3} is at the top left}
 \label{mouse_tab}
@@ -217,7 +220,7 @@ In Figure \ref{toilet} a search for a toilet in the institute environment is dep
 \begin{figure}
 \centering
 \includegraphics[width=0.9\textwidth, trim=800 700 0 0, clip]{figures/example_runs/toilet.png}
-\caption[Search for a toilet in the institute environment]{Search of a toilet in the institute environment: The trajectories during exploration (blue), move through doorway (red) and search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple). Only the map of room \textit{institute1} is shown because all other rooms are just entered and left immediately after the peek task }
+\caption[Search for a toilet in the institute environment]{Search of a toilet in the institute environment: The trajectories during exploration (blue), move through doorway (red) and search (green) are shown as well as the starting pose (cyan) and the final pose, where the object was found (purple). Only the map of room \textit{institute1} is shown because all other rooms are just entered and left immediately after the peek task. }
 \label{toilet}
 \end{figure}
 
@@ -237,4 +240,6 @@ In Figure \ref{explored} two runs executed after the exploration of the institut
 
 \subsubsection{Summary}
 
-To recap the findings in the test runs, the search within a room is executed efficiently. Areas within a room, where the object is more likely, are searched first, leading to low search times. In environments with multiple rooms the proposed system makes suboptimal decisions if no room is found where the object is likely. This problem of weighting exploration versus exploitation is difficult to solve. However, when the discovered rooms have either a high or very low probability to contain the object, reasonable decisions are made by the robot, which lead to efficient active object searches.
+To recap the findings in the test runs, the search within a room is executed efficiently. Areas within a room where the object is more likely are searched first, leading to low search times. In environments with multiple rooms the proposed system makes suboptimal decisions if no room is found where the object is likely. This problem of weighting exploration versus exploitation is difficult to solve. However, when the discovered rooms have either a high or very low probability to contain the object, reasonable decisions are made by the robot. 
+
+In general the performance of the proposed system depends on the environment and the searched object. In environments with similar rooms and when searching for objects, which can be nearly everywhere in the environment, the proposed system has no advantages and might even perform worse than uninformed search systems. However, in most scenarios some rooms are very unlikely to contain a searched object and some rooms have a high probability to contain a searched object. Then the proposed system significantly outperforms an uninformed search system by searching in likely rooms and postponing searches in unlikely rooms.

@@ -13,7 +13,7 @@ In most cases the room type classifier returns reasonable results. If there is a
 \subfloat[living room: 0.708, parlor: 0.239]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/wz.png}} &
 \subfloat[corridor: 0.956]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_358.png}} 
 \end{tabular}
-\caption[Images with a high probability for the correct room type]{Images with a high probability for the correct room type in the room type classification result; the result of the room type classifier is shown in the caption (only for room types with significant probability)}
+\caption[Images with a high probability for the correct room type]{Images with a high probability for the correct room type in the room type classification result; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
 \label{placegood}
 \end{figure}
 
@@ -22,9 +22,9 @@ In many cases multiple similar room types, e.g. kitchen and kitchenette, are fit
 \centering
 \begin{tabular}{cc}
 \subfloat[kitchen: 0.579, kitchenette: 0.399]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_234.png}} &
-\subfloat[office: 0.4442, home office: 0.3214]{\includegraphics[width=0.4\textwidth]{figures/peek/explore_lab_1bag1221.png}}
+\subfloat[office: 0.561, home office: 0.424]{\includegraphics[width=0.4\textwidth]{figures/peek/explore_lab_1bag1221.png}}
 \end{tabular}
-\caption[Images, where most of the probability is split between multiple fitting types]{Images, where most of the probability in the room type classification result is split between two fitting types; the result of the room type classifier is shown in the caption (only for room types with significant probability)}
+\caption[Images, where most of the probability is split between multiple fitting types]{Images, where most of the probability in the room type classification result is split between two fitting types; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
 \label{placegood2}
 \end{figure}
 
@@ -35,27 +35,27 @@ In some images the room type is not clear. In this case multiple different room 
 \subfloat[office: 0.242, home office: 0.240, pantry: 0.104, dorm room: 0.083, kitchen: 0.072, kitchenette: 0.062]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_16.png}} &
 \subfloat[office: 0.347, reception: 0.178,\newline corridor: 0.126, art gallery: 0.120, lobby: 0.067, art studio: 0.063]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_0.png}} 
 \end{tabular}
-\caption[Images with no clear room type]{Images with no clear room type; the result of the room type classifier is shown in the caption (only for room types with significant probability)}
+\caption[Images with no clear room type]{Images with no clear room type; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
 \label{placebad}
 \end{figure}
 
-The place classifier has obviously problems when the robot is in front of a wall or another object, which covers the whole image, as can be seen in Figure \ref{placebad2}. In this case the room types closet, corridor, shower or basement have usually a high probability in the room type classification result.
+The place classifier has obviously problems when the robot is in front of a wall or another object, which covers the whole image, as can be seen in Figure \ref{placebad2}. In this case the room types closet, corridor, shower and basement have usually a high probability in the room type classification result.
 \begin{figure}[h!]
 \centering
 \begin{tabular}{c}
 \subfloat[closet: 0.535, corridor: 0.206,\newline shower: 0.092]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_114.png}}
 \end{tabular}
-\caption[Image taken directly in front of a wardrobe]{Image taken directly in front of a wardrobe; the result of the room type classifier is shown in the caption (only for room types with significant probability)}
+\caption[Image taken directly in front of a wardrobe]{Image taken directly in front of a wardrobe; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
 \label{placebad2}
 \end{figure}
 
 \begin{figure} [h!]
 \centering
 \begin{tabular}{cc}
-\subfloat[Image showing dine room area and kitchen area: \newline kitchen: 0.459, kitchenette: 0.397,\newline dine room: 0.060]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_44.png}} &
-\subfloat[Image showing only dine room area: \newline dine room: 0.591, kitchen: 0.066]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_28.png}} \\
+\subfloat[Image showing a dine room area and a kitchen area: \newline kitchen: 0.459, kitchenette: 0.397,\newline dine room: 0.060]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_44.png}} &
+\subfloat[Image showing only a dine room area: \newline dine room: 0.591, kitchen: 0.066]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_28.png}} \\
 \end{tabular}
-\caption[Image showing two areas of different room types]{Image showing two areas of different type and comparison image; the result of the room type classifier is shown in the caption (only for room types with significant probability)}
+\caption[Image showing two areas of different room types]{Image showing two areas of different types and comparison image; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
 \label{placebad3}
 \end{figure}
 If multiple areas of different room types are visible in one image, this is most of the time not reflected in the result of the place classifier because the more prominent room type overrules the other one. This can be seen in Figure \ref{placebad3}: on the left, where also a kitchen area is visible, the probability for dine room is low, whereas in the right image, where no kitchen area is visible, the probability for dine room is high.
@@ -68,21 +68,21 @@ If multiple areas of different room types are visible in one image, this is most
 \subfloat[blurry image: \newline kitchen: 0.594, kitchenette: 0.355]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_539.png}} &
 \subfloat[comparison image: \newline kitchen: 0.511, kitchenette: 0.441]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_538.png}} 
 \end{tabular}
-\caption[Impact of bad lighting, noise and motion blur on the place classifier]{Impact of bad lighting, noise and motion blur on the place classifier; the result of the room type classifier is shown in the caption (only for room types with significant probability)}
+\caption[Impact of bad lighting, noise and motion blur on the place classifier]{Impact of bad lighting, noise and motion blur on the place classifier; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
 \label{placebad4}
 \end{figure}
 The place classifier is quiet robust against bad lighting and noise in the image, as can be seen by comparing image (a) and (b) in Figure \ref{placebad4}. Also blurry images caused by the robot movement have no big impact, as can be seen by comparing image (c) and (d) in Figure \ref{placebad4}.
 
 \subsubsection{Object detection}
 
-A quantitative evaluation of the used YOLOv3 object detection CNN can be found in the related paper \cite{yolo3}. There can be seen that the object detection works better for large objects than for small ones. This trend was also observed during the test runs. During tests was found that not all small objects are equally difficult to detect for the CNN. Remotes and especially mouses were detected most of the time with high confidence, even from some distance, as can be seen in image (a) of Figure \ref{obj1}. On the other hand spoons, knifes and forks were only detected when the robot was right in front, as shown in image (b) of Figure \ref{obj1}, and then only sometimes with high confidence. 
+A quantitative evaluation of the used YOLOv3 object detection CNN can be found in the related paper \cite{yolo3}. There can be seen that the object detection works better for large objects than for small ones. This trend was also observed during the test runs. During tests was found that not all small objects are equally difficult to detect for the CNN. E.g. remotes and especially mouses were detected most of the time with high confidence, even from some distance, as can be seen in image (a) of Figure \ref{obj1}. On the other hand other small objects, e.g. spoons, knifes and forks, were only detected when the robot was right in front, as shown in image (b) of Figure \ref{obj1}, and then only sometimes with high confidence. 
 \begin{figure} 
 \centering
 \begin{tabular}{cc}
 \subfloat[The mouse takes little space in the image, but was still detected with high confidence]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o1.png}} &
-\subfloat[The cutlery is perfectly visible, but only the spoon was correctly detected]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o4.png}} 
+\subfloat[The cutlery is perfectly visible, but only the spoon was detected correctly]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o4.png}} 
 \end{tabular}
-\caption{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\caption[Detection of small objects]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
 \label{obj1}
 \end{figure}
 
@@ -91,32 +91,32 @@ image (b) of Figure \ref{obj2}.
 \begin{figure} 
 \centering
 \begin{tabular}{cc}
-\subfloat[High confidence for the chairs in front and the bowl, low confidences for all other objects; the wine glass was not detected at all]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o3.png}} &
+\subfloat[High confidence for the chairs in front and the bowl, low confidences for all other objects; the wine glass on the right of the potted plant was not detected at all]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o3.png}} &
 \subfloat[Refrigerator detected at wall]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o5.png}} 
 \end{tabular}
-\caption{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\caption[Varying confidence and wrong detections]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
 \label{obj2}
 \end{figure}
 
-The performance of the object detection drops significantly with bad lighting, as can be seen in Figure \ref{obj3}. This is especially a problem since the sensitivity of the used RGBD-camera is not very high and the dynamic range low.
+The performance of the object detection drops significantly with bad lighting, as can be seen in Figure \ref{obj3}. This is especially a problem because the sensitivity of the used RGBD-camera is not very high and the dynamic range is low.
 \begin{figure} [h!]
 \centering
 \begin{tabular}{cc}
 \subfloat[Many detections with good lighting]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o7.png}} &
 \subfloat[Few and wrong detections with bad lighting]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o6.png}} 
 \end{tabular}
-\caption{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\caption[Object detection in images with bad lighting]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
 \label{obj3}
 \end{figure}
 
-The performance of the object detection also drops with motion blur, as can be seen in Figure \ref{obj4}. This, in combination with the low sensitivity of the camera and the therefore long exposure time, made the limitation of the rotational velocity during movement necessary.
+The performance of the object detection also drops with motion blur, as can be seen in Figure \ref{obj4}. This, in combination with the low sensitivity of the camera and the therefore necessary high exposure time, made the limitation of the rotational velocity during movement necessary.
 \begin{figure} 
 \centering
 \begin{tabular}{cc}
 \subfloat[Many detections without motion blur]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/obj_540.png}} &
 \subfloat[Few detections with motion blur]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/obj_541.png}} 
 \end{tabular}
-\caption{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\caption[Object detection in images with motion blur]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
 \label{obj4}
 \end{figure}
 
