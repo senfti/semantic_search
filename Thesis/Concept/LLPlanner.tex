@@ -30,7 +30,7 @@ A frontier-based approach is used for the exploration, similar to the approach p
 \begin{figure}[h]
  \centering
    \includegraphics[width=0.9\textwidth]{figures/exploration.png} 
- \caption[Map with accessible cells and frontiers]{A map with accessible cells (purple and yellow cells) and frontiers (yellow cells)}
+ \caption[Map with accessible cells and frontiers]{A map with accessible cells (purple and yellow cells) and frontiers \linebreak(yellow cells)}
  \label{fig: exploration}
 \end{figure}
 
@@ -47,7 +47,7 @@ If the object detection detects the searched object with a sufficiently high con
 
 \subsection{Search Room Task} \label{SearchTask}
 
-The goal of the search room task is to find an object of a given type within the current room or to search the whole room if no searched object is in the room. The low-level planner has to find the best next view pose, which minimizes the expected search time, based on the information gathered. Also the decisions have to be made if an object was found and if the room was fully searched.
+The goal of the search room task is to find an object of a given type within the current room or to search the whole room if no searched object is in the room. The low-level planner has to find the best next view pose which minimizes the expected search time, based on the information gathered. Also the decisions have to be made if an object was found and if the room was fully searched.
 
 In this work a greedy approach is used to find the best next view pose. The best view pose $\mathbf{p}^*$ is selected by:
 \begin{equation}

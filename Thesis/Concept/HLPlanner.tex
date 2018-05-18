@@ -1,6 +1,6 @@
 \section{High-Level Planner}
 
-This section covers the high-level planner, which operates on the topological map and selects the room the robot should search next. Based on the selected target room it also generates high-level tasks, which are then planned and executed by the low-level planner. The expected search time was chosen as the objective function to be minimized by the planner. Other possible objectives for the planner would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most scenarios. The high-level planner is executed when a search task is started and also every time a high-level tasks finishes. 
+This section covers the high-level planner which operates on the topological map and selects the room the robot should search next. Based on the selected target room it also generates high-level tasks which are then planned and executed by the low-level planner. The expected search time was chosen as the objective function to be minimized by the planner. Other possible objectives for the planner would be maximizing the probability of finding the object in limited time or minimizing the time until a certain confidence about the existence of a searched object is reached. These tackle slightly different problems, but the results should be quiet similar in most scenarios. The high-level planner is executed when a search task is started and also every time a high-level tasks finishes. 
 
 
 \subsection{High-Level Planning} \label{hl_plan}
@@ -21,7 +21,7 @@ The possible paths form a search tree, as illustrated in Figure \ref{fig: search
 \begin{figure}[h]
  \centering
    \includegraphics[width=1\textwidth,clip]{figures/DecisionTree.pdf} 
- \caption[Search tree]{Search tree of all possible search paths: The edges are search actions and the nodes are states, which also hold the probability of the object already been found and the expected search time so far; in green an example calculation is shown}
+ \caption[Search tree]{Search tree of all possible search paths: The edges are search actions and the nodes are states which also hold the probability of the object already been found and the expected search time so far; in green an example calculation is shown}
  \label{fig: search tree}
 \end{figure}
 

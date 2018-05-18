@@ -28,7 +28,7 @@ In many cases multiple similar room types, e.g. kitchen and kitchenette, are fit
 \label{placegood2}
 \end{figure}
 
-In some images the room type is not clear. In this case multiple different room types have a significant probability in the result of the place classifier and some of those are not fitting. In the image on the left of Figure \ref{placebad} a living room area with a kitchen area in the background is show. The result of the room type classifier does not reflect this. In the image on the right the room types office and corridor are reasonable, but the other room types, which have a significant probability, are wrong. 
+In some images the room type is not clear. In this case multiple different room types have a significant probability in the result of the place classifier and some of those are not fitting. In the image on the left of Figure \ref{placebad} a living room area with a kitchen area in the background is show. The result of the room type classifier does not reflect this. In the image on the right the room types office and corridor are reasonable, but the other room types which have a significant probability, are wrong. 
 \begin{figure}[h!]
 \centering
 \begin{tabular}{cc}
@@ -39,7 +39,7 @@ In some images the room type is not clear. In this case multiple different room 
 \label{placebad}
 \end{figure}
 
-The place classifier has obviously problems when the robot is in front of a wall or another object, which covers the whole image, as can be seen in Figure \ref{placebad2}. In this case the room types closet, corridor, shower and basement have usually a high probability in the room type classification result.
+The place classifier has obviously problems when the robot is in front of a wall or another object which covers the whole image, as can be seen in Figure \ref{placebad2}. In this case the room types closet, corridor, shower and basement have usually a high probability in the room type classification result.
 \begin{figure}[h!]
 \centering
 \begin{tabular}{c}
@@ -110,7 +110,7 @@ The performance of the object detection drops significantly with bad lighting, a
 \end{figure}
 
 The performance of the object detection also drops with motion blur, as can be seen in Figure \ref{obj4}. This, in combination with the low sensitivity of the camera and the therefore necessary high exposure time, made the limitation of the rotational velocity during movement necessary.
-\begin{figure} 
+\begin{figure}  [h!]
 \centering
 \begin{tabular}{cc}
 \subfloat[Many detections without motion blur]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/obj_540.png}} &
@@ -128,4 +128,4 @@ During the nearly 50 test runs with enabled doorway detection done for the evalu
 
 \subsection{Navigation} \label{NavEval}
 
-Most of the navigation goals are reached without difficulties or major delays. The global planning in the 2D map of the room works without problems. However the local planner and the robot movement cause some problems. The high payload brings the robot to its limits. On even and clean floors the robot moves fine, but on slippery or uneven floors the robot has not enough grip on the active wheels to execute the movements as planned because too much weight is on the passive wheels. Due to the robot's design, with the passive wheels being fixed in forward direction, rotational movements are more difficult to execute for the robot. Thus, the problem with slipping wheels only affects the rotational component of the movement. The result is that rotations are slower, curves are driven wider as planned and changes in the direction are delayed. In open areas this does not cause problems but in narrow areas the local planner sometimes fails to keep enough distance between the robot and the obstacles. In this case the planner fails to find a valid path because every path is assumed to cause a collision. The robot can also get into this situation if it drifts towards an obstacle during an in-place rotation, which happens if only one active wheel is slipping. The recovery behaviors of the \texttt{move{\_}base} and short backward movements are usually sufficient to recover from this situation, but these take some time. This is a major factor for the varying search times for the same test scenario. The local planner has in general a big impact on the search time. The smoother it can navigate the robot through narrow areas and around obstacles, the faster the search will be.
+Most of the navigation goals are reached without difficulties or major delays. The global planning in the 2D map of the room works without problems. However the local planner and the robot movement cause some problems. The high payload brings the robot to its limits. On even and clean floors the robot moves fine, but on slippery or uneven floors the robot has not enough grip on the active wheels to execute the movements as planned because too much weight is on the passive wheels. Due to the robot's design, with the passive wheels being fixed in forward direction, rotational movements are more difficult to execute for the robot. Thus, the problem with slipping wheels only affects the rotational component of the movement. The result is that rotations are slower, curves are driven wider as planned and changes in the direction are delayed. In open areas this does not cause problems but in narrow areas the local planner sometimes fails to keep enough distance between the robot and the obstacles. In this case the planner fails to find a valid path because every path is assumed to cause a collision. The robot can also get into this situation if it drifts towards an obstacle during an in-place rotation which happens if only one active wheel is slipping. The recovery behaviors of the \texttt{move{\_}base} and short backward movements are usually sufficient to recover from this situation, but these take some time. This is a major factor for the varying search times for the same test scenario. The local planner has in general a big impact on the search time. The smoother it can navigate the robot through narrow areas and around obstacles, the faster the search will be.

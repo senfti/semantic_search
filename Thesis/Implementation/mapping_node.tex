@@ -196,13 +196,13 @@ The creation of the map used for navigation and low-level planning is done as de
 The last step in the main loop is the check if a doorway was passed. Therefore a test is executed on all doorways in the \texttt{DoorwayMapper} of the best particle. For this test the robot pose is transformed into the coordinate frame of the doorway. The first condition is that the x-coordinate of the transformed robot pose is greater than a threshold of 0.2\,m, meaning the robot has driven beyond the doorway. The second condition is that the distance to the doorway is smaller than second threshold of 1\,m, which ensures the robot has really driven through the doorway. If both conditions are true, the currently checked doorway is passed and the map switch is triggered.
 
 In Figure \ref{mapswitchimpl} the steps of the map switch are depicted.
+Firstly, the \texttt{deactivate} function of the \texttt{RoomMapper} of the current room is called. This function discards all particles except the best in the particle filter. Also the corresponding mappers of the discard particles are removed. Then the thread for publishing the map-to-odometry-transformation is paused.
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.5\textwidth]{figures/MapSwitch.pdf}
   \caption[Map switch implementation]{Steps when switching maps} 
   \label{mapswitchimpl}
 \end{figure}
-Firstly, the \texttt{deactivate} function of the \texttt{RoomMapper} of the current room is called. This function discards all particles except the best in the particle filter. Also the corresponding mappers of the discard particles are removed. Then the thread for publishing the map-to-odometry-transformation is paused.
 
 If the \texttt{other{\_}room} variable of the passed doorway is negative, a never visited room is entered and a new \texttt{RoomMapper} is created. The particle poses in the particle filter of the new \texttt{RoomMapper} are set to the pose of the best particle in the old room and also the map-to-odometry-transformation is copied to the new mapper, so the map coordinate frames of both rooms are initially the same. The pose of the passed doorway is flipped, so it is facing outwards in the new room, and added to the \texttt{DoorwayMapper}s of the new \texttt{RoomMapper}. Then the new \texttt{RoomMapper} is added to the \texttt{room{\_}mapper} array of the \texttt{TopologicalMapper}. The doorway in the old \texttt{RoomMapper} is updated, so it contains the ID of the new room in the \texttt{other{\_}room} variable and the ID of the passed doorway in the new room in the \texttt{counterpart{\_}id} variable. 
 
