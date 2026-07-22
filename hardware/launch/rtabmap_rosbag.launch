@@ -1,0 +1,37 @@
+<!-- launches turtlebot for mapping-->
+<launch>
+  <param name="use_sim_time" value="true" />
+
+  <node pkg="topic_tools" type="relay" name="odom_relay" args="/odom /rtabmap/odom" />
+  <node pkg="topic_tools" type="relay" name="scan_relay" args="/scan /rtabmap/scan" />
+  <node pkg="topic_tools" type="relay" name="rgb_relay" args="/camera/rgb/image_raw /rtabmap/rgb/image" />
+  <node pkg="topic_tools" type="relay" name="info_relay" args="/camera/depth_registered/image_raw /rtabmap/depth/image" />
+  <node pkg="topic_tools" type="relay" name="depth_relay" args="/camera/rgb/camera_info /rtabmap/rgb/camera_info" />
+
+  <group ns="rtabmap">
+    <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--delete_db_on_start">
+          <param name="frame_id" type="string" value="base_link"/>
+
+          <param name="subscribe_depth" type="bool" value="true"/>
+          <param name="subscribe_scan" type="bool" value="true"/>
+
+          <param name="queue_size" type="int" value="10"/>
+
+          <!-- RTAB-Map's parameters -->
+          <param name="RGBD/NeighborLinkRefining" type="string" value="true"/>
+          <param name="RGBD/ProximityBySpace"     type="string" value="true"/>
+          <param name="RGBD/AngularUpdate"        type="string" value="0.01"/>
+          <param name="RGBD/LinearUpdate"         type="string" value="0.01"/>
+          <param name="RGBD/OptimizeFromGraphEnd" type="string" value="false"/>
+          <param name="Optimizer/Slam2D"          type="string" value="true"/>
+          <param name="Reg/Strategy"              type="string" value="1"/> <!-- 1=ICP -->
+          <param name="Reg/Force3DoF"             type="string" value="true"/>
+          <param name="Vis/MinInliers"            type="string" value="5"/>
+          <param name="Vis/InlierDistance"        type="string" value="0.1"/>
+          <param name="Rtabmap/TimeThr"           type="string" value="700"/>
+          <param name="Mem/RehearsalSimilarity"   type="string" value="0.45"/>
+
+          <param name="Icp/MaxCorrespondenceDistance"   type="string" value="0.5"/>
+    </node>
+  </group>
+</launch>

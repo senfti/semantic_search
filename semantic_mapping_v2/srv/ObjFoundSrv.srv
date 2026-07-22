@@ -1,0 +1,4 @@
+
+---
+float32[] max_prob
+geometry_msgs/Pose[] max_pose

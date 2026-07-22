@@ -1,0 +1,5 @@
+\section{Scene Classification using Convolutional Neural Networks}
+
+The usage of Deep Convolutional Neural Networks (CNNs) is currently the way to go to solve image recognition and classification tasks. [https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf]. CNNs, inspired by biological processes, perform so well because the whole processing, assuming that the image is of the correct size, is done by a single neural network with multiple layers of neurons and millions of learned parameters. In case of a classification task the output of the CNN is a probability distribution over the classes or at least a probability-like confidence for each class.
+
+To get a CNN for scene classification a neural network of a chosen architecture has to be trained using labeled training images. As the number of parameters is huge, these training sets have to 

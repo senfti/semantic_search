@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find hardware)/launch/includes/execution.launch.xml" >
+  </include> 
+</launch>

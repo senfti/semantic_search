@@ -2,7 +2,7 @@
 
 CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::string& trained_file,
                                  const std::string& mean_file, const std::string& label_file){
-  caffe::Caffe::set_mode(caffe::Caffe::GPU);
+  caffe::Caffe::set_mode(caffe::Caffe::Brew(1));
 
   /* Load the network. */
   net_ = new caffe::Net<float>(model_file, caffe::TEST);
@@ -24,6 +24,7 @@ CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::strin
     return;
   }
   input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
+  std::cout << "INPUT GEOMETRY (w,h): " << input_geometry_.width << " " << input_geometry_.height << std::endl;
 
   /* Load the binaryproto mean file. */
   setMean(mean_file);
@@ -37,6 +38,9 @@ CaffeClassifier::CaffeClassifier(const std::string& model_file, const std::strin
   std::string line;
   while (std::getline(labels, line))
     labels_.push_back(std::string(line));
+  for(int i=0; i<labels_.size(); i++){
+    used_classes_.push_back((labels_[i][0] != '_'));
+  }
 
   caffe::Blob<float>* output_layer = net_->output_blobs()[0];
   if (labels_.size() != output_layer->channels()){
@@ -66,6 +70,24 @@ static std::vector<int> argmax(const std::vector<float>& v, int N) {
   for (int i = 0; i < N; ++i)
     result.push_back(pairs[i].second);
   return result;
+}
+
+/* Return all without ordering */
+std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img){
+  std::vector<float> output = predict(img);
+  std::vector<CaffeRecognition> predictions;
+  double sum = 0.0;
+  for(int i = 0; i < output.size(); ++i){
+    if(used_classes_[i]){
+      predictions.push_back(CaffeRecognition(labels_[i], i, output[i]));
+      sum += output[i];
+    }
+  }
+  for(auto& pred : predictions){
+    pred.prob_ /= sum;
+  }
+
+  return predictions;
 }
 
 /* Return the indices of the top N values of vector v. */
@@ -111,34 +133,11 @@ std::vector<CaffeRecognition> CaffeClassifier::classify(const cv::Mat& img, floa
 
 /* Load the mean file in binaryproto format. */
 void CaffeClassifier::setMean(const std::string& mean_file) {
-//  caffe::BlobProto blob_proto;
-//  ReadProtoFromBinaryFileOrDie(mean_file.c_str(), &blob_proto);
-//
-//  /* Convert from BlobProto to Blob<float> */
-//  caffe::Blob<float> mean_blob;
-//  mean_blob.FromProto(blob_proto);
-//  if(mean_blob.channels() != num_channels_)
-//    std::cout << "Number of channels of mean file doesn't match input layer.";
-//
-//  /* The format of the mean file is planar 32-bit float BGR or grayscale. */
-//  std::vector<cv::Mat> channels;
-//  float* data = mean_blob.mutable_cpu_data();
-//  for (int i = 0; i < num_channels_; ++i) {
-//    /* Extract an individual channel. */
-//    cv::Mat channel(mean_blob.height(), mean_blob.width(), CV_32FC1, data);
-//    channels.push_back(channel);
-//    data += mean_blob.height() * mean_blob.width();
-//  }
-//
-//  /* Merge the separate channels into a single image. */
-//  cv::Mat mean;
-//  cv::merge(channels, mean);
-//
-//  /* Compute the global mean pixel value and create a mean image
-//   * filled with this value. */
-//  cv::Scalar channel_mean = cv::mean(mean);
-//  mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
-  mean_ = cv::Mat(input_geometry_, CV_32FC3, cv::Scalar(104.0065, 116.6690, 122.6795));
+  if(mean_file.empty())
+    mean_ = cv::Mat(input_geometry_, CV_32FC3, cv::Scalar(104.0065, 116.6690, 122.6795));
+  else{
+    mean_ = cv::imread(mean_file, cv::IMREAD_UNCHANGED);
+  }
 }
 
 std::vector<float> CaffeClassifier::predict(const cv::Mat& img) {
@@ -208,6 +207,7 @@ void CaffeClassifier::preprocess(const cv::Mat& img,
     sample_resized.convertTo(sample_float, CV_32FC1);
 
   cv::Mat sample_normalized;
+  std::cout << "TYPES " << sample_float.type() << " " << mean_.type() << " " << std::endl;
   cv::subtract(sample_float, mean_, sample_normalized);
 
   /* This operation will write the separate BGR planes directly to the

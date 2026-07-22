@@ -1,0 +1,26 @@
+<launch>
+  <arg name="use_mouse_control" default="0" doc="if mouse control (keyboard/gamepad) is used"/>
+  <arg name="use_move_base" default="1" doc="if move_base is used"/>
+
+  <include file="$(find hardware)/launch/basic.launch">
+    <arg name="move_file" value="xbox360_teleop.launch"/>
+    <arg name="use_mouse_control" value="$(arg use_mouse_control)"/>
+    <arg name="use_move_base" value="$(arg use_move_base)"/>
+  </include>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
+  
+   <include file="$(find hardware)/launch/includes/semantic_mapping.launch.xml" >
+    <arg name="scan_topic" value="scan_filtered" />
+  </include>
+
+<!--  <include file="$(find hardware)/launch/includes/door_detection.launch.xml" >
+  </include> 
+
+  <include file="$(find hardware)/launch/includes/vision.launch.xml" >
+  </include>
+
+  <include file="$(find hardware)/launch/includes/execution.launch.xml" >
+  </include> 
+-->
+</launch>

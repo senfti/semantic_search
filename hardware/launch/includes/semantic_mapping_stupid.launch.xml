@@ -1,0 +1,112 @@
+ <launch>
+  <arg name="result_topic" default="vision_result" />
+  <arg name="scan_topic"  default="scan" />
+  <arg name="base_frame"  default="base_footprint"/>
+  <arg name="odom_frame"  default="odom"/>
+
+  <arg name="octomap_hit" default="0.65" />
+  <arg name="octomap_miss" default="0.38" />
+  <arg name="octomap_downproj_thresh" default="0.6" />
+
+  <arg name="object_prior" default="0.004" />
+  <arg name="object_hit" default="0.05" />
+  <arg name="object_miss" default="0.0005" />
+  <arg name="object_samples" default="6000" />
+
+  <arg name="roomtype_confidence" default="0.05" />
+
+  <node pkg="semantic_mapping_v2" type="semantic_mapping" name="semantic_mapping" output="screen" >
+    <remap from="$(arg result_topic)" to="vision_result"/>
+    <param name="gmapping/base_frame" value="$(arg base_frame)"/>
+    <param name="gmapping/odom_frame" value="$(arg odom_frame)"/>
+    <param name="gmapping/map_update_interval" value="3.0"/>
+    <param name="gmapping/maxUrange" value="3.9"/>
+    <param name="gmapping/maxRange" value="4.1"/>
+    <param name="gmapping/sigma" value="0.05"/>
+    <param name="gmapping/kernelSize" value="1"/>
+    <param name="gmapping/lstep" value="0.05"/>
+    <param name="gmapping/astep" value="0.05"/>
+    <param name="gmapping/iterations" value="5"/>
+    <param name="gmapping/lsigma" value="0.01"/>
+    <param name="gmapping/ogain" value="3.0"/>
+    <param name="gmapping/lskip" value="0"/>
+    <param name="gmapping/minimumScore" value="200"/>
+    <param name="gmapping/srr" value="0.01"/>
+    <param name="gmapping/srt" value="0.02"/>
+    <param name="gmapping/str" value="0.01"/>
+    <param name="gmapping/stt" value="0.02"/>
+    <param name="gmapping/linearUpdate" value="0.5"/>
+    <param name="gmapping/angularUpdate" value="0.436"/>
+    <param name="gmapping/temporalUpdate" value="5.0"/>
+    <param name="gmapping/resampleThreshold" value="0.5"/>
+    <param name="gmapping/particles" value="5"/>
+    <param name="gmapping/occ_thresh" value="0.2"/>
+    <param name="gmapping/num_settle_scans" value="10"/>
+
+    <param name="gmapping/xmin" value="-1.0"/>
+    <param name="gmapping/ymin" value="-1.0"/>
+    <param name="gmapping/xmax" value="1.0"/>
+    <param name="gmapping/ymax" value="1.0"/>
+
+    <param name="gmapping/delta" value="0.05"/>
+    <param name="gmapping/llsamplerange" value="0.01"/>
+    <param name="gmapping/llsamplestep" value="0.01"/>
+    <param name="gmapping/lasamplerange" value="0.005"/>
+    <param name="gmapping/lasamplestep" value="0.005"/>
+    <remap from="scan" to="$(arg scan_topic)"/>
+
+    <param name="Octomap/resolution" value="0.125" />    
+    <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    
+    <param name="Octomap/sensor_model/max_range" value="4.0" />                 <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/pointcloud_min_z" value="0.25" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/pointcloud_max_z" value="1.8" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/hit" value="$(arg octomap_hit)" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/miss" value="$(arg octomap_miss)" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/occupancy_thresh" value="0.5" />
+    <param name="Octomap/downproject_occ_thresh" value="$(arg octomap_downproj_thresh)" />
+    <param name="Octomap/downproject_dilate_iters" value="2" />
+    <param name="Octomap/downproject_erode_iters" value="4" />
+    <param name="Octomap/downsample_factor" value="4" />                       <!-- maximum range to integrate (speedup!) --> 
+
+    <param name="RoomTypeMapper/CONFIDENCE" value="$(arg roomtype_confidence)" />              
+    <param name="RoomTypeMapper/CELL_MAX_PROB" value="0.8" />             
+    <param name="RoomTypeMapper/CELL_MIN_PROB" value="0.0005" />
+    <param name="RoomTypeMapper/ROOM_DEFAULT_RESOLUTION" value="4.0" />
+    <param name="RoomTypeMapper/ASUS_FOV" value="27" />
+    <param name="RoomTypeMapper/MIN_DIST" value="0.7" />
+    <param name="RoomTypeMapper/MAX_DIST" value="4.0" />  
+    <param name="RoomTypeMapper/SIMILARITY_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/room_spread.dat" />
+
+    <param name="RoomMapper/OBJ_PLACE_MAP_FILE" value="/home/thomas/semantic_search/src/semantic_mapping_v2/data/obj_places_map.dat" />
+    
+    <param name="ObjectMapper/OBJ_PRIOR_PROB" value="$(arg object_prior)" />  
+    <param name="ObjectMapper/OBJ_MIN_PROB" value="0.000002" />  
+    <param name="ObjectMapper/OBJ_MAX_PROB" value="0.9" />  
+    <param name="ObjectMapper/OBJ_DEFAULT_RESOLUTION" value="4.0" />  
+    <param name="ObjectMapper/OBJ_DEFUALT_MAX_HEIGHT" value="1.6" />  
+    <param name="ObjectMapper/V_H" value="$(arg object_hit)" />   
+    <param name="ObjectMapper/V_M" value="$(arg object_miss)" />  
+    <param name="ObjectMapper/OBJ_NAME_FILE" value="/home/thomas/darknet/data/coco.names" />  
+    <param name="ObjectMapper/NUM_USED_DETECTION_SAMPLES" value="$(arg object_samples)" />
+
+    <param name="transform_publish_period" value="0.05" />   
+    <param name="publish_period" value="0.5" />
+    <param name="debug_publish_interval" value="10" />
+    <param name="ROOM_CELL_OBJ_KERNEL_SIZE" value="3.0" />
+    <param name="OBJ_BASED_ROOM_AREA_TO_CELL_CONFIDENCE" value="30.0" />
+    <param name="OBJ_FILL_FRACTION" value="0.01" />
+    <param name="ROOM_ESTIMATED_OCCUPIED_AREA" value="10.0" />
+    <param name="ROOM_MIN_UNEXPLORED_AREA" value="1.0" />
+    <param name="CELL_TO_OBJ_PROB_GAUSSIAN_SIGMA" value="0.5" />
+    <param name="TRAVEL_DIST_LIN_FACTOR" value="4.0" />
+    <param name="TRAVEL_DIST_QUAD_FACTOR" value="0.0" />
+    <param name="TRAVEL_TURN_FACTOR" value="0.0" />
+    <param name="SEARCH_TIME_PER_GRID_CELL" value="4.0" />
+    <param name="ROOM_MAX_PROB" value="0.8" />
+    <param name="PUBLISH_DEBUG_IMAGES" value="1" />
+    <param name="DEBUG_OUTPUT" value="1" />
+    <param name="USE_OBJ_MAP" value="0" />
+    <param name="OBJ_TO_ROOM" value="0" />
+    <param name="ROOM_TO_OBJ" value="0" />
+  </node>
+</launch>

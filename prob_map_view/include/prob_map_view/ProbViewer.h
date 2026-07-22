@@ -1,0 +1,45 @@
+//
+// Created by thomas on 23.10.17.
+//
+
+#ifndef SEMANTIC_MAPPING_PROBVIEWER_H
+#define SEMANTIC_MAPPING_PROBVIEWER_H
+
+#include "../../src/ProbViewer_B.h"
+#include <string>
+#include <opencv2/opencv.hpp>
+#include <wx/choice.h>
+#include <ros/ros.h>
+
+class ProbViewer : public ProbViewer_B{
+  protected:
+    std::vector<cv::Mat_<float>> prob_images_;
+    cv::Mat_<uchar> occ_image_;
+    std::vector<std::string> prob_names_;
+    cv::Mat_<float> curr_img_;
+    bool img_are_log_;
+    wxChoice* select_choice_;
+    bool use2 = false;
+    bool default_max_ = true;
+
+  public:
+    ProbViewer(const wxString& win_name, const std::vector<std::string>& prob_names, bool img_are_log, bool default_max = false);     //very dangerous
+
+    virtual void onChoice( wxCommandEvent& event );
+    virtual void onCheck( wxCommandEvent& event );
+    virtual void onMouseMove( wxMouseEvent& event );
+    virtual void saveAll( wxCommandEvent& event );
+    virtual void exit( wxCommandEvent& event ){
+      ros::shutdown();
+    }
+    virtual void activate( wxActivateEvent& event );
+
+    void updateImages(const std::vector<cv::Mat_<float>>& prob_images, const cv::Mat_<uchar>& occ);
+    void setCurrent();
+    void updateImages2(const std::vector<cv::Mat_<float>>& prob_images, const cv::Mat_<uchar>& occ);
+    void setCurrent2();
+
+    void save(const std::string& folder, const std::string& postfix = std::string(""));
+};
+
+#endif //SEMANTIC_MAPPING_PROBVIEWER_H

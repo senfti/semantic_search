@@ -15,8 +15,8 @@ class Object{
   public:
     Object(const vision::ObjectDetectionMsg& msg);
 
-    float x1_, x2_, y1_, y2_, z_;
-    float prob_ = 0.f;
+    float x1_, x2_, y1_, y2_, z1_, z2_;
+    std::vector<float> prob_;
     int id_;
     std::string class_;
 };
@@ -43,11 +43,12 @@ class VisionResult{
     tf::Pose pose_;
     std::vector<Object> objects_;
     std::vector<PlaceGuess> place_guesses_;
+    std::vector<double> max_dists_;
 
-    double getSumPlaceProbs() const;
-    double getSumObjectProbs() const;
-    void improve(KnowledgeBase& kb);
-    double getImportance(double x, double y) const;
+    //double getSumPlaceProbs() const;
+    //double getSumObjectProbs() const;
+    //void improve(KnowledgeBase& kb);
+    //double getImportance(double x, double y) const;
 
     friend std::ostream& operator<<(std::ostream& os, const VisionResult& vision_result);
 };

@@ -1,0 +1,10 @@
+# Define the goal, 0...moveToPose, 1...explore, 2...search, 3...quick_search, 4...start rotation
+int16 action
+geometry_msgs/Pose pose
+int16 target_room
+int16 target_obj
+---
+# Define the result
+int16 result_number
+---
+# Define a feedback message

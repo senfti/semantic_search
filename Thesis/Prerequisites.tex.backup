@@ -1,0 +1,12 @@
+\chapter{Prerequisites}
+
+This chapter gives an overview of the basic components used in this work. It contains information about the Robot Operating System (ROS), a robotics framework used in the implementation, the \texttt{move{\_}base} package used for navigation, and the GMapping library used for simultaneous localization and mapping (SLAM).
+
+%\input{Prerequisites/CNN.tex}
+%\input{Prerequisites/YOLO.tex}
+\input{Prerequisites/ROS.tex}
+\input{Prerequisites/MOVE_BASE.tex}
+%\input{Prerequisites/OccupancyGridMapping.tex}
+\input{Prerequisites/GMapping.tex}
+%\input{Prerequisites/Octomapping.tex}
+%\input{Prerequisites/FrontierExploration.tex}

@@ -1,0 +1,386 @@
+//
+// Created by thomas on 20.12.17.
+//
+
+#include <hl_planner/Planner.h>
+
+#include <hl_planner/HierarchyMap.h>
+#include <hl_planner/Action.h>
+#include <hl_planner/Plan.h>
+#include <hl_planner/State.h>
+#include <fstream>
+
+Planner::Planner()
+: execute_action_client_(nh_, "execute_action", false), hierarchy_service_client_(nh_.serviceClient<semantic_mapping_v2::HierarchySrv>("hierarchy_srv"))
+{
+  ros::NodeHandle("~").param("DOOR_DRIVE_TIME_LOSS", HierarchyMap::DOOR_DRIVE_TIME_LOSS, HierarchyMap::DOOR_DRIVE_TIME_LOSS);
+
+  while(!execute_action_client_.waitForServer(ros::Duration(1.0))){
+    ROS_WARN("EXECUTE ACTION SERVER NOT UP");
+    ros::spinOnce();
+  }
+  while(!hierarchy_service_client_.waitForExistence(ros::Duration(1.0))){
+    ROS_WARN("HIERARCHY SERVICE NOT EXISTING");
+    ros::spinOnce();
+  }
+}
+
+
+actionlib::SimpleClientGoalState Planner::sendGoal(const Action& action){
+  execution::ExecuteGoal goal;
+  goal.pose = action.pose_;
+  goal.action = action.type_;
+  goal.target_obj = action.target_obj_;
+  goal.target_room = action.target_room_;
+  ROS_ERROR("SEND GOAL %d %d %d %.3lf %.3lf %.3lf %.3lf", goal.action, goal.target_obj, goal.target_room, goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z, goal.pose.orientation.w);
+  //std::cin.get();
+  execute_action_client_.sendGoal(goal);
+  while(!execute_action_client_.waitForResult(ros::Duration(1.0)))
+    ros::spinOnce();
+  std::cout << "GOAL EXECUTED, state = " << execute_action_client_.getState().toString() << std::endl;
+  return execute_action_client_.getState();
+}
+
+
+semantic_mapping_v2::HierarchySrvResponse Planner::getHierarchy(int max_tries){
+  for(int i=0; i<max_tries; i++){
+    semantic_mapping_v2::HierarchySrvRequest req;
+    req.debug_room = -1;
+    semantic_mapping_v2::HierarchySrvResponse res;
+    if(hierarchy_service_client_.call(req, res)){
+      return res;
+    }
+    ROS_WARN("%d. TRY SEMANTIC MAP CALL FAILED", i);
+  }
+  ROS_ERROR("SEMANTIC MAP CALL FAILED, ABORTING");
+  return semantic_mapping_v2::HierarchySrvResponse();
+}
+
+
+SearchPlan Planner::greedyPlan(const HierarchyMap &graph, const State &state){
+  SearchPlan plan(state);
+  State curr_state = state;
+  std::deque<SearchAction> search_actions_ = curr_state.getPossibleFullSearchActions();
+  while(!search_actions_.empty()){
+    float max_search_speed = 0.f;
+    SearchAction best_action;
+    for(const auto& a : search_actions_){
+      float search_speed = graph.getSearchSpeed(curr_state.current_room_, a.target_);
+      if(search_speed > max_search_speed){
+        max_search_speed = search_speed;
+        best_action = a;
+      }
+    }
+    curr_state = plan.addAction(best_action, graph, curr_state.current_room_);
+    search_actions_ = curr_state.getPossibleFullSearchActions();
+  }
+
+  return plan;
+}
+
+
+SearchPlan finishGreedy(const HierarchyMap &graph, SearchPlan search_plan, float cutoff_time){
+  State curr_state = search_plan.end_state_;
+  std::deque<SearchAction> search_actions_ = curr_state.getPossibleFullSearchActions();
+  while(!search_actions_.empty()){
+    float max_search_speed = 0.f;
+    SearchAction best_action;
+    for(const auto& a : search_actions_){
+      float search_speed = graph.getSearchSpeed(curr_state.current_room_, a.target_);
+      if(search_speed > max_search_speed){
+        max_search_speed = search_speed;
+        best_action = a;
+      }
+    }
+    curr_state = search_plan.addAction(best_action, graph, curr_state.current_room_);
+    if(search_plan.expected_search_time_ >= cutoff_time)
+      return search_plan;
+    search_actions_ = curr_state.getPossibleFullSearchActions();
+  }
+  return search_plan;
+}
+
+
+SearchPlan Planner::plan(const HierarchyMap &graph, const SearchPlan& old_plan, float& cutoff_time, float cutoff_prob, int level){
+  if(level >= cutoff_prob)
+    return finishGreedy(graph, old_plan, cutoff_time);
+
+  std::deque<SearchAction> search_actions_ = old_plan.end_state_.getPossibleFullSearchActions();
+  if(search_actions_.empty()){
+    std::cout << old_plan.getPlanString() << std::endl;
+    output_file_ << old_plan.getPlanString() << std::endl;
+    return old_plan;
+  }
+
+  SearchPlan best_plan(old_plan.end_state_, std::vector<SearchAction>(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), 0.f);
+  for(const auto& a : search_actions_){
+    SearchPlan new_plan = old_plan;
+    new_plan.addAction(a, graph, old_plan.end_state_.current_room_);
+    if(new_plan.expected_search_time_ >= cutoff_time){
+      std::cout << old_plan.getPlanString() << std::endl;
+      output_file_ << old_plan.getPlanString() << std::endl;
+      continue;
+    }
+
+    new_plan = plan(graph, new_plan, cutoff_time, cutoff_prob, level+1);
+    if(new_plan.expected_search_time_ < best_plan.expected_search_time_){
+      best_plan = new_plan;
+      if(best_plan.expected_search_time_ < cutoff_time)
+        cutoff_time = best_plan.expected_search_time_;
+    }
+  }
+  return best_plan;
+}
+
+
+Plan Planner::generateFullPlan(const SearchPlan &search_plan, State state, const HierarchyMap& graph){
+  Plan plan;
+  for(const auto& action : search_plan.actions_){
+    std::vector<int> room_path = graph.travel_path_[state.current_room_][action.target_];
+    std::vector<geometry_msgs::Pose> waypoints = graph.travel_waypoints_[state.current_room_][action.target_];
+    for(int i=1; i<room_path.size(); i++){
+      plan.actions_.push_back(Action(Action::MOVE_TO, graph.searched_obj_, room_path[i], waypoints[i]));
+      state.changeState(*plan.actions_.rbegin());
+    }
+    if(std::find(state.not_explored_.begin(), state.not_explored_.end(), state.current_room_) != state.not_explored_.end()){
+      plan.actions_.push_back(Action(Action::EXPLORE, graph.searched_obj_, state.current_room_, geometry_msgs::Pose()));
+      state.changeState(*plan.actions_.rbegin());
+    }
+    plan.actions_.push_back(Action(action.type_ == SearchAction::SEARCH ? Action::SEARCH : Action::QUICK_SEARCH, graph.searched_obj_,
+                                   state.current_room_));
+    state.changeState(*plan.actions_.rbegin());
+  }
+  if(plan.actions_.front().type_ == Action::MOVE_TO && graph.not_visited_[plan.actions_.front().target_room_]){
+    int first_unvisited = 0;
+    for(first_unvisited=0; first_unvisited<graph.not_visited_.size(); first_unvisited++)
+      if(graph.not_visited_[first_unvisited])
+        break;
+    if(first_unvisited<graph.not_visited_.size() && first_unvisited != plan.actions_.front().target_room_){
+      std::cout << "swapped " << plan.actions_.front().target_room_ << " with " << first_unvisited << std::endl;
+      for(auto& a : plan.actions_){
+        if(a.target_room_ == first_unvisited)
+          a.target_room_ = plan.actions_.front().target_room_;
+        else if(a.target_room_ == plan.actions_.front().target_room_)
+          a.target_room_ = first_unvisited;
+      }
+    }
+  }
+  std::cout << plan.getPlanString() << std::endl;
+  return plan;
+}
+
+
+Plan Planner::generatePlan(const HierarchyMap &graph, const State& state){
+  ros::Time start = ros::Time::now();
+  SearchPlan greedy_plan = greedyPlan(graph, state);
+  std::cout << "greedy: " << greedy_plan.getPlanString() << std::endl;
+
+  float cutoff_time = greedy_plan.expected_search_time_;
+  SearchPlan best_plan = plan(graph, SearchPlan(state), cutoff_time, 5, 0);
+  if(best_plan.expected_search_time_ > greedy_plan.expected_search_time_)
+    best_plan = greedy_plan;
+  std::cout << "best_plan: " << best_plan.getPlanString() << std::endl;
+
+
+  std::cout << "Complete best plan in " << (ros::Time::now()-start).toSec() << ": " << best_plan.getPlanString() << std::endl;
+
+  return generateFullPlan(best_plan, state, graph);
+}
+
+
+const std::vector<std::string> room_names = { "art gallery","art studio","assembly line","attic","auditorium","ballroom","banquette hall",
+                                              "bar","basement","beauty salon","bedroom","bookstore","bowling alley","butcher shop","bakery",
+                                              "cafeteria","candy store","classroom","closet","clothe store","coffee shop","conference center",
+                                              "conference room","corridor","dining room","dorm room","dinette","engine room","food court",
+                                              "galley","game room","gift shop","home office","hospital room","hotel room","ice cream parlor",
+                                              "jail cell","kindergarden classroom","kitchen","kitchenette","laundromat","livingroom","lobby",
+                                              "locker room","martial arts gym","music studio","nursery","office","pantry","parlor","reception",
+                                              "restaurant","restaurant kitchen","shoe shop","shower","staircase","supermarket",
+                                              "television studio","veranda","waiting room"};
+
+const std::vector<std::string> obj_names = { "person","bicycle","bird","cat","dog","backpack","umbrella","handbag","tie","suitcase","frisbee","ski","snowboard",
+                                             "sportball","kite","baseballbat","glove","skateboard","surfboard","racket","bottle","wineglass","cup","fork",
+                                             "knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hotdog","pizza","donut","cake",
+                                             "chair","sofa","potplant","bed","table","toilet","monitor","laptop","mouse","remote","keyboard","cellphone",
+                                             "microwave","oven","toaster","sink","refrigerator","book","clock","vase","scissor","teddybear","hairdryer","toothbrush"};
+
+std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res);
+
+void Planner::run(int obj, std::string run_name){
+  bool init_turn_done = false;
+  if(run_name.empty())
+    run_name = std::to_string(ros::Time::now().toSec());
+
+  if(!output_file_.is_open())
+    output_file_.open("/home/thomas/output/" + run_name + ".txt");
+  ros::Time start_time = ros::Time::now();
+  state_.resetState();
+  output_file_ << run_name << " " << std::endl << obj << " " << obj_names[obj] << std::endl;
+  while(ros::ok()){
+    ros::Duration(2.0).sleep();
+    semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+    output_file_ << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+    output_file_ << (ros::Time::now() - start_time).toSec() << std::endl;
+    output_file_ << hierarchy;
+    if(hierarchy.rooms.empty())
+      return;
+
+    if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
+      if(state_.num_rooms_ < 2)
+        sendGoal(Action(Action::START_ROTATE, obj, hierarchy.curr_room));
+      else
+        sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
+      output_file_ << "GOAL " << (state_.num_rooms_ < 2 ? "START_ROTATE" : "ROTATE") << std::endl;
+      init_turn_done = true;
+      continue;
+    }
+    else if(state_.num_rooms_<2 && !state_.not_explored_.empty() && !init_turn_done){
+      sendGoal(Action(Action::START_ROTATE, obj, hierarchy.curr_room));
+      output_file_ << "GOAL " << "ROTATE" << std::endl;
+      init_turn_done = true;
+    }
+
+    HierarchyMap graph_map(hierarchy, obj);
+    std::cout << graph_map;
+    output_file_ << graph_map;
+    state_.updateState(graph_map, hierarchy.curr_room);
+    std::cout << state_;
+    output_file_ << state_;
+
+    Plan plan = generatePlan(graph_map, state_);
+    if(plan.finished())
+      std::cout << "OBJECT NOT FOUND!" << std::endl;
+
+    actionlib::SimpleClientGoalState execution_state = sendGoal(plan.actions_.front());
+    output_file_ << plan.actions_.front().getActionString() << std::endl;
+    if(execution_state != actionlib::SimpleClientGoalState::SUCCEEDED){
+      ROS_ERROR("EXECUTION FAILED!");
+//      std::cout << "Stop trying [y]: ";
+//      std::string s;
+//      std::cin >> s;
+//      if(!s.empty() && s[0] == 'y'){
+//        ROS_ERROR("QUIT SEARCH");
+//        return;
+//      }
+    }
+    else{
+      auto result = execute_action_client_.getResult();
+      if(result->result_number == 0){
+        state_.changeState(plan.actions_.front());
+        if(plan.actions_.front().type_ == Action::EXPLORE)
+          explored_rooms_.push_back(plan.actions_.front().target_room_);
+        if(plan.actions_.front().type_ == Action::MOVE_TO && graph_map.not_visited_[plan.actions_.front().target_room_]){
+          sendGoal(Action(Action::ROTATE, obj, hierarchy.curr_room));
+          output_file_ << "GOAL " << "ROTATE" << std::endl;
+        }
+      }
+      else if(result->result_number == 100){
+        output_file_ << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT FOUND" << std::endl;
+        std::cout << "OBJECT FOUND" << std::endl;
+        return;
+      }
+      if(state_.searchable_.empty() && state_.not_explored_.empty()){
+        output_file_ << (ros::Time::now() - start_time).toSec() << std::endl << "OBJECT NOT FOUND" << std::endl;
+        std::cout << "OBJECT NOT FOUND!" << std::endl;
+        return;
+      }
+    }
+  }
+}
+
+
+void Planner::justPlan(int obj){
+  std::cout << "Start just plan" << std::endl;
+  state_ = State();
+  semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+  if(hierarchy.rooms.empty())
+    return;
+
+  std::cout << "Got " << hierarchy.rooms.size() << " rooms" << std::endl;
+
+  HierarchyMap graph_map(hierarchy, obj);
+  state_.updateState(graph_map, hierarchy.curr_room);
+  std::cout << state_;
+
+  Plan plan = generatePlan(graph_map, state_);
+}
+
+
+void Planner::exploreAll(){
+  ros::Time start_time = ros::Time::now();
+  state_.resetState();
+  while(ros::ok()){
+    ros::Duration(2.0).sleep();
+    semantic_mapping_v2::HierarchySrvResponse hierarchy = getHierarchy(HIERARCHY_MAX_TRIES);
+    if(hierarchy.rooms.empty())
+      return;
+
+    if(hierarchy.rooms[hierarchy.curr_room].obj_probs.empty()){
+      if(state_.num_rooms_ < 2)
+        sendGoal(Action(Action::START_ROTATE, -1, hierarchy.curr_room));
+      else
+        sendGoal(Action(Action::ROTATE, -1, hierarchy.curr_room));
+      continue;
+    }
+
+    HierarchyMap graph_map(hierarchy, 0);
+    std::cout << graph_map;
+    state_.updateState(graph_map, hierarchy.curr_room);
+    std::cout << state_;
+
+    if(state_.not_explored_.empty())
+      return;
+
+    Action a(Action::MOVE_TO,0,0);
+    if(hierarchy.curr_room != state_.not_explored_.back()){
+      std::vector<int> room_path = graph_map.travel_path_[state_.current_room_][state_.not_explored_.back()];
+      std::vector<geometry_msgs::Pose> waypoints = graph_map.travel_waypoints_[state_.current_room_][state_.not_explored_.back()];
+      a = Action(Action::MOVE_TO, -1, room_path[1], waypoints[1]);
+    }
+    else
+      a = Action(Action::EXPLORE, -1, state_.not_explored_.back(), geometry_msgs::Pose());
+    actionlib::SimpleClientGoalState execution_state = sendGoal(a);
+    if(execution_state != actionlib::SimpleClientGoalState::SUCCEEDED){
+      std::cout << "EXECUTION FAILED, TRYING FURTHER" << std::endl;
+    }
+    else{
+      auto result = execute_action_client_.getResult();
+      if(result->result_number == 0){
+        if(a.type_ == Action::MOVE_TO && graph_map.not_visited_[a.target_room_])
+          sendGoal(Action(Action::ROTATE, -1, hierarchy.curr_room));
+        state_.changeState(a);
+      }
+    }
+  }
+}
+
+
+void Planner::justSearch(int obj){
+  ros::Time start_time = ros::Time::now();
+  state_.resetState();
+
+  sendGoal(Action(Action::ROTATE, -1, 0));
+  sendGoal(Action(Action::SEARCH, obj, 0));
+}
+
+
+std::ostream& operator<<(std::ostream& os, const semantic_mapping_v2::HierarchySrvResponse& res){
+  os << "current room: " << res.curr_room << std::endl;
+  for(int i=0; i<res.links.size(); i++){
+    os << "link " << i << ": " << res.links[i].room1 << " " << res.links[i].room2 << std::endl;
+  }
+  os << std::endl;
+  for(int i=0; i<res.rooms.size(); i++){
+    os << "room " << i << ": " << res.rooms[i].search_time << " " << std::endl;
+    for(int j=0; j<res.rooms[i].obj_probs.size(); j++){
+      os << obj_names[j] << ": " << res.rooms[i].obj_probs[j] << " " << res.rooms[i].expected_search_time[j] << " " << res.rooms[i].obj_probs[j]/res.rooms[i].expected_search_time[j] << std::endl;
+    }
+    for(int j=0; j<res.rooms[i].room_type_probs.size(); j++){
+      os << room_names[j] << ": " << res.rooms[i].room_type_probs[j] << std::endl;
+    }
+    os << std::endl;
+  }
+  os << std::endl << std::endl;
+
+  return os;
+}

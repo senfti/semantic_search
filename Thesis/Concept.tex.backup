@@ -1,0 +1,143 @@
+\chapter{Concept}
+
+\section{Overview}
+
+At the beginning the basic hardware setup was decided to be based on a Turtlebot 2 with an rigidly mounted additional RGBD-camera. This reduces the complexity of the problem as only movement of the whole robot in two dimensional space is possible with this setup. Assuming not too cluttered environments this setup should be sufficient for most search tasks.
+
+Using visual information for object detection was an obvious choice. As the usage of commonsense knowledge was the main intention behind this work a general out of the box solution was preferred over a specialized handcrafted solution. Computer vision challenges for object detection and other computer vision tasks resulted in various available solutions for these problems to choose from. As object detection systems using color images as input and bounding boxes of detected objects as output were the only systems with a sufficient number of detectable object classes and reasonable accuracy while not being too resource-demanding for the used hardware such a system was chosen. This left the problem of getting from the bounding boxes in the image to a three dimensional representation needed for the search. The depth information of the RGBD-camera was used to project the detections into 3D space and an approach similar to occupancy grid mapping was used to merge the detections of different images into a three dimensional object probability map.
+
+To make the search more intelligent the concept of a room was implemented. Like humans the robot can assign a type to every room, e.g. kitchen. As there is a high correlation between the type of a room and the objects located in this room the classification of a room and its usage to guide the object search is highly beneficial. In this work the classification of rooms was done using a neural network for place classification and also the objects found in this room were used. As in some cases one room consists of areas of different rooms types, e.g. a kitchenette in an office room, the room is split into a grid of cells holding the probability distribution of the cell being of a certain room type over all room types.
+
+The fact that indoor environments can be segmented into rooms is used in the representation of the environment. A hybrid map consisting of a topological map depicting the room structure and metric maps for every room combines has multiple advantages. Splitting the environment into multiple smaller metric maps makes it easier to keep the maps consistent and also reduces the computational load. On the other hand is navigation and the object mapping easier in metric maps. The hybrid map structure is easy to maintain as rooms are only connected by narrow doorways which can be detected reliably.
+
+This structure is also the basis for the planning. A high-level planner working on the topological map chooses the next room to search based on the expected object probabilities and search times in the rooms and the expected travel times between the rooms. A low-level planner plans the tasks within the room like room exploration and search. This greatly simplifies the planning problem and should still lead to good results as the object probability is correlated to the room type. 
+
+Fig bla1 shows the 
+
+% In the early phase we had to make some fundamental decisions regarding the hardware and the basic concept. 
+% Firstly a Turtlebot was chosen as the basic robot setup. To improve the navigation capabilities we replaced the Microsoft Kinect of the standard Turtlebot setup with a far more accurate laser scanner. Visual object detection was the obvious choice, therefore a camera was mounted. We choose an ASUS XTion RGBD-camera because the additional depth information could be used for 3D mapping and obstacle detection. \newline
+% Another fundamental decision was to heavily use the fact that indoor environments can be segmented into rooms. This makes the use of a hybrid map to represent the environment very appealing. Every room is a node in a topological map and contains, beside other information, a metric map. The doorways between the rooms are the edges in the topological map. This representation is also used in the planning process, which is split into a high-level planning and a low-level planning. The high-level planning is used to select the next room based on the topological map and the low-level planning has then only to consider the current room. \newline
+% As the focus was on the usage of commonsense knowledge the use of a universal object detection instead of a specialized one was intended. This led to the decision to use a convolutional nerual  network for object detection. As the accuracy of those CNNs is still not so great and the number of possible objects in a room is quiet high object tracking is most likely infeasible. Therefore the use of an approach similar to occupancy grid mapping to generate a probability distribution for objects of a specific class was decided. \newline
+% The use of commonsense knowledge regarding the correlation between room type and object probability can boost the search efficiency. As a room might have different part, e.g. a kitchenette in a living room, a grid representing the probability distribution of a cell being of a certain room is generated and used to improve the probability distribution of object occurances.
+% 
+% Fig blabla shows the resulting structure or the hybrid map.  
+
+\section{Hardware}
+
+The robot used in this work is a modified version of the Turtlebot 2. The Yujin Kobuki base of the Turtlebot is a differential drive base with an odometry, amended by a gyroscope. The maximum translational velocity of this base is 0.7 m/s, the maximum rotational velocity is 180°/s and the maximum payload is 5 kg. 
+
+For accurate localization and 2D mapping a Hokuyo laser range finders (LIDAR) is mounted on the base. The specified range is from 0.02 m to 4 m with an accuracy of $\pm10$ mm and the angular range is from -120° to 120° with a resolution of 0.36°. The LIDAR scans at a rate of 10 Hz.
+
+The main camera for object detection, place classification and 3D mapping is an ASUS Xtion PRO LIVE RGBD-camera mounted at a height of about 1m facing slightly downwards. The camera takes color images and depth images at a rate of 30 Hz with a resolution of 640x480. The field of view is 58° horizontally and 45° vertically. The range of the depth measurements is specified with 0.8 m to 3.5 m, though experiments showed a minimum range of about 0.55 m. The accuracy of the depth image depends on many factors, especially on the distance and is somewhere around $\pm$5 cm (TODO genauer wert und referenz).\newline
+For the detection of doorways another ASUS Xtion PRO LIVE was added looking upwards.
+
+A Clevo notebook is mounted on the robot running the complete software with a $4^{th}$ generation Intel i7 quadcore CPU running at 2.4 GHz, 8 GB DDR3 RAM and a NVidia Geforce GT 750M GPU with 2 GB memory. 
+
+\begin{figure}
+  \includegraphics[width=1.02\textwidth,trim={0 5cm 0 0},clip]{figures/front_and_side.pdf}
+  \caption{Robot setup in front and side view with labels of most important parts}
+\end{figure}
+
+\section{Vision (todo change title)}
+
+\subsection{Object detection}
+
+Object detection is a difficult problem. The available sensor data for object detection are the RGB-image and the depth image created by the ASUS Xtion RGBD-camera. The basic idea of this thesis was to create an intelligent system which uses available data to perform the search. Therefore a general object detection system was preferred instead of a specialized one. To find such a system submissions to object detection challenges were investigated. The criteria based on which the object detection system was chosen were the number of detectable object types, the detection accuracy and if it is possible to run the system on the given hardware. 
+
+The most suitable object detection system found was YOLO (``you only look once''), a system using a single neural network for object detection. In contrast to other object detection systems YOLO is quiet fast, even running at more than 2 frames per second on the used mid-class GPU, while still having a detection accuracy not far from the best submissions. There exists a version of YOLO trained on the COCO dataset. The COCO data contains more than 200000 color images with labels for 80 different object types. This number of different detectable object types was said to be sufficient for this work. 
+
+YOLO only uses the RGB-image as input. Using the depth image should improve the detection accuracy and also the resulting position would be in 3D and not only in 2D. However as the focus of current research is on RGB only images no suitable RGBD object detection systems was found. The output of YOLO is an array of bounding boxes. Each bounding box marks the location and size of a detected object and also holds the probability of the detected object being of a certain class for all detectable classes. The sum of all those probabilities is the ``objectness'', which is the probability of an detectable object being marked by the bounding box. Using the depth image an estimation of the 3D position of the detected object is possible.
+
+\subsection{Room type classification}
+
+There are various features which can be used to classify rooms into categories used by humans. Visual features are very expressive for room classification. Another advantage of using images for room type classification is the existence of CNNs trained for place classification due to various computer vision challenges for this task. Therefore such a CNN is used for room type classification. Other features like shape are not used because of their limited expressiveness and the lack of out-of-the-box classifiers. 
+
+\subsection{Doorway detection}
+
+The detection of doorways is important for the segmentation of the environment into rooms. Doorways are narrow passages through walls. As doorways are lower than rooms, usually 2 meters high, and the ceiling of rooms is usually not very cluttered the detection was done using point clouds generated by a RGBD-camera looking upwards. The simple approach used classifies space to be a doorway if there is a narrow passage which is about 2 meters high and the space in front and behind the passage is free of obstacles.
+
+\section{Mapping}
+
+In this work mapping is much more than creating a two dimensional occupancy grid map for navigation. In addition to the 2D map a 3D map is build to avoid various obstacles not or only partially visible to the LIDAR, like for example tables and also used in the calculation of the object probability distribution. 
+This object probability distribution needed for the search planning is mapped with a three dimensional grid map for every object class. To improve the object probability distribution also a map classifying parts of the room to room categories is created and also the positions of doorways have to be inserted into the maps. All this together is created for every room separately and the rooms are nodes in a topological map representing the room structure of the environment.
+
+\subsection{Localization and metric mapping}
+
+For localization and navigation a metric map is needed. The generation of a two dimensional map using the laser scanner is not sufficient to avoid obstacles as many obstacles are not or only partially visible to the LIDAR. Such an obstacle is for example a table, where only the feet are visible to the LIDAR. Therefore the creation of a three dimensional map was decided as it is also useful in the creation of the object probability map. However 3D simultaneous localization and mapping (SLAM) is computational expensive and the tests of different 3D SLAM implementation showed worse map quality and localization accuracy than 2D SLAM using GMapping. This is probably due to the inaccuracy of the RGBD-camera compared to the LIDAR. Therefore the decision was to used GMapping for accurate 2D SLAM and create the 3D map by mapping with known pose.
+
+The challenge with this approach is to keep the 3D map consistent with the 2D map. In GMapping every particle carries its own map. Therefore it is necessary to do also the 3D mapping for every particle. Therefore the number of particles has to be low. As there is usually enough structure in indoor environment for GMapping's scan matcher and the maps are only as large as a room, hight quality maps can also generated with less than 10 particles.
+
+The 3D occupancy grid mapping library OctoMap is used for the 3D mapping. For every particle the point cloud created from the Asus Xtion depth image is transformed into the map frame using the particles pose. Then ray-tracing is done for every point in the point cloud to adjust the occupancy values in the Octomap, cells where a ray ends increase their occupancy value and the other cells intersected by a ray decrease the occupancy value. As the ray-tracing of all points in the point cloud is quiet costly and the quality of the 3D map is not that important, a the point cloud is downsampled before used in the 3D mapping.
+
+\subsection{Room type mapping}
+
+It is quiet common to have rooms which consists of multiple parts of different room types, e.g. an office room with an kitchenette. Therefore it is not sufficient to assign a room a single room type. Also a problem is that the view poses of the classification have to be taken into account. Bad views like when the robot is directly in front of a wall and seeing some parts of the room much more often than other parts can distort the result. Therefore the rooms is segmented into regular two dimensional grid with each cell having its own probability distribution over all possible room types and the probability updates are only done on the cells currently visible. This approach does not only make it possible to represent room parts of different room types but also solves the other problems mentioned above. Bad views don't have as much impact as the number of updated cells is low in such a case and the impact heavily viewed portions of the room is not as a cell can only have a limited impact.
+
+The probabilities in the room type map are base on the classification results of a deep convolutional neural network (CNN( trained to classify images into 205 place categories. Many of those categories can be ignored as they are outdoor categories leaving 82 indoor place categories. These categories are the possible room types. The output of CNN is an array of the probabilities of the image showing a certain category. The probabilities of the ignored categories are set to zero and the remaining probabilities are normalized to one resulting in the probability distribution used in the room type mapping. The objects located in the room are only considered in calculation of the final object probability distribution for efficiency reasons.
+
+The room type mapping is done similar to occupancy grid mapping with the assumption of independent cells and that a cell can only have one type. The probability of a cell being of room type $RT$ given the classified images and the visible cells in the images is calculated with
+\begin{equation}
+ P(R_{Cj}=RT | I_{1:t}, s_{Cj,1:t})=\frac1Z\frac{P(R_{Cj}=RT|I_t,s_{Cj,t})\cdot P(R_{Cj}=RT | I_{1:t-1}, s_{Cj,1:t-1})}{P(R_{Cj}=RT)}
+\end{equation}
+with the inverse sensor model $P(R_{Cj}=RT|I_t,s_{Cj,t}$, the recursive term $P(R_{Cj}=RT | I_{1:t-1}, s_{Cj,1:t-1})$, the prior $P(R_{Cj}=RT)$ and the normalization term
+\begin{equation}
+ Z=\sum_{RT\:\in \: room\: types}\frac{P(R_{Cj}=RT|I_t,s_{Cj,t})\cdot P(R_{Cj}=RT | I_{1:t-1}, s_{Cj,1:t-1})}{P(R_{Cj}=RT)}
+\end{equation}
+
+The inverse sensor model has to model what is visible in an image. In addition the model also has to take into account that multiple cells of different room type can be visible. This lead to the following inverse sensor model.
+\begin{equation}
+ P(R_{Cj}=RT|I_t,s_{Cj,t}) = \begin{cases}P(R_{I,t}=RT\:|\:I_t) \cdot V_{H_R} + P(R_{I,t}\neq RT\:|\:I_t)\cdot V_{M_R} & if\:cell\:Cj\:visible\\P(R_{Cj}=RT) & else\end{cases}
+\end{equation}
+$P(R_{I,t}=RT\:|\:I_t)$ is the probability of the image showing a room of type $RT$, $V_{H_R}$ is the parameter which influences how much the probability increases if the images shows a room of type $RT$ and $V_{M_R}$ how much it decreases otherwise. 
+%Therefore only cells within the view cone and within a chosen distance range are updated with the information of the image classification. This approach is sufficient as cells outside the room are discarded later on and the occasional update of invisible cells behind an obstacle should not cause 
+
+\subsection{Object mapping}
+
+The goal of the object mapping to store the information where objects were seen. There are lots of objects in indoor environments and the object detections accuracy is far from perfect. Therefore the representation as a list of found objects with location and category and the tracking of those objects is infeasible. A representation by a three dimensional grid map with a probability for every object class for every cell looked far more promising. For this approach to work the probabilities of different object types were assumed to be independent. This assumption was made to simplify the problem and was made because it is possible that multiple different objects are located within one cell. The second assumption is that the probabilities of different cells are independent. With these assumptions the update can be done similar to the update in occupancy grid mapping for every object class.
+
+The probability of an object of type $o$ being in a cell $P(O_{Cj}^o | I_{1:t}, x_{1:t})$ can be split into the calculation of the probability of the cell being occupied $P(occ_{Cj} | I_{1:t}, x_{1:t})$ and the probability of one of the occupying things being an object of type $o$ $P(OT_{Cj}^o| I_{1:t}, x_{1:t})$, with $I_{1:t}$ being the taken RGBD images and $x_{1:t}$ being the positions where the images where made.
+\begin{equation}
+ P(O_{Cj}^o | I_{1:t}, x_{1:t}) = P(occ_{Cj} | I_{1:t}, x_{1:t}) \cdot P(OT_{Cj}^o| I_{1:t}, x_{1:t})
+\end{equation}
+
+The calculation of the probabilities of a cell being occupied is already done by the 3D mapping, so the segmentation of the problem as described above makes things easier as the occupancy needs not be taken into account in the rest of this section. 
+\begin{equation}
+ P(OT_{Cj}^o | I_{1:t}, x_{1:t})=\frac1Z\frac{P(OT_{Cj}^o|I_t,x_{t})\cdot P(OT_{Cj}^o | I_{1:t-1}, x_{1:t-1})}{P(OT_{Cj}^o)}
+\end{equation}
+with $OT_{Cj}^o$ specifying the occurrence of an object $o$ in cell $C_j$ in case $C_j$ is occupied, the inverse sensor model $P(OT_{Cj}^o|I_t,x_{t})$, the recursive term $P(OT_{Cj}^o | I_{1:t-1}, x_{1:t-1})$, the prior $P(R_{Cj}=RT)$ and the normalization term
+\begin{equation}
+ Z=\sum_{X\:\in \: \{true, false\} }\frac{P(OT_{Cj}^o = X|I_t,x_{t})\cdot P(OT_{Cj}^o = X | I_{1:t-1}, x_{1:t-1})}{P(OT_{Cj}^o = X)}
+\end{equation}
+
+The inverse sensor model is the difficult part as it has to model the connection between object detection results given as bounding boxes with associated object class probabilities and per pixel depth information and the 3D probability representation. The basic idea is to project the object detection in the image into 3D space using the per pixel depth information from the depth image. 
+
+There are five things that make this a difficult problem:
+\begin{enumerate}
+\item Not every pixel within a bounding box is part of the detected object
+\item Bounding boxes can overlap.
+\item There are pixels without depth information: Parts in the image not visible to the IR camera, reflexions, out of range and other things can cause pixels having no depth information.
+\item A cell is usually not fully filled by an object.
+\item A cell can contain more than one object.
+\end{enumerate}
+
+The algorithm used for the inverse sensor model draws a certain number of samples randomly from the image. Not using all pixels is done due to performance reasons. The random selection of samples was done as pixels with invalid depth can easily be discarded and also because finding samples regularly distributed in 3D is performance intensive. 
+
+The samples are then assigned to the corresponding cell in the 3D grid representation. For every cells containing at least one sample the probability of every object class is updated using the maximum probability of the object class of every bounding box containing a sample which falls into the cell. The maximum is used here as a lower probability is said to be caused by
+\begin{itemize}
+ \item a sample hitting another object, which is also located in the cell.
+ \item an overlapping bounding box, which represents another object.
+\end{itemize}
+
+These assumptions lead to probabilities being higher than they should be and high probabilities also around the objects. Another thing is that there might be no sample on an object in a cell, especially if the object is small. Therefore two additional parameters $V_{H_O}$ and $V_{M_O}$ were introduced to improve the model. The resulting inverse sensor model is
+\begin{equation}
+ P(OT_{Cj}^o|I_t,x_{t}) = \begin{cases}P_{max}(OT_{Cj}^o|I_t,x_t) \cdot V_{H_O} + P_{max}(\neg OT_{Cj}^o|I_t,x_t) \cdot V_{M_O} & if\:sample\:in\:cell\\P(OT_{Cj}^o) & else\end{cases}
+\end{equation}
+with $P_{max}(OT_{Cj}^o|I_t,x_t)$ being the maximum probability of object class $o$ of all bounding boxes containing a sample that falls into cell $C_j$.
+
+\subsection{Doorway mapping}
+
+The doorway detections are transformed into the map coordinate frame using the position of the robot at the time when the image for the detection was made. If a detection is near a previous detection the detection is said to be caused by the same doorway and the doorway position is updated using a running average filter. If no previous detection near the new detection is found a new doorway is inserted into the map.
+
+\subsection{Topological Mapping}
+
+The so far discussed mapping parts cover the mapping of a room in a metric representation. Large metric maps are difficult to keep consistent and have negative impact on the performance. As rooms are separated by walls and only connected through narrow, easy to detect doorways 

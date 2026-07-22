@@ -1,0 +1,131 @@
+\section{Basic Functionality}
+
+In this section an overview is given of how well the basic components of the developed system work in practice. This should help to get a better understanding for the results presented in the following sections.
+
+\subsection{Computer Vision} \label{vision_eval}
+
+\subsubsection{Room type classification}
+
+In most cases the room type classifier returns reasonable results. If there is a clearly correct room type, the probability for this room type in the result of the room type classifier is high, as can be seen in Figure \ref{placegood}.
+\begin{figure}[h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[living room: 0.708, parlor: 0.239]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/wz.png}} &
+\subfloat[corridor: 0.956]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_358.png}} 
+\end{tabular}
+\caption[Images with a high probability for the correct room type]{Images with a high probability for the correct room type in the room type classification result; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
+\label{placegood}
+\end{figure}
+
+In many cases multiple similar room types, e.g. kitchen and kitchenette, are fitting. In this case most of the probability in the room type classification result is split between the fitting room types, as can be seen in Figure \ref{placegood2}.
+\begin{figure}[h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[kitchen: 0.579, kitchenette: 0.399]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_234.png}} &
+\subfloat[office: 0.561, home office: 0.424]{\includegraphics[width=0.4\textwidth]{figures/peek/explore_lab_1bag1221.png}}
+\end{tabular}
+\caption[Images, where most of the probability is split between multiple fitting types]{Images, where most of the probability in the room type classification result is split between two fitting types; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
+\label{placegood2}
+\end{figure}
+
+In some images the room type is not clear. In this case multiple different room types have a significant probability in the result of the place classifier and some of those are not fitting. In the image on the left of Figure \ref{placebad} a living room area with a kitchen area in the background is show. The result of the room type classifier does not reflect this. In the image on the right the room types office and corridor are reasonable, but the other room types which have a significant probability, are wrong. 
+\begin{figure}[h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[office: 0.242, home office: 0.240, pantry: 0.104, dorm room: 0.083, kitchen: 0.072, kitchenette: 0.062]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_16.png}} &
+\subfloat[office: 0.347, reception: 0.178,\newline corridor: 0.126, art gallery: 0.120, lobby: 0.067, art studio: 0.063]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_0.png}} 
+\end{tabular}
+\caption[Images with no clear room type]{Images with no clear room type; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
+\label{placebad}
+\end{figure}
+
+The place classifier has obviously problems when the robot is in front of a wall or another object which covers the whole image, as can be seen in Figure \ref{placebad2}. In this case the room types closet, corridor, shower and basement have usually a high probability in the room type classification result.
+\begin{figure}[h!]
+\centering
+\begin{tabular}{c}
+\subfloat[closet: 0.535, corridor: 0.206,\newline shower: 0.092]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_114.png}}
+\end{tabular}
+\caption[Image taken directly in front of a wardrobe]{Image taken directly in front of a wardrobe; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
+\label{placebad2}
+\end{figure}
+
+\begin{figure} [h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[Image showing a dine room area and a kitchen area: \newline kitchen: 0.459, kitchenette: 0.397,\newline dine room: 0.060]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_44.png}} &
+\subfloat[Image showing only a dine room area: \newline dine room: 0.591, kitchen: 0.066]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_28.png}} \\
+\end{tabular}
+\caption[Image showing two areas of different room types]{Image showing two areas of different types and comparison image; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
+\label{placebad3}
+\end{figure}
+If multiple areas of different room types are visible in one image, this is most of the time not reflected in the result of the place classifier because the more prominent room type overrules the other one. This can be seen in Figure \ref{placebad3}: on the left, where also a kitchen area is visible, the probability for dine room is low, whereas in the right image, where no kitchen area is visible, the probability for dine room is high.
+
+\begin{figure}[h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[dark and noisy image: \newline kitchen: 0.481, kitchenette: 0.151, restaurant kitchen: 0.115]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_278.png}} &
+\subfloat[comparison image: \newline kitchen: 0.579, kitchenette: 0.399]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_234.png}} \\
+\subfloat[blurry image: \newline kitchen: 0.594, kitchenette: 0.355]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_539.png}} &
+\subfloat[comparison image: \newline kitchen: 0.511, kitchenette: 0.441]{\includegraphics[width=0.4\textwidth]{figures/vision_test_imgs/pure_538.png}} 
+\end{tabular}
+\caption[Impact of bad lighting, noise and motion blur on the place classifier]{Impact of bad lighting, noise and motion blur on the place classifier; the result of the room type classifier is shown in the caption (only for room types with a significant probability)}
+\label{placebad4}
+\end{figure}
+The place classifier is quiet robust against bad lighting and noise in the image, as can be seen by comparing image (a) and (b) in Figure \ref{placebad4}. Also blurry images caused by the robot movement have no big impact, as can be seen by comparing image (c) and (d) in Figure \ref{placebad4}.
+
+\subsubsection{Object detection}
+
+A quantitative evaluation of the used YOLOv3 object detection CNN can be found in the related paper \cite{yolo3}. There can be seen that the object detection works better for large objects than for small ones. This trend was also observed during the test runs. During tests was found that not all small objects are equally difficult to detect for the CNN. E.g. remotes and especially mouses were detected most of the time with high confidence, even from some distance, as can be seen in image (a) of Figure \ref{obj1}. On the other hand other small objects, e.g. spoons, knifes and forks, were only detected when the robot was right in front, as shown in image (b) of Figure \ref{obj1}, and then only sometimes with high confidence. 
+\begin{figure} 
+\centering
+\begin{tabular}{cc}
+\subfloat[The mouse takes little space in the image, but was still detected with high confidence]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o1.png}} &
+\subfloat[The cutlery is perfectly visible, but only the spoon was detected correctly]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o4.png}} 
+\end{tabular}
+\caption[Detection of small objects]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\label{obj1}
+\end{figure}
+
+The confidence of the detections was found to vary a lot, like in image (a) of Figure \ref{obj2}. Also some completely wrong detections were encountered, e.g the refrigerator in 
+image (b) of Figure \ref{obj2}.
+\begin{figure} 
+\centering
+\begin{tabular}{cc}
+\subfloat[High confidence for the chairs in front and the bowl, low confidences for all other objects; the wine glass on the right of the potted plant was not detected at all]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o3.png}} &
+\subfloat[Refrigerator detected at wall]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o5.png}} 
+\end{tabular}
+\caption[Varying confidence and wrong detections]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\label{obj2}
+\end{figure}
+
+The performance of the object detection drops significantly with bad lighting, as can be seen in Figure \ref{obj3}. This is especially a problem because the sensitivity of the used RGBD-camera is not very high and the dynamic range is low.
+\begin{figure} [h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[Many detections with good lighting]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o7.png}} &
+\subfloat[Few and wrong detections with bad lighting]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/o6.png}} 
+\end{tabular}
+\caption[Object detection in images with bad lighting]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\label{obj3}
+\end{figure}
+
+The performance of the object detection also drops with motion blur, as can be seen in Figure \ref{obj4}. This, in combination with the low sensitivity of the camera and the therefore necessary high exposure time, made the limitation of the rotational velocity during movement necessary.
+\begin{figure}  [h!]
+\centering
+\begin{tabular}{cc}
+\subfloat[Many detections without motion blur]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/obj_540.png}} &
+\subfloat[Few detections with motion blur]{\includegraphics[width=0.45\textwidth]{figures/vision_test_imgs/obj_541.png}} 
+\end{tabular}
+\caption[Object detection in images with motion blur]{Detected objects (given by bounding box, type and confidence) with a confidence greater than 0.1}
+\label{obj4}
+\end{figure}
+
+In general can be said that the object detection is sufficient if no objects, which are difficult to detect, are searched. However, a better object detection would make the problem easier and the object search more reliable.
+
+\subsubsection{Doorway detection}
+
+During the nearly 50 test runs with enabled doorway detection done for the evaluation, more than 100 doorways were correctly inserted into the maps with no false negatives and only one false positives. Also during the development process only one false positive was encountered after good parameters were found.
+
+\subsection{Navigation} \label{NavEval}
+
+Most of the navigation goals are reached without difficulties or major delays. The global planning in the 2D map of the room works without problems. However the local planner and the robot movement cause some problems. The high payload brings the robot to its limits. On even and clean floors the robot moves fine, but on slippery or uneven floors the robot has not enough grip on the active wheels to execute the movements as planned because too much weight is on the passive wheels. Due to the robot's design, with the passive wheels being fixed in forward direction, rotational movements are more difficult to execute for the robot. Thus, the problem with slipping wheels only affects the rotational component of the movement. The result is that rotations are slower, curves are driven wider as planned and changes in the direction are delayed. In open areas this does not cause problems but in narrow areas the local planner sometimes fails to keep enough distance between the robot and the obstacles. In this case the planner fails to find a valid path because every path is assumed to cause a collision. The robot can also get into this situation if it drifts towards an obstacle during an in-place rotation which happens if only one active wheel is slipping. The recovery behaviors of the \texttt{move{\_}base} and short backward movements are usually sufficient to recover from this situation, but these take some time. This is a major factor for the varying search times for the same test scenario. The local planner has in general a big impact on the search time. The smoother it can navigate the robot through narrow areas and around obstacles, the faster the search will be.

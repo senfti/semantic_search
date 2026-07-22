@@ -1,0 +1,10 @@
+std_msgs/Header header
+int16 id
+float32[] room_type_probs
+float32[] obj_probs
+float32[] room_type_probs_2
+float32[] obj_probs_2
+int16[] links
+float32[] to_link_travel_times
+float32 search_time
+float32[] expected_search_time

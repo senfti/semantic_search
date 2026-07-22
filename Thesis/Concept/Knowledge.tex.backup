@@ -1,0 +1,20 @@
+\section{Commonsense Knowledge} \label{Knowledge}
+
+An inevitable prerequisite for intelligent behavior is knowledge. A learning system is out of the scope of this thesis because of the huge amount of time it takes a robot to learn enough about indoor environments to make reasonable decision. Therefore, the knowledge useful for the robot has to be chosen and prepared. In this work commonsense knowledge about indoor environments, rooms, and objects is important. Some knowledge, like the concept of a room, is implicitly used through the design of the system. Other knowledge, like the visual appearance of objects and room types is encoded in the weights of the CNNs, which are trained on thousands of labeled images. Many already trained CNNs are available and ready to use. 
+
+Additionally the robot is equipped with knowledge about the correlation between the type of a room area and the objects located in this area. One application of this knowledge is the estimation of object probabilities in unexplored areas of a room. Based on the room types in already explored areas of a room the room type of the unexplored areas can be estimated and in further consequence also the object probabilities. Therefore, it is possible to make a reasonable estimate about the probability of the searched object being in a room after just peeking into the room. The second application is to find likely object locations based on the room type of an area. The room type of areas in the room can be determined quickly but many objects are only detected when taking a closer look. Knowing in what type of area the object we are searching for is more likely helps to find the object faster.
+
+Only correlations between the detectable object classes and detectable room types are important. These are the classes the neural networks are trained for. With $N_R$ room types and $N_O$ object classes this results in a $N_R$x$N_O$ matrix $K$, where the element $K_{r,o}$ represents the probability of an object of type $o$ being in a room of type $r$.
+
+The idea is to use the information from image datasets created for computer vision challenges. The dataset the object detector was trained on consists of thousands of images and with annotations specifying the objects visible in the images. To get also the place categories of the images the place classification CNN proposed by Wang et al. \cite{PlaceCNN} was run on all images of the dataset and the probability distribution over all place classes was stored for every image. With this information the matrix elements were calculated with
+\begin{equation} \label{eq5_1}
+    K_{r,o}=\frac{\sum_{i=1}^{|Images|}P_i(r)P_i(o)}{\sum_{i=1}^{|Images|}P_i(r)}
+\end{equation}
+where $P_i(r)$ is the probability of the image $i$ showing a place $r$, which is the result of the place classification CNN, and 
+\begin{equation} \label{eq5_2}
+P_i(o)=\begin{cases}1 & if\; object\; in\; image\\0 & else\end{cases}
+\end{equation}
+
+This approach is more promising than other approaches, like the estimation based on the number of search results in image search engines proposed by Hanheide et al. \cite{knowledgeFromInternet}. One reason is that the images in computer vision challenge datasets are intended to be representative for the world. In contrast some uncommon scenes are highly overrepresented on the Internet, like the duck in the bath tube. The second benefit is that the names of objects and room types are not used, avoiding the problem of ambiguous or inaccurate terms. 
+
+With this approach the meaning of the matrix K is slightly different. The matrix element $K_{r,o}$ is now the probability of an object of type $o$ being in an image taken in a room of type $r$. So the size of the space usually seen in an image in the dataset has to be taken into consideration, as images covering more space are more likely to contain an object. On the other hand the size of the region of interest has also to be considered as smaller areas have lower object probabilities. This is described in more detail in section \ref{ObjectProbMap} 

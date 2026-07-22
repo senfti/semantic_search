@@ -1,3 +1,5 @@
 /.project
 .idea/
 cmake-build-debug/
+CMakeFiles/
+object_place_db_generator/build/

@@ -1,0 +1,36 @@
+\subsection{Room type mapping}
+
+Assigning a single room type to a room is not sufficient in many cases. One room can consists of multiple areas of different types, like an office room with a kitchenette. Therefore a regular, two dimensional grid is laid over the room. Every cell has its own probability distribution over all detectable room types. $P(R_{Cj}=RT|I_{1:t},\mathbf{x}_{1:t})$ is the probability of cell $j$ being of room type $RT$ given all the until now classified images $I_{1:t}$ and the robot poses, where the images were made, $\mathbf{x}_{1:t}$. $RT$ is one of the 82 room types of the room type classifier. As described in section \ref{ssec:num2} this mapping is done for every particle separately. 
+
+The update of the probability distribution is similar to the update step in occupancy grid mapping and the same assumptions are made. These are that all cells are independent and a cell is completely of one room type. 
+
+\begin{equation}
+ P(R_{Cj}=RT | I_{1:t}, \mathbf{x}_{1:t})=\frac1Z\frac{P(R_{Cj}=RT|I_t,\mathbf{x}_{t})\cdot P(R_{Cj}=RT | I_{1:t-1}, \mathbf{x}_{1:t-1})}{P(R_{Cj}=RT)}
+\end{equation}
+with the inverse sensor model $P(R_{Cj}=RT|I_t,\mathbf{x}_{t})$, the recursive term $P(R_{Cj}=RT | I_{1:t-1}, \mathbf{x}_{1:t-1})$, the prior $P(R_{Cj}=RT)$ and the normalization term
+\begin{equation}
+ Z=\sum_{RT\:\in \: room\: types}\frac{P(R_{Cj}=RT|I_t,\mathbf{x}_{t})\cdot P(R_{Cj}=RT | I_{1:t-1}, \mathbf{x}_{1:t-1})}{P(R_{Cj}=RT)}
+\end{equation}
+For simplicity and in lack of data the prior distribution was assumed to be flat.
+\begin{equation}
+ P(R_{Cj}=RT) = \frac{1}{|\mathbf{RT}|} \; \; \forall \; \; RT \in \mathbf{RT}
+\end{equation}
+with $\mathbf{RT}$ being the set of detectable room types.
+
+The inverse sensor model $P(R_{Cj}=RT|I_t,\mathbf{x}_{t})$ uses the result of the room type classification for the image $I_t$, $P(R_{I_{t} }=RT|I_t)$. It has also to take into account which cells are visible. A simple approach is used, assuming all cells with a cell center within the view cone of the camera, which are also within a certain range, are visible. This is shown in Figure (TODO FIGURE). While being easy and fast to calculate this simplistic approach is also sufficiently accurate. False cell updates occur if an obstacle completely occludes the cells behind it. As this is mostly caused by walls and space outside the room is ignored in later stages of the system, the impact of wrongly updated cells should be small. Also to be considered is that not all cells visible in an image have to be of the same room type. Using 
+\begin{equation}
+ P(A) =  \sum_{B \in \mathbf{B}} P(A,B) = \sum_{B \in \mathbf{B}} P(B)\cdot P(A|B)
+\end{equation}
+and assuming $P(R_{Cj}=RT|R_{I_{t}}, I_t) = P(R_{Cj}=RT|R_{I_{t}})$ the inverse sensor model is
+\begin{equation}
+ P(R_{Cj}=RT|I_t,\mathbf{x}_{t}) = \begin{cases}\sum_{R_{I_{t} }\:\in \: \mathbf{RT}} P(R_{I_{t} }|I_t) \; P(R_{Cj}=RT|R_{I_{t}})  & if \;cell \; C_j \; visible\\P(R_{Cj}=RT) & else\end{cases}
+\end{equation}
+
+$P(R_{Cj}=RT|R_{I_{t} })$ is the probability of a visible cell $C_j$ being of room type $RT$ given the room type shown mostly in the image $R_{I_{t}}$ and can be represented by a $|\mathbf{RT}|$x$|\mathbf{RT}|$ matrix. Two factors are considered in the creation process of this matrix. The diagonal elements, where $R_{Cj}=R_{I_{t}}$, have to have a relatively high probability. Further the other matrix elements have to depend on the likelihood of an area of type $R_{Cj}$ being near an area of type $R_{I_{t}}$ (e.g. being high for kitchen and dine room) and how similar two room types are (e.g. kitchen and kitchenette). The probability matrix is therefore calculated by
+\begin{equation}
+ P(R_{Cj}=RT|R_{I_{t} }) = \begin{cases} V_{equal} & if \; R_{Cj}=R_{I_{t}}=RT \\ k\cdot M_{R_{Cj},RT|R_{I_{t}}} & else \end{cases}
+\end{equation}
+$V_{equal}$ is a parameter, which has to be estimated empirically, $M_{R_{Cj},RT|R_{I_{t}}}$ is from the room type co-occurrence matrix described in section \ref{ssec:num1} and $k$ is a factor, which is calculated based on the constraint
+\begin{equation}
+ \sum_{RT \in \mathbf{RT}} P(R_{Cj}=RT|R_{I_{t}})=1 
+\end{equation}

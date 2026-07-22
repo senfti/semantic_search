@@ -50,6 +50,7 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
   <build_depend>vision</build_depend>
+  <build_depend>prob_map_view</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>vision</build_depend>
   <build_depend>kb_query</build_depend>
@@ -64,6 +65,7 @@
   <run_depend>nav_msgs</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>vision</run_depend>
+  <run_depend>prob_map_view</run_depend>
   <run_depend>kb_query</run_depend>
 
 

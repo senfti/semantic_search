@@ -1,0 +1,5 @@
+<launch>
+  <node name="door_asus_set_frame_skip" pkg="dynamic_reconfigure" type="dynparam" args="set /door_asus/camera/driver data_skip 6" />
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_base_link" args="0 0 0 0 0 0  /base_footprint /base_link 100" />
+  <node pkg="velocity_scale" type="velocity_scale" name="velocity_scale" args="1.2" />  
+</launch>

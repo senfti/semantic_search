@@ -1,0 +1,4 @@
+
+\subsection{Doorway mapping}
+
+The doorway locations have to mapped for every particle. The input for this are the results of the doorway detection, which contain the locations of currently seen doorways in the robot coordinate frame. Based on the particle position they are transformed into the map coordinate frame. The doorway mapping system then decides, if a detection is a already seen doorway or if it is a new one. This is done by comparison of location and orientation with all already mapped doorways. If no door with similar orientation is near the detection, a new doorway is inserted. Otherwise the pose of the corresponding doorway is updated, the door pose is then calculated using a running average. The doorway mapper of the currently best particle is also responsible for the detection of passing a door.

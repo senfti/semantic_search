@@ -1,0 +1,9 @@
+<launch>
+  <!--  smooths inputs from cmd_vel_mux/input/teleop_raw to cmd_vel_mux/input/teleop -->
+  <include file="$(find turtlebot_teleop)/launch/includes/velocity_smoother.launch.xml"/>
+
+  <node pkg="mouse_control" type="mouse_control" name="mouse_control" launch-prefix="xterm -hold -e">
+    <remap from="mouse_control/cmd_vel" to="teleop_velocity_smoother/raw_cmd_vel"/>
+  </node>
+
+</launch>

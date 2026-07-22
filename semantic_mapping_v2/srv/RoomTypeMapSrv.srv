@@ -1,0 +1,4 @@
+int16 room_id
+int16 id
+---
+RoomTypeMapMsg[] maps

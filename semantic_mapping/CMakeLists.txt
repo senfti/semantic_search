@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   vision
   kb_query
+  prob_map_view
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS})

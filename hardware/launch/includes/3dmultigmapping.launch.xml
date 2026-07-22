@@ -1,0 +1,58 @@
+<launch>
+  <arg name="scan_topic"  default="scan" />
+  <arg name="base_frame"  default="base_footprint"/>
+  <arg name="odom_frame"  default="odom"/>
+
+  <node pkg="multimap_gmapping3d" type="multimap_gmapping3d" name="multimap_gmapping3d" output="screen">
+    <param name="gmapping/base_frame" value="$(arg base_frame)"/>
+    <param name="gmapping/odom_frame" value="$(arg odom_frame)"/>
+    <param name="gmapping/map_update_interval" value="5.0"/>
+    <param name="gmapping/maxUrange" value="3.5"/>
+    <param name="gmapping/maxRange" value="4.5"/>
+    <param name="gmapping/sigma" value="0.05"/>
+    <param name="gmapping/kernelSize" value="1"/>
+    <param name="gmapping/lstep" value="0.05"/>
+    <param name="gmapping/astep" value="0.05"/>
+    <param name="gmapping/iterations" value="5"/>
+    <param name="gmapping/lsigma" value="0.01"/>
+    <param name="gmapping/ogain" value="3.0"/>
+    <param name="gmapping/lskip" value="0"/>
+    <param name="gmapping/minimumScore" value="200"/>
+    <param name="gmapping/srr" value="0.01"/>
+    <param name="gmapping/srt" value="0.02"/>
+    <param name="gmapping/str" value="0.01"/>
+    <param name="gmapping/stt" value="0.02"/>
+    <param name="gmapping/linearUpdate" value="0.5"/>
+    <param name="gmapping/angularUpdate" value="0.436"/>
+    <param name="gmapping/temporalUpdate" value="-1.0"/>
+    <param name="gmapping/resampleThreshold" value="0.5"/>
+    <param name="gmapping/particles" value="20"/>
+  <!--
+    <param name="gmapping/xmin" value="-50.0"/>
+    <param name="gmapping/ymin" value="-50.0"/>
+    <param name="gmapping/xmax" value="50.0"/>
+    <param name="gmapping/ymax" value="50.0"/>
+  make the starting size small for the benefit of the Android client's memory...
+  -->
+    <param name="gmapping/xmin" value="-1.0"/>
+    <param name="gmapping/ymin" value="-1.0"/>
+    <param name="gmapping/xmax" value="1.0"/>
+    <param name="gmapping/ymax" value="1.0"/>
+
+    <param name="gmapping/delta" value="0.05"/>
+    <param name="gmapping/llsamplerange" value="0.01"/>
+    <param name="gmapping/llsamplestep" value="0.01"/>
+    <param name="gmapping/lasamplerange" value="0.005"/>
+    <param name="gmapping/lasamplestep" value="0.005"/>
+    <remap from="scan" to="$(arg scan_topic)"/>
+
+    <param name="Octomap/resolution" value="0.1" />    
+    <param name="Octomap/frame_id" type="string" value="map" />                 <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->    
+    <param name="Octomap/sensor_model/max_range" value="4.0" />                 <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/pointcloud_min_z" value="0.3" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/hit" value="0.65" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/sensor_model/miss" value="0.35" />                       <!-- maximum range to integrate (speedup!) -->    
+    <param name="Octomap/downsample_voxel_size" value="0.03" />                       <!-- maximum range to integrate (speedup!) --> 
+
+  </node>
+</launch>

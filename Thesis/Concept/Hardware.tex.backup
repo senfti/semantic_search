@@ -1,0 +1,15 @@
+\section{Hardware} %TODO references?
+
+The robot used in this master's thesis is a modified version of the Turtlebot 2. The Yujin Kobuki base of the Turtlebot is a differential drive base with an odometry amended by a gyroscope. The maximum translational velocity of this base is 0.7\,m/s and the maximum rotational velocity is 180\,°/s, though the full speed is not used. The maximum payload is 5\,kg, which is about the weight of the notebook, the sensors and the construction.
+
+For accurate localization and 2D mapping a Hokuyo LIDAR is mounted on the base at a height of about 15\,cm. The specified range is from 0.02\,m to 4\,m with an accuracy of $\pm10$ mm and the angular range is from -120° to 120° with a resolution of 0.36°. The LIDAR scans at a rate of 10\,Hz.
+
+The main camera for object detection, place classification and 3D mapping is an ASUS Xtion PRO LIVE RGBD-camera mounted at a height of about 1m facing slightly downwards. The camera takes color images and depth images at a rate of 30\,Hz with a resolution of 640x480. The field of view is 58° horizontally and 45° vertically. With the orientation of the camera on the robot the visible area is from -29° to 29° horizontally and from -30° to 15° vertically. The range of the depth measurements is specified with 0.8\,m to 3.5\,m, though experiments showed a minimum range of about 0.55\,m. A second ASUS Xtion PRO LIVE camera, used for doorway detection, is mounted looking upwards.
+
+An ASUS notebook is mounted on the robot running the complete software. It is equipped with a $7^{th}$ generation Intel i7 quadcore CPU working at 2.8\,GHz, 16\,GB DDR4 RAM and a NVidia Geforce GTX 1050 Ti Mobile GPU with 4\,GB memory. Those components are up to date and quiet powerful for a notebook. However high-end hardware, especially state-of-the-art desktop GPUs, are much more powerful. The lack in computational power had to be taken into account in the design of the active object search system.
+
+\begin{figure}
+  \includegraphics[width=0.9\textwidth,clip]{figures/Robot.pdf}
+  \caption[Robot setup]{Robot setup in front and side view with dimensions and labels of most important parts}
+  \label{robot images}
+\end{figure}

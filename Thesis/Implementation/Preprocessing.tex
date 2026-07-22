@@ -1,0 +1,12 @@
+\section{Preprocessing} \label{preprocessing}
+
+The images and the point clouds can be used without preprocessing. The laser scans on the other hand have to be modified for further use. The scan{\_}filter node prepares the laser scans for the mapping. Therefore, range measurements on the far left and far right of the field of view are discarded. This is necessary as some parts of the robot are visible to the LIDAR, as shown in Figure \ref{laser}. Further, invalid range measurements need to be handled. There are two causes for invalid range measurements. Firstly, the laser beam was not sufficiently reflected by an obstacle. In this case the range measurement should be ignored. Secondly, no obstacle is within the maximum range of the LIDAR. In this case the range measurement should be set to the maximum range, so the mapping can use those beams to clear space. Due to the short range of the used LIDAR this happens often. There is no way to distinguish between these two cases and always assuming one case is not sufficient. Discarding all invalid measurements causes problems in open areas and corridors, as no or not enough information is sent to the mapping. Setting all range measurements to maximum range can result in occupied cells being wrongly classified as free. Therefore only invalid measurements of every fifth scan are set to the maximum range, which tests showed to be a reasonable trade-off.
+
+The navigation is done in 2D, but it is also necessary to consider the obstacles seen by the RGBD-camera. Therefore the laser scans sent to the local planner are modified to contain also those obstacles. This is done by intersecting the beams sent by the LIDAR with the projected point cloud of the RGBD-camera. The range measurement of a beam is then the minimum of the range measurement from the LIDAR and the distance to the first intersection with the projected point cloud. This is show in Figure \ref{laser}. 
+
+\begin{figure}
+\centering
+  \includegraphics[width=0.7\textwidth,clip]{figures/laser.png}
+  \caption[Laser scan preprocessing]{Preprocessing of the laser scan: Discarded range measurements (green); result of the scan{\_}filter node (red); projected point cloud of the RGBD-camera (black); example beam (purple); range measurements changed by the scan{\_}costmap node (blue)}
+  \label{laser}
+\end{figure}

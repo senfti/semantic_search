@@ -1,0 +1,14 @@
+ - implement current room in hierarchy msg
+ - better preprocessing of pointcloud: allowing points out
+single view position in hierachy_srv
+
+ n/a different occupancy thresholds for downprojection (higher) and possible object location (lower)
+ - better switching (odom correction on switch)
+ - not 3d mapping when not moved
+ - avoid switching map back and forth
+ - problem if we stop in a position, where we passed a door but are not passed in new map (will screw door pose and then don't know what will happen further)
+ - not changing door position shortly after map switch
+a map published with what the laser has seen and not the camera
+ - discard calculations of not possible room types (not indoor) and objects (like zebra)
+
+ - make obj_mapper and door_mapper pointers for more efficient working

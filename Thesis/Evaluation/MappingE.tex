@@ -1,0 +1,200 @@
+
+\section{Mapping}
+
+The quality of the maps is investigated after a complete exploration of the environment, as the goal of the exploration is to gather information for an efficient object search. Therefore, a modified high-level planner is used which does not generate search tasks. This was done in all three environments multiple times. In this section typical results of those exploration runs are presented and also the encountered problems are described. At first the metric maps are investigated, followed by an investigation of the Room-Type-Maps and the Object-Probability-Maps. At the end of this section the estimations after peeking into a room are presented.
+
+\subsection{Hybrid Metric Map} \label{EvalMapping}
+
+In Figure \ref{map2d_home} - \ref{map2d_ist} maps automatically created in the three test environments are shown. The 2D maps of the rooms have in general a good quality, especially for small rooms. In all maps some cells outside the room were set to free. This is due to invalid range measurements which are handled as described in Section \ref{preprocessing}. In general these free cells have no significant negative impact. In larger rooms the quality of the maps decreases, which can be seen in the map of room \textit{lab1}. There the top part leans to the left while the bottom right part is rotated towards the bottom left part. Another example can be seen in the map of the room \textit{institute1}, where the bottom corridor is curved upwards. The reason for these distortions is probably the limited range of the LIDAR, which results in many invalid range measurements in open areas. In further consequence less distinctive features are seen by the LIDAR and so the localization of the robot has to rely on the odometry, which can lead to inaccurate localization and therefore also to inaccurate maps. The larger the rooms are, the bigger is the impact of those inaccuracies. This shows the benefit of the hybrid map design which splits larger environments into easier to handle room maps. 
+\begin{figure}
+\centering
+  \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all5.png}
+  \caption[Hybrid map of the home environment]{Hybrid map of the home environment: Room \textit{home1} is a combination of a kitchen and a living room, room \textit{home2} is a bedroom with an office-like area in the upper right corner and room \textit{home3} is an anteroom. The topological map consists of the three rooms and the two edges represented by the red lines between the doorway poses. }
+  \label{map2d_home}
+\end{figure}
+\begin{figure}
+\centering
+  \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all_lab.png}
+  \caption[Hybrid map of the robotics-lab environment]{Hybrid map of robotics-lab environment: Room \textit{lab1} is the robotics-lab which consists mainly of an office area. It has free space at the bottom left and a sofa and a kitchen area at the bottom right. Room \textit{lab2} is an office, room \textit{lab3} is a corridor, room \textit{lab4} is also an office and room \textit{lab5} is a workshop/storage room. The topological map consists of the five rooms and the four edges represented by the red lines between the doorway poses. }
+  \label{map2d_lab}
+\end{figure}
+\begin{figure}
+\centering
+  \includegraphics[width=0.9\textwidth,clip]{figures/2Dmaps/all_IST_b.png}
+  \caption[Hybrid map of the university floor]{Hybrid map of a part of an university floor: Room \textit{institute1} is a corridor with a copier in the open area on the left, room \textit{institute2} consists of a kitchen area and a dining table, room \textit{institute3} is a meeting room, room \textit{institute4} is a bathroom and room \textit{institute5} is a secretariat. The topological map consists of the five rooms and the four edges represented by the red lines between the doorway poses. }
+  \label{map2d_ist}
+\end{figure}
+
+The doorway mapping works nicely in all explored environments, as can be seen in the hybrid maps in Figure \ref{map2d_home} - \ref{map2d_ist}. The doorway positions and orientations are very accurate in almost all cases, except for the doorway between rooms \textit{lab1} and \textit{lab3}. There a door closer mounted on top of the door confused the doorway detection and was responsible for the doorway detections being not in the center of the doorway. In this case the doorway pose is still within the doorway and as the shift is the same in both rooms, it causes no problems.
+
+\subsection{Room Type Map}
+
+The room \textit{home1} was chosen for the evaluation of the quality of the Room-Type-Maps because in this room areas of different room types exist. Assigning a ground truth Room-Type-Map is only possible to a limited extend, because for some areas multiple room types are fitting and the boundary between areas of different room types is even hard to judge for humans. Instead of a somewhat arbitrary ground truth, images covering the whole room are used in the evaluation as comparison for the generated maps. These images are shown in Figure \ref{wz_imgs}. In Figure \ref{wz_views} the poses, where the images were taken, are depicted and also the room types of the main areas are marked.
+
+\begin{figure}
+\renewcommand*\thesubfigure{\arabic{subfigure}} 
+\centering
+\begin{tabular}{cc}
+\subfloat[kitchen: 0.414, kitchenette: 0.401, dinette: 0.087, dine room: 0.077]{\includegraphics[width=0.40\textwidth]{figures/wz_imgs/pure_220.png}} &
+\subfloat[kitchenette: 0.468, kitchen: 0.245, living room: 0.066, galley: 0.053]{\includegraphics[width=0.40\textwidth]{figures/wz_imgs/pure_14.png}} \\
+\subfloat[kitchen: 0.444, kitchenette: 0.418]{\includegraphics[width=0.40\textwidth]{figures/wz_imgs/3.png}} &
+\subfloat[living room: 0.708, parlor: 0.239]{\includegraphics[width=0.40\textwidth]{figures/vision_test_imgs/wz.png}} \\
+\subfloat[kitchen: 0.481, kitchenette: 0.297, galley: 0.205]{\includegraphics[width=0.40\textwidth]{figures/wz_imgs/pure_242.png}} &
+\subfloat[closet: 0.243, pantry: 0.144, living room: 0.092, basement: 0.076, lobby: 0.069, reception: 0.060, kitchenette: 0.052]{\includegraphics[width=0.40\textwidth]{figures/wz_imgs/6.png}}
+\end{tabular}
+\caption[Images of the room \textit{home1}]{Images of the room \textit{home1} with place classification results}
+\label{wz_imgs}
+\end{figure}
+
+\begin{figure}
+\centering
+  \includegraphics[width=0.7\textwidth, trim=0 0 50 0,clip]{figures/wz_imgs/wz_views_b.png}
+  \caption[Detailed map of the room \textit{home1} with image poses]{Detailed map of the room \textit{home1}: Green arrows mark the doorways and the numbered red arrows are the view poses of the corresponding images in Figure \ref{wz_imgs}. The red area is a kitchen area, the yellow area is a dining table and the green area is a living room.}
+  \label{wz_views}
+\end{figure}
+
+In Figure \ref{roomclass} the most likely room types for different runs and settings are shown. In general the main areas of the room are correctly classified, though the borders of the areas vary a lot for different runs and settings. After the exploration in run 1, the kitchen area, the dining table and the living room area are correctly classified. The areas near the doorways are classified as closet, probably because of the wooden door frames. The area around the TV is classified as dine room, which is definitely not correct. However, this area was only seen at the edge of a few images which were mostly classified as dine room.
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[run 1]{\includegraphics[width=0.3\textwidth,trim=40 10 360 250, clip]{figures/wz_imgs/h5e/classes_0_b.png}} &
+\subfloat[run 1, without room type correlation]{\includegraphics[width=0.3\textwidth,trim=40 10 360 250, clip]{figures/wz_imgs/h5e/classes_1_b.png}} &
+\subfloat[run 2]{\includegraphics[width=0.3\textwidth,trim=0 20 0 50,clip]{figures/wz_imgs/h5e/classes_2_b_b2.png}} \\
+\subfloat[run 3]{\includegraphics[width=0.3\textwidth,trim=30 0 0 50,clip]{figures/wz_imgs/h5e/classes_3_b.png}} &
+\subfloat[after executed search]{\includegraphics[width=0.3\textwidth,trim=0 0 0 50,clip]{figures/wz_imgs/h5e/classes_search_b.png}} &
+\subfloat{\includegraphics[width=0.3\textwidth,trim=-50 0 0 0, clip]{figures/wz_imgs/h5e/legend.pdf}} 
+\end{tabular}
+\caption[Map of the most likely room types for room \textit{home1}]{Map of the most likely room types for the room \textit{home1}; robot trajectory is depicted as black line}
+\label{roomclass}
+\end{figure}
+
+In image (b) of Figure \ref{roomclass} the Room-Type-Map created without using the correlation between room types described at the end of Section \ref{Room-Type-Map} is shown. On the one hand the dining room area is much larger there. This is caused by the uncertainty of the room type classification between the similar room types kitchen and kitchenette. Without considering this similarity a third room type, in this case the type dine room, becomes more likely. On the other hand the closet area is much larger because it is not penalized for not really fitting to the other room types. In general the impact of using the correlation between room types is not that big, but the tests showed at least a small positive effect.
+
+In the images (c) and (d) of Figure \ref{roomclass} the resulting Room-Type-Maps for a second and third run are shown. After run 2 the living room area is much larger than after run 1, whereas in run 3 the kitchen and kitchenette area is much larger. This shows the impact of the trajectory during the exploration on the result. The trajectory decides which areas are seen how often and from which direction and which areas are seen together in one image. Especially the room type of areas, where the room type classifier is not sure, depends highly on the trajectory. Also the border between areas of different room type is shifted depending on the taken images because one room type might be overruled by the neighboring room type, as described in Section \ref{vision_eval}.
+
+In image (e) of Figure \ref{roomclass} the result after an object search is shown. Here the favor of the room type classification to detect kitchenettes can be seen. Also noteworthy is the nice shape of the living room area and the basement area, which is probability caused by the robot looking into the wall.
+
+The maps containing the probabilities of the most important room types in the room \textit{home1} after exploration run 1 are shown in Figure \ref{roomprob}. 
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[kitchen]{\includegraphics[width=0.28\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchen_b.png}} & 
+\subfloat[kitchenette]{\includegraphics[width=0.28\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchenette_b.png}} &
+\subfloat[living room]{\includegraphics[width=0.28\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/livingroom_b.png}} \\
+\subfloat[dine room]{\includegraphics[width=0.28\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/dine_b.png}} &
+\subfloat[closet]{\includegraphics[width=0.28\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/closet_b.png}} &
+\subfloat{\includegraphics[width=0.28\textwidth,trim=-300 0 -300 0, clip]{figures/wz_imgs/h5e/problegend.pdf}} 
+\end{tabular}
+\caption[Room type probabilities]{Probabilities of the stated room types in room \textit{home1} after run 1; in the legend the probability values for the different colors are stated; blue areas have a high probability of being of the given type, red ares a low probability; The probabilities fit to the most likely room types shown in image (a) of Figure \ref{roomclass}.}
+\label{roomprob}
+\end{figure}
+When comparing with image (a) in Figure \ref{roomclass}, it can be seen, as expected, that at every cell the probability of the most likely room type is high. Except at the border of areas, the probability of the most likely room type is very high. This is because the parameters have to be chosen in a way that a quick estimation of the room type during the peek task is possible. Therefore, the probability of the most likely room type of a cell increases relatively quickly to the saturation value of 0.8. Also noteworthy is the relatively high probability for kitchenette on the right side of the room. As can be seen in image (6) of Figure \ref{wz_imgs} the room type classification is not sure about the room type there and proposes multiple room types, including kitchenette.
+
+\subsection{Object Probability Map}
+
+In this section the Object-Probability-Maps are evaluated based on the results of exploration runs in room \textit{home1}. This room is suitable for the evaluation because it consists of areas of different room types and also a variety of different object were present during the runs. For the evaluation in this section the 2D projections of the Object-Probability-Maps are used because the search planning uses the 2D projections and a 3D Object-Probability-Map is difficult to visualize. 
+
+In Figure \ref{objfound} all cells with a probability greater than 0.25 in the Object-Probability-Maps of any object type are depicted together with the type of the object. 
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[bowl(green), sink(blue), cup(cyan), sofa(red)] {\includegraphics[width=0.28\textwidth,trim=40 20 80 120, clip]{figures/obj/1_ssbc.png}} & 
+\subfloat[refrigerator(green), microwave(blue), book(cyan), chair(red)]{\includegraphics[width=0.28\textwidth,trim=40 20 80 120, clip]{figures/obj/1_cmfb.png}} & 
+\subfloat[bottle(green), oven(blue), potted plant(cyan), table(red)]{\includegraphics[width=0.28\textwidth,trim=40 20 80 120, clip]{figures/obj/1_tobp.png}} \\ 
+\subfloat[bowl(green), sink(blue), cup(cyan), sofa(red)] {\includegraphics[width=0.28\textwidth,trim=-20 0 -20 0, clip]{figures/obj/2_ssbc.png}} & 
+\subfloat[refrigerator(green), microwave(blue), book(cyan), chair(red)]{\includegraphics[width=0.28\textwidth,trim=-20 0 -20 0, clip]{figures/obj/2_cmrb.png}} & 
+\subfloat[monitor(yellow), oven(blue), potted plant(cyan), table(red)]{\includegraphics[width=0.28\textwidth,trim=-20 0 -20 0, clip]{figures/obj/2_tomp.png}} \\
+\subfloat[bowl(green), sink(blue), cup(cyan), sofa(red), orange(yellow)] {\includegraphics[width=0.28\textwidth,trim=40 20 80 120, clip]{figures/obj/truth_1.png}} & 
+\subfloat[refrigerator(green), microwave(blue), book(cyan), chair(red), wine glass(yellow), knife(purple)]{\includegraphics[width=0.28\textwidth,trim=40 20 80 120, clip]{figures/obj/truth_2.png}} & 
+\subfloat[monitor(yellow), bottle(green), oven(blue), potted plant(cyan), table(red)]{\includegraphics[width=0.28\textwidth,trim=40 20 80 120, clip]{figures/obj/truth_3.png}}
+\end{tabular}
+\caption[Objects probabilities higher than 0.25 after exploration]{Objects probabilities higher than 0.25 after exploration; first row shows results of run 1, second row shows results from run 2, 3rd row shows the ground truth}
+\label{objfound}
+\end{figure}
+In some cells multiple objects were detected and therefore three images are used for the visualization. These cells are basically where the robot thinks it might have seen an object. The results of the two depicted runs show that big objects, like sofas or tables, are reliably detected. However, the object probabilities of those objects are also high in the areas around the objects due to the missing per-pixel segmentation of the objects. For example parts of the dining table have also a high probability for being a sofa. For the search planning this is usually no problem as the object is either already found during the exploration or found quickly anyway. On the other hand only some smaller objects have a high probability in the Object-Probability-Map. The problem with small objects is that they are often not detected and so the object probability does not increase high enough. The trajectory has a big impact on what objects have a high probability in the Object-Probability-Map. For example the monitor was not seen in run 1 and also not the same cups were detected in the two runs. This is as intended because the exploration is only done to quickly obtain enough data for an intelligent search planning and some areas are not at all or only vague seen in this process.
+
+The probabilities in the Object-Probability-Map do not only depend on the object detections. The information in the Room-Type-Maps is also used to estimate the object probabilities, as described in Section \ref{ObjectProbMap}. This indirect way of estimating object probabilities has the most impact if no detections of the given object type were made. In Figure \ref{objprob} the Object-Probability-Maps of some objects not detected during the exploration are depicted, together with the most likely room types of the corresponding Room-Type-Map. In general those probabilities are very low, but many cells together may have a significant object probability. The connection to the Room-Type-Maps can be seen nicely in the images. For example a fork is more likely in a dine room than in areas of other room types or a dog is more likely in a living room. On the other hand a suitcase is very unlikely in a kitchen. 
+
+In the upper center the probabilities are relatively high, as can be seen especially in (g) and (h). This area was only seen by the LIDAR, but never by the camera. Therefore, the probabilities for those cells in the Object-Map are still the initial probabilities. In the other cells which were seen by the camera and no object of the given type was found, the probability is lower than the initial value. Therefore, also the values in the Object-Probability-Maps are lower in those cells, which means the cells only seen by the LIDAR have relative high probabilities for containing the object. 
+
+The resulting Object-Probability-Maps are reasonable at first glance and the search tests will show how much they improve the object search. 
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[kitchen]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchen_b.png}} & 
+\subfloat[kitchenette]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/kitchenette_b.png}} &
+\subfloat[living room]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/livingroom_b.png}} \\
+\subfloat[dine room]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/dine_b.png}} &
+\subfloat[closet]{\includegraphics[width=0.3\textwidth,trim=40 10 160 250, clip]{figures/wz_imgs/h5e/closet_b.png}} &
+\subfloat{\includegraphics[width=0.3\textwidth,trim=-300 0 -300 0, clip]{figures/wz_imgs/h5e/problegend.pdf}} \\
+\subfloat[fork]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/fork.png}} & 
+\subfloat[knife]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/knife.png}} & 
+\subfloat[apple]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/apple.png}} \\ 
+\subfloat[toaster]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/toaster.png}} & 
+\subfloat[suitcase]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/suitcase.png}} & 
+\subfloat[dog]{\includegraphics[width=0.3\textwidth,trim=0 0 0 0, clip]{figures/obj/dog.png}}
+\end{tabular}
+\caption[Room type probabilities and object probabilities]{Room type probabilities and object probabilities of given types after exploration run 1}
+\label{objprob}
+\end{figure}
+
+In Table \ref{totalobj} the probabilities for an object of the given type being anywhere in the room are shown for the object types in Figure \ref{objprob}. The probabilities are according to the Object-Probability-Map. The larger living room area in run 2 results in a larger probability for a dog being in the room. Also noteworthy are the unexpectedly low probabilities for apple and toaster. The reason is that according to the used commonsense knowledge apples or toasters are not very frequent in indoor environments.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+ & run 1 & run 2 & run 3 & average\\ \hline
+fork & 0.184 & 0.161 & 0.159 & 0.168\\ \hline
+knife & 0.315 & 0.331 & 0.314 & 0.320\\ \hline
+apple & 0.085 & 0.095 & 0.080 & 0.087\\ \hline
+toaster & 0.050 & 0.064 & 0.052 & 0.055\\ \hline
+suitcase & 0.076 & 0.089 & 0.061 & 0.075\\ \hline
+dog & 0.138 & 0.179 & 0.131 & 0.149\\ \hline
+\end{tabular}
+\caption{Object probabilities in room \textit{home1}}
+\label{totalobj}
+\end{table}
+
+\subsection{Probability Estimations after Peek Task}
+
+The estimation of the probability for a searched object being in a room after the peek task is very important for the system to work well. Using this estimation the robot decides if the room should be investigated further or if other rooms are more promising. During the peek task only a fraction of the room is seen and so the object probability in the whole room depends on the estimation of the object probability in the rest of the room. This estimation is done using the average room type probabilities of the explored area, as described in Section \ref{HLInfoGen}. In Figure \ref{peek} images taken at the doorways into different rooms are shown together with the average room type probabilities of the rooms. The average room type probabilities are reasonable, maybe with the exception of the images (e) and (f), but there is neither a meeting room category nor a bathroom category in the detectable room types. One thing to note is that the images (b) and (c) show the same room, but different areas are seen from the different doorways, leading to different results. This shows that the information gathered during the peek task is limited and wrong assumptions might be made.
+\begin{figure}
+\centering
+\begin{tabular}{ccc}
+\subfloat[office: 0.4442 \newline home office: 0.3214 \newline attic: 0.0174]{\includegraphics[width=0.38\textwidth, clip]{figures/peek/explore_lab_1bag1221.png}} &
+\subfloat[dining room: 0.3918 \newline livingroom: 0.3093 \newline closet: 0.0878]{\includegraphics[width=0.38\textwidth, clip]{figures/peek/h5ebag117.png}} \\
+\subfloat[kitchen: 0.4841 \newline restaurant kitchen: 0.2690 \newline kitchenette: 0.0439]{\includegraphics[width=0.38\textwidth, clip]{figures/peek/h7ebag41.png}} &
+\subfloat[kitchen: 0.3211 \newline dining room: 0.2779 \newline restaurant kitchen: 0.0978]{\includegraphics[width=0.38\textwidth, clip]{figures/peek/IST_explore_subag470.png}} \\
+\subfloat[shower: 0.7556 \newline locker room: 0.1701 \newline martial arts gym: 0.0038]{\includegraphics[width=0.38\textwidth, clip]{figures/peek/pure_122.png}} &
+\subfloat[classroom: 0.6971 \newline cafeteria: 0.0919 \newline conference auditorium: 0.0256]{\includegraphics[width=0.38\textwidth, clip]{figures/peek/IST_explore_subag850.png}} 
+\end{tabular}
+\caption[Images taken at the doorway into a room]{Images taken at the doorway into a room and the average room type probabilities of the top 3 room types}
+\label{peek}
+\end{figure}
+
+In Table \ref{peekobj} the object probabilities of some selected object types after the peek task are shown. Except for the wine glass in room (d) and the toilet in room (e) none of those objects were seen during the peek task. The toilet was detected with high confidence, which can be seen on the high probability, while the wine glass was only detected in one image, therefore its probability is lower. The general trend of the probabilities looks good, though the accuracy of the probabilities is hard to evaluate without a huge amount of collected data. Only the relatively high probability for toilets is a bit weird, as toilets are very uncommon outside bathrooms.
+
+{%
+\newcommand{\mc}[3]{\multicolumn{#1}{#2}{#3}\vline}
+\definecolor{csdfr}{rgb}{1,0,0}
+\definecolor{csdfy}{rgb}{1,1,0}
+\definecolor{csdfo}{rgb}{1,0.6,0}
+\definecolor{csdfg}{rgb}{0,1,0}
+\begin{table}
+\centering
+\begin{tabular}{|l|l|l|l|l|l|l|} \hline
+object type & \mc{1}{c}{a} & \mc{1}{c}{b} & \mc{1}{c}{c} & \mc{1}{c}{d} & \mc{1}{c}{e} & \mc{1}{c}{f}\\ \hline
+microwave & \mc{1}{>{\columncolor{csdfo}}r}{0.065} & \mc{1}{>{\columncolor{csdfo}}r}{0.099} & \mc{1}{>{\columncolor{csdfg}}r}{0.317} & \mc{1}{>{\columncolor{csdfg}}r}{0.287} & \mc{1}{>{\columncolor{csdfr}}r}{0.029} & \mc{1}{>{\columncolor{csdfo}}r}{0.050}\\ \hline
+wine glass & \mc{1}{>{\columncolor{csdfo}}r}{0.088} & \mc{1}{>{\columncolor{csdfg}}r}{0.201} & \mc{1}{>{\columncolor{csdfy}}r}{0.128} & \mc{1}{>{\columncolor{csdfg}}r}{0.223} & \mc{1}{>{\columncolor{csdfr}}r}{0.029} & \mc{1}{>{\columncolor{csdfo}}r}{0.095}\\ \hline
+spoon & \mc{1}{>{\columncolor{csdfo}}r}{0.087} & \mc{1}{>{\columncolor{csdfy}}r}{0.190} & \mc{1}{>{\columncolor{csdfg}}r}{0.323} & \mc{1}{>{\columncolor{csdfg}}r}{0.324} & \mc{1}{>{\columncolor{csdfr}}r}{0.036} & \mc{1}{>{\columncolor{csdfy}}r}{0.156}\\ \hline
+apple & \mc{1}{>{\columncolor{csdfr}}r}{0.040} & \mc{1}{>{\columncolor{csdfr}}r}{0.049} & \mc{1}{>{\columncolor{csdfo}}r}{0.074} & \mc{1}{>{\columncolor{csdfo}}r}{0.083} & \mc{1}{>{\columncolor{csdfr}}r}{0.015} & \mc{1}{>{\columncolor{csdfr}}r}{0.041}\\ \hline
+laptop & \mc{1}{>{\columncolor{csdfg}}r}{0.665} & \mc{1}{>{\columncolor{csdfy}}r}{0.152} & \mc{1}{>{\columncolor{csdfo}}r}{0.053} & \mc{1}{>{\columncolor{csdfy}}r}{0.106} & \mc{1}{>{\columncolor{csdfr}}r}{0.046} & \mc{1}{>{\columncolor{csdfg}}r}{0.431}\\ \hline
+mouse & \mc{1}{>{\columncolor{csdfg}}r}{0.584} & \mc{1}{>{\columncolor{csdfr}}r}{0.043} & \mc{1}{>{\columncolor{csdfr}}r}{0.019} & \mc{1}{>{\columncolor{csdfr}}r}{0.041} & \mc{1}{>{\columncolor{csdfr}}r}{0.024} & \mc{1}{>{\columncolor{csdfy}}r}{0.176}\\ \hline
+remote & \mc{1}{>{\columncolor{csdfg}}r}{0.288} & \mc{1}{>{\columncolor{csdfg}}r}{0.255} & \mc{1}{>{\columncolor{csdfr}}r}{0.048} & \mc{1}{>{\columncolor{csdfy}}r}{0.103} & \mc{1}{>{\columncolor{csdfo}}r}{0.057} & \mc{1}{>{\columncolor{csdfg}}r}{0.258}\\ \hline
+toilet & \mc{1}{>{\columncolor{csdfo}}r}{0.075} & \mc{1}{>{\columncolor{csdfo}}r}{0.056} & \mc{1}{>{\columncolor{csdfo}}r}{0.098} & \mc{1}{>{\columncolor{csdfy}}r}{0.104} & \mc{1}{>{\columncolor{csdfg}}r}{0.999} & \mc{1}{>{\columncolor{csdfo}}r}{0.065}\\ \hline
+\end{tabular}
+\caption{Object probabilities of selected object types after peeking into the rooms shown in Figure \ref{peek}}
+\label{peekobj}
+\end{table}
+}%

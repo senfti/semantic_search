@@ -1,0 +1,36 @@
+\section{General Design Decisions} \label{ssec:num3}
+
+This section covers general design decisions made in the process of creating this active object search system. It also describes the reasoning behind these decisions and the impact on the different components of the system.
+
+\begin{itemize}
+ \item \textbf{Usage of room types:} \newline
+ Rooms or areas in rooms are usually classified based on what is usually done there, like the area where cooking is done is called kitchen. Therefore areas of the same room type have similar features and most importantly for this thesis there is a strong correlation between room type and objects in the room. This is used to estimate object probabilities in unseen areas of a room and also to improve the estimated object probability in already seen areas. \newline
+ 
+ \item \textbf{Segmentation of the environment into rooms:} \newline
+ Indoor environments usually consist of multiple rooms. Rooms are separated by walls and only connected by narrow doorways. As doorways can be detected reliably the segmentation is also done in the representation of the environment, resulting in a topology of the rooms and separate maps for every room. Beside the advantages for the planning, which are covered next, the main benefit of this representation is that the smaller maps are less computational expensive and easier to keep consistent than one huge map.
+ \newline
+ 
+ \item \textbf{Multi-level planning:} \newline
+ Combining the two already mentioned ideas the planning problem is simplified into a higher-level planning, which selects the next room to search, and a lower-level planning, planning the search in a single room. This splits the planning problem into two much easier sub-problems. It is a very good heuristic in environments with lots of small rooms, where one room type can be assigned to the whole room in every room. On the other hand big rooms with multiple areas of different room type might result in suboptimal search paths. 
+ \newline
+ 
+ \item \textbf{Probabilistic:}\newline
+ Many aspects of the environment are modeled by probabilistic representations, such as room type or object locations. On the one hand this is because of the low confidence of the computer vision components. On the other hand the connection between room type and objects in a room is a loose correlation, which also makes a probabilistic approach necessary as no deterministic reasoning is viable.
+ \newline
+ 
+ \item \textbf{Usage of a Convolutional Neural Network for object detection:} \newline
+ Object detection is a very difficult computer vision problem. The availability of huge datasets with labeled training images, computer vision challenges held using those datasets and the recent success of Convolutional Neural Networks (CNNs) lead to many trained CNNs for object detection being available. Therefore such a CNN for object detection, YOLO (you only look once), is used in this thesis.\newline
+ The advantages are:
+ \begin{itemize}
+  \item By far the best performing approach for general purpose object detection at the moment
+  \item State-of-the-art solutions are publicly available
+  \item Trained on data with sufficient number of object classes and in-class variability
+  \item Reasonably fast with CNNs being available running with more than one frame per second even on mid-class hardware
+ \end{itemize}
+ The main problem is that all currently available object detection CNNs with a sufficient number of object classes and accuracy are only working on single 2D images and the found objects are only marked with bounding boxes. This means that no segmentation of the object from the rest of the image is done and the result is only in 2D image space. Also the accuracy of the results is, despite being comparable good, still not that great. Therefore the output of the CNN is only a intermediate result and further processing is needed.
+ \newline
+ 
+ \item \textbf{Mapping of object probability distribution instead of object locations:} \newline
+ Due to the used object detection with a CNN the insertion of found objects in the map and their tracking is not possible. This is because of the confidence of the object detection is low, the number of detected objects might be high and position of a detected object in 3D is very inaccurate, as it can only be estimated based on the bounding box and a depth image. Instead the object probability distribution is mapped using a grid representation. Based on the object detection results the probabilities in the grid cells are updated. This approach can handle the large number of uncertain detections and the probability distribution is needed in the search planning. The downside of this approach is that not objects are found but only cells, which have a high probability containing an object.
+ 
+\end{itemize}

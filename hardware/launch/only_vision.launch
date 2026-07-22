@@ -1,0 +1,5 @@
+<launch>  
+  <include file="$(find hardware)/launch/includes/vision.launch.xml" >
+    <arg name="result_topic" value="vision_result2" />
+  </include> 
+</launch>

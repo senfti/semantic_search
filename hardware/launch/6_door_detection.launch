@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find hardware)/launch/includes/door_detection.launch.xml" >
+  </include> 
+</launch>
